@@ -1,0 +1,8 @@
+/target
+.vim-bookmarks
+.env
+.env-test
+*.db
+*.pem
+*.crt
+*.key
