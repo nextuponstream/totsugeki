@@ -1,0 +1,37 @@
+[package]
+name = "frontend"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+totsugeki = { path = "../totsugeki/" }
+tournament-server-request = { path = "../tournament-server-request" }
+log = "0.4"
+wasm-bindgen = "0.2.81"
+wasm-logger = "0.2"
+yew = "0.19.3"
+yew-router = "0.16.0"
+yew-router-macro = "0.15.0"
+wasm-bindgen-futures = "0.4"
+gloo-utils = "0.1.0"
+reqwest = "0.11.11"
+
+[dependencies.yew_icons]
+version = "0.4.1"
+# https://finnbear.github.io/yew_icons/
+features = ["BootstrapGithub", "FontAwesomeSolidTriangleExclamation"]
+
+# reqwest does not compile to wasm
+[dependencies.web-sys]
+version = "0.3"
+features = [
+  "Headers",
+  "Request",
+  "RequestInit",
+  "RequestMode",
+  "Response",
+  "Window",
+]

@@ -3,6 +3,14 @@
 Deploy an OpenAPI compliant backend that helps you manage tournaments with a
 discord bot.
 
+## Roadmap MVP
+
+* [ ] let player !participate in bracket
+* [ ] report !result
+* [ ] let player see their !nextmatch opponent
+* [ ] TO !validatematch
+* [ ] !finalize bracket when tournament is over
+
 ## Installation
 
 Create discord server and discord [bot](https://discord.com/developers/). Set
@@ -14,7 +22,9 @@ bot permissions:
 Invite discord bot to server. Build all binaries:
 
 ```bash
-cargo build --release
+# frontend package requires environment variables to be set at build time:
+# export $(xargs < .env)
+cargo build --release --workspace
 ```
 
 ### Deploy infrastructure
@@ -56,10 +66,3 @@ Open another terminal:
 ```bash
 cargo watch -x test
 ```
-
-## Contributing
-
-### Extend
-
-Deploy tournament server binary and consult API documentation at
-`TOURNAMENT_SERVER_ADDR:TOURNAMENT_SERVER_PORT/swagger` as defined in `.env`.

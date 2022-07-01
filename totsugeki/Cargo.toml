@@ -1,0 +1,16 @@
+[package]
+name = "totsugeki"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = { version = "1.0.137", features = ["derive"] }
+reqwest = { version = "0.11.11", features = ["json", "rustls-tls"] }
+
+# documentation generation workaround: https://github.com/rust-lang/cargo/issues/3475
+# active, generate documentation, then remove
+#async-trait = "0.1"
+#cucumber = "0.13"
+#futures = "0.3"

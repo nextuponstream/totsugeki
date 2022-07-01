@@ -1,0 +1,50 @@
+// redefined other variables with bulma values before importing
+$white-bis: hsl(0, 0%, 98%);
+$white-ter: hsl(0, 0%, 96%);
+$navbar-background-color: #1EABC7;
+$navbar-item-color: $white-bis;
+$navbar-item-active-color: $white-bis;
+$navbar-item-hover-color: $white-bis;
+$navbar-item-hover-background-color: #239AC0;
+
+$discord-background: #35393F;
+$discord-text: #D9DADB;
+$box-color: $discord-text;
+$box-background-color: $discord-background;
+$footer-padding: 3rem 0rem 3rem;
+$footer-color: true;
+
+@import "bulma";
+
+html, body {
+    height: 100%;
+}
+
+body {
+    background: #FAFAFA;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.navbar-brand {
+   padding-left: 1em;
+}
+
+.main-content {
+    padding: 1em;
+}
+
+main {
+    flex: 1 auto;
+}
+
+.discord > .content > h2 {
+    color: $discord-text;
+}
+
+footer {
+    flex: 1 0;
+    background: #f5f5f5;
+}
