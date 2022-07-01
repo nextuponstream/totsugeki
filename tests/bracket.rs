@@ -1,4 +1,12 @@
+//! Test of discord bot use cases
+
+#![deny(missing_docs)]
+#![deny(rustdoc::invalid_codeblock_attributes)]
+#![warn(rustdoc::bare_urls)]
+#![deny(rustdoc::broken_intra_doc_links)]
 #![warn(clippy::pedantic)]
+#![allow(clippy::unused_async)]
+#![warn(clippy::unwrap_used)]
 
 use async_trait::async_trait;
 use cucumber::{given, then, when, WorldInit};
@@ -7,9 +15,8 @@ use std::convert::Infallible;
 use std::env;
 use std::time::Duration;
 use tokio::time::sleep;
-use totsugeki::discord_commands::bracket::create::bot_create_bracket;
-use totsugeki::discord_commands::bracket::find::bot_find_bracket;
-use totsugeki::discord_commands::bracket::get::bot_get_bracket;
+use tournament_server_request::bracket::create;
+use tournament_server_request::bracket::fetch;
 
 // NOTE: no ü or any fancy caracters
 
@@ -70,10 +77,10 @@ fn someone_wants_to_create_bracket(w: &mut World, user: String, bracket_name: St
 
 #[when(regex = r"^(?:he|she|they) create(s|) a bracket using discord bot")]
 async fn create_bracket(w: &mut World) {
-    if let Err(e) = bot_create_bracket(
-        w.tournament_server_addr.clone(),
-        w.bracket_name.clone().unwrap(),
-        w.accept_invalid_certs,
+    if let Err(e) = create(
+        get_client(w.accept_invalid_certs),
+        w.tournament_server_addr.as_str(),
+        w.bracket_name.clone().expect("no bracket name provided"),
     )
     .await
     {
@@ -85,10 +92,10 @@ async fn create_bracket(w: &mut World) {
     regex = r"^(?:he|she|they) search the newly created bracket with the discord bot and find it"
 )]
 async fn see_bracket(w: &mut World) {
-    let brackets =
-        bot_get_bracket(w.tournament_server_addr.clone(), 0, w.accept_invalid_certs).await;
-    let brackets = brackets.unwrap();
-    let bracket_name = w.bracket_name.clone().unwrap();
+    let brackets = fetch(get_client(true), w.tournament_server_addr.as_str(), None, 0)
+        .await
+        .expect("could not fetch brackets");
+    let bracket_name = w.bracket_name.clone().expect("no bracket name");
     assert!(
         brackets
             .into_iter()
@@ -100,15 +107,15 @@ async fn see_bracket(w: &mut World) {
 
 #[then(regex = r"^(?:he|she|they) can filter results and find the created bracket")]
 async fn find_bracket(w: &mut World) {
-    let bracket_name = w.bracket_name.clone().unwrap();
-    let brackets = bot_find_bracket(
-        w.tournament_server_addr.clone(),
-        bracket_name.clone(),
+    let bracket_name = w.bracket_name.clone().expect("no bracket name");
+    let brackets = fetch(
+        get_client(w.accept_invalid_certs),
+        w.tournament_server_addr.as_str(),
+        Some(bracket_name.clone()),
         0,
-        w.accept_invalid_certs,
     )
     .await;
-    let brackets = brackets.unwrap();
+    let brackets = brackets.expect("no brackets received");
     assert!(
         brackets
             .clone()
@@ -118,4 +125,11 @@ async fn find_bracket(w: &mut World) {
         bracket_name
     );
     assert!(brackets.len() == 1, "too many results");
+}
+
+fn get_client(accept_invalid_certs: bool) -> reqwest::Client {
+    reqwest::Client::builder()
+        .danger_accept_invalid_certs(accept_invalid_certs)
+        .build()
+        .expect("http client")
 }
