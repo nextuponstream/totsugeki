@@ -18,6 +18,7 @@ bot permissions:
 
 * send messages
 * read chat history
+* manage roles
 
 Invite discord bot to server. Build all binaries:
 
@@ -50,7 +51,7 @@ for s in $(ls src/bin); do cargo watch -x "run --bin ${s%.*}" &; done
 
 ### Run tests
 
-Deploy a tournament server. Discord bot binary is not used in tests. Instead,
+Deploy totsugeki-api. Discord bot binary is not used in tests. Instead,
 cucumber-rs is used to make the same API calls to the tournament server the
 discord bot would have made.
 
@@ -58,11 +59,11 @@ discord bot would have made.
 infrastructure to use `.env-test` instead of `.env`.
 
 ```bash
-TESTING=1 cargo watch -x "run --bin tournament-server"
+TESTING=1 cargo r --release -p totsugeki-api --bin api
 ```
 
 Open another terminal:
 
 ```bash
-cargo watch -x test
+cargo test-integration
 ```
