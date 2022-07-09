@@ -6,7 +6,6 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::unused_async)]
 #![warn(clippy::unwrap_used)]
-// TODO use macros in all workspace's packages
 
 //use poem_openapi::Object;
 use serde::{Deserialize, Serialize};

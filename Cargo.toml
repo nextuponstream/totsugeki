@@ -1,10 +1,10 @@
 [workspace]
 members = [
-  "discord-bot",
-  "frontend",
   "totsugeki",
-  "tournament-server",
-  "tournament-server-request",
+  "totsugeki-api",
+  "totsugeki-api-request",
+  "totsugeki-discord-bot",
+  "totsugeki-frontend",
 ]
 
 [package]
@@ -15,14 +15,18 @@ edition = "2021"
 [dev-dependencies]
 async-trait = "0.1"
 cucumber = "0.13"
-futures = "0.3"
+futures = { version = "0.3.21", features = ["executor"] }
 tokio = { version = "1", features = ["full"] }
 env_logger = "0.9.0"
 dotenv = "0.15"
 log = "0.4.17"
-tournament-server-request = { path = "tournament-server-request" }
+totsugeki-api = { path = "totsugeki-api" }
+totsugeki-api-request = { path = "totsugeki-api-request" }
 reqwest = "0.11.11"
 
 [[test]]
-name = "bracket"
+name = "integration-cucumber"
 harness = false
+# Skip test because expensive
+# FIXME add integration test in CI
+test = false
