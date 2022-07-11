@@ -9,7 +9,7 @@ project root (to load `.env` variables):
 
 ```bash
 cd ..
-cargo watch -x "run -p totsugeki-api"
+cargo watch -x "run -p totsugeki-api --bin api"
 ```
 
 When testing authenticated API calls, use the following authorization header:

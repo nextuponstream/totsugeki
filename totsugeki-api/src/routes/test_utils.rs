@@ -1,8 +1,7 @@
-//! Provide endpoint to setup/teardown database for test purposes. Disabled when production mode is enabled.
+//! Provide endpoint to setup/teardown database for test purposes
 
 use crate::persistence::Error;
-use crate::routes::SharedDb;
-use crate::MyApiKeyAuthorization;
+use crate::{MyApiKeyAuthorization, SharedDb};
 use poem::Result;
 use poem_openapi::OpenApi;
 
@@ -18,18 +17,18 @@ impl TestUtilsApi {
         _auth: MyApiKeyAuthorization,
     ) -> Result<()> {
         // TODO find trait implementation to use ? instead of unwrapping
-        if let Err(e) = clean_database(&db) {
-            Err(e.into())
-        } else {
-            Ok(())
+        match clean_database(&db) {
+            Err(e) => Err(e.into()),
+            _ => Ok(()),
         }
     }
 }
 
-fn clean_database<'a, 'b>(db: &SharedDb<'a>) -> Result<(), Error<'b>>
+fn clean_database<'a, 'b>(db: &'a SharedDb) -> Result<(), Error<'b>>
 where
     'a: 'b,
 {
-    let mut db = db.write()?;
-    Ok(db.clean()?)
+    let db = db.read()?;
+    db.clean()?;
+    Ok(())
 }

@@ -10,21 +10,27 @@
 pub mod persistence;
 pub mod routes;
 
-use crate::persistence::Database;
+use crate::persistence::DBAccessor;
 use hmac::{Hmac, NewMac};
 use jwt::VerifyWithKey;
+use poem::web::Data;
 use poem::Request;
 use poem_openapi::{auth::ApiKey, Object, SecurityScheme};
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 use std::boxed::Box;
+use std::sync::Arc;
 use totsugeki::Bracket;
+use totsugeki::ReadLock;
 
 /// Server key encryption type
 pub type ServerKey = Hmac<Sha256>;
 
-/// Database type
-pub type SharedDb = Box<dyn Database + Send + Sync>;
+/// Instance of shared database
+// NOTE: There is no read lock in standard lib. Since it's only a handle, we never write to the underlying
+// struct. Then any number of reader can use it since no writer will prevent readers from using methods
+// tied to the struct to interact with the database.
+pub type SharedDb<'a> = Data<&'a Arc<ReadLock<Box<dyn DBAccessor + Send + Sync>>>>;
 
 #[derive(Serialize, Deserialize, Object)]
 /// Bracket for a tournament
@@ -83,4 +89,10 @@ async fn api_checker(req: &Request, api_key: ApiKey) -> Option<DiscordApiUser> {
 /// Returns HMAC from server key
 pub fn hmac(server_key: &[u8]) -> Hmac<Sha256> {
     Hmac::<Sha256>::new_from_slice(server_key).expect("valid server key")
+}
+
+#[derive(Serialize, Deserialize, Object)]
+/// Organiser (venue, organisation) for a tournament
+pub struct OrganiserPOST {
+    organiser_name: String,
 }

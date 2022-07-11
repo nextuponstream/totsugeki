@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 serde = { version = "1.0.137", features = ["derive"] }
 reqwest = { version = "0.11.11", features = ["json", "rustls-tls"] }
+uuid = { version = "1.1.2", features = ["v4", "macro-diagnostics", "serde"] }
 
 # documentation generation workaround: https://github.com/rust-lang/cargo/issues/3475
 # active, generate documentation, then remove
