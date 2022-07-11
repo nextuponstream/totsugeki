@@ -7,14 +7,15 @@ use poem::{http::Method, middleware::Cors};
 use poem_openapi::{OpenApi, OpenApiService};
 use std::boxed::Box;
 use std::env;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
+use totsugeki::ReadLock;
 use totsugeki_api::hmac;
-use totsugeki_api::persistence::inmemory::InMemory;
+use totsugeki_api::persistence::inmemory::InMemoryDBAccessor;
 use totsugeki_api::persistence::sqlite::Sqlite;
-use totsugeki_api::persistence::Database;
+use totsugeki_api::persistence::DBAccessor;
 use totsugeki_api::routes::bracket::BracketApi;
+use totsugeki_api::routes::organiser::OrganiserApi;
 use totsugeki_api::routes::test_utils::TestUtilsApi;
-use totsugeki_api::SharedDb;
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
@@ -31,7 +32,7 @@ async fn main() -> Result<(), std::io::Error> {
     if testing_mode {
         serve_server(
             OpenApiService::new(
-                (BracketApi, TestUtilsApi),
+                (BracketApi, OrganiserApi, TestUtilsApi),
                 env!("CARGO_PKG_NAME"),
                 env!("CARGO_PKG_VERSION"),
             )
@@ -42,7 +43,7 @@ async fn main() -> Result<(), std::io::Error> {
     } else {
         serve_server(
             OpenApiService::new(
-                (BracketApi, TestUtilsApi),
+                (BracketApi, OrganiserApi, TestUtilsApi),
                 env!("CARGO_PKG_NAME"),
                 env!("CARGO_PKG_VERSION"),
             )
@@ -53,6 +54,8 @@ async fn main() -> Result<(), std::io::Error> {
     }
 }
 
+type Database = Box<dyn DBAccessor + Send + Sync>;
+
 async fn serve_server<T: OpenApi + 'static>(
     api_service: OpenApiService<T, ()>,
     full_addr: &str,
@@ -60,19 +63,19 @@ async fn serve_server<T: OpenApi + 'static>(
     let ui = api_service.swagger_ui();
 
     let db_type = env::var("API_DATABASE_TYPE").expect("API_DATABASE_TYPE");
-    let db: SharedDb = match db_type.as_str() {
+    let db: Database = match db_type.as_str() {
         "SQLITE" => {
             let sqlite_file_path = env::var("SQLITE_FILE_PATH").expect("SQLITE_FILE_PATH");
-            Box::new(Sqlite::new(&sqlite_file_path)) as Box<dyn Database + Send + Sync>
+            Box::new(Sqlite::new(&sqlite_file_path)) as Box<dyn DBAccessor + Send + Sync>
         }
-        "INMEMORY" => Box::new(InMemory::default()) as Box<dyn Database + Send + Sync>,
+        "INMEMORY" => Box::new(InMemoryDBAccessor::default()) as Box<dyn DBAccessor + Send + Sync>,
         _ => {
             error!("could not parse API_DATABASE_TYPE");
             panic!("could not parse API_DATABASE_TYPE")
         }
     };
-    let db = Arc::new(RwLock::new(db));
-    db.write()
+    let db = Arc::new(ReadLock::new(db));
+    db.read()
         .expect("database")
         .init()
         .expect("initialise database");

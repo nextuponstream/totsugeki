@@ -1,24 +1,19 @@
 //! bracket routes
-use crate::persistence::Database;
 use crate::persistence::Error;
 use crate::BracketGET;
 use crate::BracketPOST;
 use crate::MyApiKeyAuthorization;
+use crate::SharedDb;
 use log::error;
 use poem::http::StatusCode;
-use poem::web::Data;
 use poem::Error as pError;
 use poem::Result;
 use poem_openapi::param::Path;
 use poem_openapi::payload::Json;
 use poem_openapi::OpenApi;
-use std::boxed::Box;
-use std::sync::{Arc, RwLock};
 use totsugeki::Bracket;
 
-type SharedDb<'a> = Data<&'a Arc<RwLock<Box<dyn Database + Send + Sync>>>>;
-
-/// All routes of the tournament servers
+/// Bracket Api
 pub struct BracketApi;
 
 #[OpenApi]
@@ -98,17 +93,17 @@ impl<'a> From<Error<'a>> for pError {
     }
 }
 
-fn insert_bracket<'a, 'b, 'c>(db: &SharedDb<'a>, bracket_name: &'b str) -> Result<(), Error<'c>>
+fn insert_bracket<'a, 'b, 'c>(db: &'a SharedDb, bracket_name: &'b str) -> Result<(), Error<'c>>
 where
-    'a: 'b,
     'a: 'c,
+    'b: 'c,
 {
-    let mut db = db.write()?;
+    let db = db.read()?;
     db.create_bracket(bracket_name)?;
     Ok(())
 }
 
-fn read_bracket<'a, 'b>(db: &SharedDb<'a>, offset: i64) -> Result<Vec<Bracket>, Error<'b>>
+fn read_bracket<'a, 'b>(db: &'a SharedDb, offset: i64) -> Result<Vec<Bracket>, Error<'b>>
 where
     'a: 'b,
 {
@@ -117,7 +112,7 @@ where
 }
 
 fn find_bracket<'a, 'b, 'c>(
-    data: &'a SharedDb,
+    db: &'a SharedDb,
     bracket_name: &'b str,
     offset: i64,
 ) -> Result<Vec<Bracket>, Error<'c>>
@@ -125,6 +120,6 @@ where
     'a: 'c,
     'b: 'c,
 {
-    let db = data.read()?;
+    let db = db.read()?;
     db.find_brackets(bracket_name, offset)
 }

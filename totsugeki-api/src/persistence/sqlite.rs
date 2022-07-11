@@ -1,5 +1,5 @@
 //! Sqlite database
-use crate::persistence::{Database, Error};
+use crate::persistence::{DBAccessor, Error};
 use sqlite::State;
 use std::path::Path;
 use totsugeki::Bracket;
@@ -39,7 +39,7 @@ impl Sqlite {
     }
 }
 
-impl Database for Sqlite {
+impl DBAccessor for Sqlite {
     fn init(&self) -> Result<(), Error> {
         if !Path::exists(Path::new(self.connection_string().as_str())) {
             self.create_tables()?;
@@ -47,7 +47,7 @@ impl Database for Sqlite {
         Ok(())
     }
 
-    fn create_bracket<'a, 'b, 'c>(&'a mut self, bracket_name: &'b str) -> Result<(), Error<'c>> {
+    fn create_bracket<'a, 'b, 'c>(&'a self, bracket_name: &'b str) -> Result<(), Error<'c>> {
         let connection = sqlite::open(self.connection_string())?;
         let mut statement = connection.prepare(
             "
@@ -84,7 +84,7 @@ impl Database for Sqlite {
     }
 
     fn find_brackets<'a, 'b, 'c>(
-        &'a self,
+        &self,
         bracket_name: &'b str,
         offset: i64,
     ) -> Result<Vec<Bracket>, Error<'c>> {
@@ -113,7 +113,7 @@ impl Database for Sqlite {
         Ok(brackets)
     }
 
-    fn clean<'a, 'b>(&'a mut self) -> Result<(), Error<'b>> {
+    fn clean<'a, 'b>(&'a self) -> Result<(), Error<'b>> {
         let connection = sqlite::open(self.connection_string())?;
         connection.execute(
             "
@@ -122,6 +122,10 @@ impl Database for Sqlite {
         )?;
         self.create_tables()?;
         Ok(())
+    }
+
+    fn create_organiser<'a, 'b, 'c>(&'a self, _organiser_name: &'b str) -> Result<(), Error<'c>> {
+        todo!()
     }
 }
 

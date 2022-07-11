@@ -14,6 +14,7 @@
 use std::fmt::{self, Formatter};
 
 pub mod bracket;
+pub mod organiser;
 
 // easily switch from http to https
 const HTTP_PREFIX: &str = "https://";
