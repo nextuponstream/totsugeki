@@ -61,21 +61,7 @@ the discord bot would have made.
 ```bash
 # use `cargo install cargo-watch'
 RUST_LOG=info cargo watch-api
-```
 
-Generate a service token for hypothetical discord bot by either visiting 
-[https://localhost:4000/swagger](https://localhost:4000/swagger) or extracting token field:
-
-```bash
-curl -kX 'POST' \
-  'https://localhost:4000/service/register/discord/test%20bot' \
-  -H 'accept: application/json' \
-  -d ''
-```
-
-Create a file containing the token (beware line return) and set environment 
-variable (`DISCORD_BOT_TOKEN_PATH`) to that file. Then run tests:
-
-```bash
+# open another terminal
 cargo test-integration
 ```
