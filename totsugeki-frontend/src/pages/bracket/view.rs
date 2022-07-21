@@ -1,6 +1,6 @@
 use crate::common::tournament_server::Props;
 use crate::get_client;
-use totsugeki::Bracket;
+use totsugeki::bracket::Bracket;
 use totsugeki_api_request::{bracket::fetch, RequestError};
 use web_sys::HtmlInputElement;
 use yew::prelude::*;

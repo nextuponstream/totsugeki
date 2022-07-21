@@ -10,8 +10,10 @@
 
 pub mod commands;
 
-use serenity::prelude::TypeMapKey;
+use serenity::{model::id::ChannelId, prelude::TypeMapKey};
 use std::sync::Arc;
+use totsugeki::{DiscussionChannel, DiscussionChannelId};
+use totsugeki_api::InternalIdType;
 
 /// Tournament server
 pub struct TournamentServer {
@@ -61,5 +63,39 @@ impl TournamentServer {
     #[must_use]
     pub fn get_authorization_header(&self) -> String {
         self.authorization_header.clone()
+    }
+}
+
+/// Discord discussion channel
+#[derive(Debug, Clone)]
+pub struct DiscordChannel {
+    channel_id: Option<DiscussionChannelId>,
+    internal_id: ChannelId,
+}
+
+impl DiscussionChannel for DiscordChannel {
+    type InternalId = ChannelId;
+
+    fn get_channel_id(&self) -> Option<DiscussionChannelId> {
+        self.channel_id
+    }
+
+    fn get_internal_id(&self) -> Self::InternalId {
+        self.internal_id
+    }
+
+    fn get_service_type(&self) -> String {
+        InternalIdType::Discord.to_string()
+    }
+}
+
+impl DiscordChannel {
+    /// Create new discord channel
+    #[must_use]
+    pub fn new(channel_id: Option<DiscussionChannelId>, internal_id: ChannelId) -> Self {
+        Self {
+            channel_id,
+            internal_id,
+        }
     }
 }

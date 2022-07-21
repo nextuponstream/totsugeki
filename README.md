@@ -51,18 +51,26 @@ for s in $(ls src/bin); do cargo watch -x "run --bin ${s%.*}" &; done
 
 ### Run tests
 
-Deploy totsugeki-api. Discord bot binary is not used in tests. Instead,
-cucumber-rs is used to make the same API calls to the tournament server the
-discord bot would have made.
-
-**Note**: Set `TESTING` environment variable if you want the test
-infrastructure to use `.env-test` instead of `.env`.
+Deploy totsugeki-api in testing mode. Discord bot binary is not used in tests.
+Instead, cucumber-rs is used to make the same API calls to the tournament server
+the discord bot would have made.
 
 ```bash
-TESTING=1 cargo r --release -p totsugeki-api --bin api
+cargo r --release -p totsugeki-api
 ```
 
-Open another terminal:
+Generate a service token for hypothetical discord bot by either visiting 
+[https://localhost:4000/swagger](https://localhost:4000/swagger) or extracting token field:
+
+```bash
+curl -kX 'POST' \
+  'https://localhost:4000/service/register/discord/test%20bot' \
+  -H 'accept: application/json' \
+  -d ''
+```
+
+Create a file containing the token (beware line return) and set environment 
+variable (`DISCORD_BOT_TOKEN_PATH`) to that file. Then run tests:
 
 ```bash
 cargo test-integration

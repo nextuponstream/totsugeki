@@ -5,7 +5,7 @@ use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::channel::Message;
 use serenity::prelude::*;
-use totsugeki::Brackets;
+use totsugeki::bracket::Brackets;
 use totsugeki_api_request::bracket::fetch;
 
 use super::get_client;
