@@ -1,9 +1,14 @@
 [alias]
 test-integration = "test --test integration-cucumber -- --concurrency 1"
+
 check-core = "check --workspace --exclude=totsugeki-frontend"
 check-frontend = "check -p totsugeki-frontend --target=wasm32-unknown-unknown"
+
 build-core = "build --release --workspace --exclude=totsugeki-frontend"
 build-frontend = "build --release -p totsugeki-frontend"
+
 watch-api = "watch -- cargo run --release -p totsugeki-api"
+watch-integration = "watch -- cargo check --test integration-cucumber"
+
 run-api = "run --release -p totsugeki-api"
 run-discord-bot = "run --release -p totsugeki-discord-bot"
