@@ -1,7 +1,7 @@
 //! Create bracket
 
 use super::get_client;
-use crate::TournamentServer;
+use crate::{DiscordChannel, TournamentServer};
 use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::channel::Message;
@@ -26,14 +26,20 @@ async fn create(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 
     let _to_id = msg.author.id.to_string(); // TODO use
     let _to_name = msg.author.name.clone(); // TODO use
+    let organiser_id = msg.guild_id.expect("guild id");
+    let cache = serenity::cache::Cache::new();
+    let organiser_name = msg.guild(cache).expect("guild").name;
+    let discussion_channel_id = msg.channel_id;
+    let discord_channel = DiscordChannel::new(None, discussion_channel_id);
 
     create_bracket(
         get_client(tournament_server.accept_invalid_certs)?,
         tournament_server.get_connection_string().as_str(),
         tournament_server.get_authorization_header().as_str(),
         bracket_name.as_str(),
-        //to_id.as_str(),
-        //to_name.as_str(),
+        organiser_name.as_str(),
+        organiser_id.to_string().as_str(),
+        discord_channel,
     )
     .await?;
     msg.reply(ctx, bracket_name).await?;

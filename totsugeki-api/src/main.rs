@@ -11,20 +11,19 @@ use std::sync::Arc;
 use totsugeki::ReadLock;
 use totsugeki_api::hmac;
 use totsugeki_api::persistence::inmemory::InMemoryDBAccessor;
-use totsugeki_api::persistence::sqlite::Sqlite;
+//use totsugeki_api::persistence::sqlite::Sqlite;
 use totsugeki_api::persistence::DBAccessor;
 use totsugeki_api::routes::bracket::BracketApi;
 use totsugeki_api::routes::organiser::OrganiserApi;
+use totsugeki_api::routes::service::ServiceApi;
 use totsugeki_api::routes::test_utils::TestUtilsApi;
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
-    let testing_mode = env::var("TESTING").is_ok();
-    if testing_mode {
-        dotenv::from_filename(".env-test").expect("Failed to load .env-test file");
-    } else {
-        dotenv::dotenv().expect("Failed to load .env file");
-    }
+    dotenv::dotenv().expect("Failed to load .env file");
+    let mode_path = env::var("API_MODE_PATH").expect("API_MODE_PATH");
+    let mode = std::fs::read_to_string(mode_path).expect("could not read mode of API");
+    let testing_mode = mode == "testing";
 
     let addr = env::var("API_ADDR").expect("API_ADDR");
     let port = env::var("API_PORT").expect("API_PORT");
@@ -32,7 +31,7 @@ async fn main() -> Result<(), std::io::Error> {
     if testing_mode {
         serve_server(
             OpenApiService::new(
-                (BracketApi, OrganiserApi, TestUtilsApi),
+                (BracketApi, OrganiserApi, ServiceApi, TestUtilsApi),
                 env!("CARGO_PKG_NAME"),
                 env!("CARGO_PKG_VERSION"),
             )
@@ -43,7 +42,7 @@ async fn main() -> Result<(), std::io::Error> {
     } else {
         serve_server(
             OpenApiService::new(
-                (BracketApi, OrganiserApi, TestUtilsApi),
+                (BracketApi, OrganiserApi, ServiceApi),
                 env!("CARGO_PKG_NAME"),
                 env!("CARGO_PKG_VERSION"),
             )
@@ -64,10 +63,7 @@ async fn serve_server<T: OpenApi + 'static>(
 
     let db_type = env::var("API_DATABASE_TYPE").expect("API_DATABASE_TYPE");
     let db: Database = match db_type.as_str() {
-        "SQLITE" => {
-            let sqlite_file_path = env::var("SQLITE_FILE_PATH").expect("SQLITE_FILE_PATH");
-            Box::new(Sqlite::new(&sqlite_file_path)) as Box<dyn DBAccessor + Send + Sync>
-        }
+        // TODO add postgres
         "INMEMORY" => Box::new(InMemoryDBAccessor::default()) as Box<dyn DBAccessor + Send + Sync>,
         _ => {
             error!("could not parse API_DATABASE_TYPE");

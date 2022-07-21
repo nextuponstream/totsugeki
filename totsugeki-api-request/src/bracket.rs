@@ -2,27 +2,37 @@
 
 use crate::RequestError;
 use crate::HTTP_PREFIX;
-use totsugeki::{Bracket, BracketPOST};
+use totsugeki::bracket::{Bracket, BracketPOST, BracketPOSTResult};
+use totsugeki::DiscussionChannel;
 
 /// Create brackets
 ///
 /// # Errors
 /// Thrown when server is unavailable or deserialisation could not be made
-pub async fn create(
+pub async fn create<T: DiscussionChannel>(
     client: reqwest::Client,
     tournament_server_url: &str,
     authorization_header: &str,
     bracket_name: &str,
-) -> Result<(), RequestError> {
-    let body = BracketPOST::new(bracket_name.to_string());
+    organiser_name: &str,
+    organiser_id: &str,
+    discussion_channel: T,
+) -> Result<BracketPOSTResult, RequestError> {
+    let body = BracketPOST::new(
+        bracket_name.to_string(),
+        organiser_name.to_string(),
+        organiser_id.to_string(),
+        discussion_channel.get_internal_id().to_string(),
+        discussion_channel.get_service_type(),
+    );
     let res = client
         .post(format!("{HTTP_PREFIX}{tournament_server_url}/bracket"))
         .header("X-API-Key", authorization_header)
         .json(&body)
         .send()
         .await?;
-    res.error_for_status()?;
-    Ok(())
+    let ids: BracketPOSTResult = res.json::<BracketPOSTResult>().await?;
+    Ok(ids)
 }
 
 /// Fetch brackets and filter results by `bracket_name_filter`

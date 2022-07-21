@@ -1,17 +1,19 @@
 //! bracket routes
+use crate::log_error;
 use crate::persistence::Error;
+use crate::ApiKeyServiceAuthorization;
 use crate::BracketGET;
 use crate::BracketPOST;
-use crate::MyApiKeyAuthorization;
+use crate::BracketPOSTResult;
+use crate::InternalIdType;
 use crate::SharedDb;
-use log::error;
 use poem::http::StatusCode;
 use poem::Error as pError;
 use poem::Result;
 use poem_openapi::param::Path;
 use poem_openapi::payload::Json;
 use poem_openapi::OpenApi;
-use totsugeki::Bracket;
+use totsugeki::bracket::Bracket;
 
 /// Bracket Api
 pub struct BracketApi;
@@ -22,13 +24,20 @@ impl BracketApi {
     async fn create_bracket<'a>(
         &self,
         db: SharedDb<'a>,
-        _auth: MyApiKeyAuthorization,
+        _auth: ApiKeyServiceAuthorization,
         bracket_request: Json<BracketPOST>,
-    ) -> Result<()> {
-        match insert_bracket(&db, bracket_request.bracket_name.as_str()) {
-            Ok(()) => Ok(()),
+    ) -> Result<Json<BracketPOSTResult>> {
+        match insert_bracket(
+            &db,
+            bracket_request.bracket_name.as_str(),
+            bracket_request.organiser_name.as_str(),
+            bracket_request.organiser_internal_id.clone(),
+            bracket_request.channel_internal_id.clone(),
+            bracket_request.service_type_id.clone(),
+        ) {
+            Ok(r) => Ok(Json(r)),
             Err(e) => {
-                error!("{e}");
+                log_error(&e);
                 Err(e.into())
             }
         }
@@ -44,13 +53,12 @@ impl BracketApi {
             Ok(brackets) => {
                 let mut b_api_vec = vec![];
                 for b in brackets {
-                    let b_api: BracketGET = b.try_into()?;
-                    b_api_vec.push(b_api);
+                    b_api_vec.push(b.try_into()?);
                 }
                 Ok(Json(b_api_vec))
             }
             Err(e) => {
-                error!("{e}");
+                log_error(&e);
                 Err(e.into())
             }
         }
@@ -74,7 +82,7 @@ impl BracketApi {
                 Ok(Json(b_api_vec))
             }
             Err(e) => {
-                error!("{e}");
+                log_error(&e);
                 Err(e.into())
             }
         }
@@ -88,19 +96,39 @@ impl<'a> From<Error<'a>> for pError {
             Error::PoisonedWriteLock(_e) => pError::from_status(StatusCode::INTERNAL_SERVER_ERROR),
             Error::Code(_msg) => pError::from_status(StatusCode::INTERNAL_SERVER_ERROR),
             Error::Denied() => pError::from_status(StatusCode::FORBIDDEN),
+            Error::Parsing(msg) => pError::from_string(msg, StatusCode::BAD_REQUEST),
             Error::Unknown(_msg) => pError::from_status(StatusCode::INTERNAL_SERVER_ERROR),
         }
     }
 }
 
-fn insert_bracket<'a, 'b, 'c>(db: &'a SharedDb, bracket_name: &'b str) -> Result<(), Error<'c>>
+fn insert_bracket<'a, 'b, 'c>(
+    db: &'a SharedDb,
+    bracket_name: &'b str,
+    organiser_name: &'b str,
+    organiser_id: String,
+    internal_channel_id: String,
+    service_type_id: String,
+) -> Result<BracketPOSTResult, Error<'c>>
 where
     'a: 'c,
     'b: 'c,
 {
     let db = db.read()?;
-    db.create_bracket(bracket_name)?;
-    Ok(())
+    let service_type_id = match service_type_id.as_str().parse::<InternalIdType>() {
+        Ok(v) => v,
+        Err(e) => {
+            return Err(Error::Parsing(format!("{e:?}")));
+        }
+    };
+    let result = db.create_bracket(
+        bracket_name,
+        organiser_name,
+        organiser_id,
+        internal_channel_id,
+        service_type_id,
+    )?;
+    Ok(result)
 }
 
 fn read_bracket<'a, 'b>(db: &'a SharedDb, offset: i64) -> Result<Vec<Bracket>, Error<'b>>

@@ -12,6 +12,7 @@
 //! which is why reqwest client is passed as a parameter. frontend is the only crate compiling to wasm
 //! but discord bot makes the same request. This parameter being added to the parameter list is a necessary code smell.
 use std::fmt::{self, Formatter};
+use totsugeki::ServiceRegisterPOST;
 
 pub mod bracket;
 pub mod organiser;
@@ -29,7 +30,7 @@ pub enum RequestError {
 impl std::fmt::Display for RequestError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            RequestError::Request(e) => std::fmt::Display::fmt(e, f),
+            RequestError::Request(e) => e.fmt(f),
         }
     }
 }
@@ -43,7 +44,6 @@ impl From<reqwest::Error> for RequestError {
 impl std::error::Error for RequestError {}
 
 /// Use API endpoint to clean database for test purposes.
-// TODO use file to indicate mode: production or testing
 pub async fn clean_database(
     client: reqwest::Client,
     tournament_server_url: &str,
@@ -56,4 +56,19 @@ pub async fn clean_database(
         .await?;
     res.error_for_status()?;
     Ok(())
+}
+
+/// Get service API token for tests
+pub async fn get_service_token(
+    client: reqwest::Client,
+    tournament_server_url: &str,
+) -> Result<ServiceRegisterPOST, RequestError> {
+    let res = client
+        .post(format!(
+            "{HTTP_PREFIX}{tournament_server_url}/service/register/test-service/for-tests"
+        ))
+        .send()
+        .await?;
+    let token = res.json::<ServiceRegisterPOST>().await?;
+    Ok(token)
 }

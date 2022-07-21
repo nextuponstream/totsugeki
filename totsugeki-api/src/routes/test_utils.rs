@@ -1,7 +1,7 @@
 //! Provide endpoint to setup/teardown database for test purposes
 
 use crate::persistence::Error;
-use crate::{MyApiKeyAuthorization, SharedDb};
+use crate::{ApiKeyServiceAuthorization, SharedDb};
 use poem::Result;
 use poem_openapi::OpenApi;
 
@@ -14,7 +14,7 @@ impl TestUtilsApi {
     async fn clean_database<'a>(
         &self,
         db: SharedDb<'a>,
-        _auth: MyApiKeyAuthorization,
+        _auth: ApiKeyServiceAuthorization,
     ) -> Result<()> {
         // TODO find trait implementation to use ? instead of unwrapping
         match clean_database(&db) {
