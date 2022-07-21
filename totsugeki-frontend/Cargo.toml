@@ -1,3 +1,5 @@
+# cargo-features = ["per-package-target"] // TODO wait for https://github.com/rust-lang/cargo/issues/9406
+
 [package]
 name = "totsugeki-frontend"
 version = "0.1.0"

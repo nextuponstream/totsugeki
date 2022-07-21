@@ -25,7 +25,7 @@ Invite discord bot to server. Build all binaries:
 ```bash
 # frontend package requires environment variables to be set at build time:
 # export $(xargs < .env)
-cargo build --release --workspace
+ cargo build-core && cargo build-frontend   
 ```
 
 ### Deploy infrastructure
@@ -46,7 +46,10 @@ openssl req -newkey rsa:4096 \
 Then deploy:
 
 ```bash
-for s in $(ls src/bin); do cargo watch -x "run --bin ${s%.*}" &; done
+cargo run-api
+cargo run-discord-bot
+cd totsugeki-frontend && yarn run dev --watch
+# open http://localhost:8080
 ```
 
 ### Run tests
@@ -56,7 +59,8 @@ Instead, cucumber-rs is used to make the same API calls to the tournament server
 the discord bot would have made.
 
 ```bash
-cargo r --release -p totsugeki-api
+# use `cargo install cargo-watch'
+RUST_LOG=info cargo watch-api
 ```
 
 Generate a service token for hypothetical discord bot by either visiting 
