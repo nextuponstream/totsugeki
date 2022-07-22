@@ -28,7 +28,7 @@ Invite discord bot to server. Build all binaries:
  cargo build-core && cargo build-frontend   
 ```
 
-### Deploy infrastructure
+### Deploy locally
 
 Create `.env` using `.env.example`. For development, generate self-signed
 certificate:
@@ -43,13 +43,20 @@ openssl req -newkey rsa:4096 \
 -keyout dev.key
 ```
 
-Then deploy:
+Follow workspace members README to deploy and take a look at available
+aliases (`cargo --list`).
+
+## Developping
+
+For easier development, use `cargo install cargo-watch' and use related aliases.
+
+### Checks
+
+Because workspaces have different build targets, use the following command to
+check the code.
 
 ```bash
-cargo run-api
-cargo run-discord-bot
-cd totsugeki-frontend && yarn run dev --watch
-# open http://localhost:8080
+cargo watch -x check-core -x check-frontend
 ```
 
 ### Run tests
@@ -59,7 +66,6 @@ Instead, cucumber-rs is used to make the same API calls to the tournament server
 the discord bot would have made.
 
 ```bash
-# use `cargo install cargo-watch'
 RUST_LOG=info cargo watch-api
 
 # open another terminal
