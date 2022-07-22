@@ -6,7 +6,7 @@ use crate::{ApiServiceId, ApiServiceUser, BracketPOSTResult, InternalIdType};
 use std::fmt::Display;
 use std::str::FromStr;
 use std::sync::{PoisonError, RwLockReadGuard, RwLockWriteGuard};
-use totsugeki::{bracket::Bracket, organiser::Organiser};
+use totsugeki::{bracket::Bracket, join::JoinPOSTResponseBody, organiser::Organiser};
 
 /// Error while parsing InteralIdType
 #[derive(Debug)]
@@ -43,7 +43,7 @@ pub enum Error<'a> {
     /// Database error with error code
     Code(String),
     /// Denied access
-    Denied(),
+    Denied(String),
     /// Parsing error
     Parsing(String),
     /// Unknown
@@ -66,7 +66,7 @@ impl<'a> Display for Error<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Error::Code(msg) | Error::Unknown(msg) | Error::Parsing(msg) => writeln!(f, "{msg}"),
-            Error::Denied() => writeln!(f, "Denied"),
+            Error::Denied(msg) => writeln!(f, "Reason: {msg}"),
             Error::PoisonedReadLock(e) => e.fmt(f),
             Error::PoisonedWriteLock(e) => e.fmt(f),
         }
@@ -125,6 +125,17 @@ pub trait DBAccessor {
     /// # Errors
     /// Returns an error when database failed to initialize.
     fn init(&self) -> Result<(), Error>;
+
+    /// Join bracket as a player
+    ///
+    /// # Errors
+    /// Returns an error if database could not be accessed
+    fn join_bracket<'a, 'b, 'c>(
+        &'a self,
+        player_internal_id: &'b str,
+        channel_internal_id: &'b str,
+        service_type_id: &'b str,
+    ) -> Result<JoinPOSTResponseBody, Error<'c>>;
 
     /// List brackets
     ///

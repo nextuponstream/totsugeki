@@ -2,8 +2,8 @@
 
 use crate::persistence::Error;
 use crate::ApiKeyServiceAuthorization;
-use crate::OrganiserGET;
-use crate::OrganiserPOST;
+use crate::OrganiserGETResponse;
+use crate::OrganiserPOSTResponse;
 use crate::SharedDb;
 use log::warn;
 use poem::Result;
@@ -22,7 +22,7 @@ impl OrganiserApi {
         &self,
         db: SharedDb<'a>,
         _auth: ApiKeyServiceAuthorization,
-        organiser_request: Json<OrganiserPOST>,
+        organiser_request: Json<OrganiserPOSTResponse>,
     ) -> Result<()> {
         match insert_organiser(&db, organiser_request.organiser_name.as_str()) {
             Ok(()) => Ok(()),
@@ -38,7 +38,7 @@ impl OrganiserApi {
         &self,
         db: SharedDb<'a>,
         offset: Path<i64>,
-    ) -> Result<Json<Vec<OrganiserGET>>> {
+    ) -> Result<Json<Vec<OrganiserGETResponse>>> {
         match read_organiser(&db, offset.0) {
             Ok(os) => {
                 let mut o_api_vec = vec![];
@@ -61,7 +61,7 @@ impl OrganiserApi {
         db: SharedDb<'a>,
         organiser_name: Path<String>,
         offset: Path<i64>,
-    ) -> Result<Json<Vec<OrganiserGET>>> {
+    ) -> Result<Json<Vec<OrganiserGETResponse>>> {
         match find_organiser(&db, organiser_name.0.as_str(), offset.0) {
             Ok(os) => {
                 let mut o_api_vec = vec![];

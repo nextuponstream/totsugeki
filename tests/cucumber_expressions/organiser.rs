@@ -1,16 +1,11 @@
 use crate::get_client;
 use crate::World;
-use cucumber::{then, when};
+use cucumber::then;
 use totsugeki::organiser::Organiser;
 use totsugeki::DiscussionChannel;
 use totsugeki::DiscussionChannelId;
 use totsugeki_api_request::organiser::fetch;
 use uuid::Uuid;
-
-#[when(expr = "the new bracket originates from discord server of organiser {word}")]
-pub fn bracket_originates(w: &mut World, organiser_name: String) {
-    w.organiser_name = Some(organiser_name);
-}
 
 fn verify_channel_is_active_for_organiser(
     organisers: &Vec<Organiser>,
@@ -19,7 +14,11 @@ fn verify_channel_is_active_for_organiser(
     discussion_channel_id: DiscussionChannelId,
     bracket_id: Uuid,
 ) {
-    assert!(organisers.len() == 1, "too many results: {:?}", organisers);
+    assert!(
+        organisers.len() == 1,
+        "There should be only one organiser: {:?}",
+        organisers
+    );
     assert!(
         organisers.iter().any(|o| {
             if o.get_organiser_id() == organiser_id

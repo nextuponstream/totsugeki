@@ -7,6 +7,7 @@
 #![warn(clippy::unwrap_used)]
 #![doc = include_str!("../README.md")]
 
+pub mod join;
 pub mod persistence;
 pub mod routes;
 
@@ -24,10 +25,9 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use totsugeki::bracket::ActiveBrackets;
 use totsugeki::bracket::{Bracket, BracketId};
-use totsugeki::organiser::Organiser;
-use totsugeki::DiscussionChannelId;
-use totsugeki::OrganiserId;
+use totsugeki::organiser::{Organiser, OrganiserId};
 use totsugeki::ReadLock;
+use totsugeki::{DiscussionChannelId, PlayerId};
 use uuid::Uuid;
 
 /// Server key encryption type
@@ -49,7 +49,7 @@ pub struct BracketPOST {
     service_type_id: String,
 }
 
-/// Bracket for a tournament
+/// Bracket GET response
 //
 // NOTE: having Bracket implement `ToJSON` means that importing `totsugeki` will bring in all poem
 // dependencies. This does not play nice with yew dependencies when doing relative import
@@ -57,25 +57,27 @@ pub struct BracketPOST {
 // Bracket package as barebones as possible and let packages importing it the task of deriving
 // necessary traits into their own structs.
 #[derive(Object, Serialize, Deserialize)]
-pub struct BracketGET {
+pub struct BracketGETResponse {
     id: BracketId,
     bracket_name: String,
+    players: Vec<PlayerId>,
 }
 
-impl BracketGET {
+impl BracketGETResponse {
     /// Form values to be sent to the API to create a bracket
     #[must_use]
     pub fn new(bracket: Bracket) -> Self {
-        BracketGET {
+        BracketGETResponse {
             id: bracket.get_id(),
             bracket_name: bracket.get_bracket_name(),
+            players: bracket.get_players(),
         }
     }
 }
 
-impl From<Bracket> for BracketGET {
+impl From<Bracket> for BracketGETResponse {
     fn from(b: Bracket) -> Self {
-        BracketGET::new(b)
+        BracketGETResponse::new(b)
     }
 }
 
@@ -85,8 +87,8 @@ pub fn hmac(server_key: &[u8]) -> Hmac<Sha256> {
 }
 
 #[derive(Serialize, Deserialize, Object)]
-/// Organiser (venue, organisation) for a tournament
-pub struct OrganiserPOST {
+/// Organiser POST body response
+pub struct OrganiserPOSTResponse {
     organiser_name: String,
 }
 
@@ -95,7 +97,7 @@ fn log_error(e: &Error) {
         Error::PoisonedReadLock(e) => error!("{e}"),
         Error::PoisonedWriteLock(e) => error!("{e}"),
         Error::Code(e) | Error::Unknown(e) => error!("{e}"),
-        Error::Denied() => warn!("Unauthorized action from user"),
+        Error::Denied(e) => warn!("{e}"),
         Error::Parsing(e) => warn!("User input could not be parsed: {e}"),
     }
 }
@@ -115,11 +117,11 @@ impl std::fmt::Display for InternalIdType {
 }
 
 /// Finalized brackets
-pub type FinalizedBrackets = HashMap<BracketId, BracketGET>;
+pub type FinalizedBrackets = HashMap<BracketId, BracketGETResponse>;
 
 #[derive(Object, Serialize, Deserialize)]
-/// Get organisers
-pub struct OrganiserGET {
+/// Organiser GET response
+pub struct OrganiserGETResponse {
     organiser_id: OrganiserId,
     organiser_name: String,
     active_brackets: ActiveBrackets,
@@ -150,7 +152,7 @@ impl ApiServiceUser {
 }
 
 #[derive(Object)]
-/// Response body
+/// Bracket POST response body
 pub struct BracketPOSTResult {
     bracket_id: BracketId,
     organiser_id: OrganiserId,
@@ -173,7 +175,7 @@ impl BracketPOSTResult {
     }
 }
 
-impl From<Organiser> for OrganiserGET {
+impl From<Organiser> for OrganiserGETResponse {
     fn from(o: Organiser) -> Self {
         Self {
             organiser_id: o.get_organiser_id(),
@@ -182,7 +184,7 @@ impl From<Organiser> for OrganiserGET {
             finalized_brackets: {
                 let mut map = HashMap::new();
                 for kv in o.get_finalized_brackets().iter() {
-                    map.insert(*kv.0, BracketGET::new(kv.1.clone()));
+                    map.insert(*kv.0, BracketGETResponse::new(kv.1.clone()));
                 }
                 map
             },
@@ -190,7 +192,7 @@ impl From<Organiser> for OrganiserGET {
     }
 }
 
-/// Api key service authorization
+/// Authorization mechanism for service to use endpoint
 #[derive(SecurityScheme)]
 #[oai(
     type = "api_key",
