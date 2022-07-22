@@ -11,9 +11,9 @@ use std::sync::Arc;
 use totsugeki::ReadLock;
 use totsugeki_api::hmac;
 use totsugeki_api::persistence::inmemory::InMemoryDBAccessor;
-//use totsugeki_api::persistence::sqlite::Sqlite;
 use totsugeki_api::persistence::DBAccessor;
 use totsugeki_api::routes::bracket::BracketApi;
+use totsugeki_api::routes::join::JoinApi;
 use totsugeki_api::routes::organiser::OrganiserApi;
 use totsugeki_api::routes::service::ServiceApi;
 use totsugeki_api::routes::test_utils::TestUtilsApi;
@@ -31,7 +31,7 @@ async fn main() -> Result<(), std::io::Error> {
     if testing_mode {
         serve_server(
             OpenApiService::new(
-                (BracketApi, OrganiserApi, ServiceApi, TestUtilsApi),
+                (BracketApi, OrganiserApi, ServiceApi, JoinApi, TestUtilsApi),
                 env!("CARGO_PKG_NAME"),
                 env!("CARGO_PKG_VERSION"),
             )
@@ -42,7 +42,7 @@ async fn main() -> Result<(), std::io::Error> {
     } else {
         serve_server(
             OpenApiService::new(
-                (BracketApi, OrganiserApi, ServiceApi),
+                (BracketApi, OrganiserApi, ServiceApi, JoinApi),
                 env!("CARGO_PKG_NAME"),
                 env!("CARGO_PKG_VERSION"),
             )

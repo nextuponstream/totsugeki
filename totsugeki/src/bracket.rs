@@ -1,11 +1,9 @@
 //! Bracket object
 
-use std::{collections::HashMap, fmt::Display};
-
+use crate::{organiser::OrganiserId, DiscussionChannelId, PlayerId};
 use serde::{Deserialize, Serialize};
+use std::{collections::HashMap, fmt::Display};
 use uuid::Uuid;
-
-use crate::{organiser::OrganiserId, DiscussionChannelId};
 
 /// Active brackets
 pub type ActiveBrackets = HashMap<DiscussionChannelId, BracketId>;
@@ -48,8 +46,9 @@ impl BracketPOST {
 /// Bracket for a tournament
 #[derive(Debug, PartialEq, Eq, Default, Serialize, Deserialize, Clone)]
 pub struct Bracket {
-    id: Uuid,
+    id: BracketId,
     bracket_name: String,
+    players: Vec<PlayerId>,
 }
 
 impl Display for Bracket {
@@ -94,20 +93,22 @@ impl Display for Brackets {
 impl Bracket {
     /// Create new bracket
     #[must_use]
-    pub fn new(bracket_name: String) -> Self {
+    pub fn new(bracket_name: String, players: Vec<PlayerId>) -> Self {
         // TODO add check where registration_start_time < beginning_start_time
         Bracket {
             id: Uuid::new_v4(),
             bracket_name,
+            players,
         }
     }
 
     /// Create from existing bracket
     #[must_use]
-    pub fn from(uuid: Uuid, bracket_name: String) -> Self {
+    pub fn from(id: BracketId, bracket_name: String, players: Vec<PlayerId>) -> Self {
         Self {
-            id: uuid,
+            id,
             bracket_name,
+            players,
         }
     }
 
@@ -121,6 +122,12 @@ impl Bracket {
     #[must_use]
     pub fn get_bracket_name(&self) -> String {
         self.bracket_name.clone()
+    }
+
+    /// Get players
+    #[must_use]
+    pub fn get_players(&self) -> Vec<PlayerId> {
+        self.players.clone()
     }
 }
 

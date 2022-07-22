@@ -15,6 +15,7 @@ use std::fmt::{self, Formatter};
 use totsugeki::ServiceRegisterPOST;
 
 pub mod bracket;
+pub mod join;
 pub mod organiser;
 
 // easily switch from http to https

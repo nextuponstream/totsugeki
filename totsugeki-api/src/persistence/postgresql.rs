@@ -80,4 +80,13 @@ impl DBAccessor for PostgresqlDatabase {
     ) -> Result<crate::ApiServiceId, super::Error<'c>> {
         todo!()
     }
+
+    fn join_bracket<'a, 'b, 'c>(
+        &'a self,
+        player_internal_id: &'b str,
+        channel_internal_id: &'b str,
+        service_type_id: &'b str,
+    ) -> Result<totsugeki::join::JoinPOSTResponseBody, super::Error<'c>> {
+        todo!()
+    }
 }

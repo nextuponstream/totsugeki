@@ -2,7 +2,7 @@
 use crate::log_error;
 use crate::persistence::Error;
 use crate::ApiKeyServiceAuthorization;
-use crate::BracketGET;
+use crate::BracketGETResponse;
 use crate::BracketPOST;
 use crate::BracketPOSTResult;
 use crate::InternalIdType;
@@ -48,7 +48,7 @@ impl BracketApi {
         &self,
         db: SharedDb<'a>,
         offset: Path<i64>,
-    ) -> Result<Json<Vec<BracketGET>>> {
+    ) -> Result<Json<Vec<BracketGETResponse>>> {
         match read_bracket(&db, offset.0) {
             Ok(brackets) => {
                 let mut b_api_vec = vec![];
@@ -71,12 +71,12 @@ impl BracketApi {
         db: SharedDb<'a>,
         bracket_name: Path<String>,
         offset: Path<i64>,
-    ) -> Result<Json<Vec<BracketGET>>> {
+    ) -> Result<Json<Vec<BracketGETResponse>>> {
         match find_bracket(&db, bracket_name.0.as_str(), offset.0) {
             Ok(brackets) => {
                 let mut b_api_vec = vec![];
                 for b in brackets {
-                    let b_api: BracketGET = b.try_into()?;
+                    let b_api: BracketGETResponse = b.try_into()?;
                     b_api_vec.push(b_api);
                 }
                 Ok(Json(b_api_vec))
@@ -95,7 +95,7 @@ impl<'a> From<Error<'a>> for pError {
             Error::PoisonedReadLock(_e) => pError::from_status(StatusCode::INTERNAL_SERVER_ERROR),
             Error::PoisonedWriteLock(_e) => pError::from_status(StatusCode::INTERNAL_SERVER_ERROR),
             Error::Code(_msg) => pError::from_status(StatusCode::INTERNAL_SERVER_ERROR),
-            Error::Denied() => pError::from_status(StatusCode::FORBIDDEN),
+            Error::Denied(msg) => pError::from_string(msg, StatusCode::FORBIDDEN),
             Error::Parsing(msg) => pError::from_string(msg, StatusCode::BAD_REQUEST),
             Error::Unknown(_msg) => pError::from_status(StatusCode::INTERNAL_SERVER_ERROR),
         }
