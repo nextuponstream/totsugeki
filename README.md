@@ -48,22 +48,24 @@ aliases (`cargo --list`).
 
 ## Developping
 
-For easier development, use `cargo install cargo-watch' and use related aliases.
+For easier development, use `cargo install cargo-watch' and use related
+aliases.
 
 ### Checks
 
 Because workspaces have different build targets, use the following command to
-check the code.
+check project code.
 
 ```bash
-cargo watch -x check-core -x check-frontend
+cargo watch -x check-core -x check-frontend -x check-integration
 ```
 
 ### Run tests
 
-Deploy totsugeki-api in testing mode. Discord bot binary is not used in tests.
-Instead, cucumber-rs is used to make the same API calls to the tournament server
-the discord bot would have made.
+Deploy totsugeki-api in testing mode (set API_MODE_PATH to point to a file 
+which contains "testing"). Discord bot binary is not used in tests. Instead,
+cucumber-rs is used to make the same API calls to the tournament server the
+discord bot would have made.
 
 ```bash
 RUST_LOG=info cargo watch-api
