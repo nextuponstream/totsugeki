@@ -255,15 +255,15 @@ impl DBAccessor for InMemoryDBAccessor {
                         "no bracket found for id: \"{bracket_id}\""
                     )))?;
                     let mut players = b.get_players();
-                    players.push(player_id);
+                    if !players.contains(&player_id) {
+                        players.push(player_id);
+                    }
                     let b = Bracket::from(b.get_id(), b.get_bracket_name(), players);
                     db.brackets.insert(b.get_id(), b.clone());
 
                     Ok(body)
                 } else {
-                    return Err(Error::Denied(
-                        "Cannot join bracket from unknown discord guild".to_string(),
-                    ));
+                    return Err(Error::Parsing("Unknown discord guild".to_string()));
                 }
             }
         }

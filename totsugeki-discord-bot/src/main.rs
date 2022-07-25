@@ -4,13 +4,11 @@ use serenity::framework::standard::StandardFramework;
 use serenity::prelude::*;
 use std::env;
 use std::sync::Arc;
-use totsugeki_discord_bot::commands::bracket::*;
-use totsugeki_discord_bot::commands::help::*;
-use totsugeki_discord_bot::commands::ping::*;
+use totsugeki_discord_bot::commands::{bracket::*, help::*, join::*, ping::*};
 use totsugeki_discord_bot::TournamentServer;
 
 #[group]
-#[commands(ping)]
+#[commands(ping, join)]
 #[summary = "Main available commands"]
 #[sub_groups("bracket")]
 pub struct General;

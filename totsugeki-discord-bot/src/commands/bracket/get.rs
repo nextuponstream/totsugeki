@@ -1,5 +1,5 @@
 //! Get bracket
-use crate::TournamentServer;
+use crate::{get_client, TournamentServer};
 use log::error;
 use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandResult};
@@ -7,8 +7,6 @@ use serenity::model::channel::Message;
 use serenity::prelude::*;
 use totsugeki::bracket::Brackets;
 use totsugeki_api_request::bracket::fetch;
-
-use super::get_client;
 
 #[command]
 #[description = "Get list of brackets"]

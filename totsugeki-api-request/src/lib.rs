@@ -25,20 +25,20 @@ const HTTP_PREFIX: &str = "https://";
 #[derive(Debug)]
 pub enum RequestError {
     /// Request error
-    Request(reqwest::Error),
+    Request(reqwest::Error, String),
 }
 
 impl std::fmt::Display for RequestError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            RequestError::Request(e) => e.fmt(f),
+            RequestError::Request(_, msg) => writeln!(f, "{msg}"),
         }
     }
 }
 
 impl From<reqwest::Error> for RequestError {
     fn from(e: reqwest::Error) -> Self {
-        RequestError::Request(e)
+        RequestError::Request(e, String::new())
     }
 }
 

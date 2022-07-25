@@ -5,7 +5,7 @@ discord bot.
 
 ## Roadmap MVP
 
-* [ ] let player !participate in bracket
+* [ ] let player !join bracket
 * [ ] report !result
 * [ ] let player see their !nextmatch opponent
 * [ ] TO !validatematch

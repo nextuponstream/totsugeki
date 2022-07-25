@@ -1,6 +1,6 @@
 //! Create bracket
 
-use super::get_client;
+use crate::get_client;
 use crate::{DiscordChannel, TournamentServer};
 use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandResult};
@@ -24,11 +24,8 @@ async fn create(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
             .clone()
     };
 
-    let _to_id = msg.author.id.to_string(); // TODO use
-    let _to_name = msg.author.name.clone(); // TODO use
     let organiser_id = msg.guild_id.expect("guild id");
-    let cache = serenity::cache::Cache::new();
-    let organiser_name = msg.guild(cache).expect("guild").name;
+    let organiser_name = msg.guild(&ctx).expect("guild").name;
     let discussion_channel_id = msg.channel_id;
     let discord_channel = DiscordChannel::new(None, discussion_channel_id);
 
