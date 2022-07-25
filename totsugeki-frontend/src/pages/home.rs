@@ -43,7 +43,7 @@ impl Component for Home {
                                 <div class="box discord">
                                     <div class="content">
                                         <h2>{ "Players" }</h2>
-                                        <p>{ "!participate" }</p>
+                                        <p>{ "!join" }</p>
                                         <p>{ "!result 2-0" }</p>
                                         <p>{ "!nextmatch" }</p>
                                     </div>

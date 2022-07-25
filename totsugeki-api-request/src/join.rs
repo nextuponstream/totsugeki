@@ -31,6 +31,15 @@ pub async fn post<T: DiscussionChannel>(
         .json(&body)
         .send()
         .await?;
-    let response = res.json::<JoinPOSTResponseBody>().await?;
-    Ok(response)
+    // use _ref so res is not consumed
+    match res.error_for_status_ref() {
+        Ok(_) => {
+            let response = res.json::<JoinPOSTResponseBody>().await?;
+            Ok(response)
+        }
+        Err(r) => {
+            let txt = res.text().await?;
+            Err(RequestError::Request(r, txt))
+        }
+    }
 }

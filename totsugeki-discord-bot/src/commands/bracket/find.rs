@@ -1,6 +1,5 @@
 //! Find bracket by name
-use super::get_client;
-use crate::TournamentServer;
+use crate::{get_client, TournamentServer};
 use log::error;
 use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandResult};
