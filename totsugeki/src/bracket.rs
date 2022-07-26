@@ -46,7 +46,7 @@ impl BracketPOST {
 /// Bracket for a tournament
 #[derive(Debug, PartialEq, Eq, Default, Serialize, Deserialize, Clone)]
 pub struct Bracket {
-    id: BracketId,
+    bracket_id: BracketId,
     bracket_name: String,
     players: Vec<PlayerId>,
 }
@@ -55,8 +55,8 @@ impl Display for Bracket {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(
             f,
-            "{{ id: {}, bracket_name \"{} \"}}",
-            self.id, self.bracket_name
+            "{{ bracket_id: {}, bracket_name \"{} \"}}",
+            self.bracket_id, self.bracket_name
         )
     }
 }
@@ -96,7 +96,7 @@ impl Bracket {
     pub fn new(bracket_name: String, players: Vec<PlayerId>) -> Self {
         // TODO add check where registration_start_time < beginning_start_time
         Bracket {
-            id: Uuid::new_v4(),
+            bracket_id: Uuid::new_v4(),
             bracket_name,
             players,
         }
@@ -106,7 +106,7 @@ impl Bracket {
     #[must_use]
     pub fn from(id: BracketId, bracket_name: String, players: Vec<PlayerId>) -> Self {
         Self {
-            id,
+            bracket_id: id,
             bracket_name,
             players,
         }
@@ -115,7 +115,7 @@ impl Bracket {
     /// Get ID of bracket
     #[must_use]
     pub fn get_id(&self) -> Uuid {
-        self.id
+        self.bracket_id
     }
 
     /// Get name of bracket
