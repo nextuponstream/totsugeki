@@ -29,15 +29,15 @@ impl BracketPOST {
     pub fn new(
         bracket_name: String,
         organiser_name: String,
-        organiser_id: String,
-        internal_channel_id: String,
+        organiser_internal_id: String,
+        channel_internal_id: String,
         service_type_id: String,
     ) -> Self {
         BracketPOST {
             bracket_name,
             organiser_name,
-            organiser_internal_id: organiser_id,
-            channel_internal_id: internal_channel_id,
+            organiser_internal_id,
+            channel_internal_id,
             service_type_id,
         }
     }
@@ -146,6 +146,20 @@ pub struct BracketPOSTResult {
 }
 
 impl BracketPOSTResult {
+    #[must_use]
+    /// Create new bracket from values
+    pub fn from(
+        bracket_id: BracketId,
+        organiser_id: OrganiserId,
+        discussion_channel_id: DiscussionChannelId,
+    ) -> Self {
+        Self {
+            bracket_id,
+            organiser_id,
+            discussion_channel_id,
+        }
+    }
+
     #[must_use]
     /// Get bracket id
     pub fn get_bracket_id(&self) -> BracketId {

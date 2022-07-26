@@ -1,11 +1,10 @@
 //! bracket routes
+use crate::bracket::{BracketPOST, BracketPOSTResult};
 use crate::log_error;
 use crate::persistence::Error;
 use crate::ApiKeyServiceAuthorization;
 use crate::BracketGETResponse;
-use crate::BracketPOST;
-use crate::BracketPOSTResult;
-use crate::InternalIdType;
+use crate::Service;
 use crate::SharedDb;
 use poem::http::StatusCode;
 use poem::Error as pError;
@@ -115,7 +114,7 @@ where
     'b: 'c,
 {
     let db = db.read()?;
-    let service_type_id = match service_type_id.as_str().parse::<InternalIdType>() {
+    let service_type_id = match service_type_id.as_str().parse::<Service>() {
         Ok(v) => v,
         Err(e) => {
             return Err(Error::Parsing(format!("{e:?}")));
@@ -128,6 +127,7 @@ where
         internal_channel_id,
         service_type_id,
     )?;
+    let result = result.into();
     Ok(result)
 }
 

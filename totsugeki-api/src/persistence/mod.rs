@@ -2,26 +2,30 @@
 pub mod inmemory;
 pub mod postgresql;
 
-use crate::{ApiServiceId, ApiServiceUser, BracketPOSTResult, InternalIdType};
+use crate::{ApiServiceId, ApiServiceUser, Service};
 use std::fmt::Display;
 use std::str::FromStr;
 use std::sync::{PoisonError, RwLockReadGuard, RwLockWriteGuard};
-use totsugeki::{bracket::Bracket, join::JoinPOSTResponseBody, organiser::Organiser};
+use totsugeki::{
+    bracket::{Bracket, BracketPOSTResult},
+    join::JoinPOSTResponseBody,
+    organiser::Organiser,
+};
 
-/// Error while parsing InteralIdType
+/// Error while parsing InteralIdType of service used
 #[derive(Debug)]
-pub enum ParseInternalIdTypeError {
+pub enum ParseServiceInternalIdError {
     /// Parsing error
     Parse(String),
 }
 
-impl FromStr for InternalIdType {
-    type Err = ParseInternalIdTypeError;
+impl FromStr for Service {
+    type Err = ParseServiceInternalIdError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "discord" => Ok(Self::Discord),
-            _ => Err(ParseInternalIdTypeError::Parse(format!(
+            _ => Err(ParseServiceInternalIdError::Parse(format!(
                 "could not parse {s}"
             ))),
         }
@@ -91,7 +95,7 @@ pub trait DBAccessor {
         organiser_name: &'b str,
         organiser_internal_id: String,
         internal_channel_id: String,
-        internal_id_type: InternalIdType,
+        internal_id_type: Service,
     ) -> Result<BracketPOSTResult, Error<'c>>;
 
     /// Create tournament organiser
