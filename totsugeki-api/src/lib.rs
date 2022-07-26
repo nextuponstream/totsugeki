@@ -28,7 +28,7 @@ use routes::test_utils::TestUtilsApi;
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 use std::boxed::Box;
-use std::collections::HashMap;
+use std::collections::HashSet;
 use std::sync::Arc;
 use totsugeki::bracket::{ActiveBrackets, BracketId};
 use totsugeki::organiser::{Organiser, OrganiserId};
@@ -83,7 +83,7 @@ impl std::fmt::Display for Service {
 }
 
 /// Finalized brackets
-pub type FinalizedBrackets = HashMap<BracketId, BracketGETResponse>;
+pub type FinalizedBrackets = HashSet<BracketId>;
 
 #[derive(Object, Serialize, Deserialize)]
 /// Organiser GET response
@@ -123,13 +123,7 @@ impl From<Organiser> for OrganiserGETResponse {
             organiser_id: o.get_organiser_id(),
             organiser_name: o.get_organiser_name(),
             active_brackets: o.get_active_brackets(),
-            finalized_brackets: {
-                let mut map = HashMap::new();
-                for kv in o.get_finalized_brackets().iter() {
-                    map.insert(*kv.0, BracketGETResponse::new(kv.1.clone()));
-                }
-                map
-            },
+            finalized_brackets: o.get_finalized_brackets(),
         }
     }
 }

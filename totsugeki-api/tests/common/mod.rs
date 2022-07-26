@@ -1,10 +1,11 @@
 //! Common setup/teardown methods
 
-use std::sync::Arc;
+pub mod bracket;
 
 use hmac::Hmac;
 use poem::Route;
 use sha2::Sha256;
+use std::sync::Arc;
 use totsugeki::ReadLock;
 use totsugeki_api::{oai_test_service, persistence::DBAccessor, route_with_data, DatabaseType};
 

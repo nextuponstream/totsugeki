@@ -2,14 +2,17 @@
 
 use crate::{organiser::OrganiserId, DiscussionChannelId, PlayerId};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fmt::Display};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::Display,
+};
 use uuid::Uuid;
 
 /// Active brackets
 pub type ActiveBrackets = HashMap<DiscussionChannelId, BracketId>;
 
 /// Finalized brackets
-pub type FinalizedBrackets = HashMap<BracketId, Bracket>;
+pub type FinalizedBrackets = HashSet<BracketId>;
 
 #[derive(Serialize, Deserialize)]
 /// Body of bracket POST request
