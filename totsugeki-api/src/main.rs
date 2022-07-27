@@ -4,6 +4,7 @@ use poem::Route;
 use poem_openapi::{OpenApi, OpenApiService};
 use std::env;
 use totsugeki_api::routes::bracket::Api as BracketApi;
+use totsugeki_api::routes::health_check::Api as HealthcheckApi;
 use totsugeki_api::routes::join::Api as JoinApi;
 use totsugeki_api::routes::organiser::Api as OrganiserApi;
 use totsugeki_api::routes::service::Api as ServiceApi;
@@ -31,7 +32,13 @@ async fn main() -> Result<(), std::io::Error> {
     } else {
         serve_server(
             OpenApiService::new(
-                (BracketApi, OrganiserApi, ServiceApi, JoinApi),
+                (
+                    BracketApi,
+                    OrganiserApi,
+                    ServiceApi,
+                    JoinApi,
+                    HealthcheckApi,
+                ),
                 env!("CARGO_PKG_NAME"),
                 env!("CARGO_PKG_VERSION"),
             )

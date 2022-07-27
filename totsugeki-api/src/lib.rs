@@ -21,6 +21,7 @@ use persistence::postgresql::Accessor as PostgresqlDBAccessor;
 use poem::{http::Method, middleware::Cors, web::Data, EndpointExt, Request, Route};
 use poem_openapi::{auth::ApiKey, Object, OpenApiService, SecurityScheme};
 use routes::bracket::Api as BracketApi;
+use routes::health_check::Api as HealthcheckApi;
 use routes::join::Api as JoinApi;
 use routes::organiser::Api as OrganiserApi;
 use routes::service::Api as ServiceApi;
@@ -146,10 +147,26 @@ async fn api_checker(req: &Request, api_key: ApiKey) -> Option<ApiServiceUser> {
 
 /// OAI service for tests
 #[must_use]
-pub fn oai_test_service(
-) -> OpenApiService<(BracketApi, OrganiserApi, ServiceApi, JoinApi, TestUtilsApi), ()> {
+pub fn oai_test_service() -> OpenApiService<
+    (
+        BracketApi,
+        OrganiserApi,
+        ServiceApi,
+        JoinApi,
+        HealthcheckApi,
+        TestUtilsApi,
+    ),
+    (),
+> {
     OpenApiService::new(
-        (BracketApi, OrganiserApi, ServiceApi, JoinApi, TestUtilsApi),
+        (
+            BracketApi,
+            OrganiserApi,
+            ServiceApi,
+            JoinApi,
+            HealthcheckApi,
+            TestUtilsApi,
+        ),
         env!("CARGO_PKG_NAME"),
         env!("CARGO_PKG_VERSION"),
     )
