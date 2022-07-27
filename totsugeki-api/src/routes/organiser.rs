@@ -13,10 +13,10 @@ use poem_openapi::OpenApi;
 use totsugeki::organiser::Organiser;
 
 /// Organiser Api
-pub struct OrganiserApi;
+pub struct Api;
 
 #[OpenApi]
-impl OrganiserApi {
+impl Api {
     #[oai(path = "/organiser", method = "post")]
     async fn create_organiser<'a>(
         &self,

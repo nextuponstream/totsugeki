@@ -4,13 +4,13 @@ use super::DBAccessor;
 
 /// Postgresql database
 #[derive(Default)]
-pub struct PostgresqlDBAccessor;
+pub struct Accessor;
 
 #[allow(
     unused_variables,
     // reason = "figure out business logic of bracket feature with inmemory before implementing"
 )] // FIXME remove
-impl DBAccessor for PostgresqlDBAccessor {
+impl DBAccessor for Accessor {
     fn clean<'a, 'b>(&'a self) -> Result<(), super::Error<'b>> {
         todo!()
     }
@@ -22,7 +22,7 @@ impl DBAccessor for PostgresqlDBAccessor {
         organiser_internal_id: String,
         internal_channel_id: String,
         internal_id_type: crate::Service,
-    ) -> Result<totsugeki::bracket::BracketPOSTResult, super::Error<'c>> {
+    ) -> Result<totsugeki::bracket::POSTResult, super::Error<'c>> {
         todo!()
     }
 
@@ -87,7 +87,7 @@ impl DBAccessor for PostgresqlDBAccessor {
         player_internal_id: &'b str,
         channel_internal_id: &'b str,
         service_type_id: &'b str,
-    ) -> Result<totsugeki::join::JoinPOSTResponseBody, super::Error<'c>> {
+    ) -> Result<totsugeki::join::POSTResponseBody, super::Error<'c>> {
         todo!()
     }
 }

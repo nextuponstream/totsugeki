@@ -1,26 +1,26 @@
 //! join
 
-use crate::join::{JoinPOST, JoinPOSTResponse};
+use crate::join::{POSTRequest, POSTResponse};
 use crate::persistence::Error;
 use crate::{log_error, ApiKeyServiceAuthorization, SharedDb};
 use poem::Result;
 use poem_openapi::{payload::Json, OpenApi};
-use totsugeki::join::JoinPOSTResponseBody;
+use totsugeki::join::POSTResponseBody;
 
 /// Join Api
-pub struct JoinApi;
+pub struct Api;
 
 #[OpenApi]
-impl JoinApi {
+impl Api {
     /// Let player join bracket from organiser
     #[oai(path = "/join", method = "post")]
     async fn join_bracket<'a>(
         &self,
         db: SharedDb<'a>,
         _auth: ApiKeyServiceAuthorization,
-        join_request: Json<JoinPOST>,
-    ) -> Result<Json<JoinPOSTResponse>> {
-        match join(&db, join_request.0) {
+        join_request: Json<POSTRequest>,
+    ) -> Result<Json<POSTResponse>> {
+        match join(&db, &join_request.0) {
             Ok(r) => Ok(Json(r)),
             Err(e) => {
                 log_error(&e);
@@ -30,7 +30,7 @@ impl JoinApi {
     }
 }
 
-fn join<'a, 'b>(db: &'a SharedDb, j: JoinPOST) -> Result<JoinPOSTResponse, Error<'b>>
+fn join<'a, 'b>(db: &'a SharedDb, j: &POSTRequest) -> Result<POSTResponse, Error<'b>>
 where
     'a: 'b,
 {
@@ -40,12 +40,12 @@ where
         j.channel_internal_id.as_str(),
         j.service_type_id.as_str(),
     )?;
-    let response: JoinPOSTResponse = body.into();
+    let response: POSTResponse = body.into();
     Ok(response)
 }
 
-impl From<JoinPOSTResponseBody> for JoinPOSTResponse {
-    fn from(b: JoinPOSTResponseBody) -> Self {
+impl From<POSTResponseBody> for POSTResponse {
+    fn from(b: POSTResponseBody) -> Self {
         Self {
             player_id: b.player_id,
             bracket_id: b.bracket_id,

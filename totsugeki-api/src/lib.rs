@@ -13,25 +13,25 @@ pub mod persistence;
 pub mod routes;
 
 use crate::persistence::{inmemory::InMemoryDBAccessor, DBAccessor, Error};
-use bracket::BracketGETResponse;
+use bracket::GETResponse;
 use hmac::{Hmac, NewMac};
 use jwt::VerifyWithKey;
 use log::{error, warn};
-use persistence::postgresql::PostgresqlDBAccessor;
+use persistence::postgresql::Accessor as PostgresqlDBAccessor;
 use poem::{http::Method, middleware::Cors, web::Data, EndpointExt, Request, Route};
 use poem_openapi::{auth::ApiKey, Object, OpenApiService, SecurityScheme};
-use routes::bracket::BracketApi;
-use routes::join::JoinApi;
-use routes::organiser::OrganiserApi;
-use routes::service::ServiceApi;
-use routes::test_utils::TestUtilsApi;
+use routes::bracket::Api as BracketApi;
+use routes::join::Api as JoinApi;
+use routes::organiser::Api as OrganiserApi;
+use routes::service::Api as ServiceApi;
+use routes::test_utils::Api as TestUtilsApi;
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 use std::boxed::Box;
 use std::collections::HashSet;
 use std::sync::Arc;
-use totsugeki::bracket::{ActiveBrackets, BracketId};
-use totsugeki::organiser::{Organiser, OrganiserId};
+use totsugeki::bracket::{ActiveBrackets, Id as BracketId};
+use totsugeki::organiser::{Id as OrganiserId, Organiser};
 use totsugeki::ReadLock;
 use uuid::Uuid;
 
@@ -48,6 +48,7 @@ pub type ServerKey = Hmac<Sha256>;
 pub type SharedDb<'a> = Data<&'a Arc<ReadLock<Box<dyn DBAccessor + Send + Sync>>>>;
 
 /// Returns HMAC from server key
+#[must_use]
 pub fn hmac(server_key: &[u8]) -> Hmac<Sha256> {
     Hmac::<Sha256>::new_from_slice(server_key).expect("valid server key")
 }
@@ -139,11 +140,12 @@ impl From<Organiser> for OrganiserGETResponse {
 pub struct ApiKeyServiceAuthorization(ApiServiceUser);
 
 async fn api_checker(req: &Request, api_key: ApiKey) -> Option<ApiServiceUser> {
-    let server_key = req.data::<ServerKey>().unwrap();
+    let server_key = req.data::<ServerKey>().expect("server key");
     VerifyWithKey::<ApiServiceUser>::verify_with_key(api_key.key.as_str(), server_key).ok()
 }
 
 /// OAI service for tests
+#[must_use]
 pub fn oai_test_service(
 ) -> OpenApiService<(BracketApi, OrganiserApi, ServiceApi, JoinApi, TestUtilsApi), ()> {
     OpenApiService::new(
@@ -207,10 +209,11 @@ type TotsugekiEndpoint = poem::middleware::AddDataEndpoint<
 >;
 
 /// Return route with cors enabled, authorization and database
+#[must_use]
 pub fn route_with_data(
     route: Route,
     db_type: DatabaseType,
-    server_key: Vec<u8>,
+    server_key: &[u8],
 ) -> TotsugekiEndpoint {
     let db: Database = db_type.into();
     let db = Arc::new(ReadLock::new(db));
@@ -218,7 +221,7 @@ pub fn route_with_data(
         .expect("database")
         .init()
         .expect("initialise database");
-    let server_key = hmac(&server_key);
+    let server_key = hmac(server_key);
     let cors = Cors::new().allow_method(Method::GET);
     // NOTE: use lsp "add return type" after deleting fn return type instead of
     // guessing

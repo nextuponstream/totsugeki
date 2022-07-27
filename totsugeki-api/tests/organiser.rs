@@ -6,8 +6,8 @@ use common::{bracket::parse_bracket_post_response, db_types_to_test, test_api};
 use poem::test::TestJson;
 use std::collections::{HashMap, HashSet};
 use totsugeki::{
-    bracket::{BracketId, BracketPOST, FinalizedBrackets},
-    organiser::{Organiser, OrganiserId},
+    bracket::{FinalizedBrackets, Id as BracketId, POST},
+    organiser::{Id as OrganiserId, Organiser},
     DiscussionChannelId,
 };
 
@@ -61,7 +61,7 @@ async fn new_organiser_is_generated_when_bracket_is_created_if_unknown() {
         let organiser_internal_id = "1".to_string();
         let channel_internal_id = "1".to_string();
         let service_type_id = "discord".to_string();
-        let body = BracketPOST::new(
+        let body = POST::new(
             bracket_name,
             organiser_name.clone(),
             organiser_internal_id,
@@ -120,7 +120,7 @@ async fn running_two_brackets_at_the_same_time() {
         let organiser_internal_id = "1".to_string();
         let channel_internal_id = "1".to_string();
         let service_type_id = "discord".to_string();
-        let body = BracketPOST::new(
+        let body = POST::new(
             bracket_name,
             organiser_name.clone(),
             organiser_internal_id.clone(),
@@ -130,7 +130,7 @@ async fn running_two_brackets_at_the_same_time() {
 
         let bracket_name = "weekly-game-2".to_string(); // TODO generate name
         let channel_internal_id = "2".to_string();
-        let body_next_bracket = BracketPOST::new(
+        let body_next_bracket = POST::new(
             bracket_name,
             organiser_name.clone(),
             organiser_internal_id,

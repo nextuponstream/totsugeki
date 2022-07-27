@@ -9,7 +9,7 @@ use common::{
     db_types_to_test, test_api,
 };
 use poem::http::StatusCode;
-use totsugeki::{bracket::BracketPOST, join::JoinPOSTRequestBody};
+use totsugeki::{bracket::POST, join::POSTRequestBody};
 
 #[tokio::test]
 async fn joining_bracket_requires_authorization() {
@@ -32,7 +32,7 @@ async fn players_join_bracket() {
         let organiser_internal_id = "1".to_string();
         let channel_internal_id = "1".to_string();
         let service_type_id = "discord".to_string();
-        let body = BracketPOST::new(
+        let body = POST::new(
             bracket_name.clone(),
             organiser_name,
             organiser_internal_id,
@@ -58,7 +58,7 @@ async fn players_join_bracket() {
             let player_name = format!("player_{i}");
             let channel_internal_id = channel_internal_id.clone();
             let service_type_id = service_type_id.clone();
-            let body = JoinPOSTRequestBody::new(
+            let body = POSTRequestBody::new(
                 player_internal_id,
                 player_name,
                 channel_internal_id,

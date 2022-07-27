@@ -41,7 +41,7 @@ pub async fn test_api(db_type: DatabaseType) -> TotsugekiApiTestClient {
     let cli = poem::test::TestClient::new(route_with_data(
         app_route(),
         db_type,
-        "123456".as_bytes().to_vec(), // TODO generate random key
+        "123456".as_bytes(), // TODO generate random key
     ));
 
     let service_name = "hello"; // TODO generate random name

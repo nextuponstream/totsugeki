@@ -1,6 +1,6 @@
 //! Bracket object
 
-use crate::{organiser::OrganiserId, DiscussionChannelId, PlayerId};
+use crate::{organiser::Id as OrganiserId, DiscussionChannelId, PlayerId};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
@@ -9,14 +9,14 @@ use std::{
 use uuid::Uuid;
 
 /// Active brackets
-pub type ActiveBrackets = HashMap<DiscussionChannelId, BracketId>;
+pub type ActiveBrackets = HashMap<DiscussionChannelId, Id>;
 
 /// Finalized brackets
-pub type FinalizedBrackets = HashSet<BracketId>;
+pub type FinalizedBrackets = HashSet<Id>;
 
 #[derive(Serialize, Deserialize)]
-/// Body of bracket POST request
-pub struct BracketPOST {
+/// POST request to /bracket endpoint
+pub struct POST {
     /// name of the bracket
     bracket_name: String,
     /// used to create missing organiser
@@ -26,7 +26,7 @@ pub struct BracketPOST {
     service_type_id: String,
 }
 
-impl BracketPOST {
+impl POST {
     /// Create new Bracket POST request
     #[must_use]
     pub fn new(
@@ -36,7 +36,7 @@ impl BracketPOST {
         channel_internal_id: String,
         service_type_id: String,
     ) -> Self {
-        BracketPOST {
+        POST {
             bracket_name,
             organiser_name,
             organiser_internal_id,
@@ -49,7 +49,7 @@ impl BracketPOST {
 /// Bracket for a tournament
 #[derive(Debug, PartialEq, Eq, Default, Serialize, Deserialize, Clone)]
 pub struct Bracket {
-    bracket_id: BracketId,
+    bracket_id: Id,
     bracket_name: String,
     players: Vec<PlayerId>,
 }
@@ -107,7 +107,7 @@ impl Bracket {
 
     /// Create from existing bracket
     #[must_use]
-    pub fn from(id: BracketId, bracket_name: String, players: Vec<PlayerId>) -> Self {
+    pub fn from(id: Id, bracket_name: String, players: Vec<PlayerId>) -> Self {
         Self {
             bracket_id: id,
             bracket_name,
@@ -135,25 +135,25 @@ impl Bracket {
 }
 
 /// Bracket identifier
-pub type BracketId = Uuid;
+pub type Id = Uuid;
 
-/// Response to Bracket POST request
+/// POST response to /bracket endpoint
 #[derive(Serialize, Deserialize)]
-pub struct BracketPOSTResult {
+pub struct POSTResult {
     /// id of created bracket
-    bracket_id: BracketId,
+    bracket_id: Id,
     /// id of organiser
     organiser_id: OrganiserId,
     /// id of discussion channel
     discussion_channel_id: DiscussionChannelId,
 }
 
-impl BracketPOSTResult {
+impl POSTResult {
     #[must_use]
     /// Create new bracket from values
     pub fn from(
-        bracket_id: BracketId,
-        organiser_id: OrganiserId,
+        bracket_id: Id,
+        organiser_id: Id,
         discussion_channel_id: DiscussionChannelId,
     ) -> Self {
         Self {
@@ -165,13 +165,13 @@ impl BracketPOSTResult {
 
     #[must_use]
     /// Get bracket id
-    pub fn get_bracket_id(&self) -> BracketId {
+    pub fn get_bracket_id(&self) -> Id {
         self.bracket_id
     }
 
     #[must_use]
     /// Get organiser id
-    pub fn get_organiser_id(&self) -> OrganiserId {
+    pub fn get_organiser_id(&self) -> Id {
         self.organiser_id
     }
 

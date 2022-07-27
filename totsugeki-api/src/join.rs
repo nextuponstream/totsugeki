@@ -1,11 +1,11 @@
 //! join request body and response
 
 use poem_openapi::Object;
-use totsugeki::{bracket::BracketId, organiser::OrganiserId, PlayerId};
+use totsugeki::{bracket::Id as BracketId, organiser::Id as OrganiserId, PlayerId};
 
-/// Join POST request body
+/// POST request to /join endpoint
 #[derive(Object)]
-pub struct JoinPOST {
+pub struct POSTRequest {
     /// player id of service
     pub player_internal_id: String,
     /// name of unregistered player
@@ -16,9 +16,9 @@ pub struct JoinPOST {
     pub service_type_id: String,
 }
 
-/// Join POST response body
+/// POST response to /join endpoint
 #[derive(Object)]
-pub struct JoinPOSTResponse {
+pub struct POSTResponse {
     /// Player identifier
     pub player_id: PlayerId,
     /// Bracket identifier

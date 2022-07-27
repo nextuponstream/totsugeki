@@ -6,7 +6,7 @@ use common::{
     db_types_to_test, test_api,
 };
 use poem::http::StatusCode;
-use totsugeki::bracket::BracketPOST;
+use totsugeki::bracket::POST;
 
 #[tokio::test]
 async fn posting_bracket_requires_authorization() {
@@ -29,7 +29,7 @@ async fn someone_creates_bracket() {
         let organiser_internal_id = "1".to_string();
         let channel_internal_id = "1".to_string();
         let service_type_id = "discord".to_string();
-        let body = BracketPOST::new(
+        let body = POST::new(
             bracket_name,
             organiser_name,
             organiser_internal_id,
@@ -87,7 +87,7 @@ async fn search_bracket() {
         let organiser_internal_id = "1".to_string();
         let channel_internal_id = "1".to_string();
         let service_type_id = "discord".to_string();
-        let body = BracketPOST::new(
+        let body = POST::new(
             bracket_name.clone(),
             organiser_name,
             organiser_internal_id,

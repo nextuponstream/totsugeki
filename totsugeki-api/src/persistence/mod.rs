@@ -7,12 +7,12 @@ use std::fmt::Display;
 use std::str::FromStr;
 use std::sync::{PoisonError, RwLockReadGuard, RwLockWriteGuard};
 use totsugeki::{
-    bracket::{Bracket, BracketPOSTResult},
-    join::JoinPOSTResponseBody,
+    bracket::{Bracket, POSTResult},
+    join::POSTResponseBody,
     organiser::Organiser,
 };
 
-/// Error while parsing InteralIdType of service used
+/// Error while parsing ``InteralIdType`` of service used
 #[derive(Debug)]
 pub enum ParseServiceInternalIdError {
     /// Parsing error
@@ -96,7 +96,7 @@ pub trait DBAccessor {
         organiser_internal_id: String,
         internal_channel_id: String,
         internal_id_type: Service,
-    ) -> Result<BracketPOSTResult, Error<'c>>;
+    ) -> Result<POSTResult, Error<'c>>;
 
     /// Create tournament organiser
     ///
@@ -139,7 +139,7 @@ pub trait DBAccessor {
         player_internal_id: &'b str,
         channel_internal_id: &'b str,
         service_type_id: &'b str,
-    ) -> Result<JoinPOSTResponseBody, Error<'c>>;
+    ) -> Result<POSTResponseBody, Error<'c>>;
 
     /// List brackets
     ///
@@ -157,10 +157,10 @@ pub trait DBAccessor {
     ///
     /// # Errors
     /// Returns an error if database could not be accessed
-    fn list_service_api_user<'a, 'b, 'c>(
+    fn list_service_api_user<'a, 'b>(
         &'a self,
         offset: i64,
-    ) -> Result<Vec<ApiServiceUser>, Error<'c>>;
+    ) -> Result<Vec<ApiServiceUser>, Error<'b>>;
 
     /// Register service API user
     ///

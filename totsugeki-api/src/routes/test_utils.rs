@@ -6,10 +6,10 @@ use poem::Result;
 use poem_openapi::OpenApi;
 
 /// Api calls to clean up database for testing purposes
-pub struct TestUtilsApi;
+pub struct Api;
 
 #[OpenApi]
-impl TestUtilsApi {
+impl Api {
     #[oai(path = "/clean", method = "delete")]
     async fn clean_database<'a>(
         &self,

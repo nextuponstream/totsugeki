@@ -2,14 +2,14 @@
 use poem_openapi::Object;
 use serde::{Deserialize, Serialize};
 use totsugeki::{
-    bracket::{Bracket, BracketId},
-    organiser::OrganiserId,
+    bracket::{Bracket, Id as BracketId},
+    organiser::Id as OrganiserId,
     DiscussionChannelId, PlayerId,
 };
 
 #[derive(Serialize, Deserialize, Object)]
-/// Bracket for a tournament
-pub struct BracketPOST {
+/// POST request to /bracket
+pub struct POST {
     /// name of the bracket
     pub bracket_name: String,
     /// name of the organiser if unknown to totsugeki
@@ -30,17 +30,17 @@ pub struct BracketPOST {
 // Bracket package as barebones as possible and let packages importing it the task of deriving
 // necessary traits into their own structs.
 #[derive(Object, Serialize, Deserialize)]
-pub struct BracketGETResponse {
+pub struct GETResponse {
     bracket_id: BracketId,
     bracket_name: String,
     players: Vec<PlayerId>,
 }
 
-impl BracketGETResponse {
+impl GETResponse {
     /// Form values to be sent to the API to create a bracket
     #[must_use]
-    pub fn new(bracket: Bracket) -> Self {
-        BracketGETResponse {
+    pub fn new(bracket: &Bracket) -> Self {
+        GETResponse {
             bracket_id: bracket.get_id(),
             bracket_name: bracket.get_bracket_name(),
             players: bracket.get_players(),
@@ -48,15 +48,15 @@ impl BracketGETResponse {
     }
 }
 
-impl From<Bracket> for BracketGETResponse {
+impl From<Bracket> for GETResponse {
     fn from(b: Bracket) -> Self {
-        BracketGETResponse::new(b)
+        GETResponse::new(&b)
     }
 }
 
 #[derive(Object)]
 /// Bracket POST response body
-pub struct BracketPOSTResult {
+pub struct POSTResult {
     /// bracket identifier
     pub bracket_id: BracketId,
     /// organiser identifier
@@ -65,7 +65,7 @@ pub struct BracketPOSTResult {
     pub discussion_channel_id: DiscussionChannelId,
 }
 
-impl BracketPOSTResult {
+impl POSTResult {
     #[must_use]
     /// Create response body
     pub fn new(
@@ -81,8 +81,8 @@ impl BracketPOSTResult {
     }
 }
 
-impl From<totsugeki::bracket::BracketPOSTResult> for BracketPOSTResult {
-    fn from(tb: totsugeki::bracket::BracketPOSTResult) -> Self {
+impl From<totsugeki::bracket::POSTResult> for POSTResult {
+    fn from(tb: totsugeki::bracket::POSTResult) -> Self {
         Self {
             bracket_id: tb.get_bracket_id(),
             organiser_id: tb.get_organiser_id(),

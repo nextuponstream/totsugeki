@@ -50,6 +50,9 @@ impl<T> ReadLock<T> {
     }
 
     /// Give read handle over ressource
+    ///
+    /// # Errors
+    /// Returns an error if lock is poisoned
     pub fn read(&self) -> LockResult<RwLockReadGuard<'_, T>> {
         self.inner.read()
     }

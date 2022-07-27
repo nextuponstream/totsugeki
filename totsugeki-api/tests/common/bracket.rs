@@ -2,12 +2,12 @@
 
 use poem::test::TestJson;
 use totsugeki::{
-    bracket::{Bracket, BracketId, BracketPOSTResult},
-    organiser::OrganiserId,
+    bracket::{Bracket, Id as BracketId, POSTResult},
+    organiser::Id as OrganiserId,
     DiscussionChannelId, PlayerId,
 };
 
-pub fn parse_bracket_post_response(response: TestJson) -> BracketPOSTResult {
+pub fn parse_bracket_post_response(response: TestJson) -> POSTResult {
     let r = response.value().object();
     let bracket_id_raw = r.get("bracket_id").string();
     let bracket_id = BracketId::parse_str(bracket_id_raw).expect("bracket id");
@@ -17,7 +17,7 @@ pub fn parse_bracket_post_response(response: TestJson) -> BracketPOSTResult {
     let discussion_channel_id =
         DiscussionChannelId::parse_str(discussion_channel_id_raw).expect("discussion channel id");
 
-    BracketPOSTResult::from(bracket_id, organiser_id, discussion_channel_id)
+    POSTResult::from(bracket_id, organiser_id, discussion_channel_id)
 }
 
 pub fn parse_bracket_get_response(response: TestJson) -> Vec<Bracket> {

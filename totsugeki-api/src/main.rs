@@ -3,10 +3,10 @@ use poem::Result;
 use poem::Route;
 use poem_openapi::{OpenApi, OpenApiService};
 use std::env;
-use totsugeki_api::routes::bracket::BracketApi;
-use totsugeki_api::routes::join::JoinApi;
-use totsugeki_api::routes::organiser::OrganiserApi;
-use totsugeki_api::routes::service::ServiceApi;
+use totsugeki_api::routes::bracket::Api as BracketApi;
+use totsugeki_api::routes::join::Api as JoinApi;
+use totsugeki_api::routes::organiser::Api as OrganiserApi;
+use totsugeki_api::routes::service::Api as ServiceApi;
 use totsugeki_api::{oai_test_service, route_with_data, DatabaseType};
 
 #[tokio::main]
@@ -54,7 +54,7 @@ async fn serve_server<T: OpenApi + 'static>(
     let ui = api_service.swagger_ui();
     let app = Route::new().nest("/", api_service);
     let app = app.nest("/swagger", ui);
-    let app = route_with_data(app, db_type, server_key);
+    let app = route_with_data(app, db_type, &server_key);
 
     let cert_path = env::var("API_CERT_PATH").expect("API_CERT_PATH");
     let key_path = env::var("API_PRIVATE_KEY_PATH").expect("API_PRIVATE_KEY_PATH");

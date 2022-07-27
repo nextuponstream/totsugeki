@@ -2,11 +2,11 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{bracket::BracketId, organiser::OrganiserId, PlayerId};
+use crate::{bracket::Id as BracketId, organiser::Id as OrganiserId, PlayerId};
 
-/// Join POST response body
+/// /join POST response body
 #[derive(Debug, Deserialize)]
-pub struct JoinPOSTResponseBody {
+pub struct POSTResponseBody {
     /// Player identifier
     pub player_id: PlayerId,
     /// bracket identifier
@@ -17,7 +17,7 @@ pub struct JoinPOSTResponseBody {
 
 #[derive(Serialize)]
 /// Join POST request body
-pub struct JoinPOSTRequestBody {
+pub struct POSTRequestBody {
     /// Player internal id
     player_internal_id: String,
     /// player_name: String,
@@ -28,7 +28,7 @@ pub struct JoinPOSTRequestBody {
     service_type_id: String,
 }
 
-impl JoinPOSTRequestBody {
+impl POSTRequestBody {
     /// Create new Join POST request body
     #[must_use]
     pub fn new(
