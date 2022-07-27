@@ -5,6 +5,9 @@ use crate::HTTP_PREFIX;
 use totsugeki::organiser::Organiser;
 
 /// Fetch organisers
+///
+/// # Errors
+/// Returns an error when the api is unavailable
 pub async fn fetch(
     client: reqwest::Client,
     tournament_server_url: &str,

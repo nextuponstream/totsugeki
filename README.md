@@ -5,7 +5,7 @@ discord bot.
 
 ## Roadmap MVP
 
-* [ ] let player !join bracket
+* [x] let player !join bracket
 * [ ] report !result
 * [ ] let player see their !nextmatch opponent
 * [ ] TO !validatematch
@@ -57,19 +57,11 @@ Because workspaces have different build targets, use the following command to
 check project code.
 
 ```bash
-cargo watch -x check-core -x check-frontend -x check-integration
+cargo watch -x check-core -x check-frontend
 ```
 
 ### Run tests
 
-Deploy totsugeki-api in testing mode (set API_MODE_PATH to point to a file 
-which contains "testing"). Discord bot binary is not used in tests. Instead,
-cucumber-rs is used to make the same API calls to the tournament server the
-discord bot would have made.
-
 ```bash
-RUST_LOG=info cargo watch-api
-
-# open another terminal
-cargo test-integration
+cargo test
 ```

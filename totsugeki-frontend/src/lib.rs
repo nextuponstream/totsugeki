@@ -25,6 +25,7 @@ pub fn run_app() -> Result<(), JsValue> {
 }
 
 /// Get http client
+#[must_use]
 pub fn get_client() -> reqwest::Client {
     reqwest::Client::new()
 }

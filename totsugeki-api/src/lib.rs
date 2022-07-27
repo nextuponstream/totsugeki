@@ -7,28 +7,37 @@
 #![warn(clippy::unwrap_used)]
 #![doc = include_str!("../README.md")]
 
+pub mod bracket;
 pub mod join;
 pub mod persistence;
 pub mod routes;
 
-use crate::persistence::{DBAccessor, Error};
+use crate::persistence::{inmemory::InMemoryDBAccessor, DBAccessor, Error};
+use bracket::GETResponse;
 use hmac::{Hmac, NewMac};
 use jwt::VerifyWithKey;
 use log::{error, warn};
-use poem::web::Data;
-use poem::Request;
-use poem_openapi::{auth::ApiKey, Object, SecurityScheme};
+use persistence::postgresql::Accessor as PostgresqlDBAccessor;
+use poem::{http::Method, middleware::Cors, web::Data, EndpointExt, Request, Route};
+use poem_openapi::{auth::ApiKey, Object, OpenApiService, SecurityScheme};
+use routes::bracket::Api as BracketApi;
+use routes::health_check::Api as HealthcheckApi;
+use routes::join::Api as JoinApi;
+use routes::organiser::Api as OrganiserApi;
+use routes::service::Api as ServiceApi;
+use routes::test_utils::Api as TestUtilsApi;
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 use std::boxed::Box;
-use std::collections::HashMap;
+use std::collections::HashSet;
 use std::sync::Arc;
-use totsugeki::bracket::ActiveBrackets;
-use totsugeki::bracket::{Bracket, BracketId};
-use totsugeki::organiser::{Organiser, OrganiserId};
+use totsugeki::bracket::{ActiveBrackets, Id as BracketId};
+use totsugeki::organiser::{Id as OrganiserId, Organiser};
 use totsugeki::ReadLock;
-use totsugeki::{DiscussionChannelId, PlayerId};
 use uuid::Uuid;
+
+/// Database accessor
+pub type Database = Box<dyn DBAccessor + Send + Sync>;
 
 /// Server key encryption type
 pub type ServerKey = Hmac<Sha256>;
@@ -39,49 +48,8 @@ pub type ServerKey = Hmac<Sha256>;
 // tied to the struct to interact with the database.
 pub type SharedDb<'a> = Data<&'a Arc<ReadLock<Box<dyn DBAccessor + Send + Sync>>>>;
 
-#[derive(Serialize, Deserialize, Object)]
-/// Bracket for a tournament
-pub struct BracketPOST {
-    bracket_name: String,
-    organiser_name: String,
-    channel_internal_id: String,
-    organiser_internal_id: String,
-    service_type_id: String,
-}
-
-/// Bracket GET response
-//
-// NOTE: having Bracket implement `ToJSON` means that importing `totsugeki` will bring in all poem
-// dependencies. This does not play nice with yew dependencies when doing relative import
-// (totsugeki = { path = "../totsugeki" }) and caused many errors. The workaround is to leave
-// Bracket package as barebones as possible and let packages importing it the task of deriving
-// necessary traits into their own structs.
-#[derive(Object, Serialize, Deserialize)]
-pub struct BracketGETResponse {
-    id: BracketId,
-    bracket_name: String,
-    players: Vec<PlayerId>,
-}
-
-impl BracketGETResponse {
-    /// Form values to be sent to the API to create a bracket
-    #[must_use]
-    pub fn new(bracket: Bracket) -> Self {
-        BracketGETResponse {
-            id: bracket.get_id(),
-            bracket_name: bracket.get_bracket_name(),
-            players: bracket.get_players(),
-        }
-    }
-}
-
-impl From<Bracket> for BracketGETResponse {
-    fn from(b: Bracket) -> Self {
-        BracketGETResponse::new(b)
-    }
-}
-
 /// Returns HMAC from server key
+#[must_use]
 pub fn hmac(server_key: &[u8]) -> Hmac<Sha256> {
     Hmac::<Sha256>::new_from_slice(server_key).expect("valid server key")
 }
@@ -102,22 +70,22 @@ fn log_error(e: &Error) {
     }
 }
 
-/// Type of services supported
-pub enum InternalIdType {
+/// Type of supported services
+pub enum Service {
     /// Discord
     Discord,
 }
 
-impl std::fmt::Display for InternalIdType {
+impl std::fmt::Display for Service {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            InternalIdType::Discord => write!(f, "discord"),
+            Service::Discord => write!(f, "discord"),
         }
     }
 }
 
 /// Finalized brackets
-pub type FinalizedBrackets = HashMap<BracketId, BracketGETResponse>;
+pub type FinalizedBrackets = HashSet<BracketId>;
 
 #[derive(Object, Serialize, Deserialize)]
 /// Organiser GET response
@@ -151,43 +119,13 @@ impl ApiServiceUser {
     }
 }
 
-#[derive(Object)]
-/// Bracket POST response body
-pub struct BracketPOSTResult {
-    bracket_id: BracketId,
-    organiser_id: OrganiserId,
-    discussion_channel_id: DiscussionChannelId,
-}
-
-impl BracketPOSTResult {
-    #[must_use]
-    /// Create response body
-    pub fn new(
-        bracket_id: BracketId,
-        organiser_id: OrganiserId,
-        discussion_channel_id: DiscussionChannelId,
-    ) -> Self {
-        Self {
-            bracket_id,
-            organiser_id,
-            discussion_channel_id,
-        }
-    }
-}
-
 impl From<Organiser> for OrganiserGETResponse {
     fn from(o: Organiser) -> Self {
         Self {
             organiser_id: o.get_organiser_id(),
             organiser_name: o.get_organiser_name(),
             active_brackets: o.get_active_brackets(),
-            finalized_brackets: {
-                let mut map = HashMap::new();
-                for kv in o.get_finalized_brackets().iter() {
-                    map.insert(*kv.0, BracketGETResponse::new(kv.1.clone()));
-                }
-                map
-            },
+            finalized_brackets: o.get_finalized_brackets(),
         }
     }
 }
@@ -203,6 +141,106 @@ impl From<Organiser> for OrganiserGETResponse {
 pub struct ApiKeyServiceAuthorization(ApiServiceUser);
 
 async fn api_checker(req: &Request, api_key: ApiKey) -> Option<ApiServiceUser> {
-    let server_key = req.data::<ServerKey>().unwrap();
+    let server_key = req.data::<ServerKey>().expect("server key");
     VerifyWithKey::<ApiServiceUser>::verify_with_key(api_key.key.as_str(), server_key).ok()
+}
+
+/// OAI service for tests
+#[must_use]
+pub fn oai_test_service() -> OpenApiService<
+    (
+        BracketApi,
+        OrganiserApi,
+        ServiceApi,
+        JoinApi,
+        HealthcheckApi,
+        TestUtilsApi,
+    ),
+    (),
+> {
+    OpenApiService::new(
+        (
+            BracketApi,
+            OrganiserApi,
+            ServiceApi,
+            JoinApi,
+            HealthcheckApi,
+            TestUtilsApi,
+        ),
+        env!("CARGO_PKG_NAME"),
+        env!("CARGO_PKG_VERSION"),
+    )
+}
+
+/// Type of database in use by api
+pub enum DatabaseType {
+    /// In-memory database
+    InMemory,
+    /// Postgresql database
+    Postgresql,
+}
+
+/// Error while inferring Database type from string
+#[derive(Debug)]
+pub enum ParseDatabaseTypeError {
+    /// No match was found for string
+    NoMatch,
+}
+
+impl std::str::FromStr for DatabaseType {
+    type Err = ParseDatabaseTypeError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "INMEMORY" => Ok(Self::InMemory),
+            "POSTGRESQL" => Ok(Self::Postgresql),
+            _ => Err(ParseDatabaseTypeError::NoMatch),
+        }
+    }
+}
+
+impl std::fmt::Display for DatabaseType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DatabaseType::InMemory => writeln!(f, "INMEMORY"),
+            DatabaseType::Postgresql => writeln!(f, "POSTGRESQL"),
+        }
+    }
+}
+
+impl From<DatabaseType> for Database {
+    fn from(db_type: DatabaseType) -> Self {
+        match db_type {
+            DatabaseType::InMemory => Box::new(InMemoryDBAccessor::default()),
+            DatabaseType::Postgresql => Box::new(PostgresqlDBAccessor::default()),
+        }
+    }
+}
+
+type TotsugekiEndpoint = poem::middleware::AddDataEndpoint<
+    poem::middleware::AddDataEndpoint<
+        poem::middleware::CorsEndpoint<Route>,
+        Arc<ReadLock<Database>>,
+    >,
+    Hmac<Sha256>,
+>;
+
+/// Return route with cors enabled, authorization and database
+#[must_use]
+pub fn route_with_data(
+    route: Route,
+    db_type: DatabaseType,
+    server_key: &[u8],
+) -> TotsugekiEndpoint {
+    let db: Database = db_type.into();
+    let db = Arc::new(ReadLock::new(db));
+    db.read()
+        .expect("database")
+        .init()
+        .expect("initialise database");
+    let server_key = hmac(server_key);
+    let cors = Cors::new().allow_method(Method::GET);
+    // NOTE: use lsp "add return type" after deleting fn return type instead of
+    // guessing
+    route.with(cors).data(db).data(server_key)
 }

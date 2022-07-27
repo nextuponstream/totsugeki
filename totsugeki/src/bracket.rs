@@ -1,19 +1,22 @@
 //! Bracket object
 
-use crate::{organiser::OrganiserId, DiscussionChannelId, PlayerId};
+use crate::{organiser::Id as OrganiserId, DiscussionChannelId, PlayerId};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fmt::Display};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::Display,
+};
 use uuid::Uuid;
 
 /// Active brackets
-pub type ActiveBrackets = HashMap<DiscussionChannelId, BracketId>;
+pub type ActiveBrackets = HashMap<DiscussionChannelId, Id>;
 
 /// Finalized brackets
-pub type FinalizedBrackets = HashMap<BracketId, Bracket>;
+pub type FinalizedBrackets = HashSet<Id>;
 
 #[derive(Serialize, Deserialize)]
-/// Body of bracket POST request
-pub struct BracketPOST {
+/// POST request to /bracket endpoint
+pub struct POST {
     /// name of the bracket
     bracket_name: String,
     /// used to create missing organiser
@@ -23,21 +26,21 @@ pub struct BracketPOST {
     service_type_id: String,
 }
 
-impl BracketPOST {
+impl POST {
     /// Create new Bracket POST request
     #[must_use]
     pub fn new(
         bracket_name: String,
         organiser_name: String,
-        organiser_id: String,
-        internal_channel_id: String,
+        organiser_internal_id: String,
+        channel_internal_id: String,
         service_type_id: String,
     ) -> Self {
-        BracketPOST {
+        POST {
             bracket_name,
             organiser_name,
-            organiser_internal_id: organiser_id,
-            channel_internal_id: internal_channel_id,
+            organiser_internal_id,
+            channel_internal_id,
             service_type_id,
         }
     }
@@ -46,7 +49,7 @@ impl BracketPOST {
 /// Bracket for a tournament
 #[derive(Debug, PartialEq, Eq, Default, Serialize, Deserialize, Clone)]
 pub struct Bracket {
-    id: BracketId,
+    bracket_id: Id,
     bracket_name: String,
     players: Vec<PlayerId>,
 }
@@ -55,8 +58,8 @@ impl Display for Bracket {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(
             f,
-            "{{ id: {}, bracket_name \"{} \"}}",
-            self.id, self.bracket_name
+            "{{ bracket_id: {}, bracket_name \"{} \"}}",
+            self.bracket_id, self.bracket_name
         )
     }
 }
@@ -96,7 +99,7 @@ impl Bracket {
     pub fn new(bracket_name: String, players: Vec<PlayerId>) -> Self {
         // TODO add check where registration_start_time < beginning_start_time
         Bracket {
-            id: Uuid::new_v4(),
+            bracket_id: Uuid::new_v4(),
             bracket_name,
             players,
         }
@@ -104,9 +107,9 @@ impl Bracket {
 
     /// Create from existing bracket
     #[must_use]
-    pub fn from(id: BracketId, bracket_name: String, players: Vec<PlayerId>) -> Self {
+    pub fn from(id: Id, bracket_name: String, players: Vec<PlayerId>) -> Self {
         Self {
-            id,
+            bracket_id: id,
             bracket_name,
             players,
         }
@@ -115,7 +118,7 @@ impl Bracket {
     /// Get ID of bracket
     #[must_use]
     pub fn get_id(&self) -> Uuid {
-        self.id
+        self.bracket_id
     }
 
     /// Get name of bracket
@@ -132,29 +135,43 @@ impl Bracket {
 }
 
 /// Bracket identifier
-pub type BracketId = Uuid;
+pub type Id = Uuid;
 
-/// Response to Bracket POST request
+/// POST response to /bracket endpoint
 #[derive(Serialize, Deserialize)]
-pub struct BracketPOSTResult {
+pub struct POSTResult {
     /// id of created bracket
-    bracket_id: BracketId,
+    bracket_id: Id,
     /// id of organiser
     organiser_id: OrganiserId,
     /// id of discussion channel
     discussion_channel_id: DiscussionChannelId,
 }
 
-impl BracketPOSTResult {
+impl POSTResult {
+    #[must_use]
+    /// Create new bracket from values
+    pub fn from(
+        bracket_id: Id,
+        organiser_id: Id,
+        discussion_channel_id: DiscussionChannelId,
+    ) -> Self {
+        Self {
+            bracket_id,
+            organiser_id,
+            discussion_channel_id,
+        }
+    }
+
     #[must_use]
     /// Get bracket id
-    pub fn get_bracket_id(&self) -> BracketId {
+    pub fn get_bracket_id(&self) -> Id {
         self.bracket_id
     }
 
     #[must_use]
     /// Get organiser id
-    pub fn get_organiser_id(&self) -> OrganiserId {
+    pub fn get_organiser_id(&self) -> Id {
         self.organiser_id
     }
 

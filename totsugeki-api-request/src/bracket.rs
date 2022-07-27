@@ -2,7 +2,7 @@
 
 use crate::RequestError;
 use crate::HTTP_PREFIX;
-use totsugeki::bracket::{Bracket, BracketPOST, BracketPOSTResult};
+use totsugeki::bracket::{Bracket, POSTResult, POST};
 use totsugeki::DiscussionChannel;
 
 /// Create brackets
@@ -17,8 +17,8 @@ pub async fn create<T: DiscussionChannel>(
     organiser_name: &str,
     organiser_id: &str,
     discussion_channel: T,
-) -> Result<BracketPOSTResult, RequestError> {
-    let body = BracketPOST::new(
+) -> Result<POSTResult, RequestError> {
+    let body = POST::new(
         bracket_name.to_string(),
         organiser_name.to_string(),
         organiser_id.to_string(),
@@ -31,7 +31,7 @@ pub async fn create<T: DiscussionChannel>(
         .json(&body)
         .send()
         .await?;
-    let ids: BracketPOSTResult = res.json::<BracketPOSTResult>().await?;
+    let ids: POSTResult = res.json::<POSTResult>().await?;
     Ok(ids)
 }
 

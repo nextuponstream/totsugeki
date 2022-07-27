@@ -3,7 +3,7 @@
 use crate::RequestError;
 use crate::HTTP_PREFIX;
 use totsugeki::{
-    join::{JoinPOSTRequestBody, JoinPOSTResponseBody},
+    join::{POSTRequestBody, POSTResponseBody},
     DiscussionChannel,
 };
 
@@ -18,8 +18,8 @@ pub async fn post<T: DiscussionChannel>(
     player_internal_id: &str,
     player_name: &str,
     discussion_channel: T,
-) -> Result<JoinPOSTResponseBody, RequestError> {
-    let body = JoinPOSTRequestBody::new(
+) -> Result<POSTResponseBody, RequestError> {
+    let body = POSTRequestBody::new(
         player_internal_id.to_string(),
         player_name.to_string(),
         discussion_channel.get_internal_id().to_string(),
@@ -34,7 +34,7 @@ pub async fn post<T: DiscussionChannel>(
     // use _ref so res is not consumed
     match res.error_for_status_ref() {
         Ok(_) => {
-            let response = res.json::<JoinPOSTResponseBody>().await?;
+            let response = res.json::<POSTResponseBody>().await?;
             Ok(response)
         }
         Err(r) => {

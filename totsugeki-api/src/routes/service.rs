@@ -16,10 +16,10 @@ struct ServiceRegisterPOST {
 }
 
 /// Service Api
-pub struct ServiceApi;
+pub struct Api;
 
 #[OpenApi]
-impl ServiceApi {
+impl Api {
     #[oai(path = "/service/register/:name/:description", method = "post")]
     /// Create new service api user and returns identifier and token
     async fn register_api_service<'a>(

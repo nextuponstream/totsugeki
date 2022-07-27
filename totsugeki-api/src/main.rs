@@ -1,22 +1,14 @@
-use log::error;
 use poem::listener::{Listener, RustlsCertificate, RustlsConfig, TcpListener};
-use poem::EndpointExt;
 use poem::Result;
 use poem::Route;
-use poem::{http::Method, middleware::Cors};
 use poem_openapi::{OpenApi, OpenApiService};
-use std::boxed::Box;
 use std::env;
-use std::sync::Arc;
-use totsugeki::ReadLock;
-use totsugeki_api::hmac;
-use totsugeki_api::persistence::inmemory::InMemoryDBAccessor;
-use totsugeki_api::persistence::DBAccessor;
-use totsugeki_api::routes::bracket::BracketApi;
-use totsugeki_api::routes::join::JoinApi;
-use totsugeki_api::routes::organiser::OrganiserApi;
-use totsugeki_api::routes::service::ServiceApi;
-use totsugeki_api::routes::test_utils::TestUtilsApi;
+use totsugeki_api::routes::bracket::Api as BracketApi;
+use totsugeki_api::routes::health_check::Api as HealthcheckApi;
+use totsugeki_api::routes::join::Api as JoinApi;
+use totsugeki_api::routes::organiser::Api as OrganiserApi;
+use totsugeki_api::routes::service::Api as ServiceApi;
+use totsugeki_api::{oai_test_service, route_with_data, DatabaseType};
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
@@ -28,64 +20,48 @@ async fn main() -> Result<(), std::io::Error> {
     let addr = env::var("API_ADDR").expect("API_ADDR");
     let port = env::var("API_PORT").expect("API_PORT");
     let full_addr = format!("{addr}:{port}");
+    let db_type = env::var("API_DATABASE_TYPE").expect("API_DATABASE_TYPE");
+    let db_type = db_type.parse::<DatabaseType>().expect("database type");
     if testing_mode {
         serve_server(
-            OpenApiService::new(
-                (BracketApi, OrganiserApi, ServiceApi, JoinApi, TestUtilsApi),
-                env!("CARGO_PKG_NAME"),
-                env!("CARGO_PKG_VERSION"),
-            )
-            .server(format!("https://{full_addr}")),
+            oai_test_service().server(format!("https://{full_addr}")),
             &full_addr,
+            db_type,
         )
         .await
     } else {
         serve_server(
             OpenApiService::new(
-                (BracketApi, OrganiserApi, ServiceApi, JoinApi),
+                (
+                    BracketApi,
+                    OrganiserApi,
+                    ServiceApi,
+                    JoinApi,
+                    HealthcheckApi,
+                ),
                 env!("CARGO_PKG_NAME"),
                 env!("CARGO_PKG_VERSION"),
             )
             .server(format!("https://{full_addr}")),
             &full_addr,
+            db_type,
         )
         .await
     }
 }
 
-type Database = Box<dyn DBAccessor + Send + Sync>;
-
 async fn serve_server<T: OpenApi + 'static>(
     api_service: OpenApiService<T, ()>,
     full_addr: &str,
+    db_type: DatabaseType,
 ) -> Result<(), std::io::Error> {
-    let ui = api_service.swagger_ui();
-
-    let db_type = env::var("API_DATABASE_TYPE").expect("API_DATABASE_TYPE");
-    let db: Database = match db_type.as_str() {
-        // TODO add postgres
-        "INMEMORY" => Box::new(InMemoryDBAccessor::default()) as Box<dyn DBAccessor + Send + Sync>,
-        _ => {
-            error!("could not parse API_DATABASE_TYPE");
-            panic!("could not parse API_DATABASE_TYPE")
-        }
-    };
-    let db = Arc::new(ReadLock::new(db));
-    db.read()
-        .expect("database")
-        .init()
-        .expect("initialise database");
-
-    let cors = Cors::new().allow_method(Method::GET);
     let server_key = env::var("API_KEY_PATH").expect("API_KEY_PATH");
     let server_key = std::fs::read(server_key).expect("could not read key");
-    let server_key = hmac(&server_key);
-    let app = Route::new()
-        .nest("/", api_service)
-        .nest("/swagger", ui)
-        .with(cors)
-        .data(db)
-        .data(server_key);
+
+    let ui = api_service.swagger_ui();
+    let app = Route::new().nest("/", api_service);
+    let app = app.nest("/swagger", ui);
+    let app = route_with_data(app, db_type, &server_key);
 
     let cert_path = env::var("API_CERT_PATH").expect("API_CERT_PATH");
     let key_path = env::var("API_PRIVATE_KEY_PATH").expect("API_PRIVATE_KEY_PATH");

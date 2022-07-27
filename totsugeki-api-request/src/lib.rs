@@ -44,7 +44,10 @@ impl From<reqwest::Error> for RequestError {
 
 impl std::error::Error for RequestError {}
 
-/// Use API endpoint to clean database for test purposes.
+/// Use API endpoint to clean database for test purposes
+///
+/// # Errors
+/// Returns an error when the api is unavailable
 pub async fn clean_database(
     client: reqwest::Client,
     tournament_server_url: &str,
@@ -60,6 +63,9 @@ pub async fn clean_database(
 }
 
 /// Get service API token for tests
+///
+/// # Errors
+/// Returns an error when the api is unavailable
 pub async fn get_service_token(
     client: reqwest::Client,
     tournament_server_url: &str,

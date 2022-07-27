@@ -7,95 +7,18 @@
 #![allow(clippy::unused_async)]
 #![warn(clippy::unwrap_used)]
 
-use bracket::{ActiveBrackets, Bracket, FinalizedBrackets};
-use organiser::OrganiserId;
+use bracket::ActiveBrackets;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use std::sync::{LockResult, RwLock, RwLockReadGuard};
-use std::{collections::HashMap, fmt::Display};
 use uuid::Uuid;
 
 pub mod bracket;
 pub mod join;
 pub mod organiser;
 
-/// A collection of brackets
-#[derive(Default)]
-pub struct Brackets {
-    brackets: Vec<Bracket>,
-}
-
-impl Brackets {
-    /// Create representation of brackets implementing `std::fmt::Display`
-    #[must_use]
-    pub fn new(brackets: Vec<Bracket>) -> Self {
-        Brackets { brackets }
-    }
-
-    /// Get brackets
-    #[must_use]
-    pub fn get_brackets(&self) -> Vec<Bracket> {
-        self.brackets.clone()
-    }
-}
-
-impl Display for Brackets {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for b in self.brackets.clone() {
-            b.fmt(f)?;
-        }
-        Ok(())
-    }
-}
-
 /// Discussion channel identifier
 pub type DiscussionChannelId = Uuid;
-
-/// Tournament organiser with TO's runnning brackets
-#[derive(Debug, PartialEq, Eq, Default, Serialize, Deserialize, Clone)]
-pub struct Organiser {
-    organiser_id: OrganiserId,
-    organiser_name: String,
-    active_brackets: ActiveBrackets,
-    finalized_brackets: FinalizedBrackets,
-    // TODO location type
-}
-
-impl Organiser {
-    /// Create new tournament organiser
-    pub fn new(name: String) -> Self {
-        Self {
-            organiser_id: Uuid::new_v4(),
-            organiser_name: name,
-            active_brackets: HashMap::new(),
-            finalized_brackets: HashMap::new(),
-        }
-    }
-
-    #[must_use]
-    /// Get organiser id
-    pub fn get_organiser_id(&self) -> OrganiserId {
-        self.organiser_id
-    }
-
-    #[must_use]
-    /// Get organiser name
-    pub fn get_organiser_name(&self) -> String {
-        self.organiser_name.clone()
-    }
-
-    #[must_use]
-    /// Get active brackets
-    pub fn get_active_brackets(&self) -> ActiveBrackets {
-        self.active_brackets.clone()
-    }
-
-    #[must_use]
-    /// Get finalized brackets
-    pub fn get_finalized_brackets(&self) -> FinalizedBrackets {
-        self.finalized_brackets.clone()
-    }
-}
 
 #[derive(Serialize, Deserialize)]
 /// Body of organiser POST request
@@ -127,6 +50,9 @@ impl<T> ReadLock<T> {
     }
 
     /// Give read handle over ressource
+    ///
+    /// # Errors
+    /// Returns an error if lock is poisoned
     pub fn read(&self) -> LockResult<RwLockReadGuard<'_, T>> {
         self.inner.read()
     }

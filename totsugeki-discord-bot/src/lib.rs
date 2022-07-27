@@ -14,7 +14,7 @@ use poem::error::ResponseError;
 use serenity::{model::id::ChannelId, prelude::TypeMapKey};
 use std::sync::Arc;
 use totsugeki::{DiscussionChannel, DiscussionChannelId};
-use totsugeki_api::InternalIdType;
+use totsugeki_api::Service;
 
 /// Tournament server
 pub struct TournamentServer {
@@ -86,7 +86,7 @@ impl DiscussionChannel for DiscordChannel {
     }
 
     fn get_service_type(&self) -> String {
-        InternalIdType::Discord.to_string()
+        Service::Discord.to_string()
     }
 }
 

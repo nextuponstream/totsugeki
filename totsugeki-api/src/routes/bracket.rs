@@ -1,11 +1,10 @@
 //! bracket routes
+use crate::bracket::{POSTResult, POST};
 use crate::log_error;
 use crate::persistence::Error;
 use crate::ApiKeyServiceAuthorization;
-use crate::BracketGETResponse;
-use crate::BracketPOST;
-use crate::BracketPOSTResult;
-use crate::InternalIdType;
+use crate::GETResponse;
+use crate::Service;
 use crate::SharedDb;
 use poem::http::StatusCode;
 use poem::Error as pError;
@@ -16,24 +15,24 @@ use poem_openapi::OpenApi;
 use totsugeki::bracket::Bracket;
 
 /// Bracket Api
-pub struct BracketApi;
+pub struct Api;
 
 #[OpenApi]
-impl BracketApi {
+impl Api {
     #[oai(path = "/bracket", method = "post")]
     async fn create_bracket<'a>(
         &self,
         db: SharedDb<'a>,
         _auth: ApiKeyServiceAuthorization,
-        bracket_request: Json<BracketPOST>,
-    ) -> Result<Json<BracketPOSTResult>> {
+        bracket_request: Json<POST>,
+    ) -> Result<Json<POSTResult>> {
         match insert_bracket(
             &db,
             bracket_request.bracket_name.as_str(),
             bracket_request.organiser_name.as_str(),
             bracket_request.organiser_internal_id.clone(),
             bracket_request.channel_internal_id.clone(),
-            bracket_request.service_type_id.clone(),
+            bracket_request.service_type_id.as_str(),
         ) {
             Ok(r) => Ok(Json(r)),
             Err(e) => {
@@ -48,7 +47,7 @@ impl BracketApi {
         &self,
         db: SharedDb<'a>,
         offset: Path<i64>,
-    ) -> Result<Json<Vec<BracketGETResponse>>> {
+    ) -> Result<Json<Vec<GETResponse>>> {
         match read_bracket(&db, offset.0) {
             Ok(brackets) => {
                 let mut b_api_vec = vec![];
@@ -71,12 +70,12 @@ impl BracketApi {
         db: SharedDb<'a>,
         bracket_name: Path<String>,
         offset: Path<i64>,
-    ) -> Result<Json<Vec<BracketGETResponse>>> {
+    ) -> Result<Json<Vec<GETResponse>>> {
         match find_bracket(&db, bracket_name.0.as_str(), offset.0) {
             Ok(brackets) => {
                 let mut b_api_vec = vec![];
                 for b in brackets {
-                    let b_api: BracketGETResponse = b.try_into()?;
+                    let b_api: GETResponse = b.try_into()?;
                     b_api_vec.push(b_api);
                 }
                 Ok(Json(b_api_vec))
@@ -108,14 +107,14 @@ fn insert_bracket<'a, 'b, 'c>(
     organiser_name: &'b str,
     organiser_id: String,
     internal_channel_id: String,
-    service_type_id: String,
-) -> Result<BracketPOSTResult, Error<'c>>
+    service_type_id: &str,
+) -> Result<POSTResult, Error<'c>>
 where
     'a: 'c,
     'b: 'c,
 {
     let db = db.read()?;
-    let service_type_id = match service_type_id.as_str().parse::<InternalIdType>() {
+    let service_type_id = match service_type_id.parse::<Service>() {
         Ok(v) => v,
         Err(e) => {
             return Err(Error::Parsing(format!("{e:?}")));
@@ -128,6 +127,7 @@ where
         internal_channel_id,
         service_type_id,
     )?;
+    let result = result.into();
     Ok(result)
 }
 

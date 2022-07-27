@@ -1,22 +1,22 @@
 //! In-memory database
 use crate::persistence::{DBAccessor, Error};
-use crate::{ApiServiceId, ApiServiceUser, BracketPOSTResult};
+use crate::{ApiServiceId, ApiServiceUser};
 use serenity::model::id::{ChannelId, GuildId, UserId};
 use serenity::model::misc::{ChannelIdParseError, UserIdParseError};
 use std::any::Any;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
-use totsugeki::bracket::BracketId;
-use totsugeki::join::JoinPOSTResponseBody;
-use totsugeki::organiser::OrganiserId;
+use totsugeki::bracket::Id as BracketId;
+use totsugeki::join::POSTResponseBody;
+use totsugeki::organiser::Id as OrganiserId;
 use totsugeki::{
-    bracket::{ActiveBrackets, Bracket},
+    bracket::{ActiveBrackets, Bracket, POSTResult},
     organiser::Organiser,
 };
 use totsugeki::{DiscussionChannelId, PlayerId};
 use uuid::Uuid;
 
-use super::{InternalIdType, ParseInternalIdTypeError};
+use super::{ParseServiceInternalIdError, Service};
 
 /// In-memory database
 #[derive(Default)]
@@ -69,15 +69,15 @@ impl DBAccessor for InMemoryDBAccessor {
         organiser_name: &'b str,
         internal_organiser_id: String,
         internal_channel_id: String,
-        internal_id_type: InternalIdType,
-    ) -> Result<BracketPOSTResult, Error<'c>> {
+        internal_id_type: Service,
+    ) -> Result<POSTResult, Error<'c>> {
         let mut db = self.db.write().expect("database"); // FIXME bubble up error
         let b = Bracket::new(bracket_name.to_string(), vec![]);
 
         // find if global id exists already for channel
         let mut discussion_channel_id = Uuid::new_v4(); // if channel is not registered yet
         match internal_id_type {
-            InternalIdType::Discord => {
+            Service::Discord => {
                 let internal_channel_id = match internal_channel_id.parse::<ChannelId>() {
                     Ok(v) => v,
                     Err(e) => {
@@ -98,7 +98,7 @@ impl DBAccessor for InMemoryDBAccessor {
         // find if global id already exists for organiser
         let mut organiser_id = Uuid::new_v4();
         match internal_id_type {
-            InternalIdType::Discord => {
+            Service::Discord => {
                 let id = match internal_organiser_id.parse::<u64>() {
                     Ok(v) => v,
                     Err(e) => {
@@ -140,7 +140,7 @@ impl DBAccessor for InMemoryDBAccessor {
 
         // use uuid of service, then id of discussion_channel_id as key to get organiser id as val in kv map
         db.brackets.insert(b.get_id(), b.clone());
-        Ok(BracketPOSTResult::new(
+        Ok(POSTResult::from(
             b.get_id(),
             organiser_id,
             discussion_channel_id,
@@ -177,7 +177,7 @@ impl DBAccessor for InMemoryDBAccessor {
     ) -> Result<Vec<Bracket>, Error<'c>> {
         let db = self.db.read().expect("database");
         let mut brackets = vec![];
-        for b in db.brackets.iter() {
+        for b in &db.brackets {
             if b.1.get_bracket_name() == bracket_name {
                 brackets.push(b.1.clone());
             }
@@ -211,15 +211,15 @@ impl DBAccessor for InMemoryDBAccessor {
         player_internal_id: &'b str,
         channel_internal_id: &'b str,
         service_type_id: &'b str,
-    ) -> Result<totsugeki::join::JoinPOSTResponseBody, Error<'c>> {
-        let service_type = service_type_id.parse::<InternalIdType>()?;
+    ) -> Result<totsugeki::join::POSTResponseBody, Error<'c>> {
+        let service_type = service_type_id.parse::<Service>()?;
         let mut player_id = PlayerId::new_v4();
 
         let mut db = self.db.write().expect("database"); // FIXME bubble up error
 
         // map internal service id to global id
         match service_type {
-            InternalIdType::Discord => {
+            Service::Discord => {
                 let player_internal_id = player_internal_id.parse::<UserId>()?;
                 let channel_internal_id = channel_internal_id.parse::<ChannelId>()?;
 
@@ -234,32 +234,33 @@ impl DBAccessor for InMemoryDBAccessor {
                     let bracket_id = db
                         .discussion_channel_active_brackets
                         .get(&discussion_channel_id)
-                        .ok_or(Error::Denied(
-                            "There is no active bracket in this discussion channel".to_string(),
-                        ))?;
+                        .ok_or_else(|| {
+                            Error::Denied(
+                                "There is no active bracket in this discussion channel".to_string(),
+                            )
+                        })?;
 
-                    let organiser_id =
-                        db.bracket_organiser
-                            .get(bracket_id)
-                            .ok_or(Error::Unknown(format!(
-                                "No organiser is responsible for bracket {bracket_id}"
-                            )))?;
+                    let organiser_id = db.bracket_organiser.get(bracket_id).ok_or_else(|| {
+                        Error::Unknown(format!(
+                            "No organiser is responsible for bracket {bracket_id}"
+                        ))
+                    })?;
 
-                    let body = JoinPOSTResponseBody {
+                    let body = POSTResponseBody {
                         player_id,
                         bracket_id: *bracket_id,
                         organiser_id: *organiser_id,
                     };
 
-                    let b = db.brackets.get(bracket_id).ok_or(Error::Unknown(format!(
-                        "no bracket found for id: \"{bracket_id}\""
-                    )))?;
+                    let b = db.brackets.get(bracket_id).ok_or_else(|| {
+                        Error::Unknown(format!("no bracket found for id: \"{bracket_id}\""))
+                    })?;
                     let mut players = b.get_players();
                     if !players.contains(&player_id) {
                         players.push(player_id);
                     }
                     let b = Bracket::from(b.get_id(), b.get_bracket_name(), players);
-                    db.brackets.insert(b.get_id(), b.clone());
+                    db.brackets.insert(b.get_id(), b);
 
                     Ok(body)
                 } else {
@@ -272,7 +273,7 @@ impl DBAccessor for InMemoryDBAccessor {
     fn list_brackets<'a, 'b>(&'a self, _offset: i64) -> Result<Vec<Bracket>, Error<'b>> {
         let db = self.db.read().expect("database"); // FIXME bubble up error
         let mut brackets = vec![];
-        for b in db.brackets.iter() {
+        for b in &db.brackets {
             brackets.push(b.1.clone());
         }
         Ok(brackets)
@@ -290,10 +291,10 @@ impl DBAccessor for InMemoryDBAccessor {
             .collect())
     }
 
-    fn list_service_api_user<'a, 'b, 'c>(
+    fn list_service_api_user<'a, 'b>(
         &'a self,
         _offset: i64,
-    ) -> Result<Vec<crate::ApiServiceUser>, Error<'c>> {
+    ) -> Result<Vec<crate::ApiServiceUser>, Error<'b>> {
         let db = self.db.read().expect("database"); // FIXME bubble up error
         let api_service_users = db
             .api_services
@@ -329,8 +330,8 @@ impl From<UserIdParseError> for Error<'_> {
     }
 }
 
-impl From<ParseInternalIdTypeError> for Error<'_> {
-    fn from(e: ParseInternalIdTypeError) -> Self {
+impl From<ParseServiceInternalIdError> for Error<'_> {
+    fn from(e: ParseServiceInternalIdError) -> Self {
         Self::Parsing(format!("{e:?}")) // FIXME bubble up error and implement display instead of using String
     }
 }
