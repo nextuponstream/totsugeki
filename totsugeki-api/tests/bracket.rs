@@ -1,5 +1,5 @@
 /// test /bracket
-mod common;
+pub mod common;
 
 use common::{
     bracket::{parse_bracket_get_response, parse_bracket_post_response},

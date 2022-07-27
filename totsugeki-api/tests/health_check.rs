@@ -1,6 +1,8 @@
 //! test /health_check
 
-mod common;
+// NOTE: shared test modules needs to be public so dead code warning are not
+// raised when using module but not all function are used
+pub mod common;
 
 use common::{db_types_to_test, test_api};
 

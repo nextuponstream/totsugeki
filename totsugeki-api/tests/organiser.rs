@@ -1,11 +1,10 @@
 // test /organiser endpoint
 
-mod common;
-
-use std::collections::{HashMap, HashSet};
+pub mod common;
 
 use common::{bracket::parse_bracket_post_response, db_types_to_test, test_api};
 use poem::test::TestJson;
+use std::collections::{HashMap, HashSet};
 use totsugeki::{
     bracket::{BracketId, BracketPOST, FinalizedBrackets},
     organiser::{Organiser, OrganiserId},
