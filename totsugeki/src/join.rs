@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{bracket::Id as BracketId, organiser::Id as OrganiserId, PlayerId};
+use crate::{bracket::Id as BracketId, organiser::Id as OrganiserId, player::Id as PlayerId};
 
 /// /join POST response body
 #[derive(Debug, Deserialize)]
