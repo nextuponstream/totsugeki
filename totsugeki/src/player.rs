@@ -68,12 +68,6 @@ impl Players {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        bracket::{Bracket, Format},
-        matches::Match,
-        player::Id as PlayerId,
-        seeding::Method as SeedingMethod,
-    };
 
     #[test]
     fn adding_two_same_players_returns_error() {
