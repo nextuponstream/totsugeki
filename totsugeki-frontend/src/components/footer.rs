@@ -1,6 +1,9 @@
+//! Footer component
+
 use yew::prelude::*;
 use yew_icons::{Icon, IconId};
 
+/// Footer web component
 pub struct Footer;
 
 impl Component for Footer {

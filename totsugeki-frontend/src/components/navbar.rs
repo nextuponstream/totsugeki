@@ -1,14 +1,19 @@
+//! Navigation bar component
+
 use crate::routes::Route;
 use yew::prelude::*;
 use yew::{html, Component};
 use yew_router::prelude::*;
 
+/// Update navigation bar component
 pub enum Msg {
+    /// Toggle navigation bar on small screen
     ToggleNavbar,
 }
 
 /// Navigation bar component
 pub struct Navbar {
+    /// Visibility of the navigation bar
     navbar_active: bool,
 }
 
