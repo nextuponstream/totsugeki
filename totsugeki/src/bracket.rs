@@ -1,12 +1,44 @@
-//! Bracket object
+//! Bracket domain
 
-use crate::{organiser::Id as OrganiserId, DiscussionChannelId, PlayerId};
+use crate::{
+    matches::Match,
+    organiser::Id as OrganiserId,
+    player::{Id as PlayerId, Players},
+    seeding::{
+        get_balanced_round_matches_top_seed_favored, seed, Error as SeedingError,
+        Method as SeedingMethod,
+    },
+    DiscussionChannelId,
+};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
     fmt::Display,
 };
 use uuid::Uuid;
+
+/// Error while manipulating brackets
+#[derive(Debug)]
+pub enum Error {
+    /// Error while seeding a bracket
+    Seeding(SeedingError),
+    /// Missing argument
+    MissingArgument,
+}
+
+/// All bracket formats
+#[derive(PartialEq, Eq, Clone, Deserialize, Serialize, Debug)]
+pub enum Format {
+    /// Single elimination tournament
+    SingleElimination,
+    // TODO add other style of tournament
+}
+
+impl Default for Format {
+    fn default() -> Self {
+        Self::SingleElimination // TODO set to DoubleElimination when implemented
+    }
+}
 
 /// Active brackets
 pub type ActiveBrackets = HashMap<DiscussionChannelId, Id>;
@@ -47,11 +79,25 @@ impl POST {
 }
 
 /// Bracket for a tournament
+///
+/// Seeding is important: <https://youtu.be/ZGoIIV55hEc?t=108>
+///
+/// TLDR: do not match good players against each other early on so good players
+/// don't end up below players they would have beaten otherwise
+// TODO add factor to not match local players against each other
+// idea: 1st and 2nd player get placed separately, then try to avoid matching
+// any two players from the same local for the first round at least. What you
+// would really want is to put players from the same local as far away from
+// each of them as possible
 #[derive(Debug, PartialEq, Eq, Default, Serialize, Deserialize, Clone)]
 pub struct Bracket {
     bracket_id: Id,
     bracket_name: String,
     players: Vec<PlayerId>,
+    is_seeded: bool,
+    matches: Vec<Vec<Match>>,
+    format: Format,
+    seeding_method: SeedingMethod,
 }
 
 impl Display for Bracket {
@@ -96,22 +142,41 @@ impl Display for Brackets {
 impl Bracket {
     /// Create new bracket
     #[must_use]
-    pub fn new(bracket_name: String, players: Vec<PlayerId>) -> Self {
+    pub fn new(
+        bracket_name: String,
+        players: Vec<PlayerId>,
+        format: Format,
+        seeding_method: SeedingMethod,
+    ) -> Self {
         // TODO add check where registration_start_time < beginning_start_time
         Bracket {
             bracket_id: Uuid::new_v4(),
             bracket_name,
             players,
+            is_seeded: false,
+            matches: vec![],
+            format,
+            seeding_method,
         }
     }
 
     /// Create from existing bracket
     #[must_use]
-    pub fn from(id: Id, bracket_name: String, players: Vec<PlayerId>) -> Self {
+    pub fn from(
+        id: Id,
+        bracket_name: String,
+        players: Vec<PlayerId>,
+        format: Format,
+        seeding_method: SeedingMethod,
+    ) -> Self {
         Self {
             bracket_id: id,
             bracket_name,
             players,
+            is_seeded: false,
+            matches: vec![],
+            format,
+            seeding_method,
         }
     }
 
@@ -131,6 +196,37 @@ impl Bracket {
     #[must_use]
     pub fn get_players(&self) -> Vec<PlayerId> {
         self.players.clone()
+    }
+
+    /// Seed bracket
+    ///
+    /// # Errors
+    /// Returns an error if necessary arguments for seeding are missing
+    pub fn seed(self, players: Option<Players>) -> Result<Bracket, Error> {
+        let matches: Vec<Vec<Match>> = match self.format {
+            Format::SingleElimination => match players {
+                Some(players) => {
+                    let players = seed(&self.seeding_method, players)?;
+                    get_balanced_round_matches_top_seed_favored(&players)
+                }
+                None => return Err(Error::MissingArgument),
+            },
+        };
+        let mut bracket = self;
+        bracket.matches = matches;
+        Ok(bracket)
+    }
+
+    /// Get matches
+    #[must_use]
+    pub fn get_matches(&self) -> Vec<Vec<Match>> {
+        self.matches.clone()
+    }
+}
+
+impl From<SeedingError> for Error {
+    fn from(e: SeedingError) -> Self {
+        Self::Seeding(e)
     }
 }
 
