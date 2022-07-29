@@ -1,13 +1,15 @@
 //! Tournament server properties
 use yew::{html::IntoPropValue, Properties};
 
-/// Tournament server as seen by a component
+/// Totsugeki api as seen by a component
 #[derive(Clone, PartialEq)]
-pub struct TournamentServer {
+pub struct Api {
+    /// url of the API
     addr: String,
 }
 
-impl TournamentServer {
+impl Api {
+    /// Returns the API url
     pub fn get_backend_addr(&self) -> String {
         self.addr.clone()
     }
@@ -16,7 +18,8 @@ impl TournamentServer {
 /// Properties needed to interact with tournament server
 #[derive(PartialEq, Properties)]
 pub struct Props {
-    pub props: TournamentServer,
+    /// API
+    pub props: Api,
 }
 
 impl Default for Props {
@@ -29,14 +32,14 @@ impl Default for Props {
             format!("{addr}:{port}")
         };
         Self {
-            props: TournamentServer { addr },
+            props: Api { addr },
         }
     }
 }
 
-impl IntoPropValue<TournamentServer> for Props {
-    fn into_prop_value(self) -> TournamentServer {
-        TournamentServer {
+impl IntoPropValue<Api> for Props {
+    fn into_prop_value(self) -> Api {
+        Api {
             addr: self.props.addr,
         }
     }

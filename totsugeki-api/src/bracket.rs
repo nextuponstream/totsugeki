@@ -4,7 +4,8 @@ use serde::{Deserialize, Serialize};
 use totsugeki::{
     bracket::{Bracket, Id as BracketId},
     organiser::Id as OrganiserId,
-    DiscussionChannelId, PlayerId,
+    player::Id as PlayerId,
+    DiscussionChannelId,
 };
 
 #[derive(Serialize, Deserialize, Object)]

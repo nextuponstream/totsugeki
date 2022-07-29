@@ -1,7 +1,7 @@
 //! join request body and response
 
 use poem_openapi::Object;
-use totsugeki::{bracket::Id as BracketId, organiser::Id as OrganiserId, PlayerId};
+use totsugeki::{bracket::Id as BracketId, organiser::Id as OrganiserId, player::Id as PlayerId};
 
 /// POST request to /join endpoint
 #[derive(Object)]

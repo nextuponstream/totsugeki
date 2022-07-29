@@ -1,7 +1,10 @@
+//! Home page
+
 use yew::Context;
 use yew::{html, Component};
 use yew_icons::{Icon, IconId};
 
+/// Home page
 pub struct Home;
 
 impl Component for Home {

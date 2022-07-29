@@ -1,4 +1,6 @@
-use crate::common::tournament_server::Props;
+//! Page displaying many brackets
+
+use crate::common::api::Props;
 use crate::get_client;
 use totsugeki::bracket::Bracket;
 use totsugeki_api_request::{bracket::fetch, RequestError};
@@ -6,27 +8,37 @@ use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew::{html, Component, Context, Html};
 
-pub struct BracketViewCore {
+/// View of many brackets
+pub struct View {
+    /// state of the page fetch request to display a bracket list
     fetch_state: FetchState<Vec<Bracket>>,
+    /// html nodes over the filter input and search button
     refs: Vec<NodeRef>,
+    /// indicate if a user facing error message should be displayed for the offset input
     input_error_offset: bool,
 }
 
-/// The possible states a fetch request can be in.
+/// States of a bracket list fetch request
 pub enum FetchState<T> {
+    /// Page is not fetching brackets
     NotFetching,
+    /// Page is fetching brackets
     Fetching,
+    /// Page has successfully fetched
     Success(T),
+    /// Failure to fetch
     Failed(RequestError),
 }
 
 /// Update bracket view
 pub enum Msg {
+    /// Update UI with bracket list
     GetBrackets,
+    /// Update view after API call to fetch bracket
     SetBracketsFetchState(FetchState<Vec<Bracket>>),
 }
 
-impl Component for BracketViewCore {
+impl Component for View {
     type Message = Msg;
     type Properties = Props;
 
@@ -127,7 +139,8 @@ impl Component for BracketViewCore {
     }
 }
 
-fn filter_brackets(view_self: &BracketViewCore, ctx: &Context<BracketViewCore>) -> Html {
+/// Html view of bracket list
+fn filter_brackets(view_self: &View, ctx: &Context<View>) -> Html {
     html! {
         // NOTE: prevent_default prevents form from reopening the same page because of submit
         // button in a form

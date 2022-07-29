@@ -1,6 +1,8 @@
-//! idk bro
+//! Frontend of Totsugeki
+
 #![recursion_limit = "512"]
 #![deny(missing_docs)]
+#![deny(clippy::missing_docs_in_private_items)]
 #![deny(rustdoc::invalid_codeblock_attributes)]
 #![warn(rustdoc::bare_urls)]
 #![deny(rustdoc::broken_intra_doc_links)]

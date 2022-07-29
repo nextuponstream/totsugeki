@@ -2139,6 +2139,7 @@ dependencies = [
 name = "totsugeki"
 version = "0.1.0"
 dependencies = [
+ "rand",
  "reqwest",
  "serde",
  "uuid",

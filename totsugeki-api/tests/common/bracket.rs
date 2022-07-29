@@ -2,9 +2,11 @@
 
 use poem::test::TestJson;
 use totsugeki::{
-    bracket::{Bracket, Id as BracketId, POSTResult},
+    bracket::{Bracket, Format, Id as BracketId, POSTResult},
     organiser::Id as OrganiserId,
-    DiscussionChannelId, PlayerId,
+    player::Id as PlayerId,
+    seeding::Method,
+    DiscussionChannelId,
 };
 
 pub fn parse_bracket_post_response(response: TestJson) -> POSTResult {
@@ -33,7 +35,13 @@ pub fn parse_bracket_get_response(response: TestJson) -> Vec<Bracket> {
                 .iter()
                 .map(|p| PlayerId::parse_str(p).expect("player id"))
                 .collect();
-            Bracket::from(bracket_id, bracket_name.to_string(), players)
+            Bracket::from(
+                bracket_id,
+                bracket_name.to_string(),
+                players,
+                Format::SingleElimination, // FIXME use argument
+                Method::Strict,            // FIXME use argument
+            )
         })
         .collect()
 }

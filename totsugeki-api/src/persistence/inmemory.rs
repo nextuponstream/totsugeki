@@ -6,14 +6,15 @@ use serenity::model::misc::{ChannelIdParseError, UserIdParseError};
 use std::any::Any;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
-use totsugeki::bracket::Id as BracketId;
+use totsugeki::bracket::{Format, Id as BracketId};
 use totsugeki::join::POSTResponseBody;
 use totsugeki::organiser::Id as OrganiserId;
+use totsugeki::seeding::Method;
 use totsugeki::{
     bracket::{ActiveBrackets, Bracket, POSTResult},
     organiser::Organiser,
 };
-use totsugeki::{DiscussionChannelId, PlayerId};
+use totsugeki::{player::Id as PlayerId, DiscussionChannelId};
 use uuid::Uuid;
 
 use super::{ParseServiceInternalIdError, Service};
@@ -72,7 +73,12 @@ impl DBAccessor for InMemoryDBAccessor {
         internal_id_type: Service,
     ) -> Result<POSTResult, Error<'c>> {
         let mut db = self.db.write().expect("database"); // FIXME bubble up error
-        let b = Bracket::new(bracket_name.to_string(), vec![]);
+        let b = Bracket::new(
+            bracket_name.to_string(),
+            vec![],
+            Format::SingleElimination, // FIXME use argument
+            Method::Strict,            // FIXME use argument
+        );
 
         // find if global id exists already for channel
         let mut discussion_channel_id = Uuid::new_v4(); // if channel is not registered yet
@@ -259,7 +265,13 @@ impl DBAccessor for InMemoryDBAccessor {
                     if !players.contains(&player_id) {
                         players.push(player_id);
                     }
-                    let b = Bracket::from(b.get_id(), b.get_bracket_name(), players);
+                    let b = Bracket::from(
+                        b.get_id(),
+                        b.get_bracket_name(),
+                        players,
+                        Format::SingleElimination, // FIXME use argument
+                        Method::Strict,            // FIXME use argument
+                    );
                     db.brackets.insert(b.get_id(), b);
 
                     Ok(body)

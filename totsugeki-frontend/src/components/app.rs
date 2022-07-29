@@ -1,3 +1,5 @@
+//! App component (main container)
+
 use crate::components::footer::Footer;
 use crate::components::navbar::Navbar;
 use crate::routes::{switch, Route};
@@ -5,6 +7,7 @@ use yew::prelude::*;
 use yew::{html, Component};
 use yew_router::prelude::*;
 
+/// Main web container of frontend
 pub struct App;
 
 impl Component for App {

@@ -15,7 +15,10 @@ use uuid::Uuid;
 
 pub mod bracket;
 pub mod join;
+pub mod matches;
 pub mod organiser;
+pub mod player;
+pub mod seeding;
 
 /// Discussion channel identifier
 pub type DiscussionChannelId = Uuid;
@@ -96,6 +99,3 @@ impl ServiceRegisterPOST {
         self.token.clone()
     }
 }
-
-/// Player identifier
-pub type PlayerId = Uuid;
