@@ -1,4 +1,5 @@
 #![deny(missing_docs)]
+#![deny(clippy::missing_docs_in_private_items)]
 #![deny(rustdoc::invalid_codeblock_attributes)]
 #![warn(rustdoc::bare_urls)]
 #![deny(rustdoc::broken_intra_doc_links)]
@@ -18,7 +19,7 @@ pub mod bracket;
 pub mod join;
 pub mod organiser;
 
-// easily switch from http to https
+/// Helper for forming url
 const HTTP_PREFIX: &str = "https://";
 
 /// Error while making request to the tournament server
