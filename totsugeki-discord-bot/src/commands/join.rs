@@ -1,6 +1,6 @@
 //! join bracket as a player
 
-use crate::{get_client, DiscordChannel, TournamentServer};
+use crate::{get_client, Api, DiscordChannel};
 use reqwest::StatusCode;
 use serenity::{
     framework::standard::{macros::command, Args, CommandResult},
@@ -19,7 +19,7 @@ async fn join(ctx: &Context, msg: &Message, mut _args: Args) -> CommandResult {
     let tournament_server = {
         let data_read = ctx.data.read().await;
         data_read
-            .get::<TournamentServer>()
+            .get::<Api>()
             .expect("Expected TournamentServer in TypeMap.")
             .clone()
     };

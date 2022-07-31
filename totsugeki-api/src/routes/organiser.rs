@@ -3,7 +3,7 @@
 use crate::persistence::Error;
 use crate::ApiKeyServiceAuthorization;
 use crate::OrganiserGETResponse;
-use crate::OrganiserPOSTResponse;
+use crate::OrganiserPOSTRequest;
 use crate::SharedDb;
 use log::warn;
 use poem::Result;
@@ -17,14 +17,15 @@ pub struct Api;
 
 #[OpenApi]
 impl Api {
+    /// Create new organiser
     #[oai(path = "/organiser", method = "post")]
     async fn create_organiser<'a>(
         &self,
         db: SharedDb<'a>,
         _auth: ApiKeyServiceAuthorization,
-        organiser_request: Json<OrganiserPOSTResponse>,
+        organiser_request: Json<OrganiserPOSTRequest>,
     ) -> Result<()> {
-        match insert_organiser(&db, organiser_request.organiser_name.as_str()) {
+        match register_organiser(&db, organiser_request.organiser_name.as_str()) {
             Ok(()) => Ok(()),
             Err(e) => {
                 warn!("{e}");
@@ -33,13 +34,14 @@ impl Api {
         }
     }
 
+    /// List registered organisers
     #[oai(path = "/organiser/:offset", method = "get")]
     async fn list_organiser<'a>(
         &self,
         db: SharedDb<'a>,
         offset: Path<i64>,
     ) -> Result<Json<Vec<OrganiserGETResponse>>> {
-        match read_organiser(&db, offset.0) {
+        match list_registered_organisers(&db, offset.0) {
             Ok(os) => {
                 let mut o_api_vec = vec![];
                 for o in os {
@@ -55,6 +57,7 @@ impl Api {
         }
     }
 
+    /// Find a specific organiser by name
     #[oai(path = "/organiser/:organiser_name/:offset", method = "get")]
     async fn find_organiser<'a>(
         &self,
@@ -79,7 +82,11 @@ impl Api {
     }
 }
 
-fn insert_organiser<'a, 'b, 'c>(db: &'a SharedDb, organiser_name: &'b str) -> Result<(), Error<'c>>
+/// Call to register organiser made to database
+fn register_organiser<'a, 'b, 'c>(
+    db: &'a SharedDb,
+    organiser_name: &'b str,
+) -> Result<(), Error<'c>>
 where
     'a: 'c,
     'b: 'c,
@@ -89,7 +96,11 @@ where
     Ok(())
 }
 
-fn read_organiser<'a, 'b>(db: &'a SharedDb, offset: i64) -> Result<Vec<Organiser>, Error<'b>>
+/// List registered organiser
+fn list_registered_organisers<'a, 'b>(
+    db: &'a SharedDb,
+    offset: i64,
+) -> Result<Vec<Organiser>, Error<'b>>
 where
     'a: 'b,
 {
@@ -97,6 +108,7 @@ where
     db.list_organisers(offset)
 }
 
+/// Find registered organiser by `organiser_name`
 fn find_organiser<'a, 'b, 'c>(
     db: &'a SharedDb,
     organiser_name: &'b str,

@@ -2,16 +2,12 @@
 
 use std::collections::HashSet;
 
-use serenity::client::{Context, EventHandler};
+use serenity::client::Context;
 use serenity::framework::standard::macros::help;
 use serenity::framework::standard::{
     help_commands, Args, CommandGroup, CommandResult, HelpOptions,
 };
 use serenity::model::prelude::{Message, UserId};
-
-struct Handler;
-
-impl EventHandler for Handler {}
 
 #[help]
 #[lacking_permissions = "Hide"]

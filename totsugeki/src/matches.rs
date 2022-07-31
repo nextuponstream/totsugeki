@@ -17,11 +17,14 @@ type Opponent = Option<PlayerId>;
 /// A match between two players, resulting in a winner and a loser
 #[derive(Debug, Default, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct Match {
+    /// Two players from this match. One of the player can be a BYE opponent
     players: [Option<Opponent>; 2],
     /// seeds\[0\]: top seed
     /// seeds\[1\]: bottom seed
     seeds: [usize; 2],
+    /// The winner of this match
     winner: Option<Opponent>,
+    /// The looser of this match
     looser: Option<Opponent>,
 }
 

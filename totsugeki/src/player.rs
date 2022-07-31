@@ -8,6 +8,7 @@ pub type Id = Uuid;
 /// Players
 #[derive(Default, Debug, Clone)]
 pub struct Players {
+    /// players from this group
     players: Vec<Id>,
 }
 

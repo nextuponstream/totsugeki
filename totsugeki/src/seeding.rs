@@ -61,6 +61,7 @@ pub fn seed(method: &Method, players: Players) -> Result<Players, Error> {
     }
 }
 
+/// Matches from bracket, sorted by rounds
 struct RoundMatches(Vec<Vec<Match>>);
 
 impl std::fmt::Display for RoundMatches {

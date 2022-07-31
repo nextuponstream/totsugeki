@@ -19,6 +19,7 @@ pub struct Api;
 
 #[OpenApi]
 impl Api {
+    /// Create a new active bracket in issued discussion channel
     #[oai(path = "/bracket", method = "post")]
     async fn create_bracket<'a>(
         &self,
@@ -26,7 +27,7 @@ impl Api {
         _auth: ApiKeyServiceAuthorization,
         bracket_request: Json<POST>,
     ) -> Result<Json<POSTResult>> {
-        match insert_bracket(
+        match create_new_active_bracket(
             &db,
             bracket_request.bracket_name.as_str(),
             bracket_request.organiser_name.as_str(),
@@ -42,13 +43,14 @@ impl Api {
         }
     }
 
+    /// List registered brackets
     #[oai(path = "/bracket/:offset", method = "get")]
     async fn list_bracket<'a>(
         &self,
         db: SharedDb<'a>,
         offset: Path<i64>,
     ) -> Result<Json<Vec<GETResponse>>> {
-        match read_bracket(&db, offset.0) {
+        match list_brackets(&db, offset.0) {
             Ok(brackets) => {
                 let mut b_api_vec = vec![];
                 for b in brackets {
@@ -101,7 +103,8 @@ impl<'a> From<Error<'a>> for pError {
     }
 }
 
-fn insert_bracket<'a, 'b, 'c>(
+/// Database call to create new active bracket from issued discussion channel
+fn create_new_active_bracket<'a, 'b, 'c>(
     db: &'a SharedDb,
     bracket_name: &'b str,
     organiser_name: &'b str,
@@ -131,7 +134,8 @@ where
     Ok(result)
 }
 
-fn read_bracket<'a, 'b>(db: &'a SharedDb, offset: i64) -> Result<Vec<Bracket>, Error<'b>>
+/// Call to database to list registered bracket
+fn list_brackets<'a, 'b>(db: &'a SharedDb, offset: i64) -> Result<Vec<Bracket>, Error<'b>>
 where
     'a: 'b,
 {
@@ -139,6 +143,7 @@ where
     db.list_brackets(offset)
 }
 
+/// Call to database to find bracket named `bracket_name`
 fn find_bracket<'a, 'b, 'c>(
     db: &'a SharedDb,
     bracket_name: &'b str,

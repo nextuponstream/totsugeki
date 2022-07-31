@@ -1,5 +1,5 @@
 //! Find bracket by name
-use crate::{get_client, TournamentServer};
+use crate::{get_client, Api};
 use log::error;
 use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandResult};
@@ -18,7 +18,7 @@ async fn find(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let tournament_server = {
         let data_read = ctx.data.read().await;
         data_read
-            .get::<TournamentServer>()
+            .get::<Api>()
             .expect("Expected TournamentServer in TypeMap.")
             .clone()
     };

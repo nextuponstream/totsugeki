@@ -3,7 +3,6 @@ use crate::persistence::{DBAccessor, Error};
 use crate::{ApiServiceId, ApiServiceUser};
 use serenity::model::id::{ChannelId, GuildId, UserId};
 use serenity::model::misc::{ChannelIdParseError, UserIdParseError};
-use std::any::Any;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use totsugeki::bracket::{Format, Id as BracketId};
@@ -22,6 +21,7 @@ use super::{ParseServiceInternalIdError, Service};
 /// In-memory database
 #[derive(Default)]
 pub struct InMemoryDBAccessor {
+    /// Lock over in-memory database
     db: Arc<RwLock<InMemoryDatabase>>,
 }
 
@@ -31,10 +31,13 @@ type DiscordInternalChannels = HashMap<ChannelId, DiscussionChannelId>;
 /// Link internal discord guild id to organiser id
 type DiscordInternalGuilds = HashMap<GuildId, OrganiserId>;
 
+/// Link discord users to Totsugeki users
 type DiscordInternalUsers = HashMap<UserId, PlayerId>;
 
+/// Active bracket in discussion channel
 type DiscussionChannelActiveBrackets = HashMap<DiscussionChannelId, BracketId>;
 
+/// Organiser of bracket
 type BracketOrganiser = HashMap<BracketId, OrganiserId>;
 
 /// In memory database
@@ -42,16 +45,21 @@ type BracketOrganiser = HashMap<BracketId, OrganiserId>;
 pub struct InMemoryDatabase {
     // TODO find out if you need internal mapping per discord Api service
     // my guess is you don't need
+    /// All registered brackets
     brackets: HashMap<BracketId, Bracket>,
+    /// All registered organisers
     organisers: HashMap<OrganiserId, Organiser>,
+    /// Alll registered api services users
     api_services: HashMap<ApiServiceId, (String, String)>,
-    service_organisers: Vec<(ApiServiceId, Box<dyn Any + Send + Sync>, OrganiserId)>,
     /// Maps to discussion channels id
     discord_internal_channel: DiscordInternalChannels,
     /// Maps to organiser id
     discord_internal_guilds: DiscordInternalGuilds,
+    /// All registered discord users who are Totsugeki users
     discord_internal_users: DiscordInternalUsers,
+    /// Find quickly active brackets with discussion channel ID
     discussion_channel_active_brackets: DiscussionChannelActiveBrackets,
+    /// All organisers of brackets
     bracket_organiser: BracketOrganiser,
 }
 
@@ -60,7 +68,6 @@ impl DBAccessor for InMemoryDBAccessor {
         let mut db = self.db.write().expect("database"); // FIXME bubble up error
         db.brackets = HashMap::new();
         db.organisers = HashMap::new();
-        db.service_organisers = vec![];
         Ok(())
     }
 

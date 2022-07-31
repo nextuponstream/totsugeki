@@ -32,8 +32,11 @@ pub struct POST {
 // necessary traits into their own structs.
 #[derive(Object, Serialize, Deserialize)]
 pub struct GETResponse {
+    /// Identifier of bracket
     bracket_id: BracketId,
+    /// Name of this bracket
     bracket_name: String,
+    /// Players in this bracket
     players: Vec<PlayerId>,
 }
 

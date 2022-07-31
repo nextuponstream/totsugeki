@@ -9,9 +9,12 @@ use poem_openapi::Object;
 use poem_openapi::{param::Path, payload::Json, OpenApi};
 use totsugeki::ServiceId;
 
+/// Register response for new service to the api
 #[derive(Object)]
 struct ServiceRegisterPOST {
+    /// Id of newly registered service
     id: ServiceId,
+    /// Token for registered service
     token: String,
 }
 
@@ -20,8 +23,8 @@ pub struct Api;
 
 #[OpenApi]
 impl Api {
+    /// Create new service api user
     #[oai(path = "/service/register/:name/:description", method = "post")]
-    /// Create new service api user and returns identifier and token
     async fn register_api_service<'a>(
         &self,
         db: SharedDb<'a>,
@@ -38,6 +41,7 @@ impl Api {
         Ok(Json(ServiceRegisterPOST { id, token }))
     }
 
+    /// List all registered services
     #[oai(path = "/service/register/:offset", method = "get")]
     async fn list_api_service<'a>(
         &self,
@@ -49,6 +53,7 @@ impl Api {
     }
 }
 
+/// Call to register service made to database
 fn register_service<'a, 'b, 'c>(
     db: &'a SharedDb,
     service_name: &'b str,
@@ -63,6 +68,7 @@ where
     Ok(id)
 }
 
+/// Cal to list services made to database
 fn list_services<'a, 'b>(db: &'a SharedDb, offset: i64) -> Result<Vec<ApiServiceUser>, Error<'b>>
 where
     'a: 'b,

@@ -10,6 +10,7 @@ pub struct Api;
 
 #[OpenApi]
 impl Api {
+    /// Clean database for tests
     #[oai(path = "/clean", method = "delete")]
     async fn clean_database<'a>(
         &self,
@@ -24,6 +25,7 @@ impl Api {
     }
 }
 
+/// Call database and clean data
 fn clean_database<'a, 'b>(db: &'a SharedDb) -> Result<(), Error<'b>>
 where
     'a: 'b,

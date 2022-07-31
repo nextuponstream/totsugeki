@@ -1,7 +1,7 @@
 //! Create bracket
 
 use crate::get_client;
-use crate::{DiscordChannel, TournamentServer};
+use crate::{Api, DiscordChannel};
 use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::channel::Message;
@@ -19,7 +19,7 @@ async fn create(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let tournament_server = {
         let data_read = ctx.data.read().await;
         data_read
-            .get::<TournamentServer>()
+            .get::<Api>()
             .expect("Expected TournamentServer in TypeMap.")
             .clone()
     };
