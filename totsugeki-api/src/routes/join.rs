@@ -12,7 +12,7 @@ pub struct Api;
 
 #[OpenApi]
 impl Api {
-    /// Let player join bracket from organiser
+    /// Let player join active bracket in issued discussion channel
     #[oai(path = "/join", method = "post")]
     async fn join_bracket<'a>(
         &self,
@@ -30,6 +30,7 @@ impl Api {
     }
 }
 
+/// Call to database for player to join active bracket in discussion channel
 fn join<'a, 'b>(db: &'a SharedDb, j: &POSTRequest) -> Result<POSTResponse, Error<'b>>
 where
     'a: 'b,

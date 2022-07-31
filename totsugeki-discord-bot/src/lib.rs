@@ -1,6 +1,7 @@
 //! discord commands
 
 #![deny(missing_docs)]
+#![deny(clippy::missing_docs_in_private_items)]
 #![deny(rustdoc::invalid_codeblock_attributes)]
 #![warn(rustdoc::bare_urls)]
 #![deny(rustdoc::broken_intra_doc_links)]
@@ -17,23 +18,27 @@ use totsugeki::{DiscussionChannel, DiscussionChannelId};
 use totsugeki_api::Service;
 
 /// Tournament server
-pub struct TournamentServer {
+pub struct Api {
+    /// url of Api
     addr: String,
+    /// Api port (for local for local development)
     port: Option<String>,
+    /// Parameter to accept self-signed certificate (for local development)
     accept_invalid_certs: bool,
+    /// Authorization header to use api as registered user
     authorization_header: String,
 }
 
-impl TypeMapKey for TournamentServer {
+impl TypeMapKey for Api {
     // While you will be using RwLock or Mutex most of the time you want to modify data,
     // sometimes it's not required; like for example, with static data, or if you are using other
     // kinds of atomic operators.
     //
     // Arc should stay, to allow for the data lock to be closed early.
-    type Value = Arc<TournamentServer>;
+    type Value = Arc<Api>;
 }
 
-impl TournamentServer {
+impl Api {
     /// Create a new tournament server
     #[must_use]
     pub fn new(
@@ -42,7 +47,7 @@ impl TournamentServer {
         accept_invalid_certs: bool,
         authorization_header: String,
     ) -> Self {
-        TournamentServer {
+        Api {
             addr,
             port,
             accept_invalid_certs,
@@ -70,7 +75,9 @@ impl TournamentServer {
 /// Discord discussion channel
 #[derive(Debug, Clone)]
 pub struct DiscordChannel {
+    /// Api identifier of this discord channel
     channel_id: Option<DiscussionChannelId>,
+    /// Discord identifier of this discussion channel
     internal_id: ChannelId,
 }
 

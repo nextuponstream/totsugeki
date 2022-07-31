@@ -1,4 +1,5 @@
 #![deny(missing_docs)]
+#![deny(clippy::missing_docs_in_private_items)]
 #![deny(rustdoc::invalid_codeblock_attributes)]
 #![warn(rustdoc::bare_urls)]
 #![deny(rustdoc::broken_intra_doc_links)]
@@ -55,11 +56,13 @@ pub fn hmac(server_key: &[u8]) -> Hmac<Sha256> {
 }
 
 #[derive(Serialize, Deserialize, Object)]
-/// Organiser POST body response
-pub struct OrganiserPOSTResponse {
+/// Organiser POST request body
+pub struct OrganiserPOSTRequest {
+    /// Name of the organiser to create
     organiser_name: String,
 }
 
+/// Log error are the appropriate level
 fn log_error(e: &Error) {
     match e {
         Error::PoisonedReadLock(e) => error!("{e}"),
@@ -90,9 +93,13 @@ pub type FinalizedBrackets = HashSet<BracketId>;
 #[derive(Object, Serialize, Deserialize)]
 /// Organiser GET response
 pub struct OrganiserGETResponse {
+    /// Identifier of the organiser
     organiser_id: OrganiserId,
+    /// Name of the organiser
     organiser_name: String,
+    /// Active bracket managed by this organiser
     active_brackets: ActiveBrackets,
+    /// Finalized bracket from this organiser
     finalized_brackets: FinalizedBrackets,
 }
 
@@ -102,8 +109,11 @@ type ApiServiceId = Uuid;
 /// Api service
 #[derive(Object, Serialize, Deserialize)]
 pub struct ApiServiceUser {
+    /// Identifier of this service
     id: ApiServiceId,
+    /// Name of this service
     name: String,
+    /// A brief description of this service
     description: String,
 }
 
@@ -140,6 +150,7 @@ impl From<Organiser> for OrganiserGETResponse {
 )]
 pub struct ApiKeyServiceAuthorization(ApiServiceUser);
 
+/// Authorization check for `api_key` holder
 async fn api_checker(req: &Request, api_key: ApiKey) -> Option<ApiServiceUser> {
     let server_key = req.data::<ServerKey>().expect("server key");
     VerifyWithKey::<ApiServiceUser>::verify_with_key(api_key.key.as_str(), server_key).ok()
@@ -217,6 +228,7 @@ impl From<DatabaseType> for Database {
     }
 }
 
+/// Route type of Totsugeki api
 type TotsugekiEndpoint = poem::middleware::AddDataEndpoint<
     poem::middleware::AddDataEndpoint<
         poem::middleware::CorsEndpoint<Route>,

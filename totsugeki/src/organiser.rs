@@ -10,14 +10,19 @@ use crate::{bracket::Id as BracketId, ActiveBrackets};
 /// Organiser identifier
 pub type Id = Uuid;
 
+/// Brackets where players have finished playing
 type FinalizedBrackets = HashSet<BracketId>;
 
 /// Organiser of events
 #[derive(Debug, PartialEq, Eq, Default, Serialize, Deserialize, Clone)]
 pub struct Organiser {
+    /// Active brackets from organiser
     active_brackets: ActiveBrackets,
+    /// Finalized brackets from organiser
     finalized_brackets: FinalizedBrackets,
+    /// Identifier of organiser
     organiser_id: Id,
+    /// Name of the organiser
     organiser_name: String,
     // TODO location type
 }

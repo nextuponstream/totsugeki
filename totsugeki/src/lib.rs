@@ -1,4 +1,5 @@
 #![deny(missing_docs)]
+#![deny(clippy::missing_docs_in_private_items)]
 #![deny(rustdoc::invalid_codeblock_attributes)]
 #![warn(rustdoc::bare_urls)]
 #![deny(rustdoc::broken_intra_doc_links)]
@@ -41,6 +42,7 @@ impl OrganiserPOST {
 /// Read-only lock wrapper
 pub struct ReadLock<T> {
     // NOTE: needs to be made innaccessible within it's own module so noone can access inner.write()
+    /// underlying lock
     inner: RwLock<T>,
 }
 
@@ -82,7 +84,9 @@ pub trait DiscussionChannel {
 /// Response body
 #[derive(Deserialize)]
 pub struct ServiceRegisterPOST {
+    /// New service identifier
     id: ServiceId,
+    /// Authorization token for service with ID `id`
     token: String,
 }
 

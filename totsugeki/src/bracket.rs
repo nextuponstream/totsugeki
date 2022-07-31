@@ -53,8 +53,11 @@ pub struct POST {
     bracket_name: String,
     /// used to create missing organiser
     organiser_name: String,
+    /// Identifier of the organiser from the service (for instance: discord)
     organiser_internal_id: String,
+    /// Identifier of the discussion channel from service (for instance: discord)
     channel_internal_id: String,
+    /// Name of service. See totsugeki_api for a list of supported service
     service_type_id: String,
 }
 
@@ -91,12 +94,17 @@ impl POST {
 // each of them as possible
 #[derive(Debug, PartialEq, Eq, Default, Serialize, Deserialize, Clone)]
 pub struct Bracket {
+    /// Identifier of this bracket
     bracket_id: Id,
+    /// Name of this bracket
     bracket_name: String,
+    /// Players of this bracket
     players: Vec<PlayerId>,
-    is_seeded: bool,
+    /// Matches from this bracket, sorted by rounds
     matches: Vec<Vec<Match>>,
+    /// Bracket format
     format: Format,
+    /// Seeding method used for this bracket
     seeding_method: SeedingMethod,
 }
 
@@ -113,6 +121,7 @@ impl Display for Bracket {
 /// A collection of brackets
 #[derive(Default)]
 pub struct Brackets {
+    /// A collection of brackets
     brackets: Vec<Bracket>,
 }
 
@@ -153,7 +162,6 @@ impl Bracket {
             bracket_id: Uuid::new_v4(),
             bracket_name,
             players,
-            is_seeded: false,
             matches: vec![],
             format,
             seeding_method,
@@ -173,7 +181,6 @@ impl Bracket {
             bracket_id: id,
             bracket_name,
             players,
-            is_seeded: false,
             matches: vec![],
             format,
             seeding_method,

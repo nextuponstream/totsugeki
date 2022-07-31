@@ -5,7 +5,7 @@ use serenity::prelude::*;
 use std::env;
 use std::sync::Arc;
 use totsugeki_discord_bot::commands::{bracket::*, help::*, join::*, ping::*};
-use totsugeki_discord_bot::TournamentServer;
+use totsugeki_discord_bot::Api;
 
 #[group]
 #[commands(ping, join)]
@@ -50,8 +50,8 @@ async fn main() {
         let api_token_path =
             env::var("API_TOKEN_FOR_DISCORD_BOT_PATH").expect("API_TOKEN_FOR_DISCORD_BOT_PATH");
         let api_token = std::fs::read_to_string(api_token_path).expect("api token secret");
-        let server = TournamentServer::new(addr, port, accept_invalid_certs, api_token);
-        data.insert::<TournamentServer>(Arc::new(server));
+        let server = Api::new(addr, port, accept_invalid_certs, api_token);
+        data.insert::<Api>(Arc::new(server));
     }
 
     // start listening for events by starting a single shard
