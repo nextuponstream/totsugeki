@@ -1,10 +1,9 @@
 //! bracket routes
 use crate::bracket::{POSTResult, POST};
 use crate::log_error;
-use crate::persistence::Error;
+use crate::persistence::{BracketRequest, Error};
 use crate::ApiKeyServiceAuthorization;
 use crate::GETResponse;
-use crate::Service;
 use crate::SharedDb;
 use poem::http::StatusCode;
 use poem::Error as pError;
@@ -12,7 +11,7 @@ use poem::Result;
 use poem_openapi::param::Path;
 use poem_openapi::payload::Json;
 use poem_openapi::OpenApi;
-use totsugeki::bracket::Bracket;
+use totsugeki::bracket::{Bracket, Id as BracketId};
 
 /// Bracket Api
 pub struct Api;
@@ -25,16 +24,18 @@ impl Api {
         &self,
         db: SharedDb<'a>,
         _auth: ApiKeyServiceAuthorization,
-        bracket_request: Json<POST>,
+        r: Json<POST>,
     ) -> Result<Json<POSTResult>> {
-        match create_new_active_bracket(
-            &db,
-            bracket_request.bracket_name.as_str(),
-            bracket_request.organiser_name.as_str(),
-            bracket_request.organiser_internal_id.clone(),
-            bracket_request.channel_internal_id.clone(),
-            bracket_request.service_type_id.as_str(),
-        ) {
+        let db_request = BracketRequest {
+            bracket_name: r.bracket_name.as_str(),
+            bracket_format: r.format.as_str(),
+            seeding_method: r.seeding_method.as_str(),
+            organiser_name: r.organiser_name.as_str(),
+            organiser_internal_id: r.organiser_internal_id.as_str(),
+            internal_channel_id: r.channel_internal_id.as_str(),
+            service_type_id: r.service_type_id.as_str(),
+        };
+        match create_new_active_bracket(&db, db_request) {
             Ok(r) => Ok(Json(r)),
             Err(e) => {
                 log_error(&e);
@@ -43,8 +44,24 @@ impl Api {
         }
     }
 
+    /// Get specific bracket
+    #[oai(path = "/bracket/:bracket_id", method = "get")]
+    async fn get_bracket<'a>(
+        &self,
+        db: SharedDb<'a>,
+        bracket_id: Path<BracketId>,
+    ) -> Result<Json<GETResponse>> {
+        match get_bracket(&db, bracket_id.0) {
+            Ok(bracket) => Ok(Json(bracket.try_into()?)),
+            Err(e) => {
+                log_error(&e);
+                Err(e.into())
+            }
+        }
+    }
+
     /// List registered brackets
-    #[oai(path = "/bracket/:offset", method = "get")]
+    #[oai(path = "/brackets/:offset", method = "get")]
     async fn list_bracket<'a>(
         &self,
         db: SharedDb<'a>,
@@ -66,7 +83,7 @@ impl Api {
     }
 
     /// Matches exactly bracket name
-    #[oai(path = "/bracket/:bracket_name/:offset", method = "get")]
+    #[oai(path = "/brackets/:bracket_name/:offset", method = "get")]
     async fn find_bracket<'a>(
         &self,
         db: SharedDb<'a>,
@@ -99,6 +116,7 @@ impl<'a> From<Error<'a>> for pError {
             Error::Denied(msg) => pError::from_string(msg, StatusCode::FORBIDDEN),
             Error::Parsing(msg) => pError::from_string(msg, StatusCode::BAD_REQUEST),
             Error::Unknown(_msg) => pError::from_status(StatusCode::INTERNAL_SERVER_ERROR),
+            Error::BracketNotFound(_) => pError::from_status(StatusCode::NOT_FOUND),
         }
     }
 }
@@ -106,32 +124,25 @@ impl<'a> From<Error<'a>> for pError {
 /// Database call to create new active bracket from issued discussion channel
 fn create_new_active_bracket<'a, 'b, 'c>(
     db: &'a SharedDb,
-    bracket_name: &'b str,
-    organiser_name: &'b str,
-    organiser_id: String,
-    internal_channel_id: String,
-    service_type_id: &str,
+    r: BracketRequest<'b>,
 ) -> Result<POSTResult, Error<'c>>
 where
     'a: 'c,
     'b: 'c,
 {
     let db = db.read()?;
-    let service_type_id = match service_type_id.parse::<Service>() {
-        Ok(v) => v,
-        Err(e) => {
-            return Err(Error::Parsing(format!("{e:?}")));
-        }
-    };
-    let result = db.create_bracket(
-        bracket_name,
-        organiser_name,
-        organiser_id,
-        internal_channel_id,
-        service_type_id,
-    )?;
+    let result = db.create_bracket(r)?;
     let result = result.into();
     Ok(result)
+}
+
+/// Call to database to list registered bracket
+fn get_bracket<'a, 'b>(db: &'a SharedDb, bracket_id: BracketId) -> Result<Bracket, Error<'b>>
+where
+    'a: 'b,
+{
+    let db = db.read()?;
+    db.get_bracket(bracket_id)
 }
 
 /// Call to database to list registered bracket

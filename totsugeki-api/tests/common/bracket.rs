@@ -5,7 +5,7 @@ use totsugeki::{
     bracket::{Bracket, Format, Id as BracketId, POSTResult},
     organiser::Id as OrganiserId,
     player::Id as PlayerId,
-    seeding::Method,
+    seeding::Method as SeedingMethod,
     DiscussionChannelId,
 };
 
@@ -35,12 +35,18 @@ pub fn parse_bracket_get_response(response: TestJson) -> Vec<Bracket> {
                 .iter()
                 .map(|p| PlayerId::parse_str(p).expect("player id"))
                 .collect();
+            let format = o.get("format").string().parse::<Format>().expect("format");
+            let seeding_method = o
+                .get("seeding_method")
+                .string()
+                .parse::<SeedingMethod>()
+                .expect("seeding method");
             Bracket::from(
                 bracket_id,
                 bracket_name.to_string(),
                 players,
-                Format::SingleElimination, // FIXME use argument
-                Method::Strict,            // FIXME use argument
+                format,
+                seeding_method,
             )
         })
         .collect()

@@ -45,8 +45,7 @@ impl Component for Navbar {
             <nav class="navbar" role="navigation" aria-label="main navigation">
                 <div class="navbar-brand">
                     <div class="navbar-item" style="width:130px;height:100px">
-                        // TODO path to logo
-                        <img src="GGST_May_Mr._Dolphin_Horizontal-6.png" style="min-width:100%;min-height:100%" />
+                        <img src="/GGST_May_Mr._Dolphin_Horizontal-6.png" style="min-width:100%;min-height:100%" />
                     </div>
                     <h1 class="navbar-item is-size-3">{ "Totsugeki" }</h1>
                     <button class={classes!("navbar-burger", "burger", active_class)}

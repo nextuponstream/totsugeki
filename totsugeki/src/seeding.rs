@@ -1,7 +1,7 @@
 //! Seed brackets with seeding methods
 
 use crate::{
-    matches::Match,
+    matches::{Match, Opponent},
     player::{Error as PlayerError, Players},
 };
 use rand::prelude::*;
@@ -9,13 +9,49 @@ use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 
 /// Seeding method
-#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Copy, Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub enum Method {
     /// Randomize who plays against who
     Random,
     /// Sort players by perceived strength to avoid pitting them against each
     /// other early in the bracket
     Strict,
+}
+
+impl std::fmt::Display for Method {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Method::Random => write!(f, "random"),
+            Method::Strict => write!(f, "strict"),
+        }
+    }
+}
+
+/// Seeding method parsing error
+#[derive(Debug)]
+pub enum ParsingError {
+    /// Unknown seeding method was found
+    Unknown,
+}
+
+impl std::fmt::Display for ParsingError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ParsingError::Unknown => writeln!(f, "Seeding method is unknown"),
+        }
+    }
+}
+
+impl std::str::FromStr for Method {
+    type Err = ParsingError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "random" => Self::Random,
+            "strict" => Self::Strict,
+            _ => return Err(ParsingError::Unknown),
+        })
+    }
 }
 
 impl Default for Method {
@@ -107,7 +143,7 @@ pub fn get_balanced_round_matches_top_seed_favored(players: &Players) -> Vec<Vec
         let bottom_seed = n.next_power_of_two() - i;
         this_round.push(
             Match::new(
-                [Some(Some(top_seed_player)), Some(None)],
+                [Opponent::Player(top_seed_player), Opponent::Bye],
                 [top_seed, bottom_seed],
             )
             .expect("match"),
@@ -134,7 +170,10 @@ pub fn get_balanced_round_matches_top_seed_favored(players: &Players) -> Vec<Vec
 
                 this_round.push(
                     Match::new(
-                        [Some(Some(top_seed_player)), Some(Some(bottom_seed_player))],
+                        [
+                            Opponent::Player(top_seed_player),
+                            Opponent::Player(bottom_seed_player),
+                        ],
                         [top_seed, bottom_seed],
                     )
                     .expect("match"),
@@ -143,7 +182,13 @@ pub fn get_balanced_round_matches_top_seed_favored(players: &Players) -> Vec<Vec
                 let top_seed = available_players.remove(0);
                 let bottom_seed = available_players.pop().expect("bottom seed");
 
-                this_round.push(Match::new([None, None], [top_seed, bottom_seed]).expect("match"));
+                this_round.push(
+                    Match::new(
+                        [Opponent::Unknown, Opponent::Unknown],
+                        [top_seed, bottom_seed],
+                    )
+                    .expect("match"),
+                );
             }
         }
 
@@ -221,10 +266,14 @@ mod tests {
         let matches = get_balanced_round_matches_top_seed_favored(&players);
         let expected_matches = vec![
             vec![
-                Match::new([Some(Some(*diego)), Some(None)], [1, 4]).expect("match"),
-                Match::new([Some(Some(*pink)), Some(Some(*cute_cat))], [2, 3]).expect("match"),
+                Match::new([Opponent::Player(*diego), Opponent::Bye], [1, 4]).expect("match"),
+                Match::new(
+                    [Opponent::Player(*pink), Opponent::Player(*cute_cat)],
+                    [2, 3],
+                )
+                .expect("match"),
             ],
-            vec![Match::new([None, None], [1, 2]).expect("match")],
+            vec![Match::new([Opponent::Unknown, Opponent::Unknown], [1, 2]).expect("match")],
         ];
 
         assert_eq!(
@@ -253,10 +302,15 @@ mod tests {
         let matches = get_balanced_round_matches_top_seed_favored(&players);
         let expected_matches = vec![
             vec![
-                Match::new([Some(Some(*diego)), Some(Some(*cute_cat))], [1, 4]).expect("match"),
-                Match::new([Some(Some(*pink)), Some(Some(*guy))], [2, 3]).expect("match"),
+                Match::new(
+                    [Opponent::Player(*diego), Opponent::Player(*cute_cat)],
+                    [1, 4],
+                )
+                .expect("match"),
+                Match::new([Opponent::Player(*pink), Opponent::Player(*guy)], [2, 3])
+                    .expect("match"),
             ],
-            vec![Match::new([None, None], [1, 2]).expect("match")],
+            vec![Match::new([Opponent::Unknown, Opponent::Unknown], [1, 2]).expect("match")],
         ];
 
         assert_eq!(
@@ -286,16 +340,21 @@ mod tests {
         let matches = get_balanced_round_matches_top_seed_favored(&players);
         let expected_matches = vec![
             vec![
-                Match::new([Some(Some(*diego)), Some(None)], [1, 8]).expect("match"),
-                Match::new([Some(Some(*pink)), Some(None)], [2, 7]).expect("match"),
-                Match::new([Some(Some(*average_player)), Some(None)], [3, 6]).expect("match"),
-                Match::new([Some(Some(*guy)), Some(Some(*cute_cat))], [4, 5]).expect("match"),
+                Match::new([Opponent::Player(*diego), Opponent::Bye], [1, 8]).expect("match"),
+                Match::new([Opponent::Player(*pink), Opponent::Bye], [2, 7]).expect("match"),
+                Match::new([Opponent::Player(*average_player), Opponent::Bye], [3, 6])
+                    .expect("match"),
+                Match::new(
+                    [Opponent::Player(*guy), Opponent::Player(*cute_cat)],
+                    [4, 5],
+                )
+                .expect("match"),
             ],
             vec![
-                Match::new([None, None], [1, 4]).expect("match"),
-                Match::new([None, None], [2, 3]).expect("match"),
+                Match::new([Opponent::Unknown, Opponent::Unknown], [1, 4]).expect("match"),
+                Match::new([Opponent::Unknown, Opponent::Unknown], [2, 3]).expect("match"),
             ],
-            vec![Match::new([None, None], [1, 2]).expect("match")],
+            vec![Match::new([Opponent::Unknown, Opponent::Unknown], [1, 2]).expect("match")],
         ];
 
         assert_eq!(
@@ -326,17 +385,24 @@ mod tests {
         let matches = get_balanced_round_matches_top_seed_favored(&players);
         let expected_matches = vec![
             vec![
-                Match::new([Some(Some(*diego)), Some(None)], [1, 8]).expect("match"),
-                Match::new([Some(Some(*pink)), Some(None)], [2, 7]).expect("match"),
-                Match::new([Some(Some(*pink_nemesis)), Some(Some(*cute_cat))], [3, 6])
-                    .expect("match"),
-                Match::new([Some(Some(*average_player)), Some(Some(*guy))], [4, 5]).expect("match"),
+                Match::new([Opponent::Player(*diego), Opponent::Bye], [1, 8]).expect("match"),
+                Match::new([Opponent::Player(*pink), Opponent::Bye], [2, 7]).expect("match"),
+                Match::new(
+                    [Opponent::Player(*pink_nemesis), Opponent::Player(*cute_cat)],
+                    [3, 6],
+                )
+                .expect("match"),
+                Match::new(
+                    [Opponent::Player(*average_player), Opponent::Player(*guy)],
+                    [4, 5],
+                )
+                .expect("match"),
             ],
             vec![
-                Match::new([None, None], [1, 4]).expect("match"),
-                Match::new([None, None], [2, 3]).expect("match"),
+                Match::new([Opponent::Unknown, Opponent::Unknown], [1, 4]).expect("match"),
+                Match::new([Opponent::Unknown, Opponent::Unknown], [2, 3]).expect("match"),
             ],
-            vec![Match::new([None, None], [1, 2]).expect("match")],
+            vec![Match::new([Opponent::Unknown, Opponent::Unknown], [1, 2]).expect("match")],
         ];
 
         assert_eq!(
@@ -368,17 +434,31 @@ mod tests {
         let matches = get_balanced_round_matches_top_seed_favored(&players);
         let expected_matches = vec![
             vec![
-                Match::new([Some(Some(*diego)), Some(None)], [1, 8]).expect("match"),
-                Match::new([Some(Some(*pink)), Some(Some(*cute_cat))], [2, 7]).expect("match"),
-                Match::new([Some(Some(*pink_nemesis)), Some(Some(*fg_enjoyer))], [3, 6])
-                    .expect("match"),
-                Match::new([Some(Some(*average_player)), Some(Some(*guy))], [4, 5]).expect("match"),
+                Match::new([Opponent::Player(*diego), Opponent::Bye], [1, 8]).expect("match"),
+                Match::new(
+                    [Opponent::Player(*pink), Opponent::Player(*cute_cat)],
+                    [2, 7],
+                )
+                .expect("match"),
+                Match::new(
+                    [
+                        Opponent::Player(*pink_nemesis),
+                        Opponent::Player(*fg_enjoyer),
+                    ],
+                    [3, 6],
+                )
+                .expect("match"),
+                Match::new(
+                    [Opponent::Player(*average_player), Opponent::Player(*guy)],
+                    [4, 5],
+                )
+                .expect("match"),
             ],
             vec![
-                Match::new([None, None], [1, 4]).expect("match"),
-                Match::new([None, None], [2, 3]).expect("match"),
+                Match::new([Opponent::Unknown, Opponent::Unknown], [1, 4]).expect("match"),
+                Match::new([Opponent::Unknown, Opponent::Unknown], [2, 3]).expect("match"),
             ],
-            vec![Match::new([None, None], [1, 2]).expect("match")],
+            vec![Match::new([Opponent::Unknown, Opponent::Unknown], [1, 2]).expect("match")],
         ];
 
         assert_eq!(
@@ -411,20 +491,35 @@ mod tests {
         let matches = get_balanced_round_matches_top_seed_favored(&players);
         let expected_matches = vec![
             vec![
-                Match::new([Some(Some(*diego)), Some(Some(*cute_cat))], [1, 8]).expect("match"),
-                Match::new([Some(Some(*pink)), Some(Some(*fg_enjoyer))], [2, 7]).expect("match"),
-                Match::new([Some(Some(*pink_nemesis)), Some(Some(*guy))], [3, 6]).expect("match"),
                 Match::new(
-                    [Some(Some(*big_body_enjoyer)), Some(Some(*average_player))],
+                    [Opponent::Player(*diego), Opponent::Player(*cute_cat)],
+                    [1, 8],
+                )
+                .expect("match"),
+                Match::new(
+                    [Opponent::Player(*pink), Opponent::Player(*fg_enjoyer)],
+                    [2, 7],
+                )
+                .expect("match"),
+                Match::new(
+                    [Opponent::Player(*pink_nemesis), Opponent::Player(*guy)],
+                    [3, 6],
+                )
+                .expect("match"),
+                Match::new(
+                    [
+                        Opponent::Player(*big_body_enjoyer),
+                        Opponent::Player(*average_player),
+                    ],
                     [4, 5],
                 )
                 .expect("match"),
             ],
             vec![
-                Match::new([None, None], [1, 4]).expect("match"),
-                Match::new([None, None], [2, 3]).expect("match"),
+                Match::new([Opponent::Unknown, Opponent::Unknown], [1, 4]).expect("match"),
+                Match::new([Opponent::Unknown, Opponent::Unknown], [2, 3]).expect("match"),
             ],
-            vec![Match::new([None, None], [1, 2]).expect("match")],
+            vec![Match::new([Opponent::Unknown, Opponent::Unknown], [1, 2]).expect("match")],
         ];
 
         assert_eq!(

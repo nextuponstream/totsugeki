@@ -7,9 +7,10 @@ use std::fmt::Display;
 use std::str::FromStr;
 use std::sync::{PoisonError, RwLockReadGuard, RwLockWriteGuard};
 use totsugeki::{
-    bracket::{Bracket, POSTResult},
+    bracket::{Bracket, FormatParsingError, Id as BracketId, POSTResult},
     join::POSTResponseBody,
     organiser::Organiser,
+    seeding::ParsingError as SeedingParsingError,
 };
 
 /// Error while parsing ``InteralIdType`` of service used
@@ -52,6 +53,8 @@ pub enum Error<'a> {
     Parsing(String),
     /// Unknown
     Unknown(String),
+    /// Bracket was not found
+    BracketNotFound(BracketId),
 }
 
 impl<'a> From<PoisonError<DatabaseReadLock<'a>>> for Error<'a> {
@@ -73,8 +76,39 @@ impl<'a> Display for Error<'a> {
             Error::Denied(msg) => writeln!(f, "Reason: {msg}"),
             Error::PoisonedReadLock(e) => e.fmt(f),
             Error::PoisonedWriteLock(e) => e.fmt(f),
+            Error::BracketNotFound(b_id) => writeln!(f, "Bracket not found: {b_id}"),
         }
     }
+}
+
+impl<'a> From<SeedingParsingError> for Error<'a> {
+    fn from(e: SeedingParsingError) -> Self {
+        Error::Parsing(format!("{e:?}"))
+    }
+}
+
+impl<'a> From<FormatParsingError> for Error<'a> {
+    fn from(e: FormatParsingError) -> Self {
+        Error::Parsing(format!("{e:?}"))
+    }
+}
+
+/// Parameters to create a bracket
+pub struct BracketRequest<'b> {
+    /// requested bracket name
+    pub bracket_name: &'b str,
+    /// requested bracket format
+    pub bracket_format: &'b str,
+    /// seeding method of requested bracket
+    pub seeding_method: &'b str,
+    /// Organiser name of requested bracket
+    pub organiser_name: &'b str,
+    /// Organiser id of requested bracket while using service
+    pub organiser_internal_id: &'b str,
+    /// Id of internal channel
+    pub internal_channel_id: &'b str,
+    /// Type of service used to make request
+    pub service_type_id: &'b str,
 }
 
 /// Datase underlying a tournament server
@@ -89,14 +123,8 @@ pub trait DBAccessor {
     ///
     /// # Errors
     /// Returns error if bracket could not be persisted
-    fn create_bracket<'a, 'b, 'c>(
-        &'a self,
-        bracket_name: &'b str,
-        organiser_name: &'b str,
-        organiser_internal_id: String,
-        internal_channel_id: String,
-        internal_id_type: Service,
-    ) -> Result<POSTResult, Error<'c>>;
+    fn create_bracket<'a, 'b, 'c>(&'a self, r: BracketRequest<'b>)
+        -> Result<POSTResult, Error<'c>>;
 
     /// Create tournament organiser
     ///
@@ -140,6 +168,12 @@ pub trait DBAccessor {
         channel_internal_id: &'b str,
         service_type_id: &'b str,
     ) -> Result<POSTResponseBody, Error<'c>>;
+
+    /// Get bracket using id
+    ///
+    /// # Errors
+    /// Returns an error if database could not be accessed
+    fn get_bracket<'a, 'b>(&'a self, bracket_id: BracketId) -> Result<Bracket, Error<'b>>;
 
     /// List brackets
     ///

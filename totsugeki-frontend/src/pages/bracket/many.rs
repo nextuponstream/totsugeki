@@ -1,12 +1,13 @@
 //! Page displaying many brackets
 
 use crate::common::api::Props;
-use crate::get_client;
+use crate::{get_client, routes::Route};
 use totsugeki::bracket::Bracket;
 use totsugeki_api_request::{bracket::fetch, RequestError};
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew::{html, Component, Context, Html};
+use yew_router::prelude::*;
 
 /// View of many brackets
 pub struct View {
@@ -19,6 +20,7 @@ pub struct View {
 }
 
 /// States of a bracket list fetch request
+#[derive(Debug)]
 pub enum FetchState<T> {
     /// Page is not fetching brackets
     NotFetching,
@@ -31,6 +33,7 @@ pub enum FetchState<T> {
 }
 
 /// Update bracket view
+#[derive(Debug)]
 pub enum Msg {
     /// Update UI with bracket list
     GetBrackets,
@@ -123,16 +126,24 @@ impl Component for View {
                          <tbody>{
                              brackets.iter().map(|b| html! {
                                  <tr>
-                                     <td>{b.clone().get_id()}</td>
-                                     <td>{b.clone().get_bracket_name()}</td>
+                                     <td>
+                                        <Link<Route>
+                                            to={Route::Bracket { bracket_id: b.get_id() }}>
+                                            {b.get_id()}
+                                        </Link<Route>>
+                                    </td>
+                                    <td>{b.get_bracket_name()}</td>
                                  </tr>
                              }).collect::<Html>()
                          }</tbody>
                     </table>
                 </div>
             },
-            FetchState::Failed(err) => html! { err },
-        }
+            FetchState::Failed(err) => match err {
+                    RequestError::Request(_,msg)=>html!{format!("An error has happened: {}",msg)},
+                    RequestError::BracketParsingError(e) =>  html! { format!("{e}") },
+                },
+            }
             }
         </>
         }

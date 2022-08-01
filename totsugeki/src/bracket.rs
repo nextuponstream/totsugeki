@@ -1,14 +1,15 @@
 //! Bracket domain
 
 use crate::{
+    bracket::Id as BracketId,
     matches::Match,
     organiser::Id as OrganiserId,
     player::{Id as PlayerId, Players},
     seeding::{
         get_balanced_round_matches_top_seed_favored, seed, Error as SeedingError,
-        Method as SeedingMethod,
+        Method as SeedingMethod, ParsingError as SeedingParsingError,
     },
-    DiscussionChannelId,
+    DiscussionChannel, DiscussionChannelId,
 };
 use serde::{Deserialize, Serialize};
 use std::{
@@ -27,11 +28,49 @@ pub enum Error {
 }
 
 /// All bracket formats
-#[derive(PartialEq, Eq, Clone, Deserialize, Serialize, Debug)]
+#[derive(PartialEq, Eq, Copy, Clone, Deserialize, Serialize, Debug)]
 pub enum Format {
     /// Single elimination tournament
     SingleElimination,
     // TODO add other style of tournament
+}
+
+impl std::fmt::Display for Format {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Format::SingleElimination => write!(f, "single-elimination"),
+        }
+    }
+}
+
+/// Parsing error for Format type
+#[derive(Debug)]
+pub enum FormatParsingError {
+    /// Unknown string was parsed
+    Unknown,
+}
+
+impl std::fmt::Display for FormatParsingError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FormatParsingError::Unknown => writeln!(
+                f,
+                "Unknown format. Please try another format such as: \"{}\"",
+                Format::SingleElimination
+            ),
+        }
+    }
+}
+
+impl std::str::FromStr for Format {
+    type Err = FormatParsingError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "single-elimination" => Ok(Format::SingleElimination),
+            _ => Err(FormatParsingError::Unknown),
+        }
+    }
 }
 
 impl Default for Format {
@@ -59,6 +98,10 @@ pub struct POST {
     channel_internal_id: String,
     /// Name of service. See totsugeki_api for a list of supported service
     service_type_id: String,
+    /// bracket format
+    format: String,
+    /// seeding method for bracket
+    pub seeding_method: String,
 }
 
 impl POST {
@@ -70,6 +113,8 @@ impl POST {
         organiser_internal_id: String,
         channel_internal_id: String,
         service_type_id: String,
+        format: String,
+        seeding_method: String,
     ) -> Self {
         POST {
             bracket_name,
@@ -77,6 +122,8 @@ impl POST {
             organiser_internal_id,
             channel_internal_id,
             service_type_id,
+            format,
+            seeding_method,
         }
     }
 }
@@ -189,7 +236,7 @@ impl Bracket {
 
     /// Get ID of bracket
     #[must_use]
-    pub fn get_id(&self) -> Uuid {
+    pub fn get_id(&self) -> BracketId {
         self.bracket_id
     }
 
@@ -228,6 +275,18 @@ impl Bracket {
     #[must_use]
     pub fn get_matches(&self) -> Vec<Vec<Match>> {
         self.matches.clone()
+    }
+
+    /// Get bracket format
+    #[must_use]
+    pub fn get_format(&self) -> Format {
+        self.format
+    }
+
+    /// Get bracket seeding method
+    #[must_use]
+    pub fn get_seeding_method(&self) -> SeedingMethod {
+        self.seeding_method
     }
 }
 
@@ -283,4 +342,82 @@ impl POSTResult {
     pub fn get_discussion_channel_id(&self) -> DiscussionChannelId {
         self.discussion_channel_id
     }
+}
+
+/// Bracket GET response
+#[derive(Serialize, Deserialize)]
+pub struct GET {
+    /// Identifier of bracket
+    bracket_id: Id,
+    /// Name of this bracket
+    bracket_name: String,
+    /// Players in this bracket
+    players: Vec<PlayerId>,
+    /// Matches for this bracket
+    matches: Vec<Vec<Match>>,
+    /// Bracket format
+    format: String,
+    /// Seeding method used for this bracket
+    seeding_method: String,
+}
+
+/// Error while parsing Bracket
+#[derive(Debug)]
+pub enum ParsingError {
+    /// Could not parse Bracket id
+    Format(FormatParsingError),
+    /// Could not parse seeding method
+    Seeding(SeedingParsingError),
+}
+
+impl std::fmt::Display for ParsingError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ParsingError::Format(e) => e.fmt(f),
+            ParsingError::Seeding(e) => e.fmt(f),
+        }
+    }
+}
+
+impl TryFrom<GET> for Bracket {
+    type Error = ParsingError;
+
+    fn try_from(b: GET) -> Result<Self, Self::Error> {
+        Ok(Self {
+            bracket_id: b.bracket_id,
+            bracket_name: b.bracket_name,
+            players: b.players,
+            matches: b.matches,
+            format: b.format.parse::<Format>()?,
+            seeding_method: b.seeding_method.parse::<SeedingMethod>()?,
+        })
+    }
+}
+
+impl From<FormatParsingError> for ParsingError {
+    fn from(e: FormatParsingError) -> Self {
+        Self::Format(e)
+    }
+}
+
+impl From<SeedingParsingError> for ParsingError {
+    fn from(e: SeedingParsingError) -> Self {
+        ParsingError::Seeding(e)
+    }
+}
+
+/// bracket creation request parameters
+pub struct RequestParameters<'a, T: DiscussionChannel> {
+    /// requested bracket name
+    pub bracket_name: &'a str,
+    /// requested bracket format
+    pub bracket_format: &'a str,
+    /// organiser name of requested bracket
+    pub organiser_name: &'a str,
+    /// Organiser id of requested bracket
+    pub organiser_id: &'a str,
+    /// Discussion channel where bracket request comes from
+    pub discussion_channel: T,
+    /// seeding method for bracket
+    pub seeding_method: &'a str,
 }

@@ -8,8 +8,8 @@ use totsugeki::{
     DiscussionChannelId,
 };
 
-#[derive(Serialize, Deserialize, Object)]
-/// POST request to /bracket
+#[derive(Object, Serialize, Deserialize)]
+/// REDEFINITION: POST request to /bracket endpoint
 pub struct POST {
     /// name of the bracket
     pub bracket_name: String,
@@ -21,6 +21,10 @@ pub struct POST {
     pub channel_internal_id: String,
     /// name of service used to interact with api
     pub service_type_id: String, // TODO rename service_type_name
+    /// bracket format
+    pub format: String,
+    /// seeding method for bracket
+    pub seeding_method: String,
 }
 
 /// Bracket GET response
@@ -38,6 +42,43 @@ pub struct GETResponse {
     bracket_name: String,
     /// Players in this bracket
     players: Vec<PlayerId>,
+    /// Matches for this bracket
+    matches: Vec<Vec<Match>>,
+    /// Bracket format
+    format: String,
+    /// Seeding method used for this bracket
+    seeding_method: String,
+}
+
+/// REDEFINITION: A match between two players, resulting in a winner and a loser
+#[derive(Object, Debug, Default, PartialEq, Eq, Clone, Serialize, Deserialize)]
+pub struct Match {
+    /// Two players from this match. One of the player can be a BYE opponent
+    players: [String; 2],
+    /// seeds\[0\]: top seed
+    /// seeds\[1\]: bottom seed
+    seeds: [usize; 2],
+    /// The winner of this match
+    winner: Option<String>,
+    /// The looser of this match
+    looser: Option<String>,
+}
+
+impl Match {
+    /// Get matches to send
+    fn get_sendable_matches(matches: &Vec<Vec<totsugeki::matches::Match>>) -> Vec<Vec<Match>> {
+        let mut result = vec![];
+        for round in matches {
+            let mut result_round = vec![];
+            for m in round {
+                result_round.push(m.into());
+            }
+
+            result.push(result_round);
+        }
+
+        result
+    }
 }
 
 impl GETResponse {
@@ -48,6 +89,22 @@ impl GETResponse {
             bracket_id: bracket.get_id(),
             bracket_name: bracket.get_bracket_name(),
             players: bracket.get_players(),
+            format: bracket.get_format().to_string(),
+            seeding_method: bracket.get_seeding_method().to_string(),
+            matches: Match::get_sendable_matches(&bracket.get_matches()),
+        }
+    }
+}
+
+impl From<&totsugeki::matches::Match> for Match {
+    fn from(m: &totsugeki::matches::Match) -> Self {
+        let player_1 = m.get_players()[0].to_string();
+        let player_2 = m.get_players()[1].to_string();
+        Self {
+            players: [player_1, player_2],
+            seeds: m.get_seeds(),
+            winner: m.get_winner().map(|o| o.to_string()),
+            looser: m.get_looser().map(|o| o.to_string()),
         }
     }
 }
