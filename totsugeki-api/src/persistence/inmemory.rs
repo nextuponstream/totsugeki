@@ -1,4 +1,5 @@
 //! In-memory database
+use super::BracketRequest;
 use crate::persistence::{DBAccessor, Error};
 use crate::{ApiServiceId, ApiServiceUser};
 use serenity::model::id::{ChannelId, GuildId, UserId};
@@ -8,10 +9,10 @@ use std::sync::{Arc, RwLock};
 use totsugeki::bracket::{Format, Id as BracketId};
 use totsugeki::join::POSTResponseBody;
 use totsugeki::organiser::Id as OrganiserId;
-use totsugeki::seeding::Method;
 use totsugeki::{
     bracket::{ActiveBrackets, Bracket, POSTResult},
     organiser::Organiser,
+    seeding::Method as SeedingMethod,
 };
 use totsugeki::{player::Id as PlayerId, DiscussionChannelId};
 use uuid::Uuid;
@@ -73,19 +74,19 @@ impl DBAccessor for InMemoryDBAccessor {
 
     fn create_bracket<'a, 'b, 'c>(
         &'a self,
-        bracket_name: &'b str,
-        organiser_name: &'b str,
-        internal_organiser_id: String,
-        internal_channel_id: String,
-        internal_id_type: Service,
+        r: BracketRequest<'b>,
     ) -> Result<POSTResult, Error<'c>> {
+        let bracket_name = r.bracket_name;
+        let bracket_format = r.bracket_format;
+        let seeding_method = r.seeding_method;
+        let organiser_name = r.organiser_name;
+        let internal_organiser_id = r.organiser_internal_id;
+        let internal_channel_id = r.internal_channel_id;
+        let internal_id_type = r.service_type_id.parse::<Service>()?;
         let mut db = self.db.write().expect("database"); // FIXME bubble up error
-        let b = Bracket::new(
-            bracket_name.to_string(),
-            vec![],
-            Format::SingleElimination, // FIXME use argument
-            Method::Strict,            // FIXME use argument
-        );
+        let format = bracket_format.parse::<Format>()?;
+        let seeding_method = seeding_method.parse::<SeedingMethod>()?;
+        let b = Bracket::new(bracket_name.to_string(), vec![], format, seeding_method);
 
         // find if global id exists already for channel
         let mut discussion_channel_id = Uuid::new_v4(); // if channel is not registered yet
@@ -276,8 +277,8 @@ impl DBAccessor for InMemoryDBAccessor {
                         b.get_id(),
                         b.get_bracket_name(),
                         players,
-                        Format::SingleElimination, // FIXME use argument
-                        Method::Strict,            // FIXME use argument
+                        b.get_format(),
+                        b.get_seeding_method(),
                     );
                     db.brackets.insert(b.get_id(), b);
 
@@ -340,6 +341,15 @@ impl DBAccessor for InMemoryDBAccessor {
             (service_name.to_string(), service_description.to_string()),
         );
         Ok(id)
+    }
+
+    fn get_bracket<'a, 'b>(&'a self, bracket_id: BracketId) -> Result<Bracket, Error<'b>> {
+        let db = self.db.read().expect("database"); // FIXME bubble up error
+        let bracket = match db.brackets.get(&bracket_id) {
+            Some(b) => b,
+            None => return Err(Error::BracketNotFound(bracket_id)),
+        };
+        Ok(bracket.clone())
     }
 }
 

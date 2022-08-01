@@ -15,17 +15,6 @@ impl DBAccessor for Accessor {
         todo!()
     }
 
-    fn create_bracket<'a, 'b, 'c>(
-        &'a self,
-        bracket_name: &'b str,
-        organiser_name: &'b str,
-        organiser_internal_id: String,
-        internal_channel_id: String,
-        internal_id_type: crate::Service,
-    ) -> Result<totsugeki::bracket::POSTResult, super::Error<'c>> {
-        todo!()
-    }
-
     fn create_organiser<'a, 'b, 'c>(
         &'a self,
         organiser_name: &'b str,
@@ -88,6 +77,20 @@ impl DBAccessor for Accessor {
         channel_internal_id: &'b str,
         service_type_id: &'b str,
     ) -> Result<totsugeki::join::POSTResponseBody, super::Error<'c>> {
+        todo!()
+    }
+
+    fn get_bracket<'a, 'b>(
+        &'a self,
+        bracket_id: totsugeki::bracket::Id,
+    ) -> Result<totsugeki::bracket::Bracket, super::Error<'b>> {
+        todo!()
+    }
+
+    fn create_bracket<'a, 'b, 'c>(
+        &'a self,
+        r: super::BracketRequest<'b>,
+    ) -> Result<totsugeki::bracket::POSTResult, super::Error<'c>> {
         todo!()
     }
 }

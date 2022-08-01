@@ -61,12 +61,16 @@ async fn new_organiser_is_generated_when_bracket_is_created_if_unknown() {
         let organiser_internal_id = "1".to_string();
         let channel_internal_id = "1".to_string();
         let service_type_id = "discord".to_string();
+        let format = "single-elimination".to_string();
+        let seeding_method = "strict".to_string();
         let body = POST::new(
             bracket_name,
             organiser_name.clone(),
             organiser_internal_id,
             channel_internal_id,
             service_type_id,
+            format,
+            seeding_method,
         );
 
         // When they create a bracket using discord bot
@@ -120,12 +124,16 @@ async fn running_two_brackets_at_the_same_time() {
         let organiser_internal_id = "1".to_string();
         let channel_internal_id = "1".to_string();
         let service_type_id = "discord".to_string();
+        let format = "single-elimination".to_string();
+        let seeding_method = "strict".to_string();
         let body = POST::new(
             bracket_name,
             organiser_name.clone(),
             organiser_internal_id.clone(),
             channel_internal_id,
             service_type_id.clone(),
+            format.clone(),
+            seeding_method.clone(),
         );
 
         let bracket_name = "weekly-game-2".to_string(); // TODO generate name
@@ -136,6 +144,8 @@ async fn running_two_brackets_at_the_same_time() {
             organiser_internal_id,
             channel_internal_id.clone(),
             service_type_id,
+            format,
+            seeding_method,
         );
 
         // When they create brackets using discord bot

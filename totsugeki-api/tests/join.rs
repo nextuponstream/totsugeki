@@ -32,12 +32,16 @@ async fn players_join_bracket() {
         let organiser_internal_id = "1".to_string();
         let channel_internal_id = "1".to_string();
         let service_type_id = "discord".to_string();
+        let format = "single-elimination".to_string();
+        let seeding_method = "strict".to_string();
         let body = POST::new(
             bracket_name.clone(),
             organiser_name,
             organiser_internal_id,
             channel_internal_id.clone(),
             service_type_id.clone(),
+            format,
+            seeding_method,
         );
 
         let resp = test_api
@@ -76,7 +80,7 @@ async fn players_join_bracket() {
         }
 
         // Then there is enough people for an 8 participant tournament
-        let resp = test_api.cli.get(format!("/bracket/0")).send().await;
+        let resp = test_api.cli.get("/brackets/0".to_string()).send().await;
         resp.assert_status_is_ok();
 
         let r = resp.json().await;

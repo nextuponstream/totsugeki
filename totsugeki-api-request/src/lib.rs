@@ -13,7 +13,7 @@
 //! which is why reqwest client is passed as a parameter. frontend is the only crate compiling to wasm
 //! but discord bot makes the same request. This parameter being added to the parameter list is a necessary code smell.
 use std::fmt::{self, Formatter};
-use totsugeki::ServiceRegisterPOST;
+use totsugeki::{bracket::ParsingError as BracketParsingError, ServiceRegisterPOST};
 
 pub mod bracket;
 pub mod join;
@@ -27,23 +27,37 @@ const HTTP_PREFIX: &str = "https://";
 pub enum RequestError {
     /// Request error
     Request(reqwest::Error, String),
+    /// Bracket parsing error
+    BracketParsingError(BracketParsingError),
 }
 
 impl std::fmt::Display for RequestError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             RequestError::Request(_, msg) => writeln!(f, "{msg}"),
+            RequestError::BracketParsingError(e) => e.fmt(f),
         }
     }
 }
 
 impl From<reqwest::Error> for RequestError {
     fn from(e: reqwest::Error) -> Self {
-        RequestError::Request(e, String::new())
+        let msg = e.to_string();
+        let status = match e.status() {
+            Some(s) => format!("({s})"),
+            None => String::new(),
+        };
+        RequestError::Request(e, format!("Request to Api has failed: {}{}", status, msg))
     }
 }
 
 impl std::error::Error for RequestError {}
+
+impl From<BracketParsingError> for RequestError {
+    fn from(e: BracketParsingError) -> Self {
+        Self::BracketParsingError(e)
+    }
+}
 
 /// Use API endpoint to clean database for test purposes
 ///

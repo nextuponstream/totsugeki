@@ -53,6 +53,11 @@ async fn join(ctx: &Context, msg: &Message, mut _args: Args) -> CommandResult {
                 log::error!("{e_msg}");
                 Err(Box::new(RequestError::Request(re, e_msg)))
             }
+            RequestError::BracketParsingError(e) => {
+                msg.reply(ctx, format!("{e}")).await?;
+                log::warn!("User could not request bracket: {e}");
+                Err(Box::new(RequestError::BracketParsingError(e)))
+            }
         },
     }
 }

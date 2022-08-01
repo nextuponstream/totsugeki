@@ -70,6 +70,7 @@ fn log_error(e: &Error) {
         Error::Code(e) | Error::Unknown(e) => error!("{e}"),
         Error::Denied(e) => warn!("{e}"),
         Error::Parsing(e) => warn!("User input could not be parsed: {e}"),
+        Error::BracketNotFound(b_id) => warn!("User searched for unknown bracket: {b_id}"),
     }
 }
 

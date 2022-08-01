@@ -29,12 +29,16 @@ async fn someone_creates_bracket() {
         let organiser_internal_id = "1".to_string();
         let channel_internal_id = "1".to_string();
         let service_type_id = "discord".to_string();
+        let format = "single-elimination".to_string();
+        let seeding_method = "strict".to_string();
         let body = POST::new(
-            bracket_name,
+            bracket_name.clone(),
             organiser_name,
             organiser_internal_id,
             channel_internal_id,
             service_type_id,
+            format.clone(),
+            seeding_method.clone(),
         );
 
         // When they create a bracket using discord bot
@@ -51,7 +55,7 @@ async fn someone_creates_bracket() {
         let bracket_post_resp = parse_bracket_post_response(resp);
 
         // Then they search the newly created bracket and find it
-        let resp = test_api.cli.get("/bracket/0").send().await;
+        let resp = test_api.cli.get("/brackets/0").send().await;
         resp.assert_status_is_ok();
 
         let r = resp.json().await;
@@ -72,6 +76,31 @@ async fn someone_creates_bracket() {
             bracket_post_resp.get_bracket_id()
         );
 
+        // Retrieving directly works too
+        let resp = test_api
+            .cli
+            .get(format!("/bracket/{}", bracket_post_resp.get_bracket_id()))
+            .send()
+            .await;
+        resp.assert_status_is_ok();
+
+        let r = resp.json().await;
+        let r = r.value().object();
+        assert_eq!(
+            r.get("bracket_id").string(),
+            bracket_post_resp.get_bracket_id().to_string()
+        );
+        assert_eq!(r.get("bracket_name").string(), bracket_name);
+        assert_eq!(r.get("format").string(), format);
+        assert_eq!(r.get("seeding_method").string(), seeding_method);
+
+        assert_eq!(
+            brackets.len(),
+            1,
+            "incorrect number of result, expected 1, actual: {}\n{brackets:?}",
+            brackets.len()
+        );
+
         test_api.clean_db().await;
     }
 }
@@ -87,12 +116,16 @@ async fn search_bracket() {
         let organiser_internal_id = "1".to_string();
         let channel_internal_id = "1".to_string();
         let service_type_id = "discord".to_string();
+        let format = "single-elimination".to_string();
+        let seeding_method = "strict".to_string();
         let body = POST::new(
             bracket_name.clone(),
             organiser_name,
             organiser_internal_id,
             channel_internal_id,
             service_type_id,
+            format,
+            seeding_method,
         );
 
         // When they create a bracket using discord bot
@@ -111,7 +144,7 @@ async fn search_bracket() {
         // Then they can filter results and find the created bracket
         let resp = test_api
             .cli
-            .get(format!("/bracket/{}/0", bracket_name))
+            .get(format!("/brackets/{}/0", bracket_name))
             .send()
             .await;
         resp.assert_status_is_ok();
