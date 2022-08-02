@@ -140,7 +140,7 @@ impl Component for View {
                 </div>
             },
             FetchState::Failed(err) => match err {
-                    RequestError::Request(_,msg)=>html!{format!("An error has happened: {}",msg)},
+                    RequestError::Request(_e, msg)=> html!{ format!("An error has happened: {}",msg) },
                     RequestError::BracketParsingError(e) =>  html! { format!("{e}") },
                 },
             }

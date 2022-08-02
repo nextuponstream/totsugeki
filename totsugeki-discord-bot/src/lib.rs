@@ -119,7 +119,7 @@ fn get_client(accept_invalid_certs: bool) -> Result<reqwest::Client, Error> {
 #[derive(Debug)]
 pub enum Error {
     /// General errors
-    ApiRequest(String),
+    ApiRequest(reqwest::Error),
 }
 
 // so you can await? a result that might return Error
@@ -136,7 +136,7 @@ impl std::error::Error for Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::ApiRequest(msg) => writeln!(f, "{msg}"),
+            Error::ApiRequest(e) => e.fmt(f),
         }
     }
 }
@@ -144,13 +144,13 @@ impl std::fmt::Display for Error {
 impl ResponseError for Error {
     fn status(&self) -> reqwest::StatusCode {
         match self {
-            Error::ApiRequest(_msg) => reqwest::StatusCode::INTERNAL_SERVER_ERROR,
+            Error::ApiRequest(_e) => reqwest::StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
 
 impl From<reqwest::Error> for Error {
     fn from(e: reqwest::Error) -> Self {
-        Error::ApiRequest(e.to_string()) // FIXME better error
+        Error::ApiRequest(e)
     }
 }

@@ -2,13 +2,14 @@
 
 pub mod common;
 
-use std::collections::HashSet;
-
 use common::{
-    bracket::{parse_bracket_get_response, parse_bracket_post_response},
+    bracket::{
+        parse_bracket_get_response, parse_bracket_post_response, parse_brackets_get_response,
+    },
     db_types_to_test, test_api,
 };
 use poem::http::StatusCode;
+use std::collections::HashSet;
 use totsugeki::{bracket::POST, join::POSTRequestBody};
 
 #[tokio::test]
@@ -77,6 +78,21 @@ async fn players_join_bracket() {
                 .send()
                 .await;
             resp.assert_status_is_ok();
+
+            // When a player joins, matches get updated automatically
+            let res = test_api
+                .cli
+                .get(format!("/bracket/{}", bracket_post_resp.get_bracket_id()))
+                .send()
+                .await;
+            res.assert_status_is_ok();
+            let r = res.json().await;
+            let bracket = parse_bracket_get_response(r);
+            match i {
+                1 | 2 => assert!(bracket.matches.is_empty()),
+                3 => assert_eq!(bracket.matches.len(), 2),
+                _ => {}
+            }
         }
 
         // Then there is enough people for an 8 participant tournament
@@ -84,7 +100,7 @@ async fn players_join_bracket() {
         resp.assert_status_is_ok();
 
         let r = resp.json().await;
-        let brackets = parse_bracket_get_response(r);
+        let brackets = parse_brackets_get_response(r);
 
         assert_eq!(
             brackets.len(),

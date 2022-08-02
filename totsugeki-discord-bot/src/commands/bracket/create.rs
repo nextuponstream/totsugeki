@@ -10,12 +10,14 @@ use totsugeki::bracket::RequestParameters;
 use totsugeki_api_request::bracket::create as create_bracket;
 
 #[command]
-#[description = "Create a new bracket"]
-#[usage = "<BRACKET NAME>"]
+#[description = "Create a new bracket. Use quotes."]
+#[usage = "\"<NAME>\" \"<FORMAT>\" \"<SEEDING METHOD>\""]
 #[allowed_roles("TO")]
 // https://github.com/serenity-rs/serenity/blob/current/examples/e12_global_data/src/main.rs
 async fn create(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let bracket_name = args.single::<String>()?;
+    let bracket_name = args.single_quoted::<String>()?;
+    let format = args.single_quoted::<String>()?;
+    let seeding_method = args.single_quoted::<String>()?;
 
     let tournament_server = {
         let data_read = ctx.data.read().await;
@@ -30,15 +32,14 @@ async fn create(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let organiser_name = msg.guild(&ctx).expect("guild").name;
     let discussion_channel_id = msg.channel_id;
     let discord_channel = DiscordChannel::new(None, discussion_channel_id);
-    let seeding_method = "strict"; // TODO request from args
 
     let parameters = RequestParameters {
         bracket_name: bracket_name.as_str(),
-        bracket_format: "single-elimination",
+        bracket_format: format.as_str(),
         organiser_name: organiser_name.as_str(),
         organiser_id: organiser_id.as_str(),
         discussion_channel: discord_channel,
-        seeding_method,
+        seeding_method: seeding_method.as_str(),
     };
 
     create_bracket(

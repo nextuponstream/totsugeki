@@ -27,7 +27,7 @@ pub struct POST {
     pub seeding_method: String,
 }
 
-/// Bracket GET response
+/// REDEFINITION: Bracket GET response
 //
 // NOTE: having Bracket implement `ToJSON` means that importing `totsugeki` will bring in all poem
 // dependencies. This does not play nice with yew dependencies when doing relative import
@@ -59,9 +59,9 @@ pub struct Match {
     /// seeds\[1\]: bottom seed
     seeds: [usize; 2],
     /// The winner of this match
-    winner: Option<String>,
+    winner: String,
     /// The looser of this match
-    looser: Option<String>,
+    looser: String,
 }
 
 impl Match {
@@ -103,8 +103,8 @@ impl From<&totsugeki::matches::Match> for Match {
         Self {
             players: [player_1, player_2],
             seeds: m.get_seeds(),
-            winner: m.get_winner().map(|o| o.to_string()),
-            looser: m.get_looser().map(|o| o.to_string()),
+            winner: m.get_winner().to_string(),
+            looser: m.get_looser().to_string(),
         }
     }
 }
