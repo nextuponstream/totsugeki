@@ -9,6 +9,8 @@ use yew::prelude::*;
 use yew::{html, Component, Context, Html};
 use yew_router::prelude::*;
 
+use super::FetchState;
+
 /// View of many brackets
 pub struct View {
     /// state of the page fetch request to display a bracket list
@@ -17,19 +19,6 @@ pub struct View {
     refs: Vec<NodeRef>,
     /// indicate if a user facing error message should be displayed for the offset input
     input_error_offset: bool,
-}
-
-/// States of a bracket list fetch request
-#[derive(Debug)]
-pub enum FetchState<T> {
-    /// Page is not fetching brackets
-    NotFetching,
-    /// Page is fetching brackets
-    Fetching,
-    /// Page has successfully fetched
-    Success(T),
-    /// Failure to fetch
-    Failed(RequestError),
 }
 
 /// Update bracket view

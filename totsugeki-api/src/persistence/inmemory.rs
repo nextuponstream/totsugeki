@@ -9,7 +9,7 @@ use std::sync::{Arc, RwLock};
 use totsugeki::bracket::{Format, Id as BracketId};
 use totsugeki::join::POSTResponseBody;
 use totsugeki::organiser::Id as OrganiserId;
-use totsugeki::player::Players;
+use totsugeki::player::{Player, Players};
 use totsugeki::seeding::get_balanced_round_matches_top_seed_favored;
 use totsugeki::{
     bracket::{ActiveBrackets, Bracket, POSTResult},
@@ -225,6 +225,7 @@ impl DBAccessor for InMemoryDBAccessor {
     fn join_bracket<'a, 'b, 'c>(
         &'a self,
         player_internal_id: &'b str,
+        player_name: &'b str,
         channel_internal_id: &'b str,
         service_type_id: &'b str,
     ) -> Result<totsugeki::join::POSTResponseBody, Error<'c>> {
@@ -272,14 +273,20 @@ impl DBAccessor for InMemoryDBAccessor {
                         Error::Unknown(format!("no bracket found for id: \"{bracket_id}\""))
                     })?;
                     let mut players = b.get_players();
-                    if !players.contains(&player_id) {
-                        players.push(player_id);
+                    if !players.iter().any(|p| p.get_id() == player_id) {
+                        players.push(Player {
+                            id: player_id,
+                            name: player_name.to_string(),
+                        });
                     }
                     let matches = if players.len() < 3 {
                         vec![]
                     } else {
                         get_balanced_round_matches_top_seed_favored(&Players::from(
-                            players.clone(),
+                            players
+                                .iter()
+                                .map(totsugeki::player::Player::get_id)
+                                .collect(),
                         )?)
                     };
                     let b = Bracket::from(

@@ -4,7 +4,7 @@ use crate::{
     bracket::Id as BracketId,
     matches::{Match, MatchGET, MatchParsingError},
     organiser::Id as OrganiserId,
-    player::{Id as PlayerId, Players},
+    player::{Player, Players},
     seeding::{
         get_balanced_round_matches_top_seed_favored, seed, Error as SeedingError,
         Method as SeedingMethod, ParsingError as SeedingParsingError,
@@ -146,7 +146,7 @@ pub struct Bracket {
     /// Name of this bracket
     bracket_name: String,
     /// Players of this bracket
-    players: Vec<PlayerId>,
+    players: Vec<Player>,
     /// Matches from this bracket, sorted by rounds
     matches: Vec<Vec<Match>>,
     /// Bracket format
@@ -200,7 +200,7 @@ impl Bracket {
     #[must_use]
     pub fn new(
         bracket_name: String,
-        players: Vec<PlayerId>,
+        players: Vec<Player>,
         format: Format,
         seeding_method: SeedingMethod,
     ) -> Self {
@@ -220,7 +220,7 @@ impl Bracket {
     pub fn from(
         bracket_id: Id,
         bracket_name: String,
-        players: Vec<PlayerId>,
+        players: Vec<Player>,
         matches: Vec<Vec<Match>>,
         format: Format,
         seeding_method: SeedingMethod,
@@ -249,7 +249,7 @@ impl Bracket {
 
     /// Get players
     #[must_use]
-    pub fn get_players(&self) -> Vec<PlayerId> {
+    pub fn get_players(&self) -> Vec<Player> {
         self.players.clone()
     }
 
@@ -353,7 +353,7 @@ pub struct GET {
     /// Name of this bracket
     pub bracket_name: String,
     /// Players in this bracket
-    pub players: Vec<PlayerId>,
+    pub players: Vec<Player>,
     /// Matches for this bracket
     pub matches: Vec<Vec<MatchGET>>,
     /// Bracket format

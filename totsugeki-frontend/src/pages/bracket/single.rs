@@ -4,11 +4,12 @@ use crate::common::api::Api;
 use crate::get_client;
 use totsugeki::bracket::Bracket;
 use totsugeki::bracket::Id as BracketId;
+use totsugeki::matches::print_player_name;
 use totsugeki_api_request::{bracket::get_from_id, RequestError};
 use yew::prelude::*;
 use yew::{Component, Properties};
 
-use super::many::FetchState;
+use super::FetchState;
 
 /// Bracket page properties
 #[derive(PartialEq, Properties, Clone)]
@@ -22,7 +23,7 @@ pub struct Props {
 /// View over a single bracket
 pub struct View {
     /// state of the page fetch request to display a bracket
-    fetch_state: FetchState<Bracket>, // TODO refactor Fetchstate in its module
+    fetch_state: FetchState<Bracket>,
 }
 
 /// Update bracket view
@@ -75,13 +76,15 @@ impl Component for View {
             FetchState::Success(bracket) => {
                 let players = bracket.get_players();
                 let players = players.iter().map(|p| {
-                    html! { <p>{ p.to_string() }</p> } // TODO get player names
+                    html! { <p>{ p.get_name() }</p> }
                 });
                 let matches = bracket.get_matches();
                 let matches = matches.into_iter().flatten().map(|m| {
-                    let player_1 = m.get_players()[0];
-                    let player_2 = m.get_players()[1];
-                    html! { <p>{ player_1 }<b>{ " VS " }</b>{ player_2 } </p> } // TODO get players names
+                    let player_1 = print_player_name(m.get_players()[0], &bracket.get_players())
+                        .unwrap_or_else(|| "ERROR".to_string());
+                    let player_2 = print_player_name(m.get_players()[1], &bracket.get_players())
+                        .unwrap_or_else(|| "ERROR".to_string());
+                    html! { <p>{ player_1 }<b>{ " VS " }</b>{ player_2 } </p> }
                 });
                 html! {
                     <div class="content">

@@ -1,6 +1,6 @@
 //! Two players play a match, resulting in a winner and a loser
 
-use crate::player::Id as PlayerId;
+use crate::player::{Id as PlayerId, Player};
 use serde::{Deserialize, Serialize};
 
 /// Error while creating a match
@@ -247,5 +247,18 @@ impl From<Match> for MatchGET {
             winner: m.winner.to_string(),
             looser: m.looser.to_string(),
         }
+    }
+}
+
+/// Print player name for opponent. Returns None if player was not found in list
+#[must_use]
+pub fn print_player_name(o: Opponent, players: &[Player]) -> Option<String> {
+    match o {
+        Opponent::Player(id) => players
+            .iter()
+            .find(|p| p.get_id() == id)
+            .map(Player::get_name),
+        Opponent::Bye => Some(Opponent::Bye.to_string()),
+        Opponent::Unknown => Some(Opponent::Unknown.to_string()),
     }
 }

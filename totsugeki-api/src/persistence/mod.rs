@@ -171,6 +171,7 @@ pub trait DBAccessor {
     fn join_bracket<'a, 'b, 'c>(
         &'a self,
         player_internal_id: &'b str,
+        player_name: &'b str,
         channel_internal_id: &'b str,
         service_type_id: &'b str,
     ) -> Result<POSTResponseBody, Error<'c>>;

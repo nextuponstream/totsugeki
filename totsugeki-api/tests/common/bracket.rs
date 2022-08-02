@@ -5,7 +5,7 @@ use totsugeki::{
     bracket::{Bracket, Format, Id as BracketId, POSTResult, GET},
     matches::{Match, MatchGET, Opponent},
     organiser::Id as OrganiserId,
-    player::Id as PlayerId,
+    player::{Id as PlayerId, Player},
     seeding::Method as SeedingMethod,
     DiscussionChannelId,
 };
@@ -24,11 +24,15 @@ pub fn parse_bracket_post_response(response: TestJson) -> POSTResult {
     POSTResult::from(bracket_id, organiser_id, discussion_channel_id)
 }
 
-fn parse_players(response: &TestJsonObject) -> Vec<PlayerId> {
-    let players = response.get("players").string_array();
+fn parse_players(response: &TestJsonObject) -> Vec<Player> {
+    let players = response.get("players").object_array();
     players
         .iter()
-        .map(|p| PlayerId::parse_str(p).expect("player id"))
+        .map(|p| {
+            let name = p.get("name").string().to_string();
+            let id = PlayerId::parse_str(p.get("id").string()).expect("player id");
+            Player { id, name }
+        })
         .collect()
 }
 
