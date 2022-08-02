@@ -9,6 +9,15 @@ use totsugeki::{
 };
 
 #[derive(Object, Serialize, Deserialize)]
+/// REDEFINITION: Player in a bracket
+pub struct Player {
+    /// Player identifier
+    pub id: PlayerId,
+    /// Player name
+    pub name: String,
+}
+
+#[derive(Object, Serialize, Deserialize)]
 /// REDEFINITION: POST request to /bracket endpoint
 pub struct POST {
     /// name of the bracket
@@ -41,7 +50,7 @@ pub struct GETResponse {
     /// Name of this bracket
     bracket_name: String,
     /// Players in this bracket
-    players: Vec<PlayerId>,
+    players: Vec<Player>,
     /// Matches for this bracket
     matches: Vec<Vec<Match>>,
     /// Bracket format
@@ -88,7 +97,11 @@ impl GETResponse {
         GETResponse {
             bracket_id: bracket.get_id(),
             bracket_name: bracket.get_bracket_name(),
-            players: bracket.get_players(),
+            players: bracket
+                .get_players()
+                .iter()
+                .map(|p| p.clone().into())
+                .collect(),
             format: bracket.get_format().to_string(),
             seeding_method: bracket.get_seeding_method().to_string(),
             matches: Match::get_sendable_matches(&bracket.get_matches()),
@@ -148,6 +161,15 @@ impl From<totsugeki::bracket::POSTResult> for POSTResult {
             bracket_id: tb.get_bracket_id(),
             organiser_id: tb.get_organiser_id(),
             discussion_channel_id: tb.get_discussion_channel_id(),
+        }
+    }
+}
+
+impl From<totsugeki::player::Player> for Player {
+    fn from(p: totsugeki::player::Player) -> Self {
+        Self {
+            id: p.get_id(),
+            name: p.get_name(),
         }
     }
 }

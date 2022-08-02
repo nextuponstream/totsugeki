@@ -1,6 +1,30 @@
 //! player
 
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+/// A player is referenced by their ID and their username
+#[derive(Hash, Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+pub struct Player {
+    /// Player identifier
+    pub id: Id,
+    /// Player name
+    pub name: String,
+}
+
+impl Player {
+    /// Get player id
+    #[must_use]
+    pub fn get_id(&self) -> Id {
+        self.id
+    }
+
+    /// Get player name
+    #[must_use]
+    pub fn get_name(&self) -> String {
+        self.name.clone()
+    }
+}
 
 /// Player identifier
 pub type Id = Uuid;

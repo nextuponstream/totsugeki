@@ -38,6 +38,7 @@ where
     let db = db.read()?;
     let body = db.join_bracket(
         j.player_internal_id.as_str(),
+        j.player_name.as_str(),
         j.channel_internal_id.as_str(),
         j.service_type_id.as_str(),
     )?;

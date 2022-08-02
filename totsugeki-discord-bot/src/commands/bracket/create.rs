@@ -15,6 +15,7 @@ use totsugeki_api_request::bracket::create as create_bracket;
 #[allowed_roles("TO")]
 // https://github.com/serenity-rs/serenity/blob/current/examples/e12_global_data/src/main.rs
 async fn create(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    // TODO add description example values
     let bracket_name = args.single_quoted::<String>()?;
     let format = args.single_quoted::<String>()?;
     let seeding_method = args.single_quoted::<String>()?;
