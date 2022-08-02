@@ -99,20 +99,14 @@ impl Match {
 
     /// Get winner of match. Winners are players
     #[must_use]
-    pub fn get_winner(&self) -> Option<Opponent> {
-        match self.winner {
-            Opponent::Player(id) => Some(Opponent::Player(id)),
-            Opponent::Bye | Opponent::Unknown => None,
-        }
+    pub fn get_winner(&self) -> Opponent {
+        self.winner
     }
 
     /// Get looser of match. Loosers are always players
     #[must_use]
-    pub fn get_looser(&self) -> Option<Opponent> {
-        match self.looser {
-            Opponent::Player(id) => Some(Opponent::Player(id)),
-            Opponent::Bye | Opponent::Unknown => None,
-        }
+    pub fn get_looser(&self) -> Opponent {
+        self.looser
     }
 
     /// Get players for this match
@@ -125,5 +119,133 @@ impl Match {
     #[must_use]
     pub fn get_seeds(&self) -> Seeds {
         self.seeds
+    }
+
+    /// Create match from parameters
+    ///
+    /// # Errors
+    /// This function returns an error when the match is invalid
+    /// # Panics
+    /// not implemented...
+    pub fn from(
+        players: [Opponent; 2],
+        seeds: [usize; 2],
+        winner: Opponent,
+        looser: Opponent,
+    ) -> Result<Match, Error> {
+        Ok(Self {
+            players,
+            seeds,
+            winner,
+            looser,
+        })
+    }
+}
+
+/// Match representation as received through the network
+#[derive(Debug, Default, PartialEq, Eq, Clone, Serialize, Deserialize)]
+pub struct MatchGET {
+    /// Two players from this match. One of the player can be a BYE opponent
+    players: [String; 2],
+    /// seeds\[0\]: top seed
+    /// seeds\[1\]: bottom seed
+    seeds: Seeds,
+    /// The winner of this match, "?" if unknown, "BYE" for BYE opponent
+    winner: String,
+    /// The looser of this match, "?" if unknown, "BYE" for BYE opponent
+    looser: String,
+}
+
+/// Error while converting response from network
+#[derive(Debug)]
+pub enum MatchParsingError {
+    /// Could not parse bracket id for match
+    Opponent(OpponentParsingError),
+    /// Could not gather opponents for a match
+    GatherOpponents(Vec<Opponent>),
+}
+
+impl std::fmt::Display for MatchParsingError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MatchParsingError::Opponent(e) => {
+                write!(f, "Match opponent id could not be parsed: {e}")
+            }
+            MatchParsingError::GatherOpponents(o) => {
+                write!(f, "Could not use opponents to generate match. Is there two opponents?\nOpponents: {o:?}")
+            }
+        }
+    }
+}
+
+impl TryFrom<MatchGET> for Match {
+    type Error = MatchParsingError;
+
+    fn try_from(m: MatchGET) -> Result<Match, Self::Error> {
+        let players = m
+            .players
+            .into_iter()
+            .map(Opponent::try_from)
+            .collect::<Result<Vec<Opponent>, OpponentParsingError>>()?;
+        let players: [Opponent; 2] = players.try_into()?;
+        Ok(Self {
+            players,
+            seeds: m.seeds,
+            winner: Opponent::try_from(m.winner)?,
+            looser: Opponent::try_from(m.looser)?,
+        })
+    }
+}
+
+/// Error while parsing opponent
+#[derive(Debug)]
+pub enum OpponentParsingError {
+    /// Opponent player ID is invalid
+    InvalidId,
+}
+
+impl std::fmt::Display for OpponentParsingError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            OpponentParsingError::InvalidId => write!(f, "Opponent ID is invalid"),
+        }
+    }
+}
+
+impl TryFrom<String> for Opponent {
+    type Error = OpponentParsingError;
+
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        Ok(match s.as_str() {
+            "BYE" => Opponent::Bye,
+            "?" => Opponent::Unknown,
+            _ => match PlayerId::parse_str(&s) {
+                Ok(id) => Opponent::Player(id),
+                Err(_e) => return Err(Self::Error::InvalidId),
+            },
+        })
+    }
+}
+
+impl From<OpponentParsingError> for MatchParsingError {
+    fn from(e: OpponentParsingError) -> Self {
+        Self::Opponent(e)
+    }
+}
+
+impl From<Vec<Opponent>> for MatchParsingError {
+    fn from(opponents: Vec<Opponent>) -> Self {
+        MatchParsingError::GatherOpponents(opponents)
+    }
+}
+
+impl From<Match> for MatchGET {
+    fn from(m: Match) -> Self {
+        Self {
+            players: m.players.map(|p| p.to_string()),
+            seeds: m.seeds,
+            winner: m.winner.to_string(),
+            looser: m.looser.to_string(),
+        }
     }
 }

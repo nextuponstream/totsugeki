@@ -2,7 +2,7 @@
 pub mod common;
 
 use common::{
-    bracket::{parse_bracket_get_response, parse_bracket_post_response},
+    bracket::{parse_bracket_post_response, parse_brackets_get_response},
     db_types_to_test, test_api,
 };
 use poem::http::StatusCode;
@@ -59,7 +59,7 @@ async fn someone_creates_bracket() {
         resp.assert_status_is_ok();
 
         let r = resp.json().await;
-        let brackets = parse_bracket_get_response(r);
+        let brackets = parse_brackets_get_response(r);
 
         assert_eq!(
             brackets.len(),
@@ -150,7 +150,7 @@ async fn search_bracket() {
         resp.assert_status_is_ok();
 
         let r = resp.json().await;
-        let brackets = parse_bracket_get_response(r);
+        let brackets = parse_brackets_get_response(r);
 
         assert_eq!(
             brackets.len(),

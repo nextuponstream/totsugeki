@@ -111,6 +111,12 @@ pub struct BracketRequest<'b> {
     pub service_type_id: &'b str,
 }
 
+impl<'a> From<totsugeki::player::Error> for Error<'a> {
+    fn from(e: totsugeki::player::Error) -> Self {
+        Self::Parsing(format!("could not form players group: {e:?}")) // FIXME don't use string
+    }
+}
+
 /// Datase underlying a tournament server
 pub trait DBAccessor {
     /// Clean database to run tests

@@ -9,6 +9,8 @@ use std::sync::{Arc, RwLock};
 use totsugeki::bracket::{Format, Id as BracketId};
 use totsugeki::join::POSTResponseBody;
 use totsugeki::organiser::Id as OrganiserId;
+use totsugeki::player::Players;
+use totsugeki::seeding::get_balanced_round_matches_top_seed_favored;
 use totsugeki::{
     bracket::{ActiveBrackets, Bracket, POSTResult},
     organiser::Organiser,
@@ -273,10 +275,18 @@ impl DBAccessor for InMemoryDBAccessor {
                     if !players.contains(&player_id) {
                         players.push(player_id);
                     }
+                    let matches = if players.len() < 3 {
+                        vec![]
+                    } else {
+                        get_balanced_round_matches_top_seed_favored(&Players::from(
+                            players.clone(),
+                        )?)
+                    };
                     let b = Bracket::from(
                         b.get_id(),
                         b.get_bracket_name(),
                         players,
+                        matches,
                         b.get_format(),
                         b.get_seeding_method(),
                     );

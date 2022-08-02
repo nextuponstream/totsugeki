@@ -81,11 +81,11 @@ impl Component for View {
                 let matches = matches.into_iter().flatten().map(|m| {
                     let player_1 = m.get_players()[0];
                     let player_2 = m.get_players()[1];
-                    html! { <p>{ player_1 }{ "vs" }{ player_2 } </p> } // TODO get players names
+                    html! { <p>{ player_1 }<b>{ " VS " }</b>{ player_2 } </p> } // TODO get players names
                 });
                 html! {
                     <div class="content">
-                        <p>{ "(" } {bracket.get_id()} {") "} {bracket.get_bracket_name()}</p>
+                        <p>{ "Bracket: " } {bracket.get_bracket_name()} {" ("} {bracket.get_id()} {")"}</p>
                         <p>{ "Format: " } {bracket.get_format().to_string()}</p>
                         <p>{ "Seeding type: " } {bracket.get_seeding_method().to_string()}</p>
                         <p>{ "Players:"}</p>

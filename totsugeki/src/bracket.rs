@@ -2,7 +2,7 @@
 
 use crate::{
     bracket::Id as BracketId,
-    matches::Match,
+    matches::{Match, MatchGET, MatchParsingError},
     organiser::Id as OrganiserId,
     player::{Id as PlayerId, Players},
     seeding::{
@@ -218,17 +218,18 @@ impl Bracket {
     /// Create from existing bracket
     #[must_use]
     pub fn from(
-        id: Id,
+        bracket_id: Id,
         bracket_name: String,
         players: Vec<PlayerId>,
+        matches: Vec<Vec<Match>>,
         format: Format,
         seeding_method: SeedingMethod,
     ) -> Self {
         Self {
-            bracket_id: id,
+            bracket_id,
             bracket_name,
             players,
-            matches: vec![],
+            matches,
             format,
             seeding_method,
         }
@@ -348,17 +349,17 @@ impl POSTResult {
 #[derive(Serialize, Deserialize)]
 pub struct GET {
     /// Identifier of bracket
-    bracket_id: Id,
+    pub bracket_id: Id,
     /// Name of this bracket
-    bracket_name: String,
+    pub bracket_name: String,
     /// Players in this bracket
-    players: Vec<PlayerId>,
+    pub players: Vec<PlayerId>,
     /// Matches for this bracket
-    matches: Vec<Vec<Match>>,
+    pub matches: Vec<Vec<MatchGET>>,
     /// Bracket format
-    format: String,
+    pub format: String,
     /// Seeding method used for this bracket
-    seeding_method: String,
+    pub seeding_method: String,
 }
 
 /// Error while parsing Bracket
@@ -368,6 +369,8 @@ pub enum ParsingError {
     Format(FormatParsingError),
     /// Could not parse seeding method
     Seeding(SeedingParsingError),
+    /// Could not parse match
+    MatchParsing(MatchParsingError),
 }
 
 impl std::fmt::Display for ParsingError {
@@ -375,6 +378,7 @@ impl std::fmt::Display for ParsingError {
         match self {
             ParsingError::Format(e) => e.fmt(f),
             ParsingError::Seeding(e) => e.fmt(f),
+            ParsingError::MatchParsing(e) => e.fmt(f),
         }
     }
 }
@@ -387,10 +391,25 @@ impl TryFrom<GET> for Bracket {
             bracket_id: b.bracket_id,
             bracket_name: b.bracket_name,
             players: b.players,
-            matches: b.matches,
+            matches: {
+                b.matches
+                    .iter()
+                    .map(|r| {
+                        r.iter()
+                            .map(|m| Match::try_from(m.clone()))
+                            .collect::<Result<Vec<Match>, _>>()
+                    })
+                    .collect::<Result<Vec<Vec<Match>>, _>>()?
+            },
             format: b.format.parse::<Format>()?,
             seeding_method: b.seeding_method.parse::<SeedingMethod>()?,
         })
+    }
+}
+
+impl From<MatchParsingError> for ParsingError {
+    fn from(e: MatchParsingError) -> Self {
+        Self::MatchParsing(e)
     }
 }
 
