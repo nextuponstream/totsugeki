@@ -2,6 +2,7 @@
 pub mod inmemory;
 pub mod postgresql;
 
+use crate::matches::NextMatchGET;
 use crate::{ApiServiceId, ApiServiceUser, Service};
 use std::fmt::Display;
 use std::str::FromStr;
@@ -55,6 +56,16 @@ pub enum Error<'a> {
     Unknown(String),
     /// Bracket was not found
     BracketNotFound(BracketId),
+    /// Discussion channel was not found
+    DiscussionChannelNotFound,
+    /// No active bracket for provided discussion channel
+    NoActiveBracketInDiscussionChannel,
+    /// Player was not found
+    PlayerNotFound,
+    /// Next match was not found for this bracket
+    NextMatchNotFound,
+    /// There is either not enough players in bracket or the player's run in bracket has ended
+    NoNextMatch,
 }
 
 impl<'a> From<PoisonError<DatabaseReadLock<'a>>> for Error<'a> {
@@ -77,6 +88,16 @@ impl<'a> Display for Error<'a> {
             Error::PoisonedReadLock(e) => e.fmt(f),
             Error::PoisonedWriteLock(e) => e.fmt(f),
             Error::BracketNotFound(b_id) => writeln!(f, "Bracket not found: {b_id}"),
+            Error::DiscussionChannelNotFound => writeln!(
+                f,
+                "Discussion channel not found because it is not registered"
+            ),
+            Error::NoActiveBracketInDiscussionChannel => {
+                writeln!(f, "There is no active bracket in this discussion channel")
+            }
+            Error::PlayerNotFound => writeln!(f, "Player is not registered"),
+            Error::NextMatchNotFound => writeln!(f, "Next match was not found"),
+            Error::NoNextMatch => write!(f, "There is no match for you to play."),
         }
     }
 }
@@ -212,4 +233,15 @@ pub trait DBAccessor {
         service_name: &'b str,
         service_description: &'b str,
     ) -> Result<ApiServiceId, Error<'c>>;
+
+    /// Return next match for this player
+    ///
+    /// # Errors
+    /// Returns an error if there is no match to be played
+    fn find_next_match<'a, 'b, 'c>(
+        &'a self,
+        player_internal_id: &'b str,
+        channel_internal_id: &'b str,
+        service_type_id: &'b str,
+    ) -> Result<NextMatchGET, Error<'c>>;
 }

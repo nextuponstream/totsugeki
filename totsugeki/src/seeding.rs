@@ -219,6 +219,7 @@ impl From<PlayerError> for Error {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::matches::Id as MatchId;
     use crate::player::Id as PlayerId;
     use rand::Rng;
 
@@ -264,16 +265,39 @@ mod tests {
 
         let players = Players::from(players_copy).expect("players");
         let matches = get_balanced_round_matches_top_seed_favored(&players);
+        let mut match_ids: Vec<MatchId> = matches
+            .iter()
+            .flatten()
+            .map(crate::matches::Match::get_id)
+            .rev()
+            .collect();
         let expected_matches = vec![
             vec![
-                Match::new([Opponent::Player(*diego), Opponent::Bye], [1, 4]).expect("match"),
-                Match::new(
+                Match::from(
+                    match_ids.pop().expect("match id"),
+                    [Opponent::Player(*diego), Opponent::Bye],
+                    [1, 4],
+                    Opponent::Player(*diego),
+                    Opponent::Unknown,
+                )
+                .expect("match"),
+                Match::from(
+                    match_ids.pop().expect("match id"),
                     [Opponent::Player(*pink), Opponent::Player(*cute_cat)],
                     [2, 3],
+                    Opponent::Unknown,
+                    Opponent::Unknown,
                 )
                 .expect("match"),
             ],
-            vec![Match::new([Opponent::Unknown, Opponent::Unknown], [1, 2]).expect("match")],
+            vec![Match::from(
+                match_ids.pop().expect("match id"),
+                [Opponent::Unknown, Opponent::Unknown],
+                [1, 2],
+                Opponent::Unknown,
+                Opponent::Unknown,
+            )
+            .expect("match")],
         ];
 
         assert_eq!(
@@ -300,17 +324,39 @@ mod tests {
 
         let players = Players::from(players_copy).expect("players");
         let matches = get_balanced_round_matches_top_seed_favored(&players);
+        let mut match_ids: Vec<MatchId> = matches
+            .iter()
+            .flatten()
+            .map(crate::matches::Match::get_id)
+            .rev()
+            .collect();
         let expected_matches = vec![
             vec![
-                Match::new(
+                Match::from(
+                    match_ids.pop().expect("match id"),
                     [Opponent::Player(*diego), Opponent::Player(*cute_cat)],
                     [1, 4],
+                    Opponent::Unknown,
+                    Opponent::Unknown,
                 )
                 .expect("match"),
-                Match::new([Opponent::Player(*pink), Opponent::Player(*guy)], [2, 3])
-                    .expect("match"),
+                Match::from(
+                    match_ids.pop().expect("match id"),
+                    [Opponent::Player(*pink), Opponent::Player(*guy)],
+                    [2, 3],
+                    Opponent::Unknown,
+                    Opponent::Unknown,
+                )
+                .expect("match"),
             ],
-            vec![Match::new([Opponent::Unknown, Opponent::Unknown], [1, 2]).expect("match")],
+            vec![Match::from(
+                match_ids.pop().expect("match id"),
+                [Opponent::Unknown, Opponent::Unknown],
+                [1, 2],
+                Opponent::Unknown,
+                Opponent::Unknown,
+            )
+            .expect("match")],
         ];
 
         assert_eq!(
@@ -338,23 +384,73 @@ mod tests {
 
         let players = Players::from(players_copy).expect("players");
         let matches = get_balanced_round_matches_top_seed_favored(&players);
+        let mut match_ids: Vec<MatchId> = matches
+            .iter()
+            .flatten()
+            .map(crate::matches::Match::get_id)
+            .rev()
+            .collect();
         let expected_matches = vec![
             vec![
-                Match::new([Opponent::Player(*diego), Opponent::Bye], [1, 8]).expect("match"),
-                Match::new([Opponent::Player(*pink), Opponent::Bye], [2, 7]).expect("match"),
-                Match::new([Opponent::Player(*average_player), Opponent::Bye], [3, 6])
-                    .expect("match"),
-                Match::new(
+                Match::from(
+                    match_ids.pop().expect("match id"),
+                    [Opponent::Player(*diego), Opponent::Bye],
+                    [1, 8],
+                    Opponent::Player(*diego),
+                    Opponent::Unknown,
+                )
+                .expect("match"),
+                Match::from(
+                    match_ids.pop().expect("match id"),
+                    [Opponent::Player(*pink), Opponent::Bye],
+                    [2, 7],
+                    Opponent::Player(*pink),
+                    Opponent::Unknown,
+                )
+                .expect("match"),
+                Match::from(
+                    match_ids.pop().expect("match id"),
+                    [Opponent::Player(*average_player), Opponent::Bye],
+                    [3, 6],
+                    Opponent::Player(*average_player),
+                    Opponent::Unknown,
+                )
+                .expect("match"),
+                Match::from(
+                    match_ids.pop().expect("match id"),
                     [Opponent::Player(*guy), Opponent::Player(*cute_cat)],
                     [4, 5],
+                    Opponent::Unknown,
+                    Opponent::Unknown,
                 )
                 .expect("match"),
             ],
             vec![
-                Match::new([Opponent::Unknown, Opponent::Unknown], [1, 4]).expect("match"),
-                Match::new([Opponent::Unknown, Opponent::Unknown], [2, 3]).expect("match"),
+                Match::from(
+                    match_ids.pop().expect("match id"),
+                    [Opponent::Unknown, Opponent::Unknown],
+                    [1, 4],
+                    Opponent::Unknown,
+                    Opponent::Unknown,
+                )
+                .expect("match"),
+                Match::from(
+                    match_ids.pop().expect("match id"),
+                    [Opponent::Unknown, Opponent::Unknown],
+                    [2, 3],
+                    Opponent::Unknown,
+                    Opponent::Unknown,
+                )
+                .expect("match"),
             ],
-            vec![Match::new([Opponent::Unknown, Opponent::Unknown], [1, 2]).expect("match")],
+            vec![Match::from(
+                match_ids.pop().expect("match id"),
+                [Opponent::Unknown, Opponent::Unknown],
+                [1, 2],
+                Opponent::Unknown,
+                Opponent::Unknown,
+            )
+            .expect("match")],
         ];
 
         assert_eq!(
@@ -383,26 +479,73 @@ mod tests {
 
         let players = Players::from(players_copy).expect("players");
         let matches = get_balanced_round_matches_top_seed_favored(&players);
+        let mut match_ids: Vec<MatchId> = matches
+            .iter()
+            .flatten()
+            .map(crate::matches::Match::get_id)
+            .rev()
+            .collect();
         let expected_matches = vec![
             vec![
-                Match::new([Opponent::Player(*diego), Opponent::Bye], [1, 8]).expect("match"),
-                Match::new([Opponent::Player(*pink), Opponent::Bye], [2, 7]).expect("match"),
-                Match::new(
-                    [Opponent::Player(*pink_nemesis), Opponent::Player(*cute_cat)],
-                    [3, 6],
+                Match::from(
+                    match_ids.pop().expect("match id"),
+                    [Opponent::Player(*diego), Opponent::Bye],
+                    [1, 8],
+                    Opponent::Player(*diego),
+                    Opponent::Unknown,
                 )
                 .expect("match"),
-                Match::new(
+                Match::from(
+                    match_ids.pop().expect("match id"),
+                    [Opponent::Player(*pink), Opponent::Bye],
+                    [2, 7],
+                    Opponent::Player(*pink),
+                    Opponent::Unknown,
+                )
+                .expect("match"),
+                Match::from(
+                    match_ids.pop().expect("match id"),
+                    [Opponent::Player(*pink_nemesis), Opponent::Player(*cute_cat)],
+                    [3, 6],
+                    Opponent::Unknown,
+                    Opponent::Unknown,
+                )
+                .expect("match"),
+                Match::from(
+                    match_ids.pop().expect("match id"),
                     [Opponent::Player(*average_player), Opponent::Player(*guy)],
                     [4, 5],
+                    Opponent::Unknown,
+                    Opponent::Unknown,
                 )
                 .expect("match"),
             ],
             vec![
-                Match::new([Opponent::Unknown, Opponent::Unknown], [1, 4]).expect("match"),
-                Match::new([Opponent::Unknown, Opponent::Unknown], [2, 3]).expect("match"),
+                Match::from(
+                    match_ids.pop().expect("match id"),
+                    [Opponent::Unknown, Opponent::Unknown],
+                    [1, 4],
+                    Opponent::Unknown,
+                    Opponent::Unknown,
+                )
+                .expect("match"),
+                Match::from(
+                    match_ids.pop().expect("match id"),
+                    [Opponent::Unknown, Opponent::Unknown],
+                    [2, 3],
+                    Opponent::Unknown,
+                    Opponent::Unknown,
+                )
+                .expect("match"),
             ],
-            vec![Match::new([Opponent::Unknown, Opponent::Unknown], [1, 2]).expect("match")],
+            vec![Match::from(
+                match_ids.pop().expect("match id"),
+                [Opponent::Unknown, Opponent::Unknown],
+                [1, 2],
+                Opponent::Unknown,
+                Opponent::Unknown,
+            )
+            .expect("match")],
         ];
 
         assert_eq!(
@@ -432,33 +575,76 @@ mod tests {
 
         let players = Players::from(players_copy).expect("players");
         let matches = get_balanced_round_matches_top_seed_favored(&players);
+        let mut match_ids: Vec<MatchId> = matches
+            .iter()
+            .flatten()
+            .map(crate::matches::Match::get_id)
+            .rev()
+            .collect();
         let expected_matches = vec![
             vec![
-                Match::new([Opponent::Player(*diego), Opponent::Bye], [1, 8]).expect("match"),
-                Match::new(
-                    [Opponent::Player(*pink), Opponent::Player(*cute_cat)],
-                    [2, 7],
+                Match::from(
+                    match_ids.pop().expect("match id"),
+                    [Opponent::Player(*diego), Opponent::Bye],
+                    [1, 8],
+                    Opponent::Player(*diego),
+                    Opponent::Unknown,
                 )
                 .expect("match"),
-                Match::new(
+                Match::from(
+                    match_ids.pop().expect("match id"),
+                    [Opponent::Player(*pink), Opponent::Player(*cute_cat)],
+                    [2, 7],
+                    Opponent::Unknown,
+                    Opponent::Unknown,
+                )
+                .expect("match"),
+                Match::from(
+                    match_ids.pop().expect("match id"),
                     [
                         Opponent::Player(*pink_nemesis),
                         Opponent::Player(*fg_enjoyer),
                     ],
                     [3, 6],
+                    Opponent::Unknown,
+                    Opponent::Unknown,
                 )
                 .expect("match"),
-                Match::new(
+                Match::from(
+                    match_ids.pop().expect("match id"),
                     [Opponent::Player(*average_player), Opponent::Player(*guy)],
                     [4, 5],
+                    Opponent::Unknown,
+                    Opponent::Unknown,
                 )
                 .expect("match"),
             ],
             vec![
-                Match::new([Opponent::Unknown, Opponent::Unknown], [1, 4]).expect("match"),
-                Match::new([Opponent::Unknown, Opponent::Unknown], [2, 3]).expect("match"),
+                Match::from(
+                    match_ids.pop().expect("match id"),
+                    [Opponent::Unknown, Opponent::Unknown],
+                    [1, 4],
+                    Opponent::Unknown,
+                    Opponent::Unknown,
+                )
+                .expect("match"),
+                Match::from(
+                    match_ids.pop().expect("match id"),
+                    [Opponent::Unknown, Opponent::Unknown],
+                    [2, 3],
+                    Opponent::Unknown,
+                    Opponent::Unknown,
+                )
+                .expect("match"),
             ],
-            vec![Match::new([Opponent::Unknown, Opponent::Unknown], [1, 2]).expect("match")],
+            vec![Match::from(
+                match_ids.pop().expect("match id"),
+                [Opponent::Unknown, Opponent::Unknown],
+                [1, 2],
+                Opponent::Unknown,
+                Opponent::Unknown,
+            )
+            .expect("match")],
         ];
 
         assert_eq!(
@@ -489,37 +675,76 @@ mod tests {
 
         let players = Players::from(players_copy).expect("players");
         let matches = get_balanced_round_matches_top_seed_favored(&players);
+        let mut match_ids: Vec<MatchId> = matches
+            .iter()
+            .flatten()
+            .map(crate::matches::Match::get_id)
+            .rev()
+            .collect();
         let expected_matches = vec![
             vec![
-                Match::new(
+                Match::from(
+                    match_ids.pop().expect("match id"),
                     [Opponent::Player(*diego), Opponent::Player(*cute_cat)],
                     [1, 8],
+                    Opponent::Unknown,
+                    Opponent::Unknown,
                 )
                 .expect("match"),
-                Match::new(
+                Match::from(
+                    match_ids.pop().expect("match id"),
                     [Opponent::Player(*pink), Opponent::Player(*fg_enjoyer)],
                     [2, 7],
+                    Opponent::Unknown,
+                    Opponent::Unknown,
                 )
                 .expect("match"),
-                Match::new(
+                Match::from(
+                    match_ids.pop().expect("match id"),
                     [Opponent::Player(*pink_nemesis), Opponent::Player(*guy)],
                     [3, 6],
+                    Opponent::Unknown,
+                    Opponent::Unknown,
                 )
                 .expect("match"),
-                Match::new(
+                Match::from(
+                    match_ids.pop().expect("match id"),
                     [
                         Opponent::Player(*big_body_enjoyer),
                         Opponent::Player(*average_player),
                     ],
                     [4, 5],
+                    Opponent::Unknown,
+                    Opponent::Unknown,
                 )
                 .expect("match"),
             ],
             vec![
-                Match::new([Opponent::Unknown, Opponent::Unknown], [1, 4]).expect("match"),
-                Match::new([Opponent::Unknown, Opponent::Unknown], [2, 3]).expect("match"),
+                Match::from(
+                    match_ids.pop().expect("match id"),
+                    [Opponent::Unknown, Opponent::Unknown],
+                    [1, 4],
+                    Opponent::Unknown,
+                    Opponent::Unknown,
+                )
+                .expect("match"),
+                Match::from(
+                    match_ids.pop().expect("match id"),
+                    [Opponent::Unknown, Opponent::Unknown],
+                    [2, 3],
+                    Opponent::Unknown,
+                    Opponent::Unknown,
+                )
+                .expect("match"),
             ],
-            vec![Match::new([Opponent::Unknown, Opponent::Unknown], [1, 2]).expect("match")],
+            vec![Match::from(
+                match_ids.pop().expect("match id"),
+                [Opponent::Unknown, Opponent::Unknown],
+                [1, 2],
+                Opponent::Unknown,
+                Opponent::Unknown,
+            )
+            .expect("match")],
         ];
 
         assert_eq!(

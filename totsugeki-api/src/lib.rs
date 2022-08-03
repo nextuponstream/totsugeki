@@ -10,6 +10,7 @@
 
 pub mod bracket;
 pub mod join;
+pub mod matches;
 pub mod persistence;
 pub mod routes;
 
@@ -71,6 +72,17 @@ fn log_error(e: &Error) {
         Error::Denied(e) => warn!("{e}"),
         Error::Parsing(e) => warn!("User input could not be parsed: {e}"),
         Error::BracketNotFound(b_id) => warn!("User searched for unknown bracket: {b_id}"),
+        Error::DiscussionChannelNotFound => {
+            warn!("User did not find unregistered discussion channel");
+        }
+        Error::NoActiveBracketInDiscussionChannel => {
+            warn!("User did not find active bracket in discussion channel");
+        }
+        Error::PlayerNotFound => warn!("A user searched for an unknown player"),
+        Error::NextMatchNotFound => error!("User could not get their next match"),
+        Error::NoNextMatch => {
+            warn!("User wanted to know their next match but there is none for them");
+        } // TODO add more info for debugging
     }
 }
 
