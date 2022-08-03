@@ -11,7 +11,7 @@ use totsugeki::{
     bracket::{Bracket, FormatParsingError, Id as BracketId, POSTResult},
     join::POSTResponseBody,
     organiser::Organiser,
-    seeding::ParsingError as SeedingParsingError,
+    seeding::{Error as SeedingError, ParsingError as SeedingParsingError},
 };
 
 /// Error while parsing ``InteralIdType`` of service used
@@ -66,6 +66,14 @@ pub enum Error<'a> {
     NextMatchNotFound,
     /// There is either not enough players in bracket or the player's run in bracket has ended
     NoNextMatch,
+    /// To many players causes math overflow
+    Seeding(SeedingError),
+}
+
+impl<'a> From<SeedingError> for Error<'a> {
+    fn from(e: totsugeki::seeding::Error) -> Self {
+        Self::Seeding(e)
+    }
 }
 
 impl<'a> From<PoisonError<DatabaseReadLock<'a>>> for Error<'a> {
@@ -98,6 +106,7 @@ impl<'a> Display for Error<'a> {
             Error::PlayerNotFound => writeln!(f, "Player is not registered"),
             Error::NextMatchNotFound => writeln!(f, "Next match was not found"),
             Error::NoNextMatch => write!(f, "There is no match for you to play."),
+            Error::Seeding(e) => e.fmt(f),
         }
     }
 }
