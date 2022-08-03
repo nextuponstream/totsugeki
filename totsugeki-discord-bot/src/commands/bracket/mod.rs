@@ -2,6 +2,7 @@
 pub mod create;
 pub mod find;
 pub mod get;
+pub mod next;
 
 use self::create::CREATE_COMMAND;
 use self::find::FIND_COMMAND;

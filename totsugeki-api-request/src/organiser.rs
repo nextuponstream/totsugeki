@@ -1,7 +1,6 @@
 //! Request to /organiser endpoint
 
-use crate::RequestError;
-use crate::HTTP_PREFIX;
+use crate::{RequestError, HTTP_PREFIX};
 use totsugeki::organiser::Organiser;
 
 /// Fetch organisers

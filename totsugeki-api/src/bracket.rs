@@ -3,6 +3,7 @@ use poem_openapi::Object;
 use serde::{Deserialize, Serialize};
 use totsugeki::{
     bracket::{Bracket, Id as BracketId},
+    matches::Id as MatchId,
     organiser::Id as OrganiserId,
     player::Id as PlayerId,
     DiscussionChannelId,
@@ -62,6 +63,8 @@ pub struct GETResponse {
 /// REDEFINITION: A match between two players, resulting in a winner and a loser
 #[derive(Object, Debug, Default, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct Match {
+    /// Match identifier
+    id: MatchId,
     /// Two players from this match. One of the player can be a BYE opponent
     players: [String; 2],
     /// seeds\[0\]: top seed
@@ -114,6 +117,7 @@ impl From<&totsugeki::matches::Match> for Match {
         let player_1 = m.get_players()[0].to_string();
         let player_2 = m.get_players()[1].to_string();
         Self {
+            id: m.get_id(),
             players: [player_1, player_2],
             seeds: m.get_seeds(),
             winner: m.get_winner().to_string(),

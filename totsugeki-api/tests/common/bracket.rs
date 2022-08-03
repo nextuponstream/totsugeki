@@ -3,7 +3,7 @@
 use poem::test::{TestJson, TestJsonObject};
 use totsugeki::{
     bracket::{Bracket, Format, Id as BracketId, POSTResult, GET},
-    matches::{Match, MatchGET, Opponent},
+    matches::{Id as MatchId, Match, MatchGET, Opponent},
     organiser::Id as OrganiserId,
     player::{Id as PlayerId, Player},
     seeding::Method as SeedingMethod,
@@ -107,6 +107,7 @@ pub fn parse_matches(response: &TestJsonObject) -> Vec<Vec<Match>> {
                 .iter()
                 .map(|m| {
                     let m = m.object();
+                    let id = MatchId::parse_str(m.get("id").string()).expect("id");
                     let players = m
                         .get("players")
                         .string_array()
@@ -132,7 +133,7 @@ pub fn parse_matches(response: &TestJsonObject) -> Vec<Vec<Match>> {
                     let looser = m.get("looser").string();
                     let looser = Opponent::try_from(looser.to_string()).expect("looser");
 
-                    Match::from(players, seeds, winner, looser).expect("match")
+                    Match::from(id, players, seeds, winner, looser).expect("match")
                 })
                 .collect::<Vec<Match>>();
             r

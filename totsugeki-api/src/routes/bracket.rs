@@ -1,6 +1,7 @@
 //! bracket routes
 use crate::bracket::{POSTResult, POST};
 use crate::log_error;
+use crate::matches::{NextMatchGET, NextMatchGETRequest};
 use crate::persistence::{BracketRequest, Error};
 use crate::ApiKeyServiceAuthorization;
 use crate::GETResponse;
@@ -105,6 +106,28 @@ impl Api {
             }
         }
     }
+
+    /// Return opponent of next match
+    #[oai(path = "/next_match", method = "get")]
+    async fn next_match<'a>(
+        &self,
+        db: SharedDb<'a>,
+        _auth: ApiKeyServiceAuthorization,
+        r: Json<NextMatchGETRequest>,
+    ) -> Result<Json<NextMatchGET>> {
+        match next_match_for_player(
+            &db,
+            r.player_internal_id.as_str(),
+            r.channel_internal_id.as_str(),
+            r.service_type_id.as_str(),
+        ) {
+            Ok(response) => Ok(Json(response)),
+            Err(e) => {
+                log_error(&e);
+                Err(e.into())
+            }
+        }
+    }
 }
 
 impl<'a> From<Error<'a>> for pError {
@@ -117,6 +140,21 @@ impl<'a> From<Error<'a>> for pError {
             Error::Parsing(msg) => pError::from_string(msg, StatusCode::BAD_REQUEST),
             Error::Unknown(_msg) => pError::from_status(StatusCode::INTERNAL_SERVER_ERROR),
             Error::BracketNotFound(_) => pError::from_status(StatusCode::NOT_FOUND),
+            Error::DiscussionChannelNotFound => pError::from_string(
+                Error::DiscussionChannelNotFound.to_string(),
+                StatusCode::NOT_FOUND,
+            ),
+            Error::NoActiveBracketInDiscussionChannel => pError::from_string(
+                Error::NoActiveBracketInDiscussionChannel.to_string(),
+                StatusCode::NOT_FOUND,
+            ),
+            Error::PlayerNotFound => {
+                pError::from_string(Error::PlayerNotFound.to_string(), StatusCode::NOT_FOUND)
+            }
+            Error::NextMatchNotFound => pError::from_status(StatusCode::INTERNAL_SERVER_ERROR),
+            Error::NoNextMatch => {
+                pError::from_string(Error::NoNextMatch.to_string(), StatusCode::NOT_FOUND)
+            }
         }
     }
 }
@@ -166,4 +204,19 @@ where
 {
     let db = db.read()?;
     db.find_brackets(bracket_name, offset)
+}
+
+/// Returns next match for player
+fn next_match_for_player<'a, 'b, 'c>(
+    db: &'a SharedDb,
+    player_internal_id: &'b str,
+    channel_internal_id: &'b str,
+    service_type_id: &'b str,
+) -> Result<NextMatchGET, Error<'c>>
+where
+    'a: 'c,
+    'b: 'c,
+{
+    let db = db.read()?;
+    db.find_next_match(player_internal_id, channel_internal_id, service_type_id)
 }

@@ -94,4 +94,13 @@ impl DBAccessor for Accessor {
     ) -> Result<totsugeki::bracket::POSTResult, super::Error<'c>> {
         todo!()
     }
+
+    fn find_next_match<'a, 'b, 'c>(
+        &'a self,
+        player_internal_id: &'b str,
+        channel_internal_id: &'b str,
+        service_type_id: &'b str,
+    ) -> Result<crate::matches::NextMatchGET, super::Error<'c>> {
+        todo!()
+    }
 }

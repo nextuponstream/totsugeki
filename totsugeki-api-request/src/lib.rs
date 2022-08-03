@@ -17,6 +17,7 @@ use totsugeki::{bracket::ParsingError as BracketParsingError, ServiceRegisterPOS
 
 pub mod bracket;
 pub mod join;
+pub mod next_match;
 pub mod organiser;
 
 /// Helper for forming url

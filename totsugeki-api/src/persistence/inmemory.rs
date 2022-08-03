@@ -1,5 +1,6 @@
 //! In-memory database
 use super::BracketRequest;
+use crate::matches::NextMatchGET;
 use crate::persistence::{DBAccessor, Error};
 use crate::{ApiServiceId, ApiServiceUser};
 use serenity::model::id::{ChannelId, GuildId, UserId};
@@ -8,6 +9,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use totsugeki::bracket::{Format, Id as BracketId};
 use totsugeki::join::POSTResponseBody;
+use totsugeki::matches::Opponent;
 use totsugeki::organiser::Id as OrganiserId;
 use totsugeki::player::{Player, Players};
 use totsugeki::seeding::get_balanced_round_matches_top_seed_favored;
@@ -367,6 +369,102 @@ impl DBAccessor for InMemoryDBAccessor {
             None => return Err(Error::BracketNotFound(bracket_id)),
         };
         Ok(bracket.clone())
+    }
+
+    fn find_next_match<'a, 'b, 'c>(
+        &'a self,
+        player_internal_id: &'b str,
+        channel_internal_id: &'b str,
+        service_type_id: &'b str,
+    ) -> Result<crate::matches::NextMatchGET, Error<'c>> {
+        let db = self.db.read().expect("database"); // FIXME bubble up error
+        let service_type = service_type_id.parse::<Service>()?;
+        let mut bracket = Bracket::default();
+        let mut player_id = PlayerId::default();
+        match service_type {
+            Service::Discord => {
+                let channel_internal_id = channel_internal_id.parse::<ChannelId>()?;
+                let channel_id = match db.discord_internal_channel.get(&channel_internal_id) {
+                    Some(id) => id,
+                    None => return Err(Error::DiscussionChannelNotFound),
+                };
+
+                let active_bracket_id = match db.discussion_channel_active_brackets.get(channel_id)
+                {
+                    Some(id) => id,
+                    None => return Err(Error::NoActiveBracketInDiscussionChannel),
+                };
+
+                bracket = match db.brackets.iter().find(|b| b.0 == active_bracket_id) {
+                    Some(b) => b.1.clone(),
+                    None => return Err(Error::BracketNotFound(*active_bracket_id)),
+                };
+
+                let player_internal_id = player_internal_id.parse::<UserId>()?;
+                player_id = match db.discord_internal_users.get(&player_internal_id) {
+                    Some(id) => *id,
+                    None => return Err(Error::PlayerNotFound),
+                };
+            }
+        }
+
+        match bracket.get_format() {
+            Format::SingleElimination => {
+                // TODO save info about what round a player is playing for a given bracket
+                // so you don't need to search the whole tree for it
+
+                // search from first round, find match player is in, then the next one if he wins
+                if bracket.get_matches().is_empty() {
+                    return Err(Error::NoNextMatch);
+                }
+
+                for round in &bracket.get_matches() {
+                    for m in round {
+                        if let Opponent::Player(id) = m.get_players()[0] {
+                            if id == player_id {
+                                match m.get_winner() {
+                                    Opponent::Player(winner) => {
+                                        if winner == player_id {
+                                            continue; // search next round
+                                        }
+                                        return Err(Error::NoNextMatch);
+                                    }
+                                    Opponent::Bye => todo!(), // TODO add some serious error
+                                    Opponent::Unknown => {
+                                        return Ok(NextMatchGET {
+                                            opponent: m.get_players()[1].to_string(),
+                                            match_id: m.get_id(),
+                                            bracket_id: bracket.get_id(),
+                                        })
+                                    }
+                                }
+                            }
+                        }
+                        if let Opponent::Player(id) = m.get_players()[1] {
+                            if id == player_id {
+                                match m.get_winner() {
+                                    Opponent::Player(winner) => {
+                                        if winner == player_id {
+                                            continue; // search next round
+                                        }
+                                        return Err(Error::NoNextMatch);
+                                    }
+                                    Opponent::Bye => todo!(), // TODO add some serious error
+                                    Opponent::Unknown => {
+                                        return Ok(NextMatchGET {
+                                            opponent: m.get_players()[0].to_string(),
+                                            match_id: m.get_id(),
+                                            bracket_id: bracket.get_id(),
+                                        })
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                Err(Error::NextMatchNotFound)
+            }
+        }
     }
 }
 

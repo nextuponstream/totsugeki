@@ -1,6 +1,9 @@
 //! Two players play a match, resulting in a winner and a loser
 
-use crate::player::{Id as PlayerId, Player};
+use crate::{
+    bracket::Id as BracketId,
+    player::{Id as PlayerId, Player},
+};
 use serde::{Deserialize, Serialize};
 
 /// Error while creating a match
@@ -41,6 +44,8 @@ type Seeds = [usize; 2];
 /// A match between two players, resulting in a winner and a loser
 #[derive(Debug, Default, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct Match {
+    /// Identifier of match
+    id: Id,
     /// Two players from this match. One of the player can be a BYE opponent
     players: MatchPlayers,
     /// seeds\[0\]: top seed
@@ -54,7 +59,11 @@ pub struct Match {
 
 impl std::fmt::Display for Match {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} vs {}", self.players[0], self.players[1])
+        // writeln!(f, "{}", self.id)?;
+        writeln!(f, "\t{} vs {}", self.players[0], self.players[1])
+        // writeln!(f, "\t{} vs {}", self.seeds[0], self.seeds[1])
+        // writeln!(f, "{}", self.winner)
+        // writeln!(f, "{}", self.looser)
     }
 }
 
@@ -90,6 +99,7 @@ impl Match {
             Opponent::Unknown
         };
         Ok(Self {
+            id: Id::new_v4(),
             players,
             winner,
             looser: Opponent::Unknown,
@@ -128,23 +138,33 @@ impl Match {
     /// # Panics
     /// not implemented...
     pub fn from(
+        id: Id,
         players: [Opponent; 2],
         seeds: [usize; 2],
         winner: Opponent,
         looser: Opponent,
     ) -> Result<Match, Error> {
         Ok(Self {
+            id,
             players,
             seeds,
             winner,
             looser,
         })
     }
+
+    /// Get id of match
+    #[must_use]
+    pub fn get_id(&self) -> Id {
+        self.id
+    }
 }
 
 /// Match representation as received through the network
 #[derive(Debug, Default, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct MatchGET {
+    /// Match id
+    id: Id,
     /// Two players from this match. One of the player can be a BYE opponent
     players: [String; 2],
     /// seeds\[0\]: top seed
@@ -189,6 +209,7 @@ impl TryFrom<MatchGET> for Match {
             .collect::<Result<Vec<Opponent>, OpponentParsingError>>()?;
         let players: [Opponent; 2] = players.try_into()?;
         Ok(Self {
+            id: m.id,
             players,
             seeds: m.seeds,
             winner: Opponent::try_from(m.winner)?,
@@ -242,6 +263,7 @@ impl From<Vec<Opponent>> for MatchParsingError {
 impl From<Match> for MatchGET {
     fn from(m: Match) -> Self {
         Self {
+            id: m.id,
             players: m.players.map(|p| p.to_string()),
             seeds: m.seeds,
             winner: m.winner.to_string(),
@@ -260,5 +282,29 @@ pub fn print_player_name(o: Opponent, players: &[Player]) -> Option<String> {
             .map(Player::get_name),
         Opponent::Bye => Some(Opponent::Bye.to_string()),
         Opponent::Unknown => Some(Opponent::Unknown.to_string()),
+    }
+}
+
+/// Id of match
+pub type Id = uuid::Uuid;
+
+/// Response to query: "who is my next opponent"
+#[derive(Serialize, Deserialize)]
+pub struct NextMatchGET {
+    /// Next opponent
+    pub opponent: Opponent,
+    /// Id of next match
+    pub match_id: Id,
+    /// Bracket where next match happens
+    pub bracket_id: BracketId,
+}
+
+impl std::fmt::Display for NextMatchGET {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Next opponent: {}\nMatch ID: {}\nBracket ID: {}",
+            self.opponent, self.match_id, self.bracket_id
+        )
     }
 }
