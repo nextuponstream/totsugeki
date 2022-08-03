@@ -43,6 +43,14 @@ pub enum Error {
     AlreadyPresent,
 }
 
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::AlreadyPresent => writeln!(f, "Player already present in group"),
+        }
+    }
+}
+
 impl Players {
     /// Add player to bracket
     ///

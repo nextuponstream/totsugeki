@@ -80,9 +80,11 @@ fn log_error(e: &Error) {
         }
         Error::PlayerNotFound => warn!("A user searched for an unknown player"),
         Error::NextMatchNotFound => error!("User could not get their next match"),
+        // TODO add more info for debugging
         Error::NoNextMatch => {
             warn!("User wanted to know their next match but there is none for them");
-        } // TODO add more info for debugging
+        }
+        Error::Seeding(e) => error!("Seeding is impossible: {e}"),
     }
 }
 

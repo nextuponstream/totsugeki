@@ -289,7 +289,7 @@ impl DBAccessor for InMemoryDBAccessor {
                                 .iter()
                                 .map(totsugeki::player::Player::get_id)
                                 .collect(),
-                        )?)
+                        )?)?
                     };
                     let b = Bracket::from(
                         b.get_id(),
@@ -379,9 +379,7 @@ impl DBAccessor for InMemoryDBAccessor {
     ) -> Result<crate::matches::NextMatchGET, Error<'c>> {
         let db = self.db.read().expect("database"); // FIXME bubble up error
         let service_type = service_type_id.parse::<Service>()?;
-        let mut bracket = Bracket::default();
-        let mut player_id = PlayerId::default();
-        match service_type {
+        let (bracket, player_id) = match service_type {
             Service::Discord => {
                 let channel_internal_id = channel_internal_id.parse::<ChannelId>()?;
                 let channel_id = match db.discord_internal_channel.get(&channel_internal_id) {
@@ -395,18 +393,18 @@ impl DBAccessor for InMemoryDBAccessor {
                     None => return Err(Error::NoActiveBracketInDiscussionChannel),
                 };
 
-                bracket = match db.brackets.iter().find(|b| b.0 == active_bracket_id) {
+                let bracket = match db.brackets.iter().find(|b| b.0 == active_bracket_id) {
                     Some(b) => b.1.clone(),
                     None => return Err(Error::BracketNotFound(*active_bracket_id)),
                 };
 
                 let player_internal_id = player_internal_id.parse::<UserId>()?;
-                player_id = match db.discord_internal_users.get(&player_internal_id) {
-                    Some(id) => *id,
+                match db.discord_internal_users.get(&player_internal_id) {
+                    Some(player_id) => (bracket, *player_id),
                     None => return Err(Error::PlayerNotFound),
-                };
+                }
             }
-        }
+        };
 
         match bracket.get_format() {
             Format::SingleElimination => {

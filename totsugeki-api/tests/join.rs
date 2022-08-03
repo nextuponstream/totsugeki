@@ -6,7 +6,9 @@ use common::{
     bracket::{
         parse_bracket_get_response, parse_bracket_post_response, parse_brackets_get_response,
     },
-    db_types_to_test, test_api,
+    db_types_to_test,
+    next_match::assert_next_matches,
+    test_api,
 };
 use poem::http::StatusCode;
 use std::collections::HashSet;
@@ -178,6 +180,7 @@ async fn bracket_initial_next_opponent_are_correct() {
         let bracket_post_resp = parse_bracket_post_response(resp);
 
         // When many players join
+        let mut players: Vec<PlayerId> = vec![];
         for i in 1..=8 {
             let player_internal_id = i.to_string();
             let player_name = format!("player_{i}");
@@ -200,7 +203,7 @@ async fn bracket_initial_next_opponent_are_correct() {
             join_resp.assert_status_is_ok();
             let join_resp = join_resp.json().await;
             let join_resp = join_resp.value().object();
-            let _join_resp = POSTResponseBody {
+            let join_resp = POSTResponseBody {
                 player_id: PlayerId::try_from(join_resp.get("player_id").string())
                     .expect("player id"),
                 bracket_id: BracketId::try_from(join_resp.get("bracket_id").string())
@@ -208,6 +211,7 @@ async fn bracket_initial_next_opponent_are_correct() {
                 organiser_id: OrganiserId::try_from(join_resp.get("organiser_id").string())
                     .expect("organiser"),
             };
+            players.push(join_resp.player_id);
 
             // When a player joins, matches get updated automatically
             let res = test_api
@@ -218,7 +222,6 @@ async fn bracket_initial_next_opponent_are_correct() {
             res.assert_status_is_ok();
             let r = res.json().await;
             let _bracket = parse_bracket_get_response(r);
-            // TODO make next opponent assertion
             match i {
                 1 | 2 => {
                     // When bracket is too small, no matches are generated.
@@ -239,32 +242,72 @@ async fn bracket_initial_next_opponent_are_correct() {
                     res.assert_text("There is no match for you to play.").await;
                 }
                 3 => {
-                    // TODO seed 1 next opponent is unknown
-                    let body = NextMatchGETRequest {
-                        player_internal_id: "1".to_string(),
-                        channel_internal_id,
-                        service_type_id,
-                    };
-                    let res = test_api
-                        .cli
-                        .get("/next_match")
-                        .header("X-API-Key", test_api.authorization_header.as_str())
-                        .body_json(&body)
-                        .send()
-                        .await;
-                    res.assert_status(StatusCode::OK);
-
-                    // TODO seed 2 plays seed 3
-
-                    // TODO seed 3 plays seed 2
+                    assert_next_matches(
+                        &[1],
+                        &[(2, 3)],
+                        &players,
+                        &test_api,
+                        channel_internal_id.clone(),
+                        service_type_id.clone(),
+                    )
+                    .await;
                 }
                 4 => {
-                    todo!()
+                    assert_next_matches(
+                        &[],
+                        &[(1, 4), (2, 3)],
+                        &players,
+                        &test_api,
+                        channel_internal_id.clone(),
+                        service_type_id.clone(),
+                    )
+                    .await;
                 }
                 5 => {
-                    todo!()
+                    assert_next_matches(
+                        &[1],
+                        &[(2, 3), (4, 5)],
+                        &players,
+                        &test_api,
+                        channel_internal_id.clone(),
+                        service_type_id.clone(),
+                    )
+                    .await;
                 }
-                _ => {}
+                6 => {
+                    assert_next_matches(
+                        &[1, 2],
+                        &[(3, 6), (4, 5)],
+                        &players,
+                        &test_api,
+                        channel_internal_id.clone(),
+                        service_type_id.clone(),
+                    )
+                    .await;
+                }
+                7 => {
+                    assert_next_matches(
+                        &[1],
+                        &[(2, 7), (3, 6), (4, 5)],
+                        &players,
+                        &test_api,
+                        channel_internal_id.clone(),
+                        service_type_id.clone(),
+                    )
+                    .await;
+                }
+                8 => {
+                    assert_next_matches(
+                        &[],
+                        &[(1, 8), (2, 7), (3, 6), (4, 5)],
+                        &players,
+                        &test_api,
+                        channel_internal_id.clone(),
+                        service_type_id.clone(),
+                    )
+                    .await;
+                }
+                _ => unreachable!(),
             }
         }
 

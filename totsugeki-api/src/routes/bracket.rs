@@ -155,6 +155,7 @@ impl<'a> From<Error<'a>> for pError {
             Error::NoNextMatch => {
                 pError::from_string(Error::NoNextMatch.to_string(), StatusCode::NOT_FOUND)
             }
+            Error::Seeding(_e) => pError::from_status(StatusCode::INTERNAL_SERVER_ERROR),
         }
     }
 }

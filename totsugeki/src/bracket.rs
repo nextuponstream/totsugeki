@@ -262,7 +262,7 @@ impl Bracket {
             Format::SingleElimination => match players {
                 Some(players) => {
                     let players = seed(&self.seeding_method, players)?;
-                    get_balanced_round_matches_top_seed_favored(&players)
+                    get_balanced_round_matches_top_seed_favored(&players)?
                 }
                 None => return Err(Error::MissingArgument),
             },

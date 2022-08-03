@@ -69,6 +69,19 @@ pub enum Error {
     Rng,
     /// Shuffle did yield players
     Shuffle(PlayerError),
+    /// Mathematical overflow
+    MathOverflow,
+}
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::NotEnoughPlayers => writeln!(f, "Not enough players"),
+            Error::Rng => writeln!(f, "RNG is unavailable"),
+            Error::Shuffle(e) => writeln!(f, "A shuffling operation could not be performed: {e}"),
+            Error::MathOverflow => writeln!(f, "A mathematical overflow happened"),
+        }
+    }
 }
 
 /// Returns ordered list of players according to the seeding method.
@@ -117,8 +130,11 @@ impl std::fmt::Display for RoundMatches {
 /// Top seed plays the least matches. He will face predicted higher seeds only
 /// later in the bracket. Top seed plays at most one more match than anyone
 /// else.
-#[must_use]
-pub fn get_balanced_round_matches_top_seed_favored(players: &Players) -> Vec<Vec<Match>> {
+/// # Errors
+/// Returns an error when a math overflow happens
+pub fn get_balanced_round_matches_top_seed_favored(
+    players: &Players,
+) -> Result<Vec<Vec<Match>>, Error> {
     // Matches are built bottom-up:
     // * for n
     // * compute #byes = `next_power_of_two(n)` - n
@@ -127,7 +143,11 @@ pub fn get_balanced_round_matches_top_seed_favored(players: &Players) -> Vec<Vec
     // * for round 2, select next 4 matches
     // * ...
     let n = players.len();
-    let byes = n.next_power_of_two() - n;
+    let byes = match n.checked_next_power_of_two() {
+        Some(b) => b - n,
+        None => return Err(Error::MathOverflow),
+    };
+    let mut remaining_byes = byes;
     let mut this_round: Vec<Match> = vec![];
     let mut round_matches = vec![];
 
@@ -150,11 +170,17 @@ pub fn get_balanced_round_matches_top_seed_favored(players: &Players) -> Vec<Vec
         );
     });
 
-    let mut i = n.next_power_of_two();
-    let mut initial_round = true;
+    let first_round = match n.checked_next_power_of_two() {
+        Some(i) => i,
+        None => return Err(Error::MathOverflow),
+    };
+    let second_round = first_round / 2;
+    let mut i = first_round;
     while i > 1 {
         while !available_players.is_empty() {
-            if initial_round {
+            if first_round == i {
+                seeding_initial_round(&mut available_players, players, &mut this_round);
+            } else if second_round == i {
                 let top_seed = available_players.remove(0);
                 let top_seed_player = *players
                     .clone()
@@ -167,16 +193,21 @@ pub fn get_balanced_round_matches_top_seed_favored(players: &Players) -> Vec<Vec
                     .get_players()
                     .get(bottom_seed - 1)
                     .expect("player id");
+                let player_1 = if remaining_byes > 0 && top_seed <= byes {
+                    remaining_byes -= 1;
+                    Opponent::Player(top_seed_player)
+                } else {
+                    Opponent::Unknown
+                };
+                let player_2 = if remaining_byes > 0 && bottom_seed <= byes {
+                    remaining_byes -= 1;
+                    Opponent::Player(bottom_seed_player)
+                } else {
+                    Opponent::Unknown
+                };
 
                 this_round.push(
-                    Match::new(
-                        [
-                            Opponent::Player(top_seed_player),
-                            Opponent::Player(bottom_seed_player),
-                        ],
-                        [top_seed, bottom_seed],
-                    )
-                    .expect("match"),
+                    Match::new([player_1, player_2], [top_seed, bottom_seed]).expect("match"),
                 );
             } else {
                 let top_seed = available_players.remove(0);
@@ -194,12 +225,42 @@ pub fn get_balanced_round_matches_top_seed_favored(players: &Players) -> Vec<Vec
 
         // empty iteration variable `this_round` into round_matches
         round_matches.push(this_round.drain(..).collect());
-        initial_round = false;
         i /= 2;
         available_players = (1..=i).collect();
     }
 
-    round_matches
+    Ok(round_matches)
+}
+
+/// Seeding initial round for single elimination bracket
+fn seeding_initial_round(
+    available_players: &mut Vec<usize>,
+    players: &Players,
+    this_round: &mut Vec<Match>,
+) {
+    let top_seed = available_players.remove(0);
+    let top_seed_player = *players
+        .clone()
+        .get_players()
+        .get(top_seed - 1)
+        .expect("player id");
+    let bottom_seed = available_players.pop().expect("bottom seed");
+    let bottom_seed_player = *players
+        .clone()
+        .get_players()
+        .get(bottom_seed - 1)
+        .expect("player id");
+
+    this_round.push(
+        Match::new(
+            [
+                Opponent::Player(top_seed_player),
+                Opponent::Player(bottom_seed_player),
+            ],
+            [top_seed, bottom_seed],
+        )
+        .expect("match"),
+    );
 }
 
 impl From<rand::Error> for Error {
@@ -264,7 +325,8 @@ mod tests {
         let cute_cat = players.get(2).expect("cute_cat");
 
         let players = Players::from(players_copy).expect("players");
-        let matches = get_balanced_round_matches_top_seed_favored(&players);
+        let matches =
+            get_balanced_round_matches_top_seed_favored(&players).expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
             .flatten()
@@ -292,7 +354,7 @@ mod tests {
             ],
             vec![Match::from(
                 match_ids.pop().expect("match id"),
-                [Opponent::Unknown, Opponent::Unknown],
+                [Opponent::Player(*diego), Opponent::Unknown],
                 [1, 2],
                 Opponent::Unknown,
                 Opponent::Unknown,
@@ -323,7 +385,8 @@ mod tests {
         let cute_cat = players.get(3).expect("cute_cat");
 
         let players = Players::from(players_copy).expect("players");
-        let matches = get_balanced_round_matches_top_seed_favored(&players);
+        let matches =
+            get_balanced_round_matches_top_seed_favored(&players).expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
             .flatten()
@@ -383,7 +446,8 @@ mod tests {
         let cute_cat = players.get(4).expect("cute_cat");
 
         let players = Players::from(players_copy).expect("players");
-        let matches = get_balanced_round_matches_top_seed_favored(&players);
+        let matches =
+            get_balanced_round_matches_top_seed_favored(&players).expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
             .flatten()
@@ -428,7 +492,7 @@ mod tests {
             vec![
                 Match::from(
                     match_ids.pop().expect("match id"),
-                    [Opponent::Unknown, Opponent::Unknown],
+                    [Opponent::Player(*diego), Opponent::Unknown],
                     [1, 4],
                     Opponent::Unknown,
                     Opponent::Unknown,
@@ -436,7 +500,7 @@ mod tests {
                 .expect("match"),
                 Match::from(
                     match_ids.pop().expect("match id"),
-                    [Opponent::Unknown, Opponent::Unknown],
+                    [Opponent::Player(*pink), Opponent::Player(*average_player)],
                     [2, 3],
                     Opponent::Unknown,
                     Opponent::Unknown,
@@ -478,7 +542,8 @@ mod tests {
         let cute_cat = players.get(5).expect("cute_cat");
 
         let players = Players::from(players_copy).expect("players");
-        let matches = get_balanced_round_matches_top_seed_favored(&players);
+        let matches =
+            get_balanced_round_matches_top_seed_favored(&players).expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
             .flatten()
@@ -523,7 +588,7 @@ mod tests {
             vec![
                 Match::from(
                     match_ids.pop().expect("match id"),
-                    [Opponent::Unknown, Opponent::Unknown],
+                    [Opponent::Player(*diego), Opponent::Unknown],
                     [1, 4],
                     Opponent::Unknown,
                     Opponent::Unknown,
@@ -531,7 +596,7 @@ mod tests {
                 .expect("match"),
                 Match::from(
                     match_ids.pop().expect("match id"),
-                    [Opponent::Unknown, Opponent::Unknown],
+                    [Opponent::Player(*pink), Opponent::Unknown],
                     [2, 3],
                     Opponent::Unknown,
                     Opponent::Unknown,
@@ -574,7 +639,8 @@ mod tests {
         let cute_cat = players.get(6).expect("cute_cat");
 
         let players = Players::from(players_copy).expect("players");
-        let matches = get_balanced_round_matches_top_seed_favored(&players);
+        let matches =
+            get_balanced_round_matches_top_seed_favored(&players).expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
             .flatten()
@@ -622,7 +688,7 @@ mod tests {
             vec![
                 Match::from(
                     match_ids.pop().expect("match id"),
-                    [Opponent::Unknown, Opponent::Unknown],
+                    [Opponent::Player(*diego), Opponent::Unknown],
                     [1, 4],
                     Opponent::Unknown,
                     Opponent::Unknown,
@@ -674,7 +740,8 @@ mod tests {
         let cute_cat = players.get(7).expect("cute_cat");
 
         let players = Players::from(players_copy).expect("players");
-        let matches = get_balanced_round_matches_top_seed_favored(&players);
+        let matches =
+            get_balanced_round_matches_top_seed_favored(&players).expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
             .flatten()
