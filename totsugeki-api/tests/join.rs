@@ -314,3 +314,12 @@ async fn bracket_initial_next_opponent_are_correct() {
         test_api.clean_db().await;
     }
 }
+
+#[tokio::test]
+async fn reporting_result_using_service_is_protected() {
+    for db_type in db_types_to_test() {
+        let test_api = test_api(db_type).await;
+        let res = test_api.cli.post("/bracket/report").send().await;
+        res.assert_status(StatusCode::UNAUTHORIZED);
+    }
+}

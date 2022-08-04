@@ -1,7 +1,10 @@
 //! Common setup/teardown methods
 
 pub mod bracket;
+pub mod join;
 pub mod next_match;
+pub mod report;
+pub mod validate;
 
 use hmac::Hmac;
 use poem::Route;

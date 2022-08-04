@@ -1,5 +1,7 @@
 //! Two players play a match, resulting in a winner and a loser
 
+use std::str::FromStr;
+
 use crate::{
     bracket::Id as BracketId,
     player::{Id as PlayerId, Player},
@@ -11,6 +13,26 @@ use serde::{Deserialize, Serialize};
 pub enum Error {
     /// Bye opponent cannot be unknown
     MissingOpponentForByeOpponent,
+    /// Not found
+    NotFound,
+    /// Players reported different match outcome
+    PlayersReportedDifferentMatchOutcome([ReportedResult; 2]),
+}
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::MissingOpponentForByeOpponent => write!(f, "Bye player has no opponent"),
+            Error::NotFound => write!(f, "Match not found"),
+            Error::PlayersReportedDifferentMatchOutcome(r) => {
+                write!(
+                    f,
+                    "Players reported different match outcomes: {} and {} were reported",
+                    r[0], r[1]
+                )
+            }
+        }
+    }
 }
 
 /// Opponent in a match
@@ -41,20 +63,68 @@ type MatchPlayers = [Opponent; 2];
 /// Seeds of players
 type Seeds = [usize; 2];
 
+/// A match result is a score. For example, I win 2-0
+pub type MatchReportedResult = [(i8, i8); 2];
+
+/// Reported result
+#[derive(Debug, Clone)]
+pub struct ReportedResult(pub (i8, i8));
+
+impl std::fmt::Display for ReportedResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}-{}", self.0 .0, self.0 .1)
+    }
+}
+
+/// Error while parsing match result
+#[derive(Debug)]
+pub enum MatchResultParsingError {
+    /// Could not parse
+    CouldNotParseResult,
+}
+
+impl std::fmt::Display for MatchResultParsingError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MatchResultParsingError::CouldNotParseResult => {
+                writeln!(f, "Match could not be parsed")
+            }
+        }
+    }
+}
+
+impl FromStr for ReportedResult {
+    type Err = MatchResultParsingError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // TODO use string split with '-' and parse both side
+        Ok(match s {
+            "2-0" => Self((2, 0)),
+            "2-1" => Self((2, 1)),
+            "1-2" => Self((1, 2)),
+            "0-2" => Self((0, 2)),
+            "0-0" => Self((0, 0)),
+            _ => return Err(MatchResultParsingError::CouldNotParseResult),
+        })
+    }
+}
+
 /// A match between two players, resulting in a winner and a loser
 #[derive(Debug, Default, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct Match {
     /// Identifier of match
     id: Id,
     /// Two players from this match. One of the player can be a BYE opponent
-    players: MatchPlayers,
+    pub players: MatchPlayers,
     /// seeds\[0\]: top seed
     /// seeds\[1\]: bottom seed
     seeds: Seeds,
     /// The winner of this match
-    winner: Opponent,
+    pub winner: Opponent,
     /// The looser of this match
-    looser: Opponent,
+    pub looser: Opponent,
+    /// Result reported by players
+    pub reported_results: MatchReportedResult,
 }
 
 impl std::fmt::Display for Match {
@@ -104,6 +174,7 @@ impl Match {
             winner,
             looser: Opponent::Unknown,
             seeds,
+            reported_results: [(0_i8, 0_i8), (0_i8, 0)],
         })
     }
 
@@ -143,6 +214,7 @@ impl Match {
         seeds: [usize; 2],
         winner: Opponent,
         looser: Opponent,
+        reported_results: MatchReportedResult,
     ) -> Result<Match, Error> {
         Ok(Self {
             id,
@@ -150,6 +222,7 @@ impl Match {
             seeds,
             winner,
             looser,
+            reported_results,
         })
     }
 
@@ -158,22 +231,45 @@ impl Match {
     pub fn get_id(&self) -> Id {
         self.id
     }
+
+    /// Set match outcome using reported results. Returns seed of expected winner
+    ///
+    /// # Errors
+    /// Returns an error if reported scores don't not agree on the winner
+    pub fn set_outcome(&mut self) -> Result<usize, Error> {
+        let [(s11, s12), (s21, s22)] = self.reported_results;
+
+        if s11 > s12 && s21 < s22 {
+            self.winner = self.players[0];
+            Ok(self.get_seeds()[0])
+        } else if s11 < s12 && s21 > s22 {
+            self.winner = self.players[1];
+            Ok(self.get_seeds()[0])
+        } else {
+            Err(Error::PlayersReportedDifferentMatchOutcome([
+                ReportedResult((self.reported_results[0].0, self.reported_results[0].1)),
+                ReportedResult((self.reported_results[1].0, self.reported_results[1].1)),
+            ]))
+        }
+    }
 }
 
 /// Match representation as received through the network
 #[derive(Debug, Default, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct MatchGET {
     /// Match id
-    id: Id,
+    pub id: Id,
     /// Two players from this match. One of the player can be a BYE opponent
-    players: [String; 2],
+    pub players: [String; 2],
     /// seeds\[0\]: top seed
     /// seeds\[1\]: bottom seed
-    seeds: Seeds,
+    pub seeds: Seeds,
     /// The winner of this match, "?" if unknown, "BYE" for BYE opponent
-    winner: String,
+    pub winner: String,
     /// The looser of this match, "?" if unknown, "BYE" for BYE opponent
-    looser: String,
+    pub looser: String,
+    /// Results reported by players
+    pub reported_results: [String; 2],
 }
 
 /// Error while converting response from network
@@ -183,6 +279,8 @@ pub enum MatchParsingError {
     Opponent(OpponentParsingError),
     /// Could not gather opponents for a match
     GatherOpponents(Vec<Opponent>),
+    /// Reported result could not be parsed
+    ReportedResult(MatchResultParsingError),
 }
 
 impl std::fmt::Display for MatchParsingError {
@@ -193,6 +291,9 @@ impl std::fmt::Display for MatchParsingError {
             }
             MatchParsingError::GatherOpponents(o) => {
                 write!(f, "Could not use opponents to generate match. Is there two opponents?\nOpponents: {o:?}")
+            }
+            MatchParsingError::ReportedResult(e) => {
+                writeln!(f, "Reported results could not be parsed: {e}")
             }
         }
     }
@@ -214,7 +315,17 @@ impl TryFrom<MatchGET> for Match {
             seeds: m.seeds,
             winner: Opponent::try_from(m.winner)?,
             looser: Opponent::try_from(m.looser)?,
+            reported_results: [
+                m.reported_results[0].parse::<ReportedResult>()?.0,
+                m.reported_results[0].parse::<ReportedResult>()?.0,
+            ],
         })
+    }
+}
+
+impl From<MatchResultParsingError> for MatchParsingError {
+    fn from(e: MatchResultParsingError) -> Self {
+        Self::ReportedResult(e)
     }
 }
 
@@ -268,6 +379,10 @@ impl From<Match> for MatchGET {
             seeds: m.seeds,
             winner: m.winner.to_string(),
             looser: m.looser.to_string(),
+            reported_results: [
+                ReportedResult(m.reported_results[0]).to_string(),
+                ReportedResult(m.reported_results[1]).to_string(),
+            ],
         }
     }
 }
@@ -307,4 +422,28 @@ impl std::fmt::Display for NextMatchGET {
             self.opponent, self.match_id, self.bracket_id
         )
     }
+}
+
+/// Report match result
+#[derive(Serialize)]
+pub struct MatchResultPOST {
+    /// Player id using service
+    pub player_internal_id: String,
+    /// Discussion channel id of service
+    pub channel_internal_id: String,
+    /// Service used to make call
+    pub service_type_id: String,
+    /// Result as reported by the player
+    pub result: String,
+}
+
+/// Validate match
+#[derive(Serialize)]
+pub struct ValidateMatchPOST {
+    /// Discussion channel id of service
+    pub channel_internal_id: String,
+    /// Service used to make call
+    pub service_type_id: String,
+    /// Result as reported by the player
+    pub match_id: String,
 }

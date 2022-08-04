@@ -148,7 +148,7 @@ pub struct Bracket {
     /// Players of this bracket
     players: Vec<Player>,
     /// Matches from this bracket, sorted by rounds
-    matches: Vec<Vec<Match>>,
+    pub matches: Vec<Vec<Match>>,
     /// Bracket format
     format: Format,
     /// Seeding method used for this bracket
@@ -301,7 +301,7 @@ impl From<SeedingError> for Error {
 pub type Id = Uuid;
 
 /// POST response to /bracket endpoint
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct POSTResult {
     /// id of created bracket
     bracket_id: Id,

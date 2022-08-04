@@ -2,11 +2,11 @@
 pub mod common;
 
 use common::{
-    bracket::{parse_bracket_post_response, parse_brackets_get_response},
+    bracket::{create_bracket, parse_brackets_get_response},
     db_types_to_test, test_api,
 };
 use poem::http::StatusCode;
-use totsugeki::bracket::POST;
+use totsugeki::{bracket::Format, seeding::Method as SeedingMethod};
 
 #[tokio::test]
 async fn posting_bracket_requires_authorization() {
@@ -23,36 +23,19 @@ async fn someone_creates_bracket() {
     for db_type in db_types_to_test() {
         let test_api = test_api(db_type).await;
 
-        // Given my-favorite-to wants to create a bracket named basel-weekly
-        let bracket_name = "basel-weekly".to_string(); // TODO generate name
-        let organiser_name = "my-favorite-to".to_string();
-        let organiser_internal_id = "1".to_string();
-        let channel_internal_id = "1".to_string();
-        let service_type_id = "discord".to_string();
-        let format = "single-elimination".to_string();
-        let seeding_method = "strict".to_string();
-        let body = POST::new(
-            bracket_name.clone(),
-            organiser_name,
+        let organiser_internal_id = "1";
+        let channel_internal_id = "1";
+        let format = Format::SingleElimination;
+        let seeding_method = SeedingMethod::Strict;
+        let (bracket_post_resp, bracket_name, _) = create_bracket(
+            &test_api,
             organiser_internal_id,
             channel_internal_id,
-            service_type_id,
-            format.clone(),
-            seeding_method.clone(),
-        );
-
-        // When they create a bracket using discord bot
-        let resp = test_api
-            .cli
-            .post("/bracket")
-            .header("X-API-Key", test_api.authorization_header.as_str())
-            .body_json(&body)
-            .send()
-            .await;
-        resp.assert_status_is_ok();
-
-        let resp = resp.json().await;
-        let bracket_post_resp = parse_bracket_post_response(resp);
+            totsugeki_api::Service::Discord,
+            format,
+            seeding_method,
+        )
+        .await;
 
         // Then they search the newly created bracket and find it
         let resp = test_api.cli.get("/brackets/0").send().await;
@@ -91,8 +74,8 @@ async fn someone_creates_bracket() {
             bracket_post_resp.get_bracket_id().to_string()
         );
         assert_eq!(r.get("bracket_name").string(), bracket_name);
-        assert_eq!(r.get("format").string(), format);
-        assert_eq!(r.get("seeding_method").string(), seeding_method);
+        assert_eq!(r.get("format").string(), format.to_string());
+        assert_eq!(r.get("seeding_method").string(), seeding_method.to_string());
 
         assert_eq!(
             brackets.len(),
@@ -110,36 +93,19 @@ async fn search_bracket() {
     for db_type in db_types_to_test() {
         let test_api = test_api(db_type).await;
 
-        // Given my-favorite-to wants to create a bracket named zurich-weekly
-        let bracket_name = "zurich-weekly".to_string(); // TODO generate name
-        let organiser_name = "my-favorite-to".to_string();
-        let organiser_internal_id = "1".to_string();
-        let channel_internal_id = "1".to_string();
-        let service_type_id = "discord".to_string();
-        let format = "single-elimination".to_string();
-        let seeding_method = "strict".to_string();
-        let body = POST::new(
-            bracket_name.clone(),
-            organiser_name,
+        let organiser_internal_id = "1";
+        let channel_internal_id = "1";
+        let format = Format::SingleElimination;
+        let seeding_method = SeedingMethod::Strict;
+        let (bracket_post_resp, bracket_name, _) = create_bracket(
+            &test_api,
             organiser_internal_id,
             channel_internal_id,
-            service_type_id,
+            totsugeki_api::Service::Discord,
             format,
             seeding_method,
-        );
-
-        // When they create a bracket using discord bot
-        let resp = test_api
-            .cli
-            .post("/bracket")
-            .header("X-API-Key", test_api.authorization_header.as_str())
-            .body_json(&body)
-            .send()
-            .await;
-        resp.assert_status_is_ok();
-
-        let resp = resp.json().await;
-        let bracket_post_resp = parse_bracket_post_response(resp);
+        )
+        .await;
 
         // Then they can filter results and find the created bracket
         let resp = test_api
