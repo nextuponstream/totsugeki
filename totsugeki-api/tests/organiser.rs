@@ -2,14 +2,19 @@
 
 pub mod common;
 
-use common::{bracket::parse_bracket_post_response, db_types_to_test, test_api};
+use common::{
+    bracket::{create_bracket, parse_bracket_post_response},
+    db_types_to_test, test_api,
+};
 use poem::test::TestJson;
 use std::collections::{HashMap, HashSet};
 use totsugeki::{
-    bracket::{FinalizedBrackets, Id as BracketId, POST},
+    bracket::{FinalizedBrackets, Format, Id as BracketId, POST},
     organiser::{Id as OrganiserId, Organiser},
+    seeding::Method,
     DiscussionChannelId,
 };
+use totsugeki_api::Service;
 
 fn parse_organiser_get_response(response: TestJson) -> Vec<Organiser> {
     let organisers_raw = response.value().object_array();
@@ -55,36 +60,18 @@ async fn new_organiser_is_generated_when_bracket_is_created_if_unknown() {
     for db_type in db_types_to_test() {
         let test_api = test_api(db_type).await;
 
-        // Given FancyBar wants to create a bracket named basel-weekly
-        let bracket_name = "basel-weekly".to_string(); // TODO generate name
-        let organiser_name = "FancyBar".to_string();
-        let organiser_internal_id = "1".to_string();
-        let channel_internal_id = "1".to_string();
-        let service_type_id = "discord".to_string();
-        let format = "single-elimination".to_string();
-        let seeding_method = "strict".to_string();
-        let body = POST::new(
-            bracket_name,
-            organiser_name.clone(),
-            organiser_internal_id,
+        let organiser_id = "1";
+        let channel_internal_id = "1";
+        let service_type_id = Service::Discord;
+        let (bracket_post_resp, _bracket_name, organiser_name) = create_bracket(
+            &test_api,
+            organiser_id,
             channel_internal_id,
             service_type_id,
-            format,
-            seeding_method,
-        );
-
-        // When they create a bracket using discord bot
-        let resp = test_api
-            .cli
-            .post("/bracket")
-            .header("X-API-Key", test_api.authorization_header.as_str())
-            .body_json(&body)
-            .send()
-            .await;
-        resp.assert_status_is_ok();
-
-        let resp = resp.json().await;
-        let bracket_post_resp = parse_bracket_post_response(resp);
+            Format::SingleElimination,
+            Method::Strict,
+        )
+        .await;
 
         // Then there is a organiser named FancyBar with the new active bracket
         let resp = test_api.cli.get("/organiser/0").send().await;

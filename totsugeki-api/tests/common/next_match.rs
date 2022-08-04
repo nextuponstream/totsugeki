@@ -51,7 +51,8 @@ pub async fn assert_next_opponent(
     let next_match = parse_next_match_get_response(r);
     assert_eq!(
         next_match.opponent,
-        Opponent::Player(*players.get(y - 1).expect("seeded player"))
+        Opponent::Player(*players.get(y - 1).expect("seeded player")),
+        "seed {x} is not playing against seed {y}:\n{players:?}"
     );
 }
 
@@ -139,4 +140,30 @@ pub async fn assert_next_matches(
         )
         .await;
     }
+}
+
+/// Assert player with `seed` is eliminated
+pub async fn assert_player_is_eliminated(
+    test_api: &TotsugekiApiTestClient,
+    player: usize,
+    channel_internal_id: String,
+    service_type_id: String,
+) {
+    let body = NextMatchGETRequest {
+        player_internal_id: player.to_string(),
+        channel_internal_id,
+        service_type_id,
+    };
+    let res = test_api
+        .cli
+        .get("/next_match")
+        .header("X-API-Key", test_api.authorization_header.as_str())
+        .body_json(&body)
+        .send()
+        .await;
+    res.assert_status(StatusCode::NOT_FOUND);
+    res.assert_text(
+        "There is no match for you to play because you have been eliminated from the bracket.",
+    )
+    .await;
 }

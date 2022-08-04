@@ -7,9 +7,11 @@ use crate::{ApiServiceId, ApiServiceUser, Service};
 use std::fmt::Display;
 use std::str::FromStr;
 use std::sync::{PoisonError, RwLockReadGuard, RwLockWriteGuard};
+use totsugeki::matches::MatchResultParsingError;
 use totsugeki::{
     bracket::{Bracket, FormatParsingError, Id as BracketId, POSTResult},
     join::POSTResponseBody,
+    matches::{Error as MatchError, Id as MatchId},
     organiser::Organiser,
     seeding::{Error as SeedingError, ParsingError as SeedingParsingError},
 };
@@ -68,6 +70,24 @@ pub enum Error<'a> {
     NoNextMatch,
     /// To many players causes math overflow
     Seeding(SeedingError),
+    /// No opponent was found to report result against
+    NoOpponent,
+    /// Match could not be updated
+    Match(MatchError),
+    /// Player searched for his next match in bracket but his was eliminated
+    EliminatedFromBracket,
+}
+
+impl<'a> From<MatchResultParsingError> for Error<'a> {
+    fn from(e: MatchResultParsingError) -> Self {
+        Self::Parsing(e.to_string())
+    }
+}
+
+impl<'a> From<MatchError> for Error<'a> {
+    fn from(e: MatchError) -> Self {
+        Self::Match(e)
+    }
 }
 
 impl<'a> From<SeedingError> for Error<'a> {
@@ -107,6 +127,9 @@ impl<'a> Display for Error<'a> {
             Error::NextMatchNotFound => writeln!(f, "Next match was not found"),
             Error::NoNextMatch => write!(f, "There is no match for you to play."),
             Error::Seeding(e) => e.fmt(f),
+            Error::NoOpponent => write!(f, "No opponent"),
+            Error::Match(_e) => write!(f, "Match could not be updated"),
+            Error::EliminatedFromBracket => write!(f, "There is no match for you to play because you have been eliminated from the bracket."),
         }
     }
 }
@@ -120,6 +143,12 @@ impl<'a> From<SeedingParsingError> for Error<'a> {
 impl<'a> From<FormatParsingError> for Error<'a> {
     fn from(e: FormatParsingError) -> Self {
         Error::Parsing(format!("{e:?}"))
+    }
+}
+
+impl<'a> From<uuid::Error> for Error<'a> {
+    fn from(e: uuid::Error) -> Self {
+        Error::Parsing(format!("Uuid could not be parsed: {e}")) // TODO better error propagation
     }
 }
 
@@ -253,4 +282,22 @@ pub trait DBAccessor {
         channel_internal_id: &'b str,
         service_type_id: &'b str,
     ) -> Result<NextMatchGET, Error<'c>>;
+
+    /// Let player report result for his active match
+    ///
+    /// # Errors
+    /// Returns an error if result cannot be parsed
+    fn report_result<'a, 'b, 'c>(
+        &'a self,
+        player_internal_id: &'b str,
+        channel_internal_id: &'b str,
+        service_type_id: &'b str,
+        result: &'b str,
+    ) -> Result<MatchId, Error<'c>>;
+
+    /// Let tournament organiser validate match result
+    ///
+    /// # Errors
+    /// Returns an error if result cannot be parsed
+    fn validate_result<'a, 'b>(&'a self, match_id: MatchId) -> Result<(), Error<'b>>;
 }

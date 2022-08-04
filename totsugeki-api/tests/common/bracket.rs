@@ -2,13 +2,16 @@
 
 use poem::test::{TestJson, TestJsonObject};
 use totsugeki::{
-    bracket::{Bracket, Format, Id as BracketId, POSTResult, GET},
-    matches::{Id as MatchId, Match, MatchGET, Opponent},
+    bracket::{Bracket, Format, Id as BracketId, POSTResult, GET, POST},
+    matches::{Id as MatchId, Match, MatchGET, Opponent, ReportedResult},
     organiser::Id as OrganiserId,
     player::{Id as PlayerId, Player},
     seeding::Method as SeedingMethod,
     DiscussionChannelId,
 };
+use totsugeki_api::Service;
+
+use super::TotsugekiApiTestClient;
 
 /// Response after creating a bracket
 pub fn parse_bracket_post_response(response: TestJson) -> POSTResult {
@@ -133,10 +136,60 @@ pub fn parse_matches(response: &TestJsonObject) -> Vec<Vec<Match>> {
                     let looser = m.get("looser").string();
                     let looser = Opponent::try_from(looser.to_string()).expect("looser");
 
-                    Match::from(id, players, seeds, winner, looser).expect("match")
+                    let reported_results = m.get("reported_results").string_array();
+                    let rr_1 = reported_results
+                        .get(0)
+                        .expect("reported result")
+                        .parse::<ReportedResult>()
+                        .expect("parsed reported result");
+                    let rr_2 = reported_results
+                        .get(1)
+                        .expect("reported result")
+                        .parse::<ReportedResult>()
+                        .expect("parsed reported result");
+                    let reported_results = [rr_1.0, rr_2.0];
+
+                    Match::from(id, players, seeds, winner, looser, reported_results)
+                        .expect("match")
                 })
                 .collect::<Vec<Match>>();
             r
         })
         .collect::<Vec<Vec<Match>>>()
+}
+
+/// Create bracket. Returns Bracket response, bracket name and organiser name
+pub async fn create_bracket(
+    test_api: &TotsugekiApiTestClient,
+    organiser_internal_id: &str,
+    channel_internal_id: &str,
+    service: Service,
+    format: Format,
+    seeding_method: SeedingMethod,
+) -> (POSTResult, String, String) {
+    let bracket_name = "weekly".to_string(); // TODO generate name
+    let organiser_name = "my-favorite-to".to_string(); // TODO generate name
+    let body = POST::new(
+        bracket_name.clone(),
+        organiser_name.clone(),
+        organiser_internal_id.to_string(),
+        channel_internal_id.to_string(),
+        service.to_string(),
+        format.to_string(),
+        seeding_method.to_string(),
+    );
+    let resp = test_api
+        .cli
+        .post("/bracket")
+        .header("X-API-Key", test_api.authorization_header.as_str())
+        .body_json(&body)
+        .send()
+        .await;
+    resp.assert_status_is_ok();
+    let resp = resp.json().await;
+    (
+        parse_bracket_post_response(resp),
+        bracket_name,
+        organiser_name,
+    )
 }

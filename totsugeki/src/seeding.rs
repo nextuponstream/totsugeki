@@ -341,6 +341,7 @@ mod tests {
                     [1, 4],
                     Opponent::Player(*diego),
                     Opponent::Unknown,
+                    [(0, 0), (0, 0)],
                 )
                 .expect("match"),
                 Match::from(
@@ -349,6 +350,7 @@ mod tests {
                     [2, 3],
                     Opponent::Unknown,
                     Opponent::Unknown,
+                    [(0, 0), (0, 0)],
                 )
                 .expect("match"),
             ],
@@ -358,6 +360,7 @@ mod tests {
                 [1, 2],
                 Opponent::Unknown,
                 Opponent::Unknown,
+                [(0, 0), (0, 0)],
             )
             .expect("match")],
         ];
@@ -401,6 +404,7 @@ mod tests {
                     [1, 4],
                     Opponent::Unknown,
                     Opponent::Unknown,
+                    [(0, 0), (0, 0)],
                 )
                 .expect("match"),
                 Match::from(
@@ -409,6 +413,7 @@ mod tests {
                     [2, 3],
                     Opponent::Unknown,
                     Opponent::Unknown,
+                    [(0, 0), (0, 0)],
                 )
                 .expect("match"),
             ],
@@ -418,6 +423,7 @@ mod tests {
                 [1, 2],
                 Opponent::Unknown,
                 Opponent::Unknown,
+                [(0, 0), (0, 0)],
             )
             .expect("match")],
         ];
@@ -462,6 +468,7 @@ mod tests {
                     [1, 8],
                     Opponent::Player(*diego),
                     Opponent::Unknown,
+                    [(0, 0), (0, 0)],
                 )
                 .expect("match"),
                 Match::from(
@@ -470,6 +477,7 @@ mod tests {
                     [2, 7],
                     Opponent::Player(*pink),
                     Opponent::Unknown,
+                    [(0, 0), (0, 0)],
                 )
                 .expect("match"),
                 Match::from(
@@ -478,6 +486,7 @@ mod tests {
                     [3, 6],
                     Opponent::Player(*average_player),
                     Opponent::Unknown,
+                    [(0, 0), (0, 0)],
                 )
                 .expect("match"),
                 Match::from(
@@ -486,6 +495,7 @@ mod tests {
                     [4, 5],
                     Opponent::Unknown,
                     Opponent::Unknown,
+                    [(0, 0), (0, 0)],
                 )
                 .expect("match"),
             ],
@@ -496,6 +506,7 @@ mod tests {
                     [1, 4],
                     Opponent::Unknown,
                     Opponent::Unknown,
+                    [(0, 0), (0, 0)],
                 )
                 .expect("match"),
                 Match::from(
@@ -504,6 +515,7 @@ mod tests {
                     [2, 3],
                     Opponent::Unknown,
                     Opponent::Unknown,
+                    [(0, 0), (0, 0)],
                 )
                 .expect("match"),
             ],
@@ -513,6 +525,7 @@ mod tests {
                 [1, 2],
                 Opponent::Unknown,
                 Opponent::Unknown,
+                [(0, 0), (0, 0)],
             )
             .expect("match")],
         ];
@@ -558,6 +571,7 @@ mod tests {
                     [1, 8],
                     Opponent::Player(*diego),
                     Opponent::Unknown,
+                    [(0, 0), (0, 0)],
                 )
                 .expect("match"),
                 Match::from(
@@ -566,6 +580,7 @@ mod tests {
                     [2, 7],
                     Opponent::Player(*pink),
                     Opponent::Unknown,
+                    [(0, 0), (0, 0)],
                 )
                 .expect("match"),
                 Match::from(
@@ -574,6 +589,7 @@ mod tests {
                     [3, 6],
                     Opponent::Unknown,
                     Opponent::Unknown,
+                    [(0, 0), (0, 0)],
                 )
                 .expect("match"),
                 Match::from(
@@ -582,6 +598,7 @@ mod tests {
                     [4, 5],
                     Opponent::Unknown,
                     Opponent::Unknown,
+                    [(0, 0), (0, 0)],
                 )
                 .expect("match"),
             ],
@@ -592,6 +609,7 @@ mod tests {
                     [1, 4],
                     Opponent::Unknown,
                     Opponent::Unknown,
+                    [(0, 0), (0, 0)],
                 )
                 .expect("match"),
                 Match::from(
@@ -600,6 +618,7 @@ mod tests {
                     [2, 3],
                     Opponent::Unknown,
                     Opponent::Unknown,
+                    [(0, 0), (0, 0)],
                 )
                 .expect("match"),
             ],
@@ -609,6 +628,7 @@ mod tests {
                 [1, 2],
                 Opponent::Unknown,
                 Opponent::Unknown,
+                [(0, 0), (0, 0)],
             )
             .expect("match")],
         ];
@@ -623,6 +643,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::too_many_lines)]
     fn single_elimination_favors_top_seed_7_man() {
         let n = 7;
         let mut players: Vec<PlayerId> = vec![];
@@ -655,6 +676,7 @@ mod tests {
                     [1, 8],
                     Opponent::Player(*diego),
                     Opponent::Unknown,
+                    [(0, 0), (0, 0)],
                 )
                 .expect("match"),
                 Match::from(
@@ -663,6 +685,7 @@ mod tests {
                     [2, 7],
                     Opponent::Unknown,
                     Opponent::Unknown,
+                    [(0, 0), (0, 0)],
                 )
                 .expect("match"),
                 Match::from(
@@ -674,6 +697,7 @@ mod tests {
                     [3, 6],
                     Opponent::Unknown,
                     Opponent::Unknown,
+                    [(0, 0), (0, 0)],
                 )
                 .expect("match"),
                 Match::from(
@@ -682,6 +706,7 @@ mod tests {
                     [4, 5],
                     Opponent::Unknown,
                     Opponent::Unknown,
+                    [(0, 0), (0, 0)],
                 )
                 .expect("match"),
             ],
@@ -692,6 +717,7 @@ mod tests {
                     [1, 4],
                     Opponent::Unknown,
                     Opponent::Unknown,
+                    [(0, 0), (0, 0)],
                 )
                 .expect("match"),
                 Match::from(
@@ -700,6 +726,7 @@ mod tests {
                     [2, 3],
                     Opponent::Unknown,
                     Opponent::Unknown,
+                    [(0, 0), (0, 0)],
                 )
                 .expect("match"),
             ],
@@ -709,6 +736,7 @@ mod tests {
                 [1, 2],
                 Opponent::Unknown,
                 Opponent::Unknown,
+                [(0, 0), (0, 0)],
             )
             .expect("match")],
         ];
@@ -723,6 +751,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::too_many_lines)]
     fn single_elimination_favors_top_seed_8_man() {
         let n = 8;
         let mut players: Vec<PlayerId> = vec![];
@@ -756,6 +785,7 @@ mod tests {
                     [1, 8],
                     Opponent::Unknown,
                     Opponent::Unknown,
+                    [(0, 0), (0, 0)],
                 )
                 .expect("match"),
                 Match::from(
@@ -764,6 +794,7 @@ mod tests {
                     [2, 7],
                     Opponent::Unknown,
                     Opponent::Unknown,
+                    [(0, 0), (0, 0)],
                 )
                 .expect("match"),
                 Match::from(
@@ -772,6 +803,7 @@ mod tests {
                     [3, 6],
                     Opponent::Unknown,
                     Opponent::Unknown,
+                    [(0, 0), (0, 0)],
                 )
                 .expect("match"),
                 Match::from(
@@ -783,6 +815,7 @@ mod tests {
                     [4, 5],
                     Opponent::Unknown,
                     Opponent::Unknown,
+                    [(0, 0), (0, 0)],
                 )
                 .expect("match"),
             ],
@@ -793,6 +826,7 @@ mod tests {
                     [1, 4],
                     Opponent::Unknown,
                     Opponent::Unknown,
+                    [(0, 0), (0, 0)],
                 )
                 .expect("match"),
                 Match::from(
@@ -801,6 +835,7 @@ mod tests {
                     [2, 3],
                     Opponent::Unknown,
                     Opponent::Unknown,
+                    [(0, 0), (0, 0)],
                 )
                 .expect("match"),
             ],
@@ -810,6 +845,7 @@ mod tests {
                 [1, 2],
                 Opponent::Unknown,
                 Opponent::Unknown,
+                [(0, 0), (0, 0)],
             )
             .expect("match")],
         ];

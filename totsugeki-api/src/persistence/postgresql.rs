@@ -1,6 +1,7 @@
 //! Postgresql database
 
 use super::DBAccessor;
+use totsugeki::{bracket::Id as BracketId, matches::Id as MatchId};
 
 /// Postgresql database
 #[derive(Default)]
@@ -81,10 +82,10 @@ impl DBAccessor for Accessor {
         todo!()
     }
 
-    fn get_bracket<'a, 'b>(
+    fn get_bracket<'a, 'b, 'c>(
         &'a self,
-        bracket_id: totsugeki::bracket::Id,
-    ) -> Result<totsugeki::bracket::Bracket, super::Error<'b>> {
+        bracket_id: BracketId,
+    ) -> Result<totsugeki::bracket::Bracket, super::Error<'c>> {
         todo!()
     }
 
@@ -101,6 +102,20 @@ impl DBAccessor for Accessor {
         channel_internal_id: &'b str,
         service_type_id: &'b str,
     ) -> Result<crate::matches::NextMatchGET, super::Error<'c>> {
+        todo!()
+    }
+
+    fn report_result<'a, 'b, 'c>(
+        &'a self,
+        player_internal_id: &'b str,
+        channel_internal_id: &'b str,
+        service_type_id: &'b str,
+        result: &'b str,
+    ) -> Result<MatchId, super::Error<'c>> {
+        todo!()
+    }
+
+    fn validate_result<'a, 'b>(&'a self, match_id: MatchId) -> Result<(), super::Error<'b>> {
         todo!()
     }
 }

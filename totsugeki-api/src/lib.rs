@@ -85,10 +85,16 @@ fn log_error(e: &Error) {
             warn!("User wanted to know their next match but there is none for them");
         }
         Error::Seeding(e) => error!("Seeding is impossible: {e}"),
+        Error::NoOpponent => warn!("User searched for opponent but there was none"),
+        Error::Match(e) => warn!("User could not update match status: {e}"),
+        Error::EliminatedFromBracket => {
+            warn!("Player searched for their next match but they were eliminated from the bracket");
+        }
     }
 }
 
 /// Type of supported services
+#[derive(Clone, Copy)]
 pub enum Service {
     /// Discord
     Discord,

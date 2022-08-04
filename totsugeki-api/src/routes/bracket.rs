@@ -1,18 +1,19 @@
 //! bracket routes
-use crate::bracket::{POSTResult, POST};
+use crate::bracket::{MatchResultPOST, POSTResult, POST};
 use crate::log_error;
 use crate::matches::{NextMatchGET, NextMatchGETRequest};
 use crate::persistence::{BracketRequest, Error};
 use crate::ApiKeyServiceAuthorization;
 use crate::GETResponse;
 use crate::SharedDb;
-use poem::http::StatusCode;
-use poem::Error as pError;
 use poem::Result;
 use poem_openapi::param::Path;
 use poem_openapi::payload::Json;
 use poem_openapi::OpenApi;
-use totsugeki::bracket::{Bracket, Id as BracketId};
+use totsugeki::{
+    bracket::{Bracket, Id as BracketId},
+    matches::Id as MatchId,
+};
 
 /// Bracket Api
 pub struct Api;
@@ -128,34 +129,37 @@ impl Api {
             }
         }
     }
-}
 
-impl<'a> From<Error<'a>> for pError {
-    fn from(e: Error<'a>) -> Self {
-        match e {
-            Error::PoisonedReadLock(_e) => pError::from_status(StatusCode::INTERNAL_SERVER_ERROR),
-            Error::PoisonedWriteLock(_e) => pError::from_status(StatusCode::INTERNAL_SERVER_ERROR),
-            Error::Code(_msg) => pError::from_status(StatusCode::INTERNAL_SERVER_ERROR),
-            Error::Denied(msg) => pError::from_string(msg, StatusCode::FORBIDDEN),
-            Error::Parsing(msg) => pError::from_string(msg, StatusCode::BAD_REQUEST),
-            Error::Unknown(_msg) => pError::from_status(StatusCode::INTERNAL_SERVER_ERROR),
-            Error::BracketNotFound(_) => pError::from_status(StatusCode::NOT_FOUND),
-            Error::DiscussionChannelNotFound => pError::from_string(
-                Error::DiscussionChannelNotFound.to_string(),
-                StatusCode::NOT_FOUND,
-            ),
-            Error::NoActiveBracketInDiscussionChannel => pError::from_string(
-                Error::NoActiveBracketInDiscussionChannel.to_string(),
-                StatusCode::NOT_FOUND,
-            ),
-            Error::PlayerNotFound => {
-                pError::from_string(Error::PlayerNotFound.to_string(), StatusCode::NOT_FOUND)
+    /// Report result of bracket match
+    #[oai(path = "/bracket/report", method = "post")]
+    async fn report_match_result<'a>(
+        &self,
+        db: SharedDb<'a>,
+        _auth: ApiKeyServiceAuthorization,
+        r: Json<MatchResultPOST>,
+    ) -> Result<Json<MatchId>> {
+        match report(&db, &r.0) {
+            Ok(m_id) => Ok(Json(m_id)),
+            Err(e) => {
+                log_error(&e);
+                Err(e.into())
             }
-            Error::NextMatchNotFound => pError::from_status(StatusCode::INTERNAL_SERVER_ERROR),
-            Error::NoNextMatch => {
-                pError::from_string(Error::NoNextMatch.to_string(), StatusCode::NOT_FOUND)
-            }
-            Error::Seeding(_e) => pError::from_status(StatusCode::INTERNAL_SERVER_ERROR),
+        }
+    }
+
+    /// Validate result of bracket by TO
+    #[oai(path = "/bracket/validate/:id", method = "post")]
+    async fn validate_match_result<'a>(
+        &self,
+        db: SharedDb<'a>,
+        _auth: ApiKeyServiceAuthorization,
+        id: Path<MatchId>,
+    ) -> Result<()> {
+        if let Err(e) = validate(&db, id.0) {
+            log_error(&e);
+            Err(e.into())
+        } else {
+            Ok(())
         }
     }
 }
@@ -220,4 +224,27 @@ where
 {
     let db = db.read()?;
     db.find_next_match(player_internal_id, channel_internal_id, service_type_id)
+}
+
+/// Report match result
+fn report<'a, 'b>(db: &'a SharedDb, r: &MatchResultPOST) -> Result<MatchId, Error<'b>>
+where
+    'a: 'b,
+{
+    let db = db.read()?;
+    db.report_result(
+        &r.player_internal_id,
+        &r.channel_internal_id,
+        &r.service_type_id,
+        &r.result,
+    )
+}
+
+/// Validate match result
+fn validate<'a, 'b>(db: &'a SharedDb, match_id: MatchId) -> Result<(), Error<'b>>
+where
+    'a: 'b,
+{
+    let db = db.read()?;
+    db.validate_result(match_id)
 }
