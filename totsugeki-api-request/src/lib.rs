@@ -19,6 +19,8 @@ pub mod bracket;
 pub mod join;
 pub mod next_match;
 pub mod organiser;
+pub mod report;
+pub mod validate;
 
 /// Helper for forming url
 const HTTP_PREFIX: &str = "https://";
@@ -30,6 +32,14 @@ pub enum RequestError {
     Request(reqwest::Error, String),
     /// Bracket parsing error
     BracketParsingError(BracketParsingError),
+    /// Match id parsing error
+    MatchIdParsingError(uuid::Error),
+}
+
+impl From<uuid::Error> for RequestError {
+    fn from(e: uuid::Error) -> Self {
+        Self::MatchIdParsingError(e)
+    }
 }
 
 impl std::fmt::Display for RequestError {
@@ -37,6 +47,7 @@ impl std::fmt::Display for RequestError {
         match self {
             RequestError::Request(_, msg) => writeln!(f, "{msg}"),
             RequestError::BracketParsingError(e) => e.fmt(f),
+            RequestError::MatchIdParsingError(e) => writeln!(f, "Could not parse match id: {e}"),
         }
     }
 }

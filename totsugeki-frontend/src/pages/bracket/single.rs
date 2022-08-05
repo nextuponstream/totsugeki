@@ -103,6 +103,7 @@ impl Component for View {
                     html! { format!("An error has happened: {}", msg) }
                 }
                 RequestError::BracketParsingError(e) => html! { format!("{e}") },
+                RequestError::MatchIdParsingError(e) => html! { format!("{e}") },
             },
         }
     }

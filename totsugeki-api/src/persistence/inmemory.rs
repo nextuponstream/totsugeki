@@ -579,7 +579,7 @@ impl DBAccessor for InMemoryDBAccessor {
             let mut seed = 0;
             for round in &mut (*bracket.1).matches {
                 match winner {
-                    // set next match in bracket
+                    // place winner in next round
                     Opponent::Player(winner_id) => {
                         for m in round {
                             if m.get_seeds().contains(&seed) {
