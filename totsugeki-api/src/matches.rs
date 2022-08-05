@@ -13,6 +13,8 @@ pub struct NextMatchGET {
     pub match_id: MatchId,
     /// Bracket where next match happens
     pub bracket_id: BracketId,
+    /// Opponent name
+    pub player_name: String,
 }
 
 /// REDEFINITION: request for next match

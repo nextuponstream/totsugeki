@@ -17,11 +17,13 @@ pub fn parse_next_match_get_response(r: TestJson) -> NextMatchGET {
     let opponent = Opponent::try_from(o.get("opponent").string().to_string()).expect("opponent");
     let match_id = MatchId::parse_str(o.get("match_id").string()).expect("match id");
     let bracket_id = BracketId::parse_str(o.get("bracket_id").string()).expect("bracket id");
+    let player_name = o.get("player_name").string().to_string();
 
     NextMatchGET {
         opponent,
         match_id,
         bracket_id,
+        player_name,
     }
 }
 
@@ -95,7 +97,7 @@ pub async fn assert_player_x_and_y_play_each_other(
         y,
         players,
         test_api,
-        &channel_internal_id,
+        channel_internal_id,
         service_type_id,
     )
     .await;
@@ -104,8 +106,8 @@ pub async fn assert_player_x_and_y_play_each_other(
         x,
         players,
         test_api,
-        channel_internal_id.clone(),
-        service_type_id.clone(),
+        channel_internal_id,
+        service_type_id,
     )
     .await;
 }
