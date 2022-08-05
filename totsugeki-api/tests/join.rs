@@ -185,7 +185,6 @@ async fn bracket_initial_next_opponent_are_correct() {
             let player_internal_id = i.to_string();
             let player_name = format!("player_{i}");
             let channel_internal_id = channel_internal_id.clone();
-            let service_type_id = service_type_id.clone();
             let body = POSTRequestBody::new(
                 player_internal_id.clone(),
                 player_name,
@@ -270,7 +269,7 @@ async fn bracket_initial_next_opponent_are_correct() {
                         &players,
                         &test_api,
                         channel_internal_id.clone(),
-                        service_type_id.clone(),
+                        service_type_id,
                     )
                     .await;
                 }
@@ -281,7 +280,7 @@ async fn bracket_initial_next_opponent_are_correct() {
                         &players,
                         &test_api,
                         channel_internal_id.clone(),
-                        service_type_id.clone(),
+                        service_type_id,
                     )
                     .await;
                 }
@@ -292,7 +291,7 @@ async fn bracket_initial_next_opponent_are_correct() {
                         &players,
                         &test_api,
                         channel_internal_id.clone(),
-                        service_type_id.clone(),
+                        service_type_id,
                     )
                     .await;
                 }
@@ -303,7 +302,7 @@ async fn bracket_initial_next_opponent_are_correct() {
                         &players,
                         &test_api,
                         channel_internal_id.clone(),
-                        service_type_id.clone(),
+                        service_type_id,
                     )
                     .await;
                 }

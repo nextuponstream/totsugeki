@@ -57,6 +57,39 @@ impl std::fmt::Display for Opponent {
     }
 }
 
+/// Error while parsing Opponent
+#[derive(Debug)]
+pub enum ParsingOpponentError {
+    /// Id
+    Id(uuid::Error),
+}
+
+impl std::fmt::Display for ParsingOpponentError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ParsingOpponentError::Id(e) => e.fmt(f),
+        }
+    }
+}
+
+impl std::str::FromStr for Opponent {
+    type Err = ParsingOpponentError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "?" => Opponent::Unknown,
+            "BYE" => Opponent::Bye,
+            _ => Opponent::Player(PlayerId::try_from(s)?),
+        })
+    }
+}
+
+impl From<uuid::Error> for ParsingOpponentError {
+    fn from(e: uuid::Error) -> Self {
+        Self::Id(e)
+    }
+}
+
 /// The two players for this match
 type MatchPlayers = [Opponent; 2];
 
@@ -420,14 +453,74 @@ pub struct NextMatchGET {
     pub match_id: Id,
     /// Bracket where next match happens
     pub bracket_id: BracketId,
+    /// Name of next opponent
+    pub player_name: String,
+}
+
+/// Raw response to query: "who is my next opponent"
+#[derive(Serialize, Deserialize)]
+pub struct NextMatchGETResponse {
+    /// Next opponent
+    pub opponent: String,
+    /// Id of next match
+    pub match_id: Id,
+    /// Bracket where next match happens
+    pub bracket_id: BracketId,
+    /// Name of next opponent
+    pub player_name: String,
+}
+
+/// Error while parsing next match
+#[derive(Debug)]
+pub enum NextMatchGETParsingError {
+    /// Could not parse opponent
+    Opponent(ParsingOpponentError),
+}
+
+impl std::fmt::Display for NextMatchGETParsingError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            NextMatchGETParsingError::Opponent(e) => e.fmt(f),
+        }
+    }
+}
+
+impl TryFrom<NextMatchGETResponse> for NextMatchGET {
+    type Error = NextMatchGETParsingError;
+
+    fn try_from(r: NextMatchGETResponse) -> Result<Self, Self::Error> {
+        Ok(Self {
+            opponent: r.opponent.parse::<Opponent>()?,
+            match_id: r.match_id,
+            bracket_id: r.bracket_id,
+            player_name: r.player_name,
+        })
+    }
+}
+
+impl From<ParsingOpponentError> for NextMatchGETParsingError {
+    fn from(e: ParsingOpponentError) -> Self {
+        Self::Opponent(e)
+    }
+}
+
+/// request for next match
+#[derive(Serialize, Deserialize)]
+pub struct NextMatchGETRequest {
+    /// Next opponent
+    pub player_internal_id: String,
+    /// Identifier of the discussion channel from service (for instance: discord)
+    pub channel_internal_id: String,
+    /// Name of service. See totsugeki_api for a list of supported service
+    pub service_type_id: String,
 }
 
 impl std::fmt::Display for NextMatchGET {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Next opponent: {}\nMatch ID: {}\nBracket ID: {}",
-            self.opponent, self.match_id, self.bracket_id
+            "Next opponent: {} ({})\nMatch ID: {}\nBracket ID: {}",
+            self.player_name, self.opponent, self.match_id, self.bracket_id
         )
     }
 }

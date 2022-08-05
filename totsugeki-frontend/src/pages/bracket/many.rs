@@ -132,6 +132,7 @@ impl Component for View {
                     RequestError::Request(_e, msg)=> html!{ format!("An error has happened: {}",msg) },
                     RequestError::BracketParsingError(e) =>  html! { format!("{e}") },
                     RequestError::MatchIdParsingError(e) =>  html! { format!("{e}") },
+                    RequestError::NextMatch(e) =>  html! { e.to_string() },
                 },
             }
             }

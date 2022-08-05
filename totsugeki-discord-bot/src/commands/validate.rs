@@ -51,6 +51,11 @@ async fn validate(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
                 log::error!("User could not request bracket: {e}");
                 Err(Box::new(RequestError::MatchIdParsingError(e)))
             }
+            RequestError::NextMatch(e) => {
+                msg.reply(ctx, e.to_string()).await?;
+                log::error!("User could not request bracket: {e}");
+                Err(Box::new(RequestError::NextMatch(e)))
+            }
         },
     }
 }

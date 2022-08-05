@@ -63,6 +63,11 @@ async fn join(ctx: &Context, msg: &Message, mut _args: Args) -> CommandResult {
                 log::warn!("User could not request bracket: {e}");
                 Err(Box::new(RequestError::MatchIdParsingError(e)))
             }
+            RequestError::NextMatch(e) => {
+                msg.reply(ctx, format!("{e}")).await?;
+                log::error!("User could not request bracket: {e}");
+                Err(Box::new(RequestError::NextMatch(e)))
+            }
         },
     }
 }

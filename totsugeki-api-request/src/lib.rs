@@ -13,7 +13,10 @@
 //! which is why reqwest client is passed as a parameter. frontend is the only crate compiling to wasm
 //! but discord bot makes the same request. This parameter being added to the parameter list is a necessary code smell.
 use std::fmt::{self, Formatter};
-use totsugeki::{bracket::ParsingError as BracketParsingError, ServiceRegisterPOST};
+use totsugeki::{
+    bracket::ParsingError as BracketParsingError, matches::NextMatchGETParsingError,
+    ServiceRegisterPOST,
+};
 
 pub mod bracket;
 pub mod join;
@@ -34,6 +37,14 @@ pub enum RequestError {
     BracketParsingError(BracketParsingError),
     /// Match id parsing error
     MatchIdParsingError(uuid::Error),
+    /// Error parsing next match
+    NextMatch(NextMatchGETParsingError),
+}
+
+impl From<NextMatchGETParsingError> for RequestError {
+    fn from(e: NextMatchGETParsingError) -> Self {
+        Self::NextMatch(e)
+    }
 }
 
 impl From<uuid::Error> for RequestError {
@@ -48,6 +59,7 @@ impl std::fmt::Display for RequestError {
             RequestError::Request(_, msg) => writeln!(f, "{msg}"),
             RequestError::BracketParsingError(e) => e.fmt(f),
             RequestError::MatchIdParsingError(e) => writeln!(f, "Could not parse match id: {e}"),
+            RequestError::NextMatch(e) => e.fmt(f),
         }
     }
 }
