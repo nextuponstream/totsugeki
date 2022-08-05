@@ -1,8 +1,7 @@
 //! validate matches
 
-use totsugeki::matches::MatchGET;
-
 use super::TotsugekiApiTestClient;
+use totsugeki::matches::{Id as MatchId, MatchGET};
 
 /// validate match where predicted seed `x` and `y` play
 pub async fn validate_match_for_predicted_seeds(
@@ -26,4 +25,16 @@ pub async fn validate_match_for_predicted_seeds(
             }
         }
     }
+}
+
+/// Validate match with `match_id`
+/// validate match where predicted seed `x` and `y` play
+pub async fn validate_match(test_api: &TotsugekiApiTestClient, match_id: MatchId) {
+    let res = test_api
+        .cli
+        .post(format!("/bracket/validate/{}", match_id))
+        .header("X-API-Key", test_api.authorization_header.as_str())
+        .send()
+        .await;
+    res.assert_status_is_ok();
 }

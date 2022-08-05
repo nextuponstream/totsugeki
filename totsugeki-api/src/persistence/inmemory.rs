@@ -418,12 +418,16 @@ impl DBAccessor for InMemoryDBAccessor {
                 }
 
                 for round in &bracket.get_matches() {
+                    let is_last_round = round.len() == 1;
                     for m in round {
                         if let Opponent::Player(id) = m.get_players()[0] {
                             if id == player_id {
                                 match m.get_winner() {
                                     Opponent::Player(winner) => {
                                         if winner == player_id {
+                                            if is_last_round {
+                                                return Err(Error::NoNextMatch);
+                                            }
                                             continue; // search next round
                                         }
                                         return Err(Error::EliminatedFromBracket);
@@ -444,6 +448,9 @@ impl DBAccessor for InMemoryDBAccessor {
                                 match m.get_winner() {
                                     Opponent::Player(winner) => {
                                         if winner == player_id {
+                                            if is_last_round {
+                                                return Err(Error::NoNextMatch);
+                                            }
                                             continue; // search next round
                                         }
                                         return Err(Error::EliminatedFromBracket);
@@ -572,6 +579,7 @@ impl DBAccessor for InMemoryDBAccessor {
             let mut seed = 0;
             for round in &mut (*bracket.1).matches {
                 match winner {
+                    // set next match in bracket
                     Opponent::Player(winner_id) => {
                         for m in round {
                             if m.get_seeds().contains(&seed) {
@@ -587,11 +595,18 @@ impl DBAccessor for InMemoryDBAccessor {
                         }
                     }
                     Opponent::Bye => todo!(),
+                    // validate match result
                     Opponent::Unknown => {
+                        let is_last_round = round.len() == 1;
                         for m in round {
                             if m.get_id() == match_id {
                                 seed = m.set_outcome()?;
                                 winner = m.get_winner();
+
+                                if is_last_round {
+                                    // then there is no next match to update
+                                    return Ok(());
+                                }
                             }
                         }
                     }

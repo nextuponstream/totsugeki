@@ -4,17 +4,20 @@ use totsugeki::{
     bracket::{Id as BracketId, GET},
     join::POSTRequestBody,
 };
+use totsugeki_api::Service;
 
 use super::{bracket::parse_bracket_get_response, TotsugekiApiTestClient};
 
-/// Make `n` players join a bracket
+/// Make `n` players join a bracket. Returns created bracket.
+/// First player to join has internal id 1, second has 2...
 pub async fn n_players_join_bracket(
     test_api: &TotsugekiApiTestClient,
+    n: usize,
     channel_internal_id: &str,
-    service_type_id: &str,
+    service_type_id: Service,
     bracket_id: BracketId,
 ) -> GET {
-    for i in 1..=3 {
+    for i in 1..=n {
         let player_internal_id = i.to_string();
         let player_name = format!("player_{i}");
         let body = POSTRequestBody::new(

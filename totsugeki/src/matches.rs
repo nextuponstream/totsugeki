@@ -67,8 +67,16 @@ type Seeds = [usize; 2];
 pub type MatchReportedResult = [(i8, i8); 2];
 
 /// Reported result
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct ReportedResult(pub (i8, i8));
+
+impl ReportedResult {
+    /// Reverse score
+    #[must_use]
+    pub fn reverse(self) -> Self {
+        Self((self.0 .1, self.0 .0))
+    }
+}
 
 impl std::fmt::Display for ReportedResult {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
