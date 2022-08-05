@@ -7,7 +7,7 @@ use totsugeki::{
     matches::{Id as MatchId, NextMatchGET, Opponent},
     player::Id as PlayerId,
 };
-use totsugeki_api::matches::NextMatchGETRequest;
+use totsugeki_api::{matches::NextMatchGETRequest, Service};
 
 use super::TotsugekiApiTestClient;
 
@@ -31,13 +31,13 @@ pub async fn assert_next_opponent(
     y: usize,
     players: &[PlayerId],
     test_api: &TotsugekiApiTestClient,
-    channel_internal_id: String,
-    service_type_id: String,
+    channel_internal_id: &str,
+    service_type_id: Service,
 ) {
     let body = NextMatchGETRequest {
         player_internal_id: x.to_string(),
-        channel_internal_id,
-        service_type_id,
+        channel_internal_id: channel_internal_id.to_string(),
+        service_type_id: service_type_id.to_string(),
     };
     let res = test_api
         .cli
@@ -60,13 +60,13 @@ pub async fn assert_next_opponent(
 pub async fn assert_next_opponent_is_unknown(
     x: usize,
     test_api: &TotsugekiApiTestClient,
-    channel_internal_id: String,
-    service_type_id: String,
+    channel_internal_id: &str,
+    service_type_id: Service,
 ) {
     let body = NextMatchGETRequest {
         player_internal_id: x.to_string(),
-        channel_internal_id,
-        service_type_id,
+        channel_internal_id: channel_internal_id.to_string(),
+        service_type_id: service_type_id.to_string(),
     };
     let res = test_api
         .cli
@@ -87,16 +87,16 @@ pub async fn assert_player_x_and_y_play_each_other(
     y: usize,
     players: &[PlayerId],
     test_api: &TotsugekiApiTestClient,
-    channel_internal_id: String,
-    service_type_id: String,
+    channel_internal_id: &str,
+    service_type_id: Service,
 ) {
     assert_next_opponent(
         x,
         y,
         players,
         test_api,
-        channel_internal_id.clone(),
-        service_type_id.clone(),
+        &channel_internal_id,
+        service_type_id,
     )
     .await;
     assert_next_opponent(
@@ -117,16 +117,10 @@ pub async fn assert_next_matches(
     players: &[PlayerId],
     test_api: &TotsugekiApiTestClient,
     channel_internal_id: String,
-    service_type_id: String,
+    service_type_id: Service,
 ) {
     for p in players_with_unknown_opponent {
-        assert_next_opponent_is_unknown(
-            *p,
-            test_api,
-            channel_internal_id.clone(),
-            service_type_id.clone(),
-        )
-        .await;
+        assert_next_opponent_is_unknown(*p, test_api, &channel_internal_id, service_type_id).await;
     }
 
     for (p1, p2) in players_playing_each_other {
@@ -135,8 +129,8 @@ pub async fn assert_next_matches(
             *p2,
             players,
             test_api,
-            channel_internal_id.clone(),
-            service_type_id.clone(),
+            &channel_internal_id,
+            service_type_id,
         )
         .await;
     }
@@ -146,13 +140,13 @@ pub async fn assert_next_matches(
 pub async fn assert_player_is_eliminated(
     test_api: &TotsugekiApiTestClient,
     player: usize,
-    channel_internal_id: String,
-    service_type_id: String,
+    channel_internal_id: &str,
+    service_type_id: Service,
 ) {
     let body = NextMatchGETRequest {
         player_internal_id: player.to_string(),
-        channel_internal_id,
-        service_type_id,
+        channel_internal_id: channel_internal_id.to_string(),
+        service_type_id: service_type_id.to_string(),
     };
     let res = test_api
         .cli
@@ -166,4 +160,27 @@ pub async fn assert_player_is_eliminated(
         "There is no match for you to play because you have been eliminated from the bracket.",
     )
     .await;
+}
+
+/// Assert player with `seed` has no next match (not enough players or winner)
+pub async fn assert_player_has_no_next_match(
+    test_api: &TotsugekiApiTestClient,
+    player: usize,
+    channel_internal_id: &str,
+    service_type_id: Service,
+) {
+    let body = NextMatchGETRequest {
+        player_internal_id: player.to_string(),
+        channel_internal_id: channel_internal_id.to_string(),
+        service_type_id: service_type_id.to_string(),
+    };
+    let res = test_api
+        .cli
+        .get("/next_match")
+        .header("X-API-Key", test_api.authorization_header.as_str())
+        .body_json(&body)
+        .send()
+        .await;
+    res.assert_status(StatusCode::NOT_FOUND);
+    res.assert_text("There is no match for you to play.").await;
 }

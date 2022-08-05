@@ -18,7 +18,7 @@ use totsugeki::{
     organiser::Id as OrganiserId,
     player::Id as PlayerId,
 };
-use totsugeki_api::matches::NextMatchGETRequest;
+use totsugeki_api::{matches::NextMatchGETRequest, Service};
 
 #[tokio::test]
 async fn joining_bracket_requires_authorization() {
@@ -154,7 +154,7 @@ async fn bracket_initial_next_opponent_are_correct() {
         let organiser_name = "my-favorite-to".to_string();
         let organiser_internal_id = "1".to_string();
         let channel_internal_id = "1".to_string();
-        let service_type_id = "discord".to_string();
+        let service_type_id = Service::Discord;
         let format = "single-elimination".to_string();
         let seeding_method = "strict".to_string();
         let body = POST::new(
@@ -162,7 +162,7 @@ async fn bracket_initial_next_opponent_are_correct() {
             organiser_name,
             organiser_internal_id,
             channel_internal_id.clone(),
-            service_type_id.clone(),
+            service_type_id.to_string(),
             format,
             seeding_method,
         );
@@ -190,7 +190,7 @@ async fn bracket_initial_next_opponent_are_correct() {
                 player_internal_id.clone(),
                 player_name,
                 channel_internal_id.clone(),
-                service_type_id.clone(),
+                service_type_id.to_string(),
             );
 
             let join_resp = test_api
@@ -229,7 +229,7 @@ async fn bracket_initial_next_opponent_are_correct() {
                     let body = NextMatchGETRequest {
                         player_internal_id,
                         channel_internal_id,
-                        service_type_id,
+                        service_type_id: service_type_id.to_string(),
                     };
                     let res = test_api
                         .cli
@@ -248,7 +248,7 @@ async fn bracket_initial_next_opponent_are_correct() {
                         &players,
                         &test_api,
                         channel_internal_id.clone(),
-                        service_type_id.clone(),
+                        service_type_id,
                     )
                     .await;
                 }
@@ -259,7 +259,7 @@ async fn bracket_initial_next_opponent_are_correct() {
                         &players,
                         &test_api,
                         channel_internal_id.clone(),
-                        service_type_id.clone(),
+                        service_type_id,
                     )
                     .await;
                 }
