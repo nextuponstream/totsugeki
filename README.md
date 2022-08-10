@@ -6,10 +6,14 @@ discord bot.
 ## Roadmap MVP
 
 * [x] let player !join bracket
-* [ ] report !result
-* [ ] let player see their !nextmatch opponent
-* [ ] TO !validatematch
-* [ ] !finalize bracket when tournament is over
+* [x] report !result
+* [x] let player see their !nextmatch opponent
+* [x] TO !validatematch
+* [ ] !quit bracket (for players)
+* [ ] !start bracket (for tournament organisers)
+* [ ] !dq player
+* [ ] double elimination format
+* [ ] database queries
 
 ## Installation
 

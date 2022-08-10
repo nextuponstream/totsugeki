@@ -20,10 +20,6 @@ jwt = "0.15.0"
 hmac = "0.11"
 sha2 = "0.9"
 uuid = { version = "1.1.2", features = ["v4", "serde"] }
-# TODO add tracing
-# tracing = { version = "0.1.35", features = ["log"] }
-# tracing-opentelemetry = "0.17.4"
-# tracing-subscriber = "0.3.14"
 
 [dependencies.serenity]
 version = "0.11.2"
