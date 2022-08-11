@@ -1,7 +1,10 @@
 //! Postgresql database
 
 use super::DBAccessor;
-use totsugeki::{bracket::Id as BracketId, matches::Id as MatchId};
+use totsugeki::{
+    bracket::Id as BracketId,
+    matches::{Id as MatchId, NextMatchGETResponseRaw},
+};
 
 /// Postgresql database
 #[derive(Default)]
@@ -101,7 +104,7 @@ impl DBAccessor for Accessor {
         player_internal_id: &'b str,
         channel_internal_id: &'b str,
         service_type_id: &'b str,
-    ) -> Result<crate::matches::NextMatchGET, super::Error<'c>> {
+    ) -> Result<NextMatchGETResponseRaw, super::Error<'c>> {
         todo!()
     }
 

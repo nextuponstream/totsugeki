@@ -11,6 +11,8 @@ use crate::{
     },
     DiscussionChannel, DiscussionChannelId,
 };
+#[cfg(feature = "poem-openapi")]
+use poem_openapi::Object;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
@@ -86,20 +88,21 @@ pub type ActiveBrackets = HashMap<DiscussionChannelId, Id>;
 pub type FinalizedBrackets = HashSet<Id>;
 
 #[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "poem-openapi", derive(Object))]
 /// POST request to /bracket endpoint
 pub struct POST {
     /// name of the bracket
-    bracket_name: String,
+    pub bracket_name: String,
     /// used to create missing organiser
-    organiser_name: String,
+    pub organiser_name: String,
     /// Identifier of the organiser from the service (for instance: discord)
-    organiser_internal_id: String,
+    pub organiser_internal_id: String,
     /// Identifier of the discussion channel from service (for instance: discord)
-    channel_internal_id: String,
+    pub channel_internal_id: String,
     /// Name of service. See totsugeki_api for a list of supported service
-    service_type_id: String,
+    pub service_type_id: String,
     /// bracket format
-    format: String,
+    pub format: String,
     /// seeding method for bracket
     pub seeding_method: String,
 }
@@ -302,13 +305,14 @@ pub type Id = Uuid;
 
 /// POST response to /bracket endpoint
 #[derive(Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "poem-openapi", derive(Object))]
 pub struct POSTResult {
     /// id of created bracket
-    bracket_id: Id,
+    pub bracket_id: Id,
     /// id of organiser
-    organiser_id: OrganiserId,
+    pub organiser_id: OrganiserId,
     /// id of discussion channel
-    discussion_channel_id: DiscussionChannelId,
+    pub discussion_channel_id: DiscussionChannelId,
 }
 
 impl POSTResult {
@@ -347,6 +351,7 @@ impl POSTResult {
 
 /// Bracket GET response
 #[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "poem-openapi", derive(Object))]
 pub struct GET {
     /// Identifier of bracket
     pub bracket_id: Id,
@@ -360,6 +365,21 @@ pub struct GET {
     pub format: String,
     /// Seeding method used for this bracket
     pub seeding_method: String,
+}
+
+impl GET {
+    /// Form values to be sent to the API to create a bracket
+    #[must_use]
+    pub fn new(bracket: &Bracket) -> Self {
+        GET {
+            bracket_id: bracket.get_id(),
+            bracket_name: bracket.get_bracket_name(),
+            players: bracket.get_players(),
+            format: bracket.get_format().to_string(),
+            seeding_method: bracket.get_seeding_method().to_string(),
+            matches: Match::get_sendable_matches(&bracket.get_matches()),
+        }
+    }
 }
 
 /// Error while parsing Bracket
@@ -439,4 +459,10 @@ pub struct RequestParameters<'a, T: DiscussionChannel> {
     pub discussion_channel: T,
     /// seeding method for bracket
     pub seeding_method: &'a str,
+}
+
+impl From<Bracket> for GET {
+    fn from(b: Bracket) -> Self {
+        GET::new(&b)
+    }
 }

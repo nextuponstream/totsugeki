@@ -1,12 +1,13 @@
 //! Two players play a match, resulting in a winner and a loser
 
-use std::str::FromStr;
-
 use crate::{
     bracket::Id as BracketId,
     player::{Id as PlayerId, Player},
 };
+#[cfg(feature = "poem-openapi")]
+use poem_openapi::Object;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 /// Error while creating a match
 #[derive(Debug, Clone)]
@@ -168,6 +169,24 @@ pub struct Match {
     pub reported_results: MatchReportedResult,
 }
 
+impl Match {
+    /// Get matches to send
+    #[must_use]
+    pub fn get_sendable_matches(matches: &Vec<Vec<Match>>) -> Vec<Vec<MatchGET>> {
+        let mut result = vec![];
+        for round in matches {
+            let mut result_round = vec![];
+            for m in round {
+                result_round.push(m.clone().into());
+            }
+
+            result.push(result_round);
+        }
+
+        result
+    }
+}
+
 impl std::fmt::Display for Match {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // writeln!(f, "{}", self.id)?;
@@ -297,6 +316,7 @@ impl Match {
 
 /// Match representation as received through the network
 #[derive(Debug, Default, PartialEq, Eq, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "poem-openapi", derive(Object))]
 pub struct MatchGET {
     /// Match id
     pub id: Id,
@@ -506,6 +526,7 @@ impl From<ParsingOpponentError> for NextMatchGETParsingError {
 
 /// request for next match
 #[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "poem-openapi", derive(Object))]
 pub struct NextMatchGETRequest {
     /// Next opponent
     pub player_internal_id: String,
@@ -527,6 +548,7 @@ impl std::fmt::Display for NextMatchGET {
 
 /// Report match result
 #[derive(Serialize)]
+#[cfg_attr(feature = "poem-openapi", derive(Object))]
 pub struct MatchResultPOST {
     /// Player id using service
     pub player_internal_id: String,
@@ -547,4 +569,19 @@ pub struct ValidateMatchPOST {
     pub service_type_id: String,
     /// Result as reported by the player
     pub match_id: String,
+}
+
+/// Raw response to next match query: Opponent is not parsed
+// NOTE: enum implement FromStr and ToString so you don't have to implement
+// ToJson trait
+#[cfg_attr(feature = "poem-openapi", derive(Object))]
+pub struct NextMatchGETResponseRaw {
+    /// Next opponent
+    pub opponent: String,
+    /// Id of next match
+    pub match_id: Id,
+    /// Bracket where next match happens
+    pub bracket_id: BracketId,
+    /// Opponent name
+    pub player_name: String,
 }

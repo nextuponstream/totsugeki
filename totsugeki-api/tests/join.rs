@@ -15,10 +15,11 @@ use std::collections::HashSet;
 use totsugeki::{
     bracket::{Id as BracketId, POST},
     join::{POSTRequestBody, POSTResponseBody},
+    matches::NextMatchGETRequest,
     organiser::Id as OrganiserId,
     player::Id as PlayerId,
 };
-use totsugeki_api::{matches::NextMatchGETRequest, Service};
+use totsugeki_api::Service;
 
 #[tokio::test]
 async fn joining_bracket_requires_authorization() {
