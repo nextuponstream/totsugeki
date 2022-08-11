@@ -83,7 +83,6 @@ async fn serve_server<T: OpenApi + 'static>(
     let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
     let subscriber = Registry::default().with(env_filter).with(formatting_layer);
     set_global_default(subscriber).expect("Failed to set subscriber.");
-    // env_logger::init_from_env(env_logger::Env::new().default_filter_or("error")); // TODO remove
 
     poem::Server::new(tls).run(app).await
 }
