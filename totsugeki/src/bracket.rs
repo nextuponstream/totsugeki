@@ -87,7 +87,7 @@ pub type ActiveBrackets = HashMap<DiscussionChannelId, Id>;
 /// Finalized brackets
 pub type FinalizedBrackets = HashSet<Id>;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[cfg_attr(feature = "poem-openapi", derive(Object))]
 /// POST request to /bracket endpoint
 pub struct POST {

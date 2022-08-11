@@ -1,16 +1,14 @@
 //! Organiser Api
 
+use crate::log_error;
 use crate::persistence::Error;
 use crate::ApiKeyServiceAuthorization;
-use crate::OrganiserGETResponse;
-use crate::OrganiserPOSTRequest;
 use crate::SharedDb;
-use log::warn;
 use poem::Result;
 use poem_openapi::param::Path;
 use poem_openapi::payload::Json;
 use poem_openapi::OpenApi;
-use totsugeki::organiser::Organiser;
+use totsugeki::organiser::{GETResponse, Organiser, POSTRequest};
 
 /// Organiser Api
 pub struct Api;
@@ -19,16 +17,17 @@ pub struct Api;
 impl Api {
     /// Create new organiser
     #[oai(path = "/organiser", method = "post")]
+    #[tracing::instrument(name = "Create organiser", skip(self, db, _auth))]
     async fn create_organiser<'a>(
         &self,
         db: SharedDb<'a>,
         _auth: ApiKeyServiceAuthorization,
-        organiser_request: Json<OrganiserPOSTRequest>,
+        organiser_request: Json<POSTRequest>,
     ) -> Result<()> {
         match register_organiser(&db, organiser_request.organiser_name.as_str()) {
             Ok(()) => Ok(()),
             Err(e) => {
-                warn!("{e}");
+                log_error(&e);
                 Err(e.into())
             }
         }
@@ -40,7 +39,7 @@ impl Api {
         &self,
         db: SharedDb<'a>,
         offset: Path<i64>,
-    ) -> Result<Json<Vec<OrganiserGETResponse>>> {
+    ) -> Result<Json<Vec<GETResponse>>> {
         match list_registered_organisers(&db, offset.0) {
             Ok(os) => {
                 let mut o_api_vec = vec![];
@@ -51,7 +50,7 @@ impl Api {
                 Ok(Json(o_api_vec))
             }
             Err(e) => {
-                warn!("{e}");
+                log_error(&e);
                 Err(e.into())
             }
         }
@@ -64,7 +63,7 @@ impl Api {
         db: SharedDb<'a>,
         organiser_name: Path<String>,
         offset: Path<i64>,
-    ) -> Result<Json<Vec<OrganiserGETResponse>>> {
+    ) -> Result<Json<Vec<GETResponse>>> {
         match find_organiser(&db, organiser_name.0.as_str(), offset.0) {
             Ok(os) => {
                 let mut o_api_vec = vec![];
@@ -75,7 +74,7 @@ impl Api {
                 Ok(Json(o_api_vec))
             }
             Err(e) => {
-                warn!("{e}");
+                log_error(&e);
                 Err(e.into())
             }
         }

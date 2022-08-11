@@ -1,11 +1,11 @@
 //! Organiser domain
 
-use std::collections::{HashMap, HashSet};
-
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-
 use crate::{bracket::Id as BracketId, ActiveBrackets};
+#[cfg(feature = "poem-openapi")]
+use poem_openapi::Object;
+use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
+use uuid::Uuid;
 
 /// Organiser identifier
 pub type Id = Uuid;
@@ -85,5 +85,38 @@ impl Organiser {
     /// Get active brackets
     pub fn get_finalized_brackets(&self) -> FinalizedBrackets {
         self.finalized_brackets.clone()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[cfg_attr(feature = "poem-openapi", derive(Object))]
+/// Organiser POST request body
+pub struct POSTRequest {
+    /// Name of the organiser to create
+    pub organiser_name: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "poem-openapi", derive(Object))]
+/// Organiser GET response
+pub struct GETResponse {
+    /// Identifier of the organiser
+    pub organiser_id: Id,
+    /// Name of the organiser
+    pub organiser_name: String,
+    /// Active bracket managed by this organiser
+    pub active_brackets: ActiveBrackets,
+    /// Finalized bracket from this organiser
+    pub finalized_brackets: FinalizedBrackets,
+}
+
+impl From<Organiser> for GETResponse {
+    fn from(o: Organiser) -> Self {
+        Self {
+            organiser_id: o.get_organiser_id(),
+            organiser_name: o.get_organiser_name(),
+            active_brackets: o.get_active_brackets(),
+            finalized_brackets: o.get_finalized_brackets(),
+        }
     }
 }

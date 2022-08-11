@@ -17,7 +17,7 @@ pub struct POSTResponseBody {
     pub organiser_id: OrganiserId,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 #[cfg_attr(feature = "poem-openapi", derive(Object))]
 /// Join POST request body
 pub struct POSTRequestBody {
