@@ -40,7 +40,7 @@ pub struct Players {
 }
 
 /// Error while interacting with players
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum Error {
     /// Player already exist in this group of player
     AlreadyPresent,

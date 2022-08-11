@@ -10,7 +10,7 @@ use yew::prelude::*;
 use yew_router::Routable;
 
 /// Router to other pages
-#[derive(Debug, Clone, Copy, PartialEq, Routable)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Routable)]
 pub enum Route {
     /// Home page
     #[at("/")]
