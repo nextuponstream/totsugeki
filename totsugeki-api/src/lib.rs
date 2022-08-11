@@ -14,24 +14,23 @@ pub mod routes;
 use crate::persistence::{inmemory::InMemoryDBAccessor, DBAccessor, Error};
 use hmac::{Hmac, NewMac};
 use jwt::VerifyWithKey;
-use log::{error, warn};
 use persistence::postgresql::Accessor as PostgresqlDBAccessor;
 use poem::{http::Method, middleware::Cors, web::Data, EndpointExt, Request, Route};
 use poem_openapi::{auth::ApiKey, Object, OpenApiService, SecurityScheme};
-use routes::bracket::Api as BracketApi;
-use routes::health_check::Api as HealthcheckApi;
-use routes::join::Api as JoinApi;
-use routes::organiser::Api as OrganiserApi;
-use routes::service::Api as ServiceApi;
-use routes::test_utils::Api as TestUtilsApi;
+use routes::{
+    bracket::Api as BracketApi, health_check::Api as HealthcheckApi, join::Api as JoinApi,
+    organiser::Api as OrganiserApi, service::Api as ServiceApi, test_utils::Api as TestUtilsApi,
+};
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 use std::boxed::Box;
 use std::collections::HashSet;
 use std::sync::Arc;
-use totsugeki::bracket::{ActiveBrackets, Id as BracketId, GET};
-use totsugeki::organiser::{Id as OrganiserId, Organiser};
-use totsugeki::ReadLock;
+use totsugeki::{
+    bracket::{Id as BracketId, GET},
+    ReadLock,
+};
+use tracing::{error, warn};
 use uuid::Uuid;
 
 /// Database accessor
@@ -50,13 +49,6 @@ pub type SharedDb<'a> = Data<&'a Arc<ReadLock<Box<dyn DBAccessor + Send + Sync>>
 #[must_use]
 pub fn hmac(server_key: &[u8]) -> Hmac<Sha256> {
     Hmac::<Sha256>::new_from_slice(server_key).expect("valid server key")
-}
-
-#[derive(Serialize, Deserialize, Object)]
-/// Organiser POST request body
-pub struct OrganiserPOSTRequest {
-    /// Name of the organiser to create
-    organiser_name: String,
 }
 
 /// Log error are the appropriate level
@@ -107,19 +99,6 @@ impl std::fmt::Display for Service {
 /// Finalized brackets
 pub type FinalizedBrackets = HashSet<BracketId>;
 
-#[derive(Object, Serialize, Deserialize)]
-/// Organiser GET response
-pub struct OrganiserGETResponse {
-    /// Identifier of the organiser
-    organiser_id: OrganiserId,
-    /// Name of the organiser
-    organiser_name: String,
-    /// Active bracket managed by this organiser
-    active_brackets: ActiveBrackets,
-    /// Finalized bracket from this organiser
-    finalized_brackets: FinalizedBrackets,
-}
-
 /// API service identifier
 type ApiServiceId = Uuid;
 
@@ -142,17 +121,6 @@ impl ApiServiceUser {
             id: ApiServiceId::new_v4(),
             name,
             description,
-        }
-    }
-}
-
-impl From<Organiser> for OrganiserGETResponse {
-    fn from(o: Organiser) -> Self {
-        Self {
-            organiser_id: o.get_organiser_id(),
-            organiser_name: o.get_organiser_name(),
-            active_brackets: o.get_active_brackets(),
-            finalized_brackets: o.get_finalized_brackets(),
         }
     }
 }

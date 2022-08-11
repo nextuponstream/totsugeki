@@ -525,7 +525,7 @@ impl From<ParsingOpponentError> for NextMatchGETParsingError {
 }
 
 /// request for next match
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[cfg_attr(feature = "poem-openapi", derive(Object))]
 pub struct NextMatchGETRequest {
     /// Next opponent
@@ -547,7 +547,7 @@ impl std::fmt::Display for NextMatchGET {
 }
 
 /// Report match result
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 #[cfg_attr(feature = "poem-openapi", derive(Object))]
 pub struct MatchResultPOST {
     /// Player id using service

@@ -12,6 +12,7 @@ pub struct Api;
 impl Api {
     /// Let player join active bracket in issued discussion channel
     #[oai(path = "/join", method = "post")]
+    #[tracing::instrument(name = "Report match result", skip(self, db, _auth))]
     async fn join_bracket<'a>(
         &self,
         db: SharedDb<'a>,

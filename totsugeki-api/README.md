@@ -8,8 +8,18 @@ Start a tournament server instance to test other services by running from
 project root (to load `.env` variables):
 
 ```bash
-cd ..
 cargo watch -x "run -r -p totsugeki-api"
+```
+
+TODO explain how to add bunyan cli
+
+### Pretty logging
+
+By default, bunyan formatter is used. Install cli tool (`cargo install bunyan`),
+then pipe logs:
+
+```bash
+cargo watch -x "run -r -p totsugeki-api" | bunyan
 ```
 
 ## Contributing

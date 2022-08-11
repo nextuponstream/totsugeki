@@ -13,6 +13,7 @@ use totsugeki::{
     bracket::{Bracket, Id as BracketId, POSTResult},
     matches::{Id as MatchId, MatchResultPOST, NextMatchGETRequest, NextMatchGETResponseRaw},
 };
+use tracing::info;
 
 /// Bracket Api
 pub struct Api;
@@ -21,6 +22,7 @@ pub struct Api;
 impl Api {
     /// Create a new active bracket in issued discussion channel
     #[oai(path = "/bracket", method = "post")]
+    #[tracing::instrument(name = "Creating new bracket", skip(self, db, _auth))]
     async fn create_bracket<'a>(
         &self,
         db: SharedDb<'a>,
@@ -47,11 +49,13 @@ impl Api {
 
     /// Get specific bracket
     #[oai(path = "/bracket/:bracket_id", method = "get")]
+    #[tracing::instrument(name = "Viewing bracket", skip(self, db, bracket_id))]
     async fn get_bracket<'a>(
         &self,
         db: SharedDb<'a>,
         bracket_id: Path<BracketId>,
     ) -> Result<Json<GET>> {
+        info!("{}", bracket_id.0);
         match get_bracket(&db, bracket_id.0) {
             Ok(bracket) => Ok(Json(bracket.try_into()?)),
             Err(e) => {
@@ -63,11 +67,13 @@ impl Api {
 
     /// List registered brackets
     #[oai(path = "/brackets/:offset", method = "get")]
+    #[tracing::instrument(name = "Viewing bracket list", skip(self, db, offset))]
     async fn list_bracket<'a>(
         &self,
         db: SharedDb<'a>,
         offset: Path<i64>,
     ) -> Result<Json<Vec<GET>>> {
+        info!("{}", offset.0);
         match list_brackets(&db, offset.0) {
             Ok(brackets) => {
                 let mut b_api_vec = vec![];
@@ -85,12 +91,14 @@ impl Api {
 
     /// Matches exactly bracket name
     #[oai(path = "/brackets/:bracket_name/:offset", method = "get")]
+    #[tracing::instrument(name = "Find bracket by name", skip(self, db, bracket_name, offset))]
     async fn find_bracket<'a>(
         &self,
         db: SharedDb<'a>,
         bracket_name: Path<String>,
         offset: Path<i64>,
     ) -> Result<Json<Vec<GET>>> {
+        info!("{}, {}", bracket_name.0, offset.0);
         match find_bracket(&db, bracket_name.0.as_str(), offset.0) {
             Ok(brackets) => {
                 let mut b_api_vec = vec![];
@@ -109,6 +117,7 @@ impl Api {
 
     /// Return opponent of next match
     #[oai(path = "/next_match", method = "get")]
+    #[tracing::instrument(name = "Find next match", skip(self, db, _auth))]
     async fn next_match<'a>(
         &self,
         db: SharedDb<'a>,
@@ -131,6 +140,7 @@ impl Api {
 
     /// Report result of bracket match
     #[oai(path = "/bracket/report", method = "post")]
+    #[tracing::instrument(name = "Report match result", skip(self, db, _auth))]
     async fn report_match_result<'a>(
         &self,
         db: SharedDb<'a>,
@@ -148,12 +158,14 @@ impl Api {
 
     /// Validate result of bracket by TO
     #[oai(path = "/bracket/validate/:id", method = "post")]
+    #[tracing::instrument(name = "Validate match result", skip(self, db, _auth, id))]
     async fn validate_match_result<'a>(
         &self,
         db: SharedDb<'a>,
         _auth: ApiKeyServiceAuthorization,
         id: Path<MatchId>,
     ) -> Result<()> {
+        info!("{}", id.0);
         if let Err(e) = validate(&db, id.0) {
             log_error(&e);
             Err(e.into())

@@ -9,6 +9,10 @@ use totsugeki_api::routes::join::Api as JoinApi;
 use totsugeki_api::routes::organiser::Api as OrganiserApi;
 use totsugeki_api::routes::service::Api as ServiceApi;
 use totsugeki_api::{oai_test_service, route_with_data, DatabaseType};
+use tracing::subscriber::set_global_default;
+use tracing_bunyan_formatter::BunyanFormattingLayer;
+use tracing_log::LogTracer;
+use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
@@ -69,7 +73,17 @@ async fn serve_server<T: OpenApi + 'static>(
     let key = std::fs::read_to_string(key_path).expect("Could not read key");
     let config = RustlsConfig::new().fallback(RustlsCertificate::new().cert(cert).key(key));
     let tls = TcpListener::bind(full_addr).rustls(config);
-    env_logger::init_from_env(env_logger::Env::new().default_filter_or("error"));
+
+    LogTracer::init().expect("Failed to set logger");
+    let formatting_layer = BunyanFormattingLayer::new(
+        "totsugeki-api".into(),
+        // Output the formatted spans to stdout.
+        std::io::stdout,
+    );
+    let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+    let subscriber = Registry::default().with(env_filter).with(formatting_layer);
+    set_global_default(subscriber).expect("Failed to set subscriber.");
+    // env_logger::init_from_env(env_logger::Env::new().default_filter_or("error")); // TODO remove
 
     poem::Server::new(tls).run(app).await
 }
