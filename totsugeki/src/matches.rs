@@ -59,7 +59,7 @@ impl std::fmt::Display for Opponent {
 }
 
 /// Error while parsing Opponent
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ParsingOpponentError {
     /// Id
     Id(uuid::Error),
@@ -491,11 +491,13 @@ pub struct NextMatchGETResponse {
 }
 
 /// Error while parsing next match
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum NextMatchGETParsingError {
     /// Could not parse opponent
     Opponent(ParsingOpponentError),
 }
+
+impl std::error::Error for NextMatchGETParsingError {}
 
 impl std::fmt::Display for NextMatchGETParsingError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

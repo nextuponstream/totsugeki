@@ -393,6 +393,8 @@ pub enum ParsingError {
     MatchParsing(MatchParsingError),
 }
 
+impl std::error::Error for ParsingError {}
+
 impl std::fmt::Display for ParsingError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

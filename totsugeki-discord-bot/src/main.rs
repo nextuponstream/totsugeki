@@ -8,6 +8,10 @@ use totsugeki_discord_bot::commands::{
     bracket::*, help::*, join::*, next_match::*, ping::*, report::*, validate::*,
 };
 use totsugeki_discord_bot::Api;
+use tracing::subscriber::set_global_default;
+use tracing_bunyan_formatter::BunyanFormattingLayer;
+use tracing_log::LogTracer;
+use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
 
 #[group]
 #[commands(next_match, ping, join, report, validate)]
@@ -21,8 +25,15 @@ impl EventHandler for Handler {}
 
 #[tokio::main]
 async fn main() {
-    // TODO use tracing and bunyan formatter
-    env_logger::init_from_env(env_logger::Env::new().default_filter_or("error"));
+    LogTracer::init().expect("Failed to set logger");
+    let formatting_layer = BunyanFormattingLayer::new(
+        "totsugeki-discord-bot".into(),
+        // Output the formatted spans to stdout.
+        std::io::stdout,
+    );
+    let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+    let subscriber = Registry::default().with(env_filter).with(formatting_layer);
+    set_global_default(subscriber).expect("Failed to set subscriber.");
 
     dotenv::dotenv().expect("Failed to load .env file");
 

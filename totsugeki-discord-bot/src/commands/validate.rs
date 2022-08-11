@@ -3,59 +3,64 @@
 use crate::{get_client, Api};
 use serenity::{
     client::Context,
-    framework::standard::{macros::command, Args, CommandResult},
+    framework::standard::{macros::command, Args, CommandError, CommandResult},
     model::channel::Message,
 };
 use totsugeki::matches::Id as MatchId;
 use totsugeki_api_request::{validate::send, RequestError};
+use tracing::error;
+use tracing::{span, Level};
 
 #[command]
 #[description = "Validate reported results from player for a match"]
 #[usage = "<MATCH ID>"]
 #[allowed_roles("TO")]
 async fn validate(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let match_id = args.single::<MatchId>()?;
-    let tournament_server = {
-        let data_read = ctx.data.read().await;
-        data_read
-            .get::<Api>()
-            .expect("Expected TournamentServer in TypeMap.")
-            .clone()
-    };
-    match send(
-        get_client(tournament_server.accept_invalid_certs)?,
-        tournament_server.get_connection_string().as_str(),
-        tournament_server.get_authorization_header().as_str(),
-        match_id,
-    )
-    .await
-    {
-        Ok(()) => {
+    // NOTE: workaround since instrument macro conflict with discords
+    let span = span!(Level::INFO, "Validate match command");
+    span.in_scope(|| async {
+        let match_id = args.single::<MatchId>()?;
+        let tournament_server = {
+            let data_read = ctx.data.read().await;
+            data_read
+                .get::<Api>()
+                .expect("Expected TournamentServer in TypeMap.")
+                .clone()
+        };
+        if let Err(e) = send(
+            get_client(tournament_server.accept_invalid_certs)?,
+            tournament_server.get_connection_string().as_str(),
+            tournament_server.get_authorization_header().as_str(),
+            match_id,
+        )
+        .await
+        {
+            match e {
+                // NOTE: ref to avoid borrowing
+                RequestError::Request(ref _re, ref e_msg) => {
+                    msg.reply(ctx, e_msg).await?;
+                    error!("{}", e_msg);
+                }
+                RequestError::BracketParsingError(ref e) => {
+                    msg.reply(ctx, format!("{e}")).await?;
+                    error!("User could not request bracket: {e}");
+                }
+                RequestError::MatchIdParsingError(ref e) => {
+                    msg.reply(ctx, format!("{e}")).await?;
+                    error!("User could not request bracket: {e}");
+                }
+                RequestError::NextMatch(ref e) => {
+                    msg.reply(ctx, e.to_string()).await?;
+                    error!("User could not request bracket: {e}");
+                }
+            };
+            Err(e.into())
+        } else {
             msg.reply(ctx, "Match validated. Bracket updated successfully.")
                 .await?;
-            Ok(())
+            // workaround: https://rust-lang.github.io/async-book/07_workarounds/02_err_in_async_blocks.html
+            Ok::<CommandResult, CommandError>(Ok(()))
         }
-        Err(e) => match e {
-            RequestError::Request(re, e_msg) => {
-                msg.reply(ctx, e_msg.as_str()).await?;
-                log::error!("{e_msg}");
-                Err(Box::new(RequestError::Request(re, e_msg)))
-            }
-            RequestError::BracketParsingError(e) => {
-                msg.reply(ctx, format!("{e}")).await?;
-                log::error!("User could not request bracket: {e}");
-                Err(Box::new(RequestError::BracketParsingError(e)))
-            }
-            RequestError::MatchIdParsingError(e) => {
-                msg.reply(ctx, format!("{e}")).await?;
-                log::error!("User could not request bracket: {e}");
-                Err(Box::new(RequestError::MatchIdParsingError(e)))
-            }
-            RequestError::NextMatch(e) => {
-                msg.reply(ctx, e.to_string()).await?;
-                log::error!("User could not request bracket: {e}");
-                Err(Box::new(RequestError::NextMatch(e)))
-            }
-        },
-    }
+    })
+    .await?
 }
