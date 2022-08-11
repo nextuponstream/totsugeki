@@ -2,7 +2,7 @@
 use yew::{html::IntoPropValue, Properties};
 
 /// Totsugeki api as seen by a component
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Api {
     /// url of the API
     addr: String,
@@ -16,7 +16,7 @@ impl Api {
 }
 
 /// Properties needed to interact with tournament server
-#[derive(PartialEq, Properties)]
+#[derive(Eq, PartialEq, Properties)]
 pub struct Props {
     /// API
     pub props: Api,

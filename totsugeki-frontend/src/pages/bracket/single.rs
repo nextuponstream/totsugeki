@@ -12,7 +12,7 @@ use yew::{Component, Properties};
 use super::FetchState;
 
 /// Bracket page properties
-#[derive(PartialEq, Properties, Clone)]
+#[derive(Eq, PartialEq, Properties, Clone)]
 pub struct Props {
     /// Bracket id
     pub bracket_id: BracketId,

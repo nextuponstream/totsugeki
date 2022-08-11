@@ -61,7 +61,7 @@ impl Default for Method {
 }
 
 /// Error while seeding
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum Error {
     /// You cannot seed a bracket of 0 players
     NotEnoughPlayers,
