@@ -1,11 +1,13 @@
 //! join domain
 
+use crate::{bracket::Id as BracketId, organiser::Id as OrganiserId, player::Id as PlayerId};
+#[cfg(feature = "poem-openapi")]
+use poem_openapi::Object;
 use serde::{Deserialize, Serialize};
 
-use crate::{bracket::Id as BracketId, organiser::Id as OrganiserId, player::Id as PlayerId};
-
 /// /join POST response body
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "poem-openapi", derive(Object))]
 pub struct POSTResponseBody {
     /// Player identifier
     pub player_id: PlayerId,
@@ -16,16 +18,17 @@ pub struct POSTResponseBody {
 }
 
 #[derive(Serialize)]
+#[cfg_attr(feature = "poem-openapi", derive(Object))]
 /// Join POST request body
 pub struct POSTRequestBody {
     /// Player internal id
-    player_internal_id: String,
+    pub player_internal_id: String,
     /// player_name: String,
-    player_name: String,
+    pub player_name: String,
     /// channel internal id of service
-    channel_internal_id: String,
+    pub channel_internal_id: String,
     /// Service type identifier
-    service_type_id: String,
+    pub service_type_id: String,
 }
 
 impl POSTRequestBody {

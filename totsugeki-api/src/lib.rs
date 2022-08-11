@@ -8,14 +8,10 @@
 #![warn(clippy::unwrap_used)]
 #![doc = include_str!("../README.md")]
 
-pub mod bracket;
-pub mod join;
-pub mod matches;
 pub mod persistence;
 pub mod routes;
 
 use crate::persistence::{inmemory::InMemoryDBAccessor, DBAccessor, Error};
-use bracket::GETResponse;
 use hmac::{Hmac, NewMac};
 use jwt::VerifyWithKey;
 use log::{error, warn};
@@ -33,7 +29,7 @@ use sha2::Sha256;
 use std::boxed::Box;
 use std::collections::HashSet;
 use std::sync::Arc;
-use totsugeki::bracket::{ActiveBrackets, Id as BracketId};
+use totsugeki::bracket::{ActiveBrackets, Id as BracketId, GET};
 use totsugeki::organiser::{Id as OrganiserId, Organiser};
 use totsugeki::ReadLock;
 use uuid::Uuid;

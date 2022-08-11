@@ -2,7 +2,6 @@
 pub mod inmemory;
 pub mod postgresql;
 
-use crate::matches::NextMatchGET;
 use crate::{ApiServiceId, ApiServiceUser, Service};
 use std::fmt::Display;
 use std::str::FromStr;
@@ -11,7 +10,7 @@ use totsugeki::matches::MatchResultParsingError;
 use totsugeki::{
     bracket::{Bracket, FormatParsingError, Id as BracketId, POSTResult},
     join::POSTResponseBody,
-    matches::{Error as MatchError, Id as MatchId},
+    matches::{Error as MatchError, Id as MatchId, NextMatchGETResponseRaw},
     organiser::Organiser,
     seeding::{Error as SeedingError, ParsingError as SeedingParsingError},
 };
@@ -281,7 +280,7 @@ pub trait DBAccessor {
         player_internal_id: &'b str,
         channel_internal_id: &'b str,
         service_type_id: &'b str,
-    ) -> Result<NextMatchGET, Error<'c>>;
+    ) -> Result<NextMatchGETResponseRaw, Error<'c>>;
 
     /// Let player report result for his active match
     ///

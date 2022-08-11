@@ -1,10 +1,13 @@
 //! player
 
+#[cfg(feature = "poem-openapi")]
+use poem_openapi::Object;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 /// A player is referenced by their ID and their username
 #[derive(Hash, Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+#[cfg_attr(feature = "poem-openapi", derive(Object))]
 pub struct Player {
     /// Player identifier
     pub id: Id,

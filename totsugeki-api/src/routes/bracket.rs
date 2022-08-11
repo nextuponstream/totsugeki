@@ -1,18 +1,17 @@
 //! bracket routes
-use crate::bracket::{MatchResultPOST, POSTResult, POST};
 use crate::log_error;
-use crate::matches::{NextMatchGET, NextMatchGETRequest};
 use crate::persistence::{BracketRequest, Error};
 use crate::ApiKeyServiceAuthorization;
-use crate::GETResponse;
 use crate::SharedDb;
+use crate::GET;
 use poem::Result;
 use poem_openapi::param::Path;
 use poem_openapi::payload::Json;
 use poem_openapi::OpenApi;
+use totsugeki::bracket::POST;
 use totsugeki::{
-    bracket::{Bracket, Id as BracketId},
-    matches::Id as MatchId,
+    bracket::{Bracket, Id as BracketId, POSTResult},
+    matches::{Id as MatchId, MatchResultPOST, NextMatchGETRequest, NextMatchGETResponseRaw},
 };
 
 /// Bracket Api
@@ -52,7 +51,7 @@ impl Api {
         &self,
         db: SharedDb<'a>,
         bracket_id: Path<BracketId>,
-    ) -> Result<Json<GETResponse>> {
+    ) -> Result<Json<GET>> {
         match get_bracket(&db, bracket_id.0) {
             Ok(bracket) => Ok(Json(bracket.try_into()?)),
             Err(e) => {
@@ -68,7 +67,7 @@ impl Api {
         &self,
         db: SharedDb<'a>,
         offset: Path<i64>,
-    ) -> Result<Json<Vec<GETResponse>>> {
+    ) -> Result<Json<Vec<GET>>> {
         match list_brackets(&db, offset.0) {
             Ok(brackets) => {
                 let mut b_api_vec = vec![];
@@ -91,12 +90,12 @@ impl Api {
         db: SharedDb<'a>,
         bracket_name: Path<String>,
         offset: Path<i64>,
-    ) -> Result<Json<Vec<GETResponse>>> {
+    ) -> Result<Json<Vec<GET>>> {
         match find_bracket(&db, bracket_name.0.as_str(), offset.0) {
             Ok(brackets) => {
                 let mut b_api_vec = vec![];
                 for b in brackets {
-                    let b_api: GETResponse = b.try_into()?;
+                    let b_api: GET = b.try_into()?;
                     b_api_vec.push(b_api);
                 }
                 Ok(Json(b_api_vec))
@@ -115,7 +114,7 @@ impl Api {
         db: SharedDb<'a>,
         _auth: ApiKeyServiceAuthorization,
         r: Json<NextMatchGETRequest>,
-    ) -> Result<Json<NextMatchGET>> {
+    ) -> Result<Json<NextMatchGETResponseRaw>> {
         match next_match_for_player(
             &db,
             r.player_internal_id.as_str(),
@@ -175,7 +174,6 @@ where
 {
     let db = db.read()?;
     let result = db.create_bracket(r)?;
-    let result = result.into();
     Ok(result)
 }
 
@@ -217,7 +215,7 @@ fn next_match_for_player<'a, 'b, 'c>(
     player_internal_id: &'b str,
     channel_internal_id: &'b str,
     service_type_id: &'b str,
-) -> Result<NextMatchGET, Error<'c>>
+) -> Result<NextMatchGETResponseRaw, Error<'c>>
 where
     'a: 'c,
     'b: 'c,

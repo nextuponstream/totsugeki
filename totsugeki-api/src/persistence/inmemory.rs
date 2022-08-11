@@ -1,6 +1,5 @@
 //! In-memory database
 use super::BracketRequest;
-use crate::matches::NextMatchGET;
 use crate::persistence::{DBAccessor, Error};
 use crate::{ApiServiceId, ApiServiceUser};
 use serenity::model::id::{ChannelId, GuildId, UserId};
@@ -15,7 +14,7 @@ use totsugeki::player::{Player, Players};
 use totsugeki::seeding::get_balanced_round_matches_top_seed_favored;
 use totsugeki::{
     bracket::{ActiveBrackets, Bracket, POSTResult},
-    matches::{Error as MatchError, Id as MatchId},
+    matches::{Error as MatchError, Id as MatchId, NextMatchGETResponseRaw},
     organiser::Organiser,
     seeding::Method as SeedingMethod,
 };
@@ -377,7 +376,7 @@ impl DBAccessor for InMemoryDBAccessor {
         player_internal_id: &'b str,
         channel_internal_id: &'b str,
         service_type_id: &'b str,
-    ) -> Result<crate::matches::NextMatchGET, Error<'c>> {
+    ) -> Result<NextMatchGETResponseRaw, Error<'c>> {
         let db = self.db.read().expect("database"); // FIXME bubble up error
         let service_type = service_type_id.parse::<Service>()?;
         let (bracket, player_id) =
@@ -591,7 +590,7 @@ fn get_bracket_info<'a, 'b, 'c>(
 fn search_next_opponent_in_single_elimination_bracket<'a>(
     bracket: &Bracket,
     player_id: PlayerId,
-) -> Result<NextMatchGET, Error<'a>> {
+) -> Result<NextMatchGETResponseRaw, Error<'a>> {
     // search from first round, find match player is in, then the next one if he wins
     if bracket.get_matches().is_empty() {
         return Err(Error::NoNextMatch);
@@ -620,7 +619,7 @@ fn search_next_opponent_in_single_elimination_bracket<'a>(
                                     return Err(Error::NoOpponent); // FIXME more serious error, opponent has
                                 }
                                 Opponent::Unknown => {
-                                    return Ok(NextMatchGET {
+                                    return Ok(NextMatchGETResponseRaw {
                                         opponent: m.get_players()[1].to_string(),
                                         match_id: m.get_id(),
                                         bracket_id: bracket.get_id(),
@@ -633,7 +632,7 @@ fn search_next_opponent_in_single_elimination_bracket<'a>(
                                 .iter()
                                 .find(|p| p.id == opponent_id)
                                 .map_or_else(String::new, totsugeki::player::Player::get_name); // FIXME serious error
-                            return Ok(NextMatchGET {
+                            return Ok(NextMatchGETResponseRaw {
                                 opponent: m.get_players()[1].to_string(),
                                 match_id: m.get_id(),
                                 bracket_id: bracket.get_id(),
@@ -663,7 +662,7 @@ fn search_next_opponent_in_single_elimination_bracket<'a>(
                                     return Err(Error::NoOpponent); // FIXME more serious error, opponent has
                                 }
                                 Opponent::Unknown => {
-                                    return Ok(NextMatchGET {
+                                    return Ok(NextMatchGETResponseRaw {
                                         opponent: m.get_players()[0].to_string(),
                                         match_id: m.get_id(),
                                         bracket_id: bracket.get_id(),
@@ -676,7 +675,7 @@ fn search_next_opponent_in_single_elimination_bracket<'a>(
                                 .iter()
                                 .find(|p| p.id == player_id)
                                 .map_or_else(String::new, totsugeki::player::Player::get_name); // FIXME serious error
-                            return Ok(NextMatchGET {
+                            return Ok(NextMatchGETResponseRaw {
                                 opponent: m.get_players()[0].to_string(),
                                 match_id: m.get_id(),
                                 bracket_id: bracket.get_id(),

@@ -1,11 +1,9 @@
 //! join
 
-use crate::join::{POSTRequest, POSTResponse};
-use crate::persistence::Error;
-use crate::{log_error, ApiKeyServiceAuthorization, SharedDb};
+use crate::{log_error, persistence::Error, ApiKeyServiceAuthorization, SharedDb};
 use poem::Result;
 use poem_openapi::{payload::Json, OpenApi};
-use totsugeki::join::POSTResponseBody;
+use totsugeki::join::{POSTRequestBody, POSTResponseBody};
 
 /// Join Api
 pub struct Api;
@@ -18,8 +16,8 @@ impl Api {
         &self,
         db: SharedDb<'a>,
         _auth: ApiKeyServiceAuthorization,
-        join_request: Json<POSTRequest>,
-    ) -> Result<Json<POSTResponse>> {
+        join_request: Json<POSTRequestBody>,
+    ) -> Result<Json<POSTResponseBody>> {
         match join(&db, &join_request.0) {
             Ok(r) => Ok(Json(r)),
             Err(e) => {
@@ -31,27 +29,16 @@ impl Api {
 }
 
 /// Call to database for player to join active bracket in discussion channel
-fn join<'a, 'b>(db: &'a SharedDb, j: &POSTRequest) -> Result<POSTResponse, Error<'b>>
+fn join<'a, 'b>(db: &'a SharedDb, j: &POSTRequestBody) -> Result<POSTResponseBody, Error<'b>>
 where
     'a: 'b,
 {
     let db = db.read()?;
-    let body = db.join_bracket(
+    let response = db.join_bracket(
         j.player_internal_id.as_str(),
         j.player_name.as_str(),
         j.channel_internal_id.as_str(),
         j.service_type_id.as_str(),
     )?;
-    let response: POSTResponse = body.into();
     Ok(response)
-}
-
-impl From<POSTResponseBody> for POSTResponse {
-    fn from(b: POSTResponseBody) -> Self {
-        Self {
-            player_id: b.player_id,
-            bracket_id: b.bracket_id,
-            organiser_id: b.organiser_id,
-        }
-    }
 }

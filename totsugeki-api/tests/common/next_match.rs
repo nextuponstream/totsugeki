@@ -1,15 +1,14 @@
 //! Next match utilites
 
+use super::TotsugekiApiTestClient;
 use poem::test::TestJson;
 use reqwest::StatusCode;
 use totsugeki::{
     bracket::Id as BracketId,
-    matches::{Id as MatchId, NextMatchGET, Opponent},
+    matches::{Id as MatchId, NextMatchGET, NextMatchGETRequest, Opponent},
     player::Id as PlayerId,
 };
-use totsugeki_api::{matches::NextMatchGETRequest, Service};
-
-use super::TotsugekiApiTestClient;
+use totsugeki_api::Service;
 
 /// Parse response for next match
 pub fn parse_next_match_get_response(r: TestJson) -> NextMatchGET {
