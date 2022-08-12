@@ -2,6 +2,7 @@
 use super::BracketRequest;
 use crate::persistence::{DBAccessor, Error};
 use crate::{ApiServiceId, ApiServiceUser};
+use chrono::{DateTime, Utc};
 use serenity::model::id::{ChannelId, GuildId, UserId};
 use serenity::model::misc::{ChannelIdParseError, UserIdParseError};
 use std::collections::HashMap;
@@ -90,7 +91,14 @@ impl DBAccessor for InMemoryDBAccessor {
         let mut db = self.db.write().expect("database"); // FIXME bubble up error
         let format = bracket_format.parse::<Format>()?;
         let seeding_method = seeding_method.parse::<SeedingMethod>()?;
-        let b = Bracket::new(bracket_name.to_string(), vec![], format, seeding_method);
+        let start_time: DateTime<Utc> = r.start_time.parse()?;
+        let b = Bracket::new(
+            bracket_name.to_string(),
+            vec![],
+            format,
+            seeding_method,
+            start_time,
+        );
 
         // find if global id exists already for channel
         let mut discussion_channel_id = Uuid::new_v4(); // if channel is not registered yet
@@ -298,6 +306,7 @@ impl DBAccessor for InMemoryDBAccessor {
                         matches,
                         b.get_format(),
                         b.get_seeding_method(),
+                        b.get_start_time(),
                     );
                     db.brackets.insert(b.get_id(), b);
 
@@ -536,19 +545,19 @@ impl DBAccessor for InMemoryDBAccessor {
 
 impl From<UserIdParseError> for Error<'_> {
     fn from(e: UserIdParseError) -> Self {
-        Self::Parsing(e.to_string())
+        Self::Parsing(format!("User id: {e}"))
     }
 }
 
 impl From<ParseServiceInternalIdError> for Error<'_> {
     fn from(e: ParseServiceInternalIdError) -> Self {
-        Self::Parsing(format!("{e:?}")) // FIXME bubble up error and implement display instead of using String
+        Self::Parsing(format!("Internal service: {e:?}")) // FIXME bubble up error and implement display instead of using String
     }
 }
 
 impl From<ChannelIdParseError> for Error<'_> {
     fn from(e: ChannelIdParseError) -> Self {
-        Self::Parsing(format!("{e:?}")) // FIXME bubble up error and implement display instead of using String
+        Self::Parsing(format!("Channel id: {e:?}")) // FIXME bubble up error and implement display instead of using String
     }
 }
 

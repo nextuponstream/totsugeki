@@ -2,6 +2,7 @@
 
 pub mod common;
 
+use chrono::prelude::*;
 use common::{
     bracket::{
         parse_bracket_get_response, parse_bracket_post_response, parse_brackets_get_response,
@@ -44,15 +45,17 @@ async fn players_join_bracket() {
         let service_type_id = "discord".to_string();
         let format = "single-elimination".to_string();
         let seeding_method = "strict".to_string();
-        let body = POST::new(
-            bracket_name.clone(),
+        let start_time = Utc.ymd(2000, 1, 1).and_hms(0, 0, 0).to_string();
+        let body = POST {
+            bracket_name: bracket_name.clone(),
             organiser_name,
             organiser_internal_id,
-            channel_internal_id.clone(),
-            service_type_id.clone(),
+            channel_internal_id: channel_internal_id.clone(),
+            service_type_id: service_type_id.clone(),
             format,
             seeding_method,
-        );
+            start_time,
+        };
 
         let resp = test_api
             .cli
@@ -158,15 +161,17 @@ async fn bracket_initial_next_opponent_are_correct() {
         let service_type_id = Service::Discord;
         let format = "single-elimination".to_string();
         let seeding_method = "strict".to_string();
-        let body = POST::new(
-            bracket_name.clone(),
+        let start_time = Utc.ymd(2000, 1, 1).and_hms(0, 0, 0).to_string();
+        let body = POST {
+            bracket_name: bracket_name.clone(),
             organiser_name,
             organiser_internal_id,
-            channel_internal_id.clone(),
-            service_type_id.to_string(),
+            channel_internal_id: channel_internal_id.clone(),
+            service_type_id: service_type_id.to_string(),
             format,
             seeding_method,
-        );
+            start_time,
+        };
 
         let resp = test_api
             .cli

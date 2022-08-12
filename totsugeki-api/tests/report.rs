@@ -2,6 +2,7 @@
 
 pub mod common;
 
+use chrono::prelude::*;
 use common::{
     bracket::create_bracket,
     db_types_to_test,
@@ -38,6 +39,7 @@ async fn reporting_result_for_first_round_3_man() {
             service,
             Format::SingleElimination,
             Method::Strict,
+            Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
         )
         .await;
 
@@ -117,6 +119,7 @@ async fn running_5_man_single_elimination_tournament_tournament() {
             service,
             format,
             seeding_method,
+            Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
         )
         .await;
 
@@ -238,6 +241,7 @@ async fn running_8_man_single_elimination_tournament_tournament() {
             service,
             format,
             seeding_method,
+            Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
         )
         .await;
 
@@ -414,6 +418,7 @@ async fn running_9_man_single_elimination_tournament_tournament() {
             service,
             format,
             seeding_method,
+            Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
         )
         .await;
 
