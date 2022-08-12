@@ -89,6 +89,7 @@ impl Component for View {
                 html! {
                     <div class="content">
                         <p>{ "Bracket: " } {bracket.get_bracket_name()} {" ("} {bracket.get_id()} {")"}</p>
+                        <p>{ "Start time: " } {bracket.get_start_time().to_string()}</p>
                         <p>{ "Format: " } {bracket.get_format().to_string()}</p>
                         <p>{ "Seeding type: " } {bracket.get_seeding_method().to_string()}</p>
                         <p>{ "Players:"}</p>

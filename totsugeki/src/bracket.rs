@@ -11,6 +11,7 @@ use crate::{
     },
     DiscussionChannel, DiscussionChannelId,
 };
+use chrono::prelude::*;
 #[cfg(feature = "poem-openapi")]
 use poem_openapi::Object;
 use serde::{Deserialize, Serialize};
@@ -48,17 +49,17 @@ impl std::fmt::Display for Format {
 /// Parsing error for Format type
 #[derive(Debug)]
 pub enum FormatParsingError {
-    /// Unknown string was parsed
-    Unknown,
+    /// Unknown format was provided
+    Unknown(String),
 }
 
 impl std::fmt::Display for FormatParsingError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            FormatParsingError::Unknown => writeln!(
+            FormatParsingError::Unknown(format) => writeln!(
                 f,
-                "Unknown format. Please try another format such as: \"{}\"",
-                Format::SingleElimination
+                "Unknown bracket format: \"{format}\". Please try another format such as: \"{}\"",
+                Format::default()
             ),
         }
     }
@@ -70,7 +71,7 @@ impl std::str::FromStr for Format {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "single-elimination" => Ok(Format::SingleElimination),
-            _ => Err(FormatParsingError::Unknown),
+            _ => Err(FormatParsingError::Unknown(s.to_string())),
         }
     }
 }
@@ -105,30 +106,8 @@ pub struct POST {
     pub format: String,
     /// seeding method for bracket
     pub seeding_method: String,
-}
-
-impl POST {
-    /// Create new Bracket POST request
-    #[must_use]
-    pub fn new(
-        bracket_name: String,
-        organiser_name: String,
-        organiser_internal_id: String,
-        channel_internal_id: String,
-        service_type_id: String,
-        format: String,
-        seeding_method: String,
-    ) -> Self {
-        POST {
-            bracket_name,
-            organiser_name,
-            organiser_internal_id,
-            channel_internal_id,
-            service_type_id,
-            format,
-            seeding_method,
-        }
-    }
+    /// Advertised start time
+    pub start_time: String,
 }
 
 /// Bracket for a tournament
@@ -156,6 +135,8 @@ pub struct Bracket {
     format: Format,
     /// Seeding method used for this bracket
     seeding_method: SeedingMethod,
+    /// Advertised start time
+    start_time: DateTime<Utc>,
 }
 
 impl Display for Bracket {
@@ -206,6 +187,7 @@ impl Bracket {
         players: Vec<Player>,
         format: Format,
         seeding_method: SeedingMethod,
+        start_time: DateTime<Utc>,
     ) -> Self {
         // TODO add check where registration_start_time < beginning_start_time
         Bracket {
@@ -215,6 +197,7 @@ impl Bracket {
             matches: vec![],
             format,
             seeding_method,
+            start_time,
         }
     }
 
@@ -227,6 +210,7 @@ impl Bracket {
         matches: Vec<Vec<Match>>,
         format: Format,
         seeding_method: SeedingMethod,
+        start_time: DateTime<Utc>,
     ) -> Self {
         Self {
             bracket_id,
@@ -235,6 +219,7 @@ impl Bracket {
             matches,
             format,
             seeding_method,
+            start_time,
         }
     }
 
@@ -291,6 +276,12 @@ impl Bracket {
     #[must_use]
     pub fn get_seeding_method(&self) -> SeedingMethod {
         self.seeding_method
+    }
+
+    /// Get start time
+    #[must_use]
+    pub fn get_start_time(&self) -> DateTime<Utc> {
+        self.start_time
     }
 }
 
@@ -365,6 +356,8 @@ pub struct GET {
     pub format: String,
     /// Seeding method used for this bracket
     pub seeding_method: String,
+    /// Advertised start time
+    pub start_time: String,
 }
 
 impl GET {
@@ -378,6 +371,7 @@ impl GET {
             format: bracket.get_format().to_string(),
             seeding_method: bracket.get_seeding_method().to_string(),
             matches: Match::get_sendable_matches(&bracket.get_matches()),
+            start_time: bracket.start_time.to_string(),
         }
     }
 }
@@ -385,12 +379,14 @@ impl GET {
 /// Error while parsing Bracket
 #[derive(Debug)]
 pub enum ParsingError {
-    /// Could not parse Bracket id
+    /// Could not parse bracket format
     Format(FormatParsingError),
     /// Could not parse seeding method
     Seeding(SeedingParsingError),
     /// Could not parse match
-    MatchParsing(MatchParsingError),
+    Match(MatchParsingError),
+    /// Could not parse time
+    Time(chrono::ParseError),
 }
 
 impl std::error::Error for ParsingError {}
@@ -400,7 +396,8 @@ impl std::fmt::Display for ParsingError {
         match self {
             ParsingError::Format(e) => e.fmt(f),
             ParsingError::Seeding(e) => e.fmt(f),
-            ParsingError::MatchParsing(e) => e.fmt(f),
+            ParsingError::Match(e) => e.fmt(f),
+            ParsingError::Time(e) => e.fmt(f),
         }
     }
 }
@@ -425,13 +422,14 @@ impl TryFrom<GET> for Bracket {
             },
             format: b.format.parse::<Format>()?,
             seeding_method: b.seeding_method.parse::<SeedingMethod>()?,
+            start_time: b.start_time.parse::<DateTime<Utc>>()?,
         })
     }
 }
 
 impl From<MatchParsingError> for ParsingError {
     fn from(e: MatchParsingError) -> Self {
-        Self::MatchParsing(e)
+        Self::Match(e)
     }
 }
 
@@ -448,6 +446,7 @@ impl From<SeedingParsingError> for ParsingError {
 }
 
 /// bracket creation request parameters
+#[derive(Debug)]
 pub struct RequestParameters<'a, T: DiscussionChannel> {
     /// requested bracket name
     pub bracket_name: &'a str,
@@ -461,10 +460,18 @@ pub struct RequestParameters<'a, T: DiscussionChannel> {
     pub discussion_channel: T,
     /// seeding method for bracket
     pub seeding_method: &'a str,
+    /// Advertised start time (UTC)
+    pub start_time: &'a str,
 }
 
 impl From<Bracket> for GET {
     fn from(b: Bracket) -> Self {
         GET::new(&b)
+    }
+}
+
+impl From<chrono::ParseError> for ParsingError {
+    fn from(e: chrono::ParseError) -> Self {
+        Self::Time(e)
     }
 }

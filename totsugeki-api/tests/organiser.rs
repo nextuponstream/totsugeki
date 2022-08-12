@@ -2,6 +2,7 @@
 
 pub mod common;
 
+use chrono::prelude::*;
 use common::{
     bracket::{create_bracket, parse_bracket_post_response},
     db_types_to_test, test_api,
@@ -70,6 +71,7 @@ async fn new_organiser_is_generated_when_bracket_is_created_if_unknown() {
             service_type_id,
             Format::SingleElimination,
             Method::Strict,
+            Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
         )
         .await;
 
@@ -113,27 +115,30 @@ async fn running_two_brackets_at_the_same_time() {
         let service_type_id = "discord".to_string();
         let format = "single-elimination".to_string();
         let seeding_method = "strict".to_string();
-        let body = POST::new(
+        let start_time = Utc.ymd(2000, 1, 1).and_hms(0, 0, 0).to_string();
+        let body = POST {
             bracket_name,
-            organiser_name.clone(),
-            organiser_internal_id.clone(),
+            organiser_name: organiser_name.clone(),
+            organiser_internal_id: organiser_internal_id.clone(),
             channel_internal_id,
-            service_type_id.clone(),
-            format.clone(),
-            seeding_method.clone(),
-        );
+            service_type_id: service_type_id.clone(),
+            format: format.clone(),
+            seeding_method: seeding_method.clone(),
+            start_time: start_time.clone(),
+        };
 
         let bracket_name = "weekly-game-2".to_string(); // TODO generate name
         let channel_internal_id = "2".to_string();
-        let body_next_bracket = POST::new(
+        let body_next_bracket = POST {
             bracket_name,
-            organiser_name.clone(),
+            organiser_name: organiser_name.clone(),
             organiser_internal_id,
-            channel_internal_id.clone(),
+            channel_internal_id: channel_internal_id.clone(),
             service_type_id,
             format,
             seeding_method,
-        );
+            start_time,
+        };
 
         // When they create brackets using discord bot
         let resp = test_api

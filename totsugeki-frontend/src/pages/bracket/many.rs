@@ -108,20 +108,22 @@ impl Component for View {
                     <table>
                         <thead>
                           <tr>
-                            <th>{ "ID" }</th>
                             <th>{ "Name" }</th>
+                            <th>{ "Start time" }</th>
+                            <th>{ "ID" }</th>
                           </tr>
                         </thead>
                          <tbody>{
                              brackets.iter().map(|b| html! {
                                  <tr>
-                                     <td>
+                                    <td>
                                         <Link<Route>
                                             to={Route::Bracket { bracket_id: b.get_id() }}>
-                                            {b.get_id()}
+                                            {b.get_bracket_name()}
                                         </Link<Route>>
                                     </td>
-                                    <td>{b.get_bracket_name()}</td>
+                                    <td>{b.get_start_time().to_string()}</td>
+                                    <td>{b.get_id()}</td>
                                  </tr>
                              }).collect::<Html>()
                          }</tbody>

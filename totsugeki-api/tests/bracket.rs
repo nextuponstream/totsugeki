@@ -1,6 +1,7 @@
 /// test /bracket
 pub mod common;
 
+use chrono::prelude::*;
 use common::{
     bracket::{create_bracket, parse_brackets_get_response},
     db_types_to_test, test_api,
@@ -34,6 +35,7 @@ async fn someone_creates_bracket() {
             totsugeki_api::Service::Discord,
             format,
             seeding_method,
+            Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
         )
         .await;
 
@@ -104,6 +106,7 @@ async fn search_bracket() {
             totsugeki_api::Service::Discord,
             format,
             seeding_method,
+            Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
         )
         .await;
 

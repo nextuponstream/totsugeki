@@ -2,17 +2,19 @@
 
 use crate::get_client;
 use crate::{Api, DiscordChannel};
+use chrono::{NaiveDateTime, Utc};
+use chrono_tz::Tz;
 use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandError, CommandResult};
 use serenity::model::channel::Message;
 use serenity::prelude::*;
 use totsugeki::bracket::RequestParameters;
 use totsugeki_api_request::bracket::create as create_bracket;
-use tracing::{span, Level};
+use tracing::{info, span, warn, Level};
 
 #[command]
-#[description = "Create a new bracket. Use quotes."]
-#[usage = "\"<NAME>\" \"<FORMAT>\" \"<SEEDING METHOD>\""]
+#[description = "Create a new bracket. Use quotes for everything except time and timezone."]
+#[usage = "\"<NAME>\" YYYY-MM-DD:HH:MM TZ \"<FORMAT>\" \"<SEEDING METHOD>\""]
 #[allowed_roles("TO")]
 // https://github.com/serenity-rs/serenity/blob/current/examples/e12_global_data/src/main.rs
 async fn create(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
@@ -21,6 +23,10 @@ async fn create(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let span = span!(Level::INFO, "Create bracket command");
     span.in_scope(|| async {
         let bracket_name = args.single_quoted::<String>()?;
+        let start_time = args.parse::<String>()?;
+        args.advance();
+        let tz = args.parse::<String>()?;
+        args.advance();
         let format = args.single_quoted::<String>()?;
         let seeding_method = args.single_quoted::<String>()?;
 
@@ -37,6 +43,50 @@ async fn create(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         let organiser_name = msg.guild(&ctx).expect("guild").name;
         let discussion_channel_id = msg.channel_id;
         let discord_channel = DiscordChannel::new(None, discussion_channel_id);
+        let start_time = match NaiveDateTime::parse_from_str(start_time.as_str(), "%Y-%m-%d:%H:%M")
+        {
+            Ok(s) => s,
+            Err(e) => {
+                warn!("User did not provide a correct date: {}, error: {}", start_time, e);
+                msg.reply(
+                    ctx,
+                    "Error while parsing date, please use YYYY-MM-DD:HH:MM TZ",
+                )
+                .await?;
+                return Ok::<CommandResult, CommandError>(Ok(()));
+            }
+        };
+        let tz = match tz.parse::<Tz>() {
+            Ok(tz) => tz,
+            Err(e) => {
+                warn!("User did not provide a correct timezone: {}, error: {}", tz, e);
+                msg.reply(
+                    ctx,
+                    "Error while parsing timezone, please use YYYY-MM-DD:HH:MM TZ",
+                )
+                .await?;
+                return Ok::<CommandResult, CommandError>(Ok(()));
+            }
+        };
+        let start_time = match start_time.and_local_timezone(tz) {
+            chrono::LocalResult::None => {
+                warn!("User did not provide time: {}", tz);
+                return Ok::<CommandResult, CommandError>(Ok(()));
+            }
+            chrono::LocalResult::Single(st) => st,
+            chrono::LocalResult::Ambiguous(dt1, dt2) => {
+                warn!("User provided ambiguous time: {dt1}, {dt2}");
+                msg.reply(
+                    ctx,
+                    format!("Using that time produced an ambiguous result ({} and {}). Please try another date.",dt1, dt2)
+                )
+                .await?;
+                return Ok::<CommandResult, CommandError>(Ok(()));
+            },
+        };
+        let start_time = start_time.with_timezone(&Utc);
+        // let start_time = start_time.naive_utc(); // FIXME succeed in api parsing time
+      let      start_time= format!("{start_time:?}");
 
         let parameters = RequestParameters {
             bracket_name: bracket_name.as_str(),
@@ -45,8 +95,9 @@ async fn create(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
             organiser_id: organiser_id.as_str(),
             discussion_channel: discord_channel,
             seeding_method: seeding_method.as_str(),
+            start_time: start_time.as_str(),
         };
-
+        info!("{:?}", parameters);
         create_bracket(
             get_client(tournament_server.accept_invalid_certs)?,
             tournament_server.get_connection_string().as_str(),

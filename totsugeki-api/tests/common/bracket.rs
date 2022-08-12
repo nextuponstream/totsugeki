@@ -1,5 +1,6 @@
 //! bracket domain
 
+use chrono::prelude::*;
 use poem::test::{TestJson, TestJsonObject};
 use totsugeki::{
     bracket::{Bracket, Format, Id as BracketId, POSTResult, GET, POST},
@@ -48,6 +49,7 @@ pub fn parse_bracket_get_response(response: TestJson) -> GET {
     let format = r.get("format").string().to_string();
     let seeding_method = r.get("seeding_method").string().to_string();
     let matches = parse_matches(&r);
+    let start_time = r.get("start_time").string().to_string();
 
     GET {
         bracket_id: BracketId::parse_str(bracket_id_raw).expect("bracket id"),
@@ -66,6 +68,7 @@ pub fn parse_bracket_get_response(response: TestJson) -> GET {
             .collect(),
         format,
         seeding_method,
+        start_time,
     }
 }
 
@@ -86,6 +89,11 @@ pub fn parse_brackets_get_response(response: TestJson) -> Vec<Bracket> {
                 .parse::<SeedingMethod>()
                 .expect("seeding method");
             let matches = parse_matches(o);
+            let start_time = o
+                .get("start_time")
+                .string()
+                .parse::<DateTime<Utc>>()
+                .expect("date");
             Bracket::from(
                 bracket_id,
                 bracket_name.to_string(),
@@ -93,6 +101,7 @@ pub fn parse_brackets_get_response(response: TestJson) -> Vec<Bracket> {
                 matches,
                 format,
                 seeding_method,
+                start_time,
             )
         })
         .collect()
@@ -166,18 +175,20 @@ pub async fn create_bracket(
     service: Service,
     format: Format,
     seeding_method: SeedingMethod,
+    start_time: DateTime<Utc>,
 ) -> (POSTResult, String, String) {
     let bracket_name = "weekly".to_string(); // TODO generate name
     let organiser_name = "my-favorite-to".to_string(); // TODO generate name
-    let body = POST::new(
-        bracket_name.clone(),
-        organiser_name.clone(),
-        organiser_internal_id.to_string(),
-        channel_internal_id.to_string(),
-        service.to_string(),
-        format.to_string(),
-        seeding_method.to_string(),
-    );
+    let body = POST {
+        bracket_name: bracket_name.clone(),
+        organiser_name: organiser_name.clone(),
+        organiser_internal_id: organiser_internal_id.to_string(),
+        channel_internal_id: channel_internal_id.to_string(),
+        service_type_id: service.to_string(),
+        format: format.to_string(),
+        seeding_method: seeding_method.to_string(),
+        start_time: start_time.to_string(),
+    };
     let resp = test_api
         .cli
         .post("/bracket")

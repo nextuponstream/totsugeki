@@ -77,9 +77,15 @@ pub enum Error<'a> {
     EliminatedFromBracket,
 }
 
+impl<'a> From<chrono::ParseError> for Error<'a> {
+    fn from(e: chrono::ParseError) -> Self {
+        Self::Parsing(format!("Timestamp: {e}"))
+    }
+}
+
 impl<'a> From<MatchResultParsingError> for Error<'a> {
     fn from(e: MatchResultParsingError) -> Self {
-        Self::Parsing(e.to_string())
+        Self::Parsing(format!("Match result: {e}"))
     }
 }
 
@@ -135,13 +141,13 @@ impl<'a> Display for Error<'a> {
 
 impl<'a> From<SeedingParsingError> for Error<'a> {
     fn from(e: SeedingParsingError) -> Self {
-        Error::Parsing(format!("{e:?}"))
+        Error::Parsing(format!("Could not parse seed: {e:?}"))
     }
 }
 
 impl<'a> From<FormatParsingError> for Error<'a> {
     fn from(e: FormatParsingError) -> Self {
-        Error::Parsing(format!("{e:?}"))
+        Error::Parsing(format!("Could not parse bracket: {e:?}"))
     }
 }
 
@@ -167,6 +173,8 @@ pub struct BracketRequest<'b> {
     pub internal_channel_id: &'b str,
     /// Type of service used to make request
     pub service_type_id: &'b str,
+    /// Advertised start time
+    pub start_time: &'b str,
 }
 
 impl<'a> From<totsugeki::player::Error> for Error<'a> {

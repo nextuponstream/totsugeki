@@ -16,15 +16,16 @@ pub async fn create<'a, T: DiscussionChannel>(
     authorization_header: &str,
     p: RequestParameters<'a, T>,
 ) -> Result<POSTResult, RequestError> {
-    let body = POST::new(
-        p.bracket_name.to_string(),
-        p.organiser_name.to_string(),
-        p.organiser_id.to_string(),
-        p.discussion_channel.get_internal_id().to_string(),
-        p.discussion_channel.get_service_type(),
-        p.bracket_format.to_string(),
-        p.seeding_method.to_string(),
-    );
+    let body = POST {
+        bracket_name: p.bracket_name.to_string(),
+        organiser_name: p.organiser_name.to_string(),
+        organiser_internal_id: p.organiser_id.to_string(),
+        channel_internal_id: p.discussion_channel.get_internal_id().to_string(),
+        service_type_id: p.discussion_channel.get_service_type(),
+        format: p.bracket_format.to_string(),
+        seeding_method: p.seeding_method.to_string(),
+        start_time: p.start_time.to_string(),
+    };
     let res = client
         .post(format!("{HTTP_PREFIX}{tournament_server_url}/bracket"))
         .header("X-API-Key", authorization_header)

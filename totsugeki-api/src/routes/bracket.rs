@@ -37,6 +37,7 @@ impl Api {
             organiser_internal_id: r.organiser_internal_id.as_str(),
             internal_channel_id: r.channel_internal_id.as_str(),
             service_type_id: r.service_type_id.as_str(),
+            start_time: r.start_time.as_str(),
         };
         match create_new_active_bracket(&db, db_request) {
             Ok(r) => Ok(Json(r)),
