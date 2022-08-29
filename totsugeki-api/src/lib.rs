@@ -59,9 +59,9 @@ fn log_error(e: &Error) {
         Error::Code(e) | Error::Unknown(e) => error!("{e}"),
         Error::Denied(e) => warn!("{e}"),
         Error::Parsing(e) => warn!("User input could not be parsed: {e}"),
-        Error::BracketNotFound(b_id) => warn!("User searched for unknown bracket: {b_id}"),
-        Error::DiscussionChannelNotFound => {
-            warn!("User did not find unregistered discussion channel");
+        Error::UnregisteredBracket(b_id) => warn!("User searched for unknown bracket: {b_id}"),
+        Error::UnregisteredDiscussionChannel(service, id) => {
+            warn!("Unregistered discussion channel requested for service \"{service}\" with id \"{id}\"");
         }
         Error::NoActiveBracketInDiscussionChannel => {
             warn!("User did not find active bracket in discussion channel");
@@ -78,11 +78,14 @@ fn log_error(e: &Error) {
         Error::EliminatedFromBracket => {
             warn!("Player searched for their next match but they were eliminated from the bracket");
         }
+        Error::OrganiserNotFound(service, id) => warn!("Requested organiser was not found. Organiser used service \"{service}\" with id: \"{id}\""),
+        Error::BracketInactive(user_id, bracket_id) => warn!("User {user_id} reported a result for bracket \"{bracket_id}\" but it is inactive"),
+        Error::UpdateBracket(e) => warn!("Bracket could not be updated: {e}"),
     }
 }
 
 /// Type of supported services
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum Service {
     /// Discord
     Discord,

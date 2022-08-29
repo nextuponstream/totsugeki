@@ -18,6 +18,12 @@ pub enum Error {
     NotFound,
     /// Players reported different match outcome
     PlayersReportedDifferentMatchOutcome([ReportedResult; 2]),
+    /// Mathematical overflow happened, cannot proceed
+    MathOverflow,
+    /// Cannot update match because player is Unknown
+    UnknownPlayer(PlayerId, MatchPlayers),
+    /// Cannot update match result because an opponent is missing
+    MissingOpponent(MatchPlayers),
 }
 
 impl std::fmt::Display for Error {
@@ -32,6 +38,16 @@ impl std::fmt::Display for Error {
                     r[0], r[1]
                 )
             }
+            Error::MathOverflow => write!(f, "Error. Unable to proceed further."),
+            Error::UnknownPlayer(id, players) => write!(
+                f,
+                "Player with id \"{id}\" is unknown. Players in this match are: {} VS {}",
+                players[0], players[1]
+            ),
+            Error::MissingOpponent(players) => write!(
+                f,
+                "Cannot report result in a match where opponent is missing. Current players: {} VS {}", players[0], players[1]
+            ),
         }
     }
 }
@@ -91,9 +107,6 @@ impl From<uuid::Error> for ParsingOpponentError {
     }
 }
 
-/// The two players for this match
-type MatchPlayers = [Opponent; 2];
-
 /// Seeds of players
 type Seeds = [usize; 2];
 
@@ -151,22 +164,25 @@ impl FromStr for ReportedResult {
     }
 }
 
+/// Players in match
+pub type MatchPlayers = [Opponent; 2];
+
 /// A match between two players, resulting in a winner and a loser
-#[derive(Debug, Default, PartialEq, Eq, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
 pub struct Match {
     /// Identifier of match
     id: Id,
     /// Two players from this match. One of the player can be a BYE opponent
-    pub players: MatchPlayers,
+    pub players: MatchPlayers, // FIXME set to private
     /// seeds\[0\]: top seed
     /// seeds\[1\]: bottom seed
     seeds: Seeds,
     /// The winner of this match
     pub winner: Opponent,
     /// The looser of this match
-    pub looser: Opponent,
+    pub looser: Opponent, // FIXME set to private
     /// Result reported by players
-    pub reported_results: MatchReportedResult,
+    pub reported_results: MatchReportedResult, // FIXME set to private
 }
 
 impl Match {
@@ -177,7 +193,7 @@ impl Match {
         for round in matches {
             let mut result_round = vec![];
             for m in round {
-                result_round.push(m.clone().into());
+                result_round.push((*m).into());
             }
 
             result.push(result_round);
@@ -185,15 +201,41 @@ impl Match {
 
         result
     }
+
+    /// Update match result
+    ///
+    /// # Errors
+    /// Returns an error if referred player is not in the match
+    pub fn update_reported_result(
+        &mut self,
+        player_id: PlayerId,
+        result: ReportedResult,
+    ) -> Result<(), Error> {
+        let player = Opponent::Player(player_id);
+        match self.players[0] {
+            Opponent::Player(_) => {}
+            _ => return Err(Error::MissingOpponent(self.players)),
+        }
+        match self.players[1] {
+            Opponent::Player(_) => {}
+            _ => return Err(Error::MissingOpponent(self.players)),
+        }
+        if self.players[0] == player {
+            self.reported_results[0] = result.0;
+            Ok(())
+        } else if self.players[1] == player {
+            self.reported_results[1] = result.0;
+            Ok(())
+        } else {
+            Err(Error::UnknownPlayer(player_id, self.players))
+        }
+    }
 }
 
 impl std::fmt::Display for Match {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // writeln!(f, "{}", self.id)?;
-        writeln!(f, "\t{} vs {}", self.players[0], self.players[1])
-        // writeln!(f, "\t{} vs {}", self.seeds[0], self.seeds[1])
-        // writeln!(f, "{}", self.winner)
-        // writeln!(f, "{}", self.looser)
+        writeln!(f, "\t{} vs {}", self.players[0], self.players[1])?;
+        writeln!(f, "winner: {}", self.winner)
     }
 }
 
@@ -262,12 +304,11 @@ impl Match {
         self.seeds
     }
 
+    // FIXME implement try_from match_GET or MatchRaw
     /// Create match from parameters
     ///
     /// # Errors
     /// This function returns an error when the match is invalid
-    /// # Panics
-    /// not implemented...
     pub fn from(
         id: Id,
         players: [Opponent; 2],

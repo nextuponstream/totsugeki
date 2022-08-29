@@ -2,7 +2,7 @@
 
 use crate::common::api::Props;
 use crate::{get_client, routes::Route};
-use totsugeki::bracket::Bracket;
+use totsugeki::bracket::Raw;
 use totsugeki_api_request::{bracket::fetch, RequestError};
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
@@ -14,7 +14,7 @@ use super::FetchState;
 /// View of many brackets
 pub struct View {
     /// state of the page fetch request to display a bracket list
-    fetch_state: FetchState<Vec<Bracket>>,
+    fetch_state: FetchState<Vec<Raw>>,
     /// html nodes over the filter input and search button
     refs: Vec<NodeRef>,
     /// indicate if a user facing error message should be displayed for the offset input
@@ -27,7 +27,7 @@ pub enum Msg {
     /// Update UI with bracket list
     GetBrackets,
     /// Update view after API call to fetch bracket
-    SetBracketsFetchState(FetchState<Vec<Bracket>>),
+    SetBracketsFetchState(FetchState<Vec<Raw>>),
 }
 
 impl Component for View {

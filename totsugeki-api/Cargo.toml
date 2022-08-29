@@ -30,3 +30,5 @@ version = "0.11.2"
 [dev-dependencies]
 reqwest = { version = "0.11.11" }
 poem = { git = "https://github.com/poem-web/poem", rev = "0c54289b4e94b3385b3a746f70a878531e725b5b", features = ["rustls", "test"] }
+env_logger = "*"
+test-log = { version = "0.2.11", features = ["trace"] }

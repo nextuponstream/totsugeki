@@ -1,9 +1,12 @@
 //! bracket domain
 
+use super::TotsugekiApiTestClient;
+use crate::common::join::n_players_join_bracket;
 use chrono::prelude::*;
 use poem::test::{TestJson, TestJsonObject};
+use reqwest::StatusCode;
 use totsugeki::{
-    bracket::{Bracket, Format, Id as BracketId, POSTResult, GET, POST},
+    bracket::{Format, Id as BracketId, POSTResult, Raw, StartBracketPOST, GET, POST},
     matches::{Id as MatchId, Match, MatchGET, Opponent, ReportedResult},
     organiser::Id as OrganiserId,
     player::{Id as PlayerId, Player},
@@ -11,8 +14,6 @@ use totsugeki::{
     DiscussionChannelId,
 };
 use totsugeki_api::Service;
-
-use super::TotsugekiApiTestClient;
 
 /// Response after creating a bracket
 pub fn parse_bracket_post_response(response: TestJson) -> POSTResult {
@@ -50,6 +51,9 @@ pub fn parse_bracket_get_response(response: TestJson) -> GET {
     let seeding_method = r.get("seeding_method").string().to_string();
     let matches = parse_matches(&r);
     let start_time = r.get("start_time").string().to_string();
+    let accept_match_results = r.get("accept_match_results").bool();
+    let automatic_match_validation = r.get("automatic_match_validation").bool();
+    let barred_from_entering = r.get("barred_from_entering").bool();
 
     GET {
         bracket_id: BracketId::parse_str(bracket_id_raw).expect("bracket id"),
@@ -57,23 +61,22 @@ pub fn parse_bracket_get_response(response: TestJson) -> GET {
         players,
         matches: matches
             .iter()
-            .map(|r| {
-                r.iter()
-                    .map(|m| {
-                        let m: MatchGET = m.clone().into();
-                        m
-                    })
-                    .collect()
+            .map(|m| {
+                let m: MatchGET = m.clone().into();
+                m
             })
             .collect(),
         format,
         seeding_method,
         start_time,
+        accept_match_results,
+        automatic_match_validation,
+        barred_from_entering,
     }
 }
 
 /// Response after requesting brackets
-pub fn parse_brackets_get_response(response: TestJson) -> Vec<Bracket> {
+pub fn parse_brackets_get_response(response: TestJson) -> Vec<Raw> {
     let brackets_raw = response.value().object_array();
     brackets_raw
         .iter()
@@ -94,77 +97,76 @@ pub fn parse_brackets_get_response(response: TestJson) -> Vec<Bracket> {
                 .string()
                 .parse::<DateTime<Utc>>()
                 .expect("date");
-            Bracket::from(
+            let accept_match_results = o.get("accept_match_results").bool();
+            let automatic_match_validation = o.get("automatic_match_validation").bool();
+            let barred_from_entering = o.get("barred_from_entering").bool();
+            Raw {
                 bracket_id,
-                bracket_name.to_string(),
-                players,
+                bracket_name: bracket_name.to_string(),
+                players: players.iter().map(|p| p.get_id()).collect(),
+                player_names: players.iter().map(|p| p.get_name()).collect(),
                 matches,
                 format,
                 seeding_method,
                 start_time,
-            )
+                accept_match_results,
+                automatic_match_validation,
+                barred_from_entering,
+            }
         })
         .collect()
 }
 
 /// Parse matches from response
-pub fn parse_matches(response: &TestJsonObject) -> Vec<Vec<Match>> {
+pub fn parse_matches(response: &TestJsonObject) -> Vec<Match> {
     response
         .get("matches")
         .array()
         .iter()
-        .map(|r| {
-            let r = r
-                .array()
+        .map(|m| {
+            let m = m.object();
+            let id = MatchId::parse_str(m.get("id").string()).expect("id");
+            let players = m
+                .get("players")
+                .string_array()
                 .iter()
-                .map(|m| {
-                    let m = m.object();
-                    let id = MatchId::parse_str(m.get("id").string()).expect("id");
-                    let players = m
-                        .get("players")
-                        .string_array()
-                        .iter()
-                        .map(|p| match *p {
-                            "BYE" => Opponent::Bye,
-                            "?" => Opponent::Unknown,
-                            _ => Opponent::Player(PlayerId::parse_str(p).expect("uuid")),
-                        })
-                        .collect::<Vec<Opponent>>()
-                        .try_into()
-                        .expect("2 opponents");
-                    let seeds = m
-                        .get("seeds")
-                        .i64_array()
-                        .iter()
-                        .map(|i| *i as usize)
-                        .collect::<Vec<usize>>()
-                        .try_into()
-                        .expect("seeds");
-                    let winner = m.get("winner").string();
-                    let winner = Opponent::try_from(winner.to_string()).expect("winner");
-                    let looser = m.get("looser").string();
-                    let looser = Opponent::try_from(looser.to_string()).expect("looser");
-
-                    let reported_results = m.get("reported_results").string_array();
-                    let rr_1 = reported_results
-                        .get(0)
-                        .expect("reported result")
-                        .parse::<ReportedResult>()
-                        .expect("parsed reported result");
-                    let rr_2 = reported_results
-                        .get(1)
-                        .expect("reported result")
-                        .parse::<ReportedResult>()
-                        .expect("parsed reported result");
-                    let reported_results = [rr_1.0, rr_2.0];
-
-                    Match::from(id, players, seeds, winner, looser, reported_results)
-                        .expect("match")
+                .map(|p| match *p {
+                    "BYE" => Opponent::Bye,
+                    "?" => Opponent::Unknown,
+                    _ => Opponent::Player(PlayerId::parse_str(p).expect("uuid")),
                 })
-                .collect::<Vec<Match>>();
-            r
+                .collect::<Vec<Opponent>>()
+                .try_into()
+                .expect("2 opponents");
+            let seeds = m
+                .get("seeds")
+                .i64_array()
+                .iter()
+                .map(|i| *i as usize)
+                .collect::<Vec<usize>>()
+                .try_into()
+                .expect("seeds");
+            let winner = m.get("winner").string();
+            let winner = Opponent::try_from(winner.to_string()).expect("winner");
+            let looser = m.get("looser").string();
+            let looser = Opponent::try_from(looser.to_string()).expect("looser");
+
+            let reported_results = m.get("reported_results").string_array();
+            let rr_1 = reported_results
+                .get(0)
+                .expect("reported result")
+                .parse::<ReportedResult>()
+                .expect("parsed reported result");
+            let rr_2 = reported_results
+                .get(1)
+                .expect("reported result")
+                .parse::<ReportedResult>()
+                .expect("parsed reported result");
+            let reported_results = [rr_1.0, rr_2.0];
+
+            Match::from(id, players, seeds, winner, looser, reported_results).expect("match")
         })
-        .collect::<Vec<Vec<Match>>>()
+        .collect::<Vec<Match>>()
 }
 
 /// Create bracket. Returns Bracket response, bracket name and organiser name
@@ -176,6 +178,7 @@ pub async fn create_bracket(
     format: Format,
     seeding_method: SeedingMethod,
     start_time: DateTime<Utc>,
+    automatic_match_validation: bool,
 ) -> (POSTResult, String, String) {
     let bracket_name = "weekly".to_string(); // TODO generate name
     let organiser_name = "my-favorite-to".to_string(); // TODO generate name
@@ -188,6 +191,7 @@ pub async fn create_bracket(
         format: format.to_string(),
         seeding_method: seeding_method.to_string(),
         start_time: start_time.to_string(),
+        automatic_match_validation,
     };
     let resp = test_api
         .cli
@@ -203,4 +207,58 @@ pub async fn create_bracket(
         bracket_name,
         organiser_name,
     )
+}
+
+/// Create a bracket with many joining `participants` and start bracket. Returns Bracket and organiser name
+pub async fn players_join_new_bracket_and_bracket_starts(
+    test_api: &TotsugekiApiTestClient,
+    organiser_internal_id: &str,
+    channel_internal_id: &str,
+    service: Service,
+    format: Format,
+    seeding_method: SeedingMethod,
+    start_time: DateTime<Utc>,
+    participants: usize,
+    automatic_match_validation: bool,
+) -> (GET, String) {
+    let (post_result, _, organiser_name) = create_bracket(
+        test_api,
+        organiser_internal_id,
+        channel_internal_id,
+        service,
+        format,
+        seeding_method,
+        start_time,
+        automatic_match_validation,
+    )
+    .await;
+    tournament_organiser_starts_bracket(&test_api, channel_internal_id, service).await;
+    let bracket = n_players_join_bracket(
+        &test_api,
+        participants,
+        channel_internal_id,
+        service,
+        post_result.bracket_id,
+    )
+    .await;
+    (bracket, organiser_name)
+}
+
+pub async fn tournament_organiser_starts_bracket(
+    test_api: &TotsugekiApiTestClient,
+    channel_internal_id: &str,
+    service: Service,
+) {
+    let body_start = StartBracketPOST {
+        channel_internal_id: channel_internal_id.to_string(),
+        service_type_id: service.to_string(),
+    };
+    let res = test_api
+        .cli
+        .post("/bracket/start")
+        .header("X-API-Key", test_api.authorization_header.as_str())
+        .body_json(&body_start)
+        .send()
+        .await;
+    res.assert_status(StatusCode::OK);
 }

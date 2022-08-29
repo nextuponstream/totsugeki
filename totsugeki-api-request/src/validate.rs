@@ -9,13 +9,13 @@ use totsugeki::matches::Id as MatchId;
 /// Returns an error if bracket could not be updated
 pub async fn send(
     client: reqwest::Client,
-    tournament_server_url: &str,
+    api_url: &str,
     authorization_header: &str,
     match_id: MatchId,
 ) -> Result<(), RequestError> {
     let _res = client
         .post(format!(
-            "{HTTP_PREFIX}{tournament_server_url}/bracket/validate/{match_id}"
+            "{HTTP_PREFIX}{api_url}/bracket/validate/{match_id}"
         ))
         .header("X-API-Key", authorization_header)
         .send()

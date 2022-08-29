@@ -13,14 +13,17 @@ use common::{
 };
 use poem::http::StatusCode;
 use std::collections::HashSet;
+use test_log::test;
 use totsugeki::{
-    bracket::{Id as BracketId, POST},
+    bracket::{Format, Id as BracketId, POST},
     join::{POSTRequestBody, POSTResponseBody},
     matches::NextMatchGETRequest,
     organiser::Id as OrganiserId,
     player::Id as PlayerId,
+    seeding::Method as SeedingMethod,
 };
 use totsugeki_api::Service;
+use tracing::{info, trace};
 
 #[tokio::test]
 async fn joining_bracket_requires_authorization() {
@@ -42,9 +45,9 @@ async fn players_join_bracket() {
         let organiser_name = "my-favorite-to".to_string();
         let organiser_internal_id = "1".to_string();
         let channel_internal_id = "1".to_string();
-        let service_type_id = "discord".to_string();
-        let format = "single-elimination".to_string();
-        let seeding_method = "strict".to_string();
+        let service_type_id = Service::Discord.to_string();
+        let format = Format::SingleElimination.to_string();
+        let seeding_method = SeedingMethod::Strict.to_string();
         let start_time = Utc.ymd(2000, 1, 1).and_hms(0, 0, 0).to_string();
         let body = POST {
             bracket_name: bracket_name.clone(),
@@ -55,6 +58,7 @@ async fn players_join_bracket() {
             format,
             seeding_method,
             start_time,
+            automatic_match_validation: false,
         };
 
         let resp = test_api
@@ -101,13 +105,18 @@ async fn players_join_bracket() {
             let r = res.json().await;
             let bracket = parse_bracket_get_response(r);
             match i {
-                1 | 2 => assert!(bracket.matches.is_empty()),
-                3 => assert_eq!(bracket.matches.len(), 2),
+                1 | 2 => assert!(bracket.matches.is_empty(), "no matches should be generated when there is not enough players to run a bracket"),
+                // There should be only 2 matches since BYE opponent are not relevant for players
+                3 => assert_eq!(
+                    bracket.matches.len(),
+                    2,
+                    "Matches where not generated for 3 players: {bracket:?}"
+                ),
                 _ => {}
             }
         }
 
-        // Then there is enough people for an 8 participant tournament
+        // Then there is enough people for an 8 participant bracket
         let resp = test_api.cli.get("/brackets/0".to_string()).send().await;
         resp.assert_status_is_ok();
 
@@ -127,9 +136,9 @@ async fn players_join_bracket() {
 
                 b.get_id() == bracket_post_resp.get_bracket_id()
                     && b.get_bracket_name() == bracket_name
-                    && b.get_players().len() == 8
+                    && b.get_player_ids().len() == 8
                     // https://stackoverflow.com/a/46767732
-                    && b.get_players().iter().all(|p| unique_players.insert(p))
+                    && b.get_player_ids().iter().all(|p| unique_players.insert(p))
             }),
             "no matching bracket id for \"{}\" in:\n {brackets:?}",
             bracket_post_resp.get_bracket_id()
@@ -148,7 +157,7 @@ async fn using_service_to_search_for_next_opponent_needs_authorization() {
     }
 }
 
-#[tokio::test]
+#[test(tokio::test)]
 async fn bracket_initial_next_opponent_are_correct() {
     for db_type in db_types_to_test() {
         let test_api = test_api(db_type).await;
@@ -159,8 +168,8 @@ async fn bracket_initial_next_opponent_are_correct() {
         let organiser_internal_id = "1".to_string();
         let channel_internal_id = "1".to_string();
         let service_type_id = Service::Discord;
-        let format = "single-elimination".to_string();
-        let seeding_method = "strict".to_string();
+        let format = Format::SingleElimination.to_string();
+        let seeding_method = SeedingMethod::Strict.to_string();
         let start_time = Utc.ymd(2000, 1, 1).and_hms(0, 0, 0).to_string();
         let body = POST {
             bracket_name: bracket_name.clone(),
@@ -171,6 +180,7 @@ async fn bracket_initial_next_opponent_are_correct() {
             format,
             seeding_method,
             start_time,
+            automatic_match_validation: false,
         };
 
         let resp = test_api
@@ -190,10 +200,11 @@ async fn bracket_initial_next_opponent_are_correct() {
         for i in 1..=8 {
             let player_internal_id = i.to_string();
             let player_name = format!("player_{i}");
+            info!("{player_name} wants to join");
             let channel_internal_id = channel_internal_id.clone();
             let body = POSTRequestBody::new(
                 player_internal_id.clone(),
-                player_name,
+                player_name.clone(),
                 channel_internal_id.clone(),
                 service_type_id.to_string(),
             );
@@ -217,6 +228,10 @@ async fn bracket_initial_next_opponent_are_correct() {
                     .expect("organiser"),
             };
             players.push(join_resp.player_id);
+            info!(
+                "{player_name} has joined bracket. They have ID: {}",
+                join_resp.player_id
+            );
 
             // When a player joins, matches get updated automatically
             let res = test_api
@@ -231,6 +246,9 @@ async fn bracket_initial_next_opponent_are_correct() {
                 1 | 2 => {
                     // When bracket is too small, no matches are generated.
                     // Then response is 404 with a message
+                    trace!(
+                        "{player_name} does not have a next match since no matches are generated"
+                    );
                     let body = NextMatchGETRequest {
                         player_internal_id,
                         channel_internal_id,
@@ -245,6 +263,7 @@ async fn bracket_initial_next_opponent_are_correct() {
                         .await;
                     res.assert_status(StatusCode::NOT_FOUND);
                     res.assert_text("There is no match for you to play.").await;
+                    trace!("Expected answer was that match is not found (404)");
                 }
                 3 => {
                     assert_next_matches(

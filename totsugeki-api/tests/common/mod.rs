@@ -14,7 +14,8 @@ use totsugeki::ReadLock;
 use totsugeki_api::{oai_test_service, persistence::DBAccessor, route_with_data, DatabaseType};
 
 pub fn db_types_to_test() -> Vec<DatabaseType> {
-    let db_types_in_test_arg = env!("API_DB_TYPES_IN_TESTS");
+    let db_types_in_test_arg =
+        std::env::var("API_DB_TYPES_IN_TESTS").expect("API_DB_TYPES_IN_TESTS");
     let db_types_in_tests: Vec<&str> = db_types_in_test_arg.split(',').collect();
     let db_types_in_tests: Vec<DatabaseType> = db_types_in_tests
         .iter()

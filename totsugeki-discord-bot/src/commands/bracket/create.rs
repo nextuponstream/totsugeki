@@ -13,8 +13,9 @@ use totsugeki_api_request::bracket::create as create_bracket;
 use tracing::{info, span, warn, Level};
 
 #[command]
-#[description = "Create a new bracket. Use quotes for everything except time and timezone."]
-#[usage = "\"<NAME>\" YYYY-MM-DD:HH:MM TZ \"<FORMAT>\" \"<SEEDING METHOD>\""]
+#[description = "Create a new bracket. Respect double quotes."]
+#[usage = "\"<NAME>\" YYYY-MM-DD:HH:MM TZ \"<FORMAT>\" \"<SEEDING METHOD>\" <AUTOMATIC BRACKET VALIDATION: true|false>"]
+#[example = "\"mbtl weekly #1\" 2022-12-21:20:00 CET \"single-elimination\" \"strict\" true"]
 #[allowed_roles("TO")]
 // https://github.com/serenity-rs/serenity/blob/current/examples/e12_global_data/src/main.rs
 async fn create(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
@@ -29,12 +30,13 @@ async fn create(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         args.advance();
         let format = args.single_quoted::<String>()?;
         let seeding_method = args.single_quoted::<String>()?;
+        let automatic_match_validation = args.parse::<bool>()?;
 
-        let tournament_server = {
+        let api = {
             let data_read = ctx.data.read().await;
             data_read
                 .get::<Api>()
-                .expect("Expected TournamentServer in TypeMap.")
+                .expect("Expected Api in TypeMap.")
                 .clone()
         };
 
@@ -85,8 +87,7 @@ async fn create(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
             },
         };
         let start_time = start_time.with_timezone(&Utc);
-        // let start_time = start_time.naive_utc(); // FIXME succeed in api parsing time
-      let      start_time= format!("{start_time:?}");
+        let start_time= format!("{start_time:?}");
 
         let parameters = RequestParameters {
             bracket_name: bracket_name.as_str(),
@@ -96,12 +97,13 @@ async fn create(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
             discussion_channel: discord_channel,
             seeding_method: seeding_method.as_str(),
             start_time: start_time.as_str(),
+            automatic_match_validation,
         };
         info!("{:?}", parameters);
         create_bracket(
-            get_client(tournament_server.accept_invalid_certs)?,
-            tournament_server.get_connection_string().as_str(),
-            tournament_server.get_authorization_header().as_str(),
+            get_client(api.accept_invalid_certs)?,
+            api.get_connection_string().as_str(),
+            api.get_authorization_header().as_str(),
             parameters,
         )
         .await?;

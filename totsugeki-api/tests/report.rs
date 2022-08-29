@@ -4,7 +4,10 @@ pub mod common;
 
 use chrono::prelude::*;
 use common::{
-    bracket::create_bracket,
+    bracket::{
+        create_bracket, players_join_new_bracket_and_bracket_starts,
+        tournament_organiser_starts_bracket,
+    },
     db_types_to_test,
     join::n_players_join_bracket,
     next_match::{
@@ -15,6 +18,7 @@ use common::{
     validate::{validate_match, validate_match_for_predicted_seeds},
 };
 use poem::http::StatusCode;
+use test_log::test;
 use totsugeki::{
     bracket::Format,
     matches::{MatchResultPOST, ReportedResult},
@@ -22,13 +26,13 @@ use totsugeki::{
     seeding::Method,
 };
 use totsugeki_api::Service;
+use tracing::{debug, trace};
 
-#[tokio::test]
-async fn reporting_result_for_first_round_3_man() {
+#[test(tokio::test)]
+async fn participants_cannot_report_result_until_bracket_starts() {
     for db_type in db_types_to_test() {
         let test_api = test_api(db_type).await;
 
-        // A bracket exists
         let organiser_id = "1";
         let channel_internal_id = "1";
         let service = Service::Discord;
@@ -40,6 +44,7 @@ async fn reporting_result_for_first_round_3_man() {
             Format::SingleElimination,
             Method::Strict,
             Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
+            false,
         )
         .await;
 
@@ -52,9 +57,9 @@ async fn reporting_result_for_first_round_3_man() {
         )
         .await;
 
-        // Top seed reporting a match has no effect since he has not opponent yet
-        let body = MatchResultPOST {
-            player_internal_id: "1".to_string(),
+        // Reporting a match result before bracket starts returns an error
+        let body_result = MatchResultPOST {
+            player_internal_id: "2".to_string(),
             channel_internal_id: channel_internal_id.to_string(),
             service_type_id: service.to_string(),
             result: "2-0".to_string(),
@@ -63,10 +68,137 @@ async fn reporting_result_for_first_round_3_man() {
             .cli
             .post("/bracket/report")
             .header("X-API-Key", test_api.authorization_header.as_str())
+            .body_json(&body_result)
+            .send()
+            .await;
+        res.assert_status(StatusCode::UNAUTHORIZED);
+        res.assert_text(format!(
+            "Bracket \"{}\" does not accept match result reports",
+            bracket.bracket_id
+        ))
+        .await;
+
+        // After a tournament organiser start the bracket
+        tournament_organiser_starts_bracket(&test_api, channel_internal_id, service).await;
+
+        // Then you can start reporting results
+        trace!("Organiser has started bracket. Reporting result should now work");
+        let res = test_api
+            .cli
+            .post("/bracket/report")
+            .header("X-API-Key", test_api.authorization_header.as_str())
+            .body_json(&body_result)
+            .send()
+            .await;
+        res.assert_status(StatusCode::OK);
+    }
+}
+
+#[tokio::test]
+async fn match_results_cannot_be_reported_once_bracket_has_ended() {
+    for db_type in db_types_to_test() {
+        let test_api = test_api(db_type).await;
+
+        let organiser_id = "1";
+        let channel_internal_id = "1";
+        let service = Service::Discord;
+        let (bracket, _) = players_join_new_bracket_and_bracket_starts(
+            &test_api,
+            organiser_id,
+            channel_internal_id,
+            service,
+            Format::SingleElimination,
+            Method::Strict,
+            Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
+            3,
+            false,
+        )
+        .await;
+
+        both_player_report_match_result(
+            &test_api,
+            "2",
+            "3",
+            channel_internal_id,
+            service,
+            ReportedResult((2, 0)),
+        )
+        .await;
+        validate_match_for_predicted_seeds(&test_api, 2, 3, &bracket.matches).await;
+
+        both_player_report_match_result(
+            &test_api,
+            "1",
+            "2",
+            channel_internal_id,
+            service,
+            ReportedResult((2, 0)),
+        )
+        .await;
+        validate_match_for_predicted_seeds(&test_api, 1, 2, &bracket.matches).await;
+
+        // Reporting a match is unauthorized once bracket has ended
+        let body = MatchResultPOST {
+            player_internal_id: "1".to_string(),
+            channel_internal_id: channel_internal_id.to_string(),
+            service_type_id: service.to_string(),
+            result: ReportedResult((2, 0)).to_string(),
+        };
+        let res = test_api
+            .cli
+            .post("/bracket/report")
+            .header("X-API-Key", test_api.authorization_header.as_str())
             .body_json(&body)
             .send()
             .await;
-        res.assert_status(StatusCode::NOT_FOUND);
+        res.assert_status(StatusCode::UNAUTHORIZED);
+        res.assert_text(format!(
+            "Bracket \"{}\" does not accept match result reports",
+            bracket.bracket_id
+        ))
+        .await;
+    }
+}
+
+#[test(tokio::test)]
+async fn reporting_result_for_first_round_3_man() {
+    for db_type in db_types_to_test() {
+        let test_api = test_api(db_type).await;
+
+        let organiser_id = "1";
+        let channel_internal_id = "1";
+        let service = Service::Discord;
+        let (bracket, _) = players_join_new_bracket_and_bracket_starts(
+            &test_api,
+            organiser_id,
+            channel_internal_id,
+            service,
+            Format::SingleElimination,
+            Method::Strict,
+            Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
+            3,
+            false,
+        )
+        .await;
+        debug!("Bracket matches (start): {:?}", bracket.matches);
+
+        let body = MatchResultPOST {
+            player_internal_id: "1".to_string(),
+            channel_internal_id: channel_internal_id.to_string(),
+            service_type_id: service.to_string(),
+            result: ReportedResult((2, 0)).to_string(),
+        };
+        let res = test_api
+            .cli
+            .post("/bracket/report")
+            .header("X-API-Key", test_api.authorization_header.as_str())
+            .body_json(&body)
+            .send()
+            .await;
+        let player1 = bracket.players[0].get_id();
+        trace!("Top seed reporting a match should have no effect since he has not opponent yet");
+        res.assert_status(StatusCode::FORBIDDEN);
+        res.assert_text(format!("Bracket cannot be updated: Cannot report result in a match where opponent is missing. Current players: {player1} VS ?")).await;
 
         both_player_report_match_result(
             &test_api,
@@ -78,11 +210,10 @@ async fn reporting_result_for_first_round_3_man() {
         )
         .await;
 
-        // When tournament organiser validates match from seed 2 and 3, the
-        // bracket advances
-        validate_match_for_predicted_seeds(&test_api, 2, 3, bracket.matches).await;
+        trace!("Advancing bracket");
+        validate_match_for_predicted_seeds(&test_api, 2, 3, &bracket.matches).await;
 
-        // parse bracket for players list
+        trace!("Player 1 and 2 should be playing");
         assert_next_matches(
             &[],
             &[(1, 2)],
@@ -97,13 +228,12 @@ async fn reporting_result_for_first_round_3_man() {
         )
         .await;
 
-        // use player list to assert next matches
         assert_player_is_eliminated(&test_api, 3, channel_internal_id, service).await;
     }
 }
 
-#[tokio::test]
-async fn running_5_man_single_elimination_tournament_tournament() {
+#[test(tokio::test)]
+async fn running_5_man_single_elimination_api() {
     for db_type in db_types_to_test() {
         let test_api = test_api(db_type).await;
 
@@ -120,8 +250,10 @@ async fn running_5_man_single_elimination_tournament_tournament() {
             format,
             seeding_method,
             Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
+            false,
         )
         .await;
+        tournament_organiser_starts_bracket(&test_api, channel_internal_id, service).await;
 
         let bracket = n_players_join_bracket(
             &test_api,
@@ -225,7 +357,7 @@ async fn running_5_man_single_elimination_tournament_tournament() {
 }
 
 #[tokio::test]
-async fn running_8_man_single_elimination_tournament_tournament() {
+async fn running_8_man_single_elimination_bracket() {
     for db_type in db_types_to_test() {
         let test_api = test_api(db_type).await;
 
@@ -242,8 +374,10 @@ async fn running_8_man_single_elimination_tournament_tournament() {
             format,
             seeding_method,
             Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
+            false,
         )
         .await;
+        tournament_organiser_starts_bracket(&test_api, channel_internal_id, service).await;
 
         let bracket = n_players_join_bracket(
             &test_api,
@@ -401,8 +535,8 @@ async fn running_8_man_single_elimination_tournament_tournament() {
     }
 }
 
-#[tokio::test]
-async fn running_9_man_single_elimination_tournament_tournament() {
+#[test(tokio::test)]
+async fn running_9_man_single_elimination_bracket() {
     for db_type in db_types_to_test() {
         let test_api = test_api(db_type).await;
 
@@ -411,7 +545,7 @@ async fn running_9_man_single_elimination_tournament_tournament() {
         let format = Format::SingleElimination;
         let seeding_method = Method::Strict;
         let service = Service::Discord;
-        let (bracket, _bracket_name, _organiser_name) = create_bracket(
+        let (bracket, _organiser_name) = players_join_new_bracket_and_bracket_starts(
             &test_api,
             organiser_internal_id,
             channel_internal_id,
@@ -419,17 +553,11 @@ async fn running_9_man_single_elimination_tournament_tournament() {
             format,
             seeding_method,
             Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
+            9,
+            false,
         )
         .await;
 
-        let bracket = n_players_join_bracket(
-            &test_api,
-            9,
-            channel_internal_id,
-            service,
-            bracket.get_bracket_id(),
-        )
-        .await;
         let players = bracket
             .players
             .iter()

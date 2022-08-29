@@ -19,11 +19,11 @@ async fn report(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     span.in_scope(|| async {
         let reported_result = args.single::<String>()?;
 
-        let tournament_server = {
+        let api = {
             let data_read = ctx.data.read().await;
             data_read
                 .get::<Api>()
-                .expect("Expected TournamentServer in TypeMap.")
+                .expect("Expected Api in TypeMap.")
                 .clone()
         };
         let discussion_channel_id = msg.channel_id;
@@ -31,9 +31,9 @@ async fn report(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         let player_internal_id = msg.author.id;
 
         let match_id = match result(
-            get_client(tournament_server.accept_invalid_certs)?,
-            &tournament_server.get_connection_string(),
-            &tournament_server.get_authorization_header(),
+            get_client(api.accept_invalid_certs)?,
+            &api.get_connection_string(),
+            &api.get_authorization_header(),
             &player_internal_id.to_string(),
             &reported_result,
             discord_channel,

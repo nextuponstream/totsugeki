@@ -72,6 +72,7 @@ async fn new_organiser_is_generated_when_bracket_is_created_if_unknown() {
             Format::SingleElimination,
             Method::Strict,
             Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
+            false,
         )
         .await;
 
@@ -125,6 +126,7 @@ async fn running_two_brackets_at_the_same_time() {
             format: format.clone(),
             seeding_method: seeding_method.clone(),
             start_time: start_time.clone(),
+            automatic_match_validation: false,
         };
 
         let bracket_name = "weekly-game-2".to_string(); // TODO generate name
@@ -138,6 +140,7 @@ async fn running_two_brackets_at_the_same_time() {
             format,
             seeding_method,
             start_time,
+            automatic_match_validation: false,
         };
 
         // When they create brackets using discord bot

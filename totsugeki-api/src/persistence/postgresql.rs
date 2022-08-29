@@ -30,7 +30,7 @@ impl DBAccessor for Accessor {
         &'a self,
         bracket_name: &'b str,
         offset: i64,
-    ) -> Result<Vec<totsugeki::bracket::Bracket>, super::Error<'c>> {
+    ) -> Result<Vec<totsugeki::bracket::Raw>, super::Error<'c>> {
         todo!()
     }
 
@@ -49,7 +49,7 @@ impl DBAccessor for Accessor {
     fn list_brackets<'a, 'b>(
         &'a self,
         offset: i64,
-    ) -> Result<Vec<totsugeki::bracket::Bracket>, super::Error<'b>> {
+    ) -> Result<Vec<totsugeki::bracket::Raw>, super::Error<'b>> {
         todo!()
     }
 
@@ -88,7 +88,7 @@ impl DBAccessor for Accessor {
     fn get_bracket<'a, 'b, 'c>(
         &'a self,
         bracket_id: BracketId,
-    ) -> Result<totsugeki::bracket::Bracket, super::Error<'c>> {
+    ) -> Result<totsugeki::bracket::Raw, super::Error<'c>> {
         todo!()
     }
 
@@ -119,6 +119,31 @@ impl DBAccessor for Accessor {
     }
 
     fn validate_result<'a, 'b>(&'a self, match_id: MatchId) -> Result<(), super::Error<'b>> {
+        todo!()
+    }
+
+    fn start_bracket<'a, 'b, 'c>(
+        &'a self,
+        internal_channel_id: &'b str,
+        service_type_id: &'b str,
+    ) -> Result<BracketId, super::Error<'c>> {
+        todo!()
+    }
+
+    fn bar_from_entering_bracket<'a, 'b, 'c>(
+        &'a self,
+        internal_channel_id: &'b str,
+        service_type_id: &'b str,
+    ) -> Result<BracketId, super::Error<'c>> {
+        todo!()
+    }
+
+    fn seed_bracket<'a, 'b, 'c>(
+        &'a self,
+        internal_channel_id: &'b str,
+        service_type_id: &'b str,
+        players: Vec<String>,
+    ) -> Result<BracketId, super::Error<'c>> {
         todo!()
     }
 }

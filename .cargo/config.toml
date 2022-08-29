@@ -3,15 +3,21 @@ check-core = "check --workspace --exclude=totsugeki-frontend"
 check-frontend = "check -p totsugeki-frontend --target=wasm32-unknown-unknown"
 
 build-core = "build --release --workspace --exclude=totsugeki-frontend"
-build-frontend = "build --release -p totsugeki-frontend"
+build-core-r = "build --workspace --exclude=totsugeki-frontend"
+build-frontend = "build -p totsugeki-frontend"
+build-frontend-r = "build --release -p totsugeki-frontend"
 
 watch-check-core = "watch -- cargo check --workspace --exclude=totsugeki-frontend"
 watch-check-frontend = "watch -- cargo check -p totsugeki-frontend --target=wasm32-unknown-unknown"
 
-watch-run-api = "watch -- cargo run --release -p totsugeki-api"
-watch-run-discord-bot = "watch -- cargo run --release -p totsugeki-discord-bot"
+watch-run-api = "watch -- cargo run -p totsugeki-api"
+watch-run-api-r = "watch -- cargo run --release -p totsugeki-api"
+watch-run-discord-bot = "watch -- cargo run -p totsugeki-discord-bot"
+watch-run-discord-bot-r = "watch -- cargo run --release -p totsugeki-discord-bot"
 # NOTE: works from root and totsugeki-frontend folder
 watch-run-frontend = "watch -- yarn --cwd totsugeki-frontend run dev --watch"
 
-run-api = "run --release -p totsugeki-api"
-run-discord-bot = "run --release -p totsugeki-discord-bot"
+run-api = "run -p totsugeki-api"
+run-api-r = "run --release -p totsugeki-api"
+run-discord-bot = "run -p totsugeki-discord-bot"
+run-discord-bot-r = "run --release -p totsugeki-discord-bot"

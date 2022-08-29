@@ -2,8 +2,8 @@
 
 use crate::common::api::Api;
 use crate::get_client;
-use totsugeki::bracket::Bracket;
 use totsugeki::bracket::Id as BracketId;
+use totsugeki::bracket::Raw;
 use totsugeki::matches::print_player_name;
 use totsugeki_api_request::{bracket::get_from_id, RequestError};
 use yew::prelude::*;
@@ -23,7 +23,7 @@ pub struct Props {
 /// View over a single bracket
 pub struct View {
     /// state of the page fetch request to display a bracket
-    fetch_state: FetchState<Bracket>,
+    fetch_state: FetchState<Raw>,
 }
 
 /// Update bracket view
@@ -31,7 +31,7 @@ pub enum Msg {
     /// Update page with bracket
     GetBracket,
     /// Update view after API call to fetch bracket
-    SetBracketFetchState(FetchState<Bracket>),
+    SetBracketFetchState(FetchState<Raw>),
 }
 
 impl Component for View {
@@ -79,7 +79,7 @@ impl Component for View {
                     html! { <p>{ p.get_name() }</p> }
                 });
                 let matches = bracket.get_matches();
-                let matches = matches.into_iter().flatten().map(|m| {
+                let matches = matches.iter().map(|m| {
                     let player_1 = print_player_name(m.get_players()[0], &bracket.get_players())
                         .unwrap_or_else(|| "ERROR".to_string());
                     let player_2 = print_player_name(m.get_players()[1], &bracket.get_players())

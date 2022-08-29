@@ -1,31 +1,27 @@
-//! report match result
+//! Start bracket and accept match results
 
 use crate::{RequestError, HTTP_PREFIX};
 use totsugeki::{
-    matches::{Id as MatchId, MatchResultPOST},
+    bracket::{Id as BracketId, StartBracketPOST},
     DiscussionChannel,
 };
 
-/// Report result of match using discussion channel where message is written
+/// Start bracket in discussion channel
 ///
 /// # Errors
-/// Returns error if the api returns an invalid Id for affected match
-pub async fn result<T: DiscussionChannel>(
+/// Thrown when request could not be processed by the server
+pub async fn post<T: DiscussionChannel>(
     client: reqwest::Client,
     api_url: &str,
     authorization_header: &str,
-    player_internal_id: &str,
-    result: &str,
     discussion_channel: T,
-) -> Result<MatchId, RequestError> {
-    let body = MatchResultPOST {
-        player_internal_id: player_internal_id.to_string(),
+) -> Result<BracketId, RequestError> {
+    let body = StartBracketPOST {
         channel_internal_id: discussion_channel.get_internal_id().to_string(),
         service_type_id: discussion_channel.get_service_type(),
-        result: result.to_string(),
     };
     let res = client
-        .post(format!("{HTTP_PREFIX}{api_url}/bracket/report"))
+        .post(format!("{HTTP_PREFIX}{api_url}/bracket/start"))
         .header("X-API-Key", authorization_header)
         .json(&body)
         .send()
@@ -36,8 +32,8 @@ pub async fn result<T: DiscussionChannel>(
             let mut response = res.text().await?;
             response.pop();
             response.remove(0);
-            let match_id = MatchId::parse_str(response.as_str())?;
-            Ok(match_id)
+            let bracket_id = BracketId::parse_str(response.as_str())?;
+            Ok(bracket_id)
         }
         Err(r) => {
             let txt = res.text().await?;

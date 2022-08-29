@@ -13,7 +13,7 @@ use totsugeki::{
 /// Thrown when request could not be processed by the server
 pub async fn post<T: DiscussionChannel>(
     client: reqwest::Client,
-    tournament_server_url: &str,
+    api_url: &str,
     authorization_header: &str,
     player_internal_id: &str,
     player_name: &str,
@@ -26,7 +26,7 @@ pub async fn post<T: DiscussionChannel>(
         discussion_channel.get_service_type(),
     );
     let res = client
-        .post(format!("{HTTP_PREFIX}{tournament_server_url}/join"))
+        .post(format!("{HTTP_PREFIX}{api_url}/join"))
         .header("X-API-Key", authorization_header)
         .json(&body)
         .send()
