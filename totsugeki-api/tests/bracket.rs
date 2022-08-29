@@ -36,6 +36,7 @@ async fn someone_creates_bracket() {
             format,
             seeding_method,
             Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
+            false,
         )
         .await;
 
@@ -107,6 +108,7 @@ async fn search_bracket() {
             format,
             seeding_method,
             Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
+            false,
         )
         .await;
 

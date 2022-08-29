@@ -3,7 +3,7 @@
 use crate::RequestError;
 use crate::HTTP_PREFIX;
 use totsugeki::bracket::RequestParameters;
-use totsugeki::bracket::{Bracket, Id as BracketId, POSTResult, GET as BracketGET, POST};
+use totsugeki::bracket::{Id as BracketId, POSTResult, Raw, GET as BracketGET, POST};
 use totsugeki::DiscussionChannel;
 
 /// Create brackets
@@ -12,7 +12,7 @@ use totsugeki::DiscussionChannel;
 /// Thrown when server is unavailable or deserialisation could not be made
 pub async fn create<'a, T: DiscussionChannel>(
     client: reqwest::Client,
-    tournament_server_url: &str,
+    api_url: &str,
     authorization_header: &str,
     p: RequestParameters<'a, T>,
 ) -> Result<POSTResult, RequestError> {
@@ -25,9 +25,10 @@ pub async fn create<'a, T: DiscussionChannel>(
         format: p.bracket_format.to_string(),
         seeding_method: p.seeding_method.to_string(),
         start_time: p.start_time.to_string(),
+        automatic_match_validation: p.automatic_match_validation,
     };
     let res = client
-        .post(format!("{HTTP_PREFIX}{tournament_server_url}/bracket"))
+        .post(format!("{HTTP_PREFIX}{api_url}/bracket"))
         .header("X-API-Key", authorization_header)
         .json(&body)
         .send()
@@ -42,10 +43,10 @@ pub async fn create<'a, T: DiscussionChannel>(
 /// Thrown when server is unavailable or deserialisation could not be made
 pub async fn fetch(
     client: reqwest::Client,
-    tournament_server_url: &str,
+    api_url: &str,
     bracket_name_filter: Option<String>,
     offset: i64,
-) -> Result<Vec<Bracket>, RequestError> {
+) -> Result<Vec<Raw>, RequestError> {
     let filter = match bracket_name_filter {
         Some(name) => {
             if name.is_empty() {
@@ -57,9 +58,7 @@ pub async fn fetch(
         None => "".to_string(),
     };
     let res = client
-        .get(format!(
-            "{HTTP_PREFIX}{tournament_server_url}/brackets{filter}/{offset}"
-        ))
+        .get(format!("{HTTP_PREFIX}{api_url}/brackets{filter}/{offset}"))
         .send()
         .await?;
     let text: Vec<BracketGET> = res.json().await?;
@@ -76,13 +75,11 @@ pub async fn fetch(
 /// Thrown when server is unavailable or deserialisation could not be made
 pub async fn get_from_id(
     client: reqwest::Client,
-    tournament_server_url: &str,
+    api_url: &str,
     bracket_id: BracketId,
-) -> Result<Bracket, RequestError> {
+) -> Result<Raw, RequestError> {
     let res = client
-        .get(format!(
-            "{HTTP_PREFIX}{tournament_server_url}/bracket/{bracket_id}"
-        ))
+        .get(format!("{HTTP_PREFIX}{api_url}/bracket/{bracket_id}"))
         .send()
         .await?;
     let bracket: BracketGET = res.json().await?;

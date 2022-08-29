@@ -11,8 +11,6 @@ project root (to load `.env` variables):
 cargo watch -x "run -r -p totsugeki-api"
 ```
 
-TODO explain how to add bunyan cli
-
 ### Pretty logging
 
 By default, bunyan formatter is used. Install cli tool (`cargo install bunyan`),

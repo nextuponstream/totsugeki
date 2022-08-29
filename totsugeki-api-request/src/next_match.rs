@@ -12,7 +12,7 @@ use totsugeki::{
 /// Returns error if there is an error with the network
 pub async fn next_match<T: DiscussionChannel>(
     client: reqwest::Client,
-    tournament_server_url: &str,
+    api_url: &str,
     authorization_header: &str,
     player_internal_id: &str,
     discussion_channel: T,
@@ -23,7 +23,7 @@ pub async fn next_match<T: DiscussionChannel>(
         service_type_id: discussion_channel.get_service_type(),
     };
     let res = client
-        .get(format!("{HTTP_PREFIX}{tournament_server_url}/next_match",))
+        .get(format!("{HTTP_PREFIX}{api_url}/next_match",))
         .header("X-API-Key", authorization_header)
         .json(&body)
         .send()

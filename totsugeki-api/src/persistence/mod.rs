@@ -8,10 +8,11 @@ use std::str::FromStr;
 use std::sync::{PoisonError, RwLockReadGuard, RwLockWriteGuard};
 use totsugeki::matches::MatchResultParsingError;
 use totsugeki::{
-    bracket::{Bracket, FormatParsingError, Id as BracketId, POSTResult},
+    bracket::{Error as BracketError, FormatParsingError, Id as BracketId, POSTResult, Raw},
     join::POSTResponseBody,
     matches::{Error as MatchError, Id as MatchId, NextMatchGETResponseRaw},
     organiser::Organiser,
+    player::Id as PlayerId,
     seeding::{Error as SeedingError, ParsingError as SeedingParsingError},
 };
 
@@ -55,17 +56,17 @@ pub enum Error<'a> {
     Parsing(String),
     /// Unknown
     Unknown(String),
-    /// Bracket was not found
-    BracketNotFound(BracketId),
-    /// Discussion channel was not found
-    DiscussionChannelNotFound,
+    /// Bracket is not registered
+    UnregisteredBracket(BracketId),
+    /// Discussion channel for `Service` using provided id is not registered
+    UnregisteredDiscussionChannel(Service, String),
     /// No active bracket for provided discussion channel
     NoActiveBracketInDiscussionChannel,
     /// Player was not found
     PlayerNotFound,
     /// Next match was not found for this bracket
     NextMatchNotFound,
-    /// There is either not enough players in bracket or the player's run in bracket has ended
+    /// There is either not enough players in bracket
     NoNextMatch,
     /// To many players causes math overflow
     Seeding(SeedingError),
@@ -75,6 +76,18 @@ pub enum Error<'a> {
     Match(MatchError),
     /// Player searched for his next match in bracket but his was eliminated
     EliminatedFromBracket,
+    /// Organiser was not found. Organiser used `Service` with provided id
+    OrganiserNotFound(Service, String),
+    /// Bracket is inactive
+    BracketInactive(PlayerId, BracketId),
+    /// Cannot update bracket
+    UpdateBracket(BracketError),
+}
+
+impl<'a> From<BracketError> for Error<'a> {
+    fn from(e: BracketError) -> Self {
+        Self::UpdateBracket(e)
+    }
 }
 
 impl<'a> From<chrono::ParseError> for Error<'a> {
@@ -120,10 +133,10 @@ impl<'a> Display for Error<'a> {
             Error::Denied(msg) => writeln!(f, "Reason: {msg}"),
             Error::PoisonedReadLock(e) => e.fmt(f),
             Error::PoisonedWriteLock(e) => e.fmt(f),
-            Error::BracketNotFound(b_id) => writeln!(f, "Bracket not found: {b_id}"),
-            Error::DiscussionChannelNotFound => writeln!(
+            Error::UnregisteredBracket(b_id) => writeln!(f, "Bracket \"{b_id}\" is unregistered"),
+            Error::UnregisteredDiscussionChannel(_, _) => writeln!(
                 f,
-                "Discussion channel not found because it is not registered"
+                "Discussion channel is not registered"
             ),
             Error::NoActiveBracketInDiscussionChannel => {
                 writeln!(f, "There is no active bracket in this discussion channel")
@@ -135,6 +148,9 @@ impl<'a> Display for Error<'a> {
             Error::NoOpponent => write!(f, "No opponent"),
             Error::Match(_e) => write!(f, "Match could not be updated"),
             Error::EliminatedFromBracket => write!(f, "There is no match for you to play because you have been eliminated from the bracket."),
+            Error::OrganiserNotFound(_, _) => write!(f, "Organiser not found"),
+            Error::BracketInactive(_, bracket_id) => write!(f, "Bracket \"{bracket_id}\" does not accept match result reports"),
+            Error::UpdateBracket(e) => write!(f, "Bracket cannot be updated: {e}"),
         }
     }
 }
@@ -175,6 +191,8 @@ pub struct BracketRequest<'b> {
     pub service_type_id: &'b str,
     /// Advertised start time
     pub start_time: &'b str,
+    /// Automatically validate match if both players agree
+    pub automatic_match_validation: bool,
 }
 
 impl<'a> From<totsugeki::player::Error> for Error<'a> {
@@ -183,7 +201,7 @@ impl<'a> From<totsugeki::player::Error> for Error<'a> {
     }
 }
 
-/// Datase underlying a tournament server
+/// Datase underlying the api
 pub trait DBAccessor {
     /// Clean database to run tests
     ///
@@ -212,7 +230,7 @@ pub trait DBAccessor {
         &'a self,
         bracket_name: &'b str,
         offset: i64,
-    ) -> Result<Vec<Bracket>, Error<'c>>;
+    ) -> Result<Vec<Raw>, Error<'c>>;
 
     /// Find organisers with `organiser_name` filter
     ///
@@ -246,13 +264,13 @@ pub trait DBAccessor {
     ///
     /// # Errors
     /// Returns an error if database could not be accessed
-    fn get_bracket<'a, 'b>(&'a self, bracket_id: BracketId) -> Result<Bracket, Error<'b>>;
+    fn get_bracket<'a, 'b>(&'a self, bracket_id: BracketId) -> Result<Raw, Error<'b>>;
 
     /// List brackets
     ///
     /// # Errors
     /// Returns an error if database could not be accessed
-    fn list_brackets<'a, 'b>(&'a self, offset: i64) -> Result<Vec<Bracket>, Error<'b>>;
+    fn list_brackets<'a, 'b>(&'a self, offset: i64) -> Result<Vec<Raw>, Error<'b>>;
 
     /// List organisers
     ///
@@ -307,4 +325,39 @@ pub trait DBAccessor {
     /// # Errors
     /// Returns an error if result cannot be parsed
     fn validate_result<'a, 'b>(&'a self, match_id: MatchId) -> Result<(), Error<'b>>;
+
+    /// Start bracket and allow participants to report result. Use discussion
+    /// channel to determine which bracket to start.
+    ///
+    /// # Errors
+    /// Returns an error if the database is unavailable
+    fn start_bracket<'a, 'b, 'c>(
+        &'a self,
+        internal_channel_id: &'b str,
+        service_type_id: &'b str,
+        // TODO add optionnal player list from name|id to seed bracket
+    ) -> Result<BracketId, Error<'c>>;
+
+    /// Bar new participants from entering active bracket in discusion channel
+    ///
+    /// This make it easy to seed bracket
+    ///
+    /// # Errors
+    /// Returns an error if there is no active bracket in channel
+    fn bar_from_entering_bracket<'a, 'b, 'c>(
+        &'a self,
+        internal_channel_id: &'b str,
+        service_type_id: &'b str,
+    ) -> Result<BracketId, Error<'c>>;
+
+    /// Seed active bracket in discussion channel
+    ///
+    /// # Errors
+    /// Returns an error if there is no bracket to seed
+    fn seed_bracket<'a, 'b, 'c>(
+        &'a self,
+        internal_channel_id: &'b str,
+        service: &'b str,
+        players: Vec<String>,
+    ) -> Result<BracketId, Error<'c>>;
 }

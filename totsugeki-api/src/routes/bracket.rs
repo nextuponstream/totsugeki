@@ -8,9 +8,9 @@ use poem::Result;
 use poem_openapi::param::Path;
 use poem_openapi::payload::Json;
 use poem_openapi::OpenApi;
-use totsugeki::bracket::POST;
+use totsugeki::bracket::{StartBracketPOST, POST};
 use totsugeki::{
-    bracket::{Bracket, Id as BracketId, POSTResult},
+    bracket::{Id as BracketId, POSTResult, Raw},
     matches::{Id as MatchId, MatchResultPOST, NextMatchGETRequest, NextMatchGETResponseRaw},
 };
 use tracing::info;
@@ -38,6 +38,7 @@ impl Api {
             internal_channel_id: r.channel_internal_id.as_str(),
             service_type_id: r.service_type_id.as_str(),
             start_time: r.start_time.as_str(),
+            automatic_match_validation: r.automatic_match_validation,
         };
         match create_new_active_bracket(&db, db_request) {
             Ok(r) => Ok(Json(r)),
@@ -174,6 +175,24 @@ impl Api {
             Ok(())
         }
     }
+
+    /// Validate result of bracket by TO
+    #[oai(path = "/bracket/start", method = "post")]
+    #[tracing::instrument(name = "Start bracket", skip(self, db, _auth))]
+    async fn start_bracket<'a>(
+        &self,
+        db: SharedDb<'a>,
+        _auth: ApiKeyServiceAuthorization,
+        r: Json<StartBracketPOST>,
+    ) -> Result<Json<BracketId>> {
+        match start(&db, &r.0) {
+            Ok(bracket_id) => Ok(Json(bracket_id)),
+            Err(e) => {
+                log_error(&e);
+                Err(e.into())
+            }
+        }
+    }
 }
 
 /// Database call to create new active bracket from issued discussion channel
@@ -191,7 +210,7 @@ where
 }
 
 /// Call to database to list registered bracket
-fn get_bracket<'a, 'b>(db: &'a SharedDb, bracket_id: BracketId) -> Result<Bracket, Error<'b>>
+fn get_bracket<'a, 'b>(db: &'a SharedDb, bracket_id: BracketId) -> Result<Raw, Error<'b>>
 where
     'a: 'b,
 {
@@ -200,7 +219,7 @@ where
 }
 
 /// Call to database to list registered bracket
-fn list_brackets<'a, 'b>(db: &'a SharedDb, offset: i64) -> Result<Vec<Bracket>, Error<'b>>
+fn list_brackets<'a, 'b>(db: &'a SharedDb, offset: i64) -> Result<Vec<Raw>, Error<'b>>
 where
     'a: 'b,
 {
@@ -213,7 +232,7 @@ fn find_bracket<'a, 'b, 'c>(
     db: &'a SharedDb,
     bracket_name: &'b str,
     offset: i64,
-) -> Result<Vec<Bracket>, Error<'c>>
+) -> Result<Vec<Raw>, Error<'c>>
 where
     'a: 'c,
     'b: 'c,
@@ -258,4 +277,13 @@ where
 {
     let db = db.read()?;
     db.validate_result(match_id)
+}
+
+/// Update bracket to start accepting match results
+fn start<'a, 'b>(db: &'a SharedDb, r: &StartBracketPOST) -> Result<BracketId, Error<'b>>
+where
+    'a: 'b,
+{
+    let db = db.read()?;
+    db.start_bracket(&r.channel_internal_id, &r.service_type_id)
 }

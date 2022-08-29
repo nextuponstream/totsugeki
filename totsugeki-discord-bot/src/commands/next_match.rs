@@ -17,11 +17,11 @@ async fn next_match(ctx: &Context, msg: &Message) -> CommandResult {
     // NOTE: workaround since instrument macro conflict with discords
     let span = span!(Level::INFO, "Next match command");
     span.in_scope(|| async {
-        let tournament_server = {
+        let api = {
             let data_read = ctx.data.read().await;
             data_read
                 .get::<Api>()
-                .expect("Expected TournamentServer in TypeMap.")
+                .expect("Expected Api in TypeMap.")
                 .clone()
         };
         let discussion_channel_id = msg.channel_id;
@@ -29,9 +29,9 @@ async fn next_match(ctx: &Context, msg: &Message) -> CommandResult {
         let player_internal_id = msg.author.id;
 
         let next_match = match next_match_request(
-            get_client(tournament_server.accept_invalid_certs)?,
-            &tournament_server.get_connection_string(),
-            &tournament_server.get_authorization_header(),
+            get_client(api.accept_invalid_certs)?,
+            &api.get_connection_string(),
+            &api.get_authorization_header(),
             &player_internal_id.to_string(),
             discord_channel,
         )

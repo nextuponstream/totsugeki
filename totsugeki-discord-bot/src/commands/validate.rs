@@ -20,17 +20,17 @@ async fn validate(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
     let span = span!(Level::INFO, "Validate match command");
     span.in_scope(|| async {
         let match_id = args.single::<MatchId>()?;
-        let tournament_server = {
+        let api = {
             let data_read = ctx.data.read().await;
             data_read
                 .get::<Api>()
-                .expect("Expected TournamentServer in TypeMap.")
+                .expect("Expected Api in TypeMap.")
                 .clone()
         };
         if let Err(e) = send(
-            get_client(tournament_server.accept_invalid_certs)?,
-            tournament_server.get_connection_string().as_str(),
-            tournament_server.get_authorization_header().as_str(),
+            get_client(api.accept_invalid_certs)?,
+            api.get_connection_string().as_str(),
+            api.get_authorization_header().as_str(),
             match_id,
         )
         .await

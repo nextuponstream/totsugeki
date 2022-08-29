@@ -52,7 +52,7 @@ aliases (`cargo --list`).
 
 ## Developping
 
-For easier development, use `cargo install cargo-watch' and use related
+For easier development, use `cargo install cargo-watch` and use related
 aliases.
 
 ### Checks
@@ -67,5 +67,7 @@ cargo watch -x check-core -x check-frontend
 ### Run tests
 
 ```bash
+# if you want additionnal debug information, prefix command:
+# RUST_LOG=debug cargo test
 cargo test
 ```

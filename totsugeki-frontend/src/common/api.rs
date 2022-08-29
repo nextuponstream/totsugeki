@@ -1,4 +1,4 @@
-//! Tournament server properties
+//! Api properties
 use yew::{html::IntoPropValue, Properties};
 
 /// Totsugeki api as seen by a component
@@ -15,7 +15,7 @@ impl Api {
     }
 }
 
-/// Properties needed to interact with tournament server
+/// Properties needed to interact with api
 #[derive(Eq, PartialEq, Properties)]
 pub struct Props {
     /// API

@@ -7,7 +7,7 @@
 #![allow(clippy::unused_async)]
 #![warn(clippy::unwrap_used)]
 
-//! All requests made by external services to the tournament server
+//! All requests made by external services to the api
 //!
 //! **Note**: reqwest `danger_accept_invalid_certs` method does not compile to wasm target
 //! which is why reqwest client is passed as a parameter. frontend is the only crate compiling to wasm
@@ -23,12 +23,13 @@ pub mod join;
 pub mod next_match;
 pub mod organiser;
 pub mod report;
+pub mod start;
 pub mod validate;
 
 /// Helper for forming url
 const HTTP_PREFIX: &str = "https://";
 
-/// Error while making request to the tournament server
+/// Error while making request to the api
 #[derive(Debug)]
 pub enum RequestError {
     /// Request error
@@ -89,11 +90,11 @@ impl From<BracketParsingError> for RequestError {
 /// Returns an error when the api is unavailable
 pub async fn clean_database(
     client: reqwest::Client,
-    tournament_server_url: &str,
+    api_url: &str,
     authorization_header: &str,
 ) -> Result<(), RequestError> {
     let res = client
-        .delete(format!("{HTTP_PREFIX}{tournament_server_url}/clean"))
+        .delete(format!("{HTTP_PREFIX}{api_url}/clean"))
         .header("X-API-Key", authorization_header)
         .send()
         .await?;
@@ -107,11 +108,11 @@ pub async fn clean_database(
 /// Returns an error when the api is unavailable
 pub async fn get_service_token(
     client: reqwest::Client,
-    tournament_server_url: &str,
+    api_url: &str,
 ) -> Result<ServiceRegisterPOST, RequestError> {
     let res = client
         .post(format!(
-            "{HTTP_PREFIX}{tournament_server_url}/service/register/test-service/for-tests"
+            "{HTTP_PREFIX}{api_url}/service/register/test-service/for-tests"
         ))
         .send()
         .await?;

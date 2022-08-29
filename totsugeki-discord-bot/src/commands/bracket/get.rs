@@ -18,17 +18,17 @@ async fn get(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     span.in_scope(|| async {
         let offset = args.single::<i64>()?;
 
-        let tournament_server = {
+        let api = {
             let data_read = ctx.data.read().await;
             data_read
                 .get::<Api>()
-                .expect("Expected TournamentServer in TypeMap.")
+                .expect("Expected Api in TypeMap.")
                 .clone()
         };
 
         let brackets = match fetch(
-            get_client(tournament_server.accept_invalid_certs)?,
-            tournament_server.get_connection_string().as_str(),
+            get_client(api.accept_invalid_certs)?,
+            api.get_connection_string().as_str(),
             None,
             offset,
         )

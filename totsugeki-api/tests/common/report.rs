@@ -60,7 +60,11 @@ pub async fn both_player_report_match_result(
     )
     .await;
 
-    assert_eq!(match_id_1, match_id_2);
+    assert_eq!(
+        match_id_1, match_id_2,
+        "players with seed {} and {} are not playing the same match",
+        player_internal_id_1, player_internal_id_2
+    );
 
     match_id_1
 }

@@ -9,7 +9,7 @@ use totsugeki::organiser::Organiser;
 /// Returns an error when the api is unavailable
 pub async fn fetch(
     client: reqwest::Client,
-    tournament_server_url: &str,
+    api_url: &str,
     organiser_name_filter: Option<String>,
     offset: i64,
 ) -> Result<Vec<Organiser>, RequestError> {
@@ -24,9 +24,7 @@ pub async fn fetch(
         None => "".to_string(),
     };
     let res = client
-        .get(format!(
-            "{HTTP_PREFIX}{tournament_server_url}/organiser{filter}/{offset}"
-        ))
+        .get(format!("{HTTP_PREFIX}{api_url}/organiser{filter}/{offset}"))
         .send()
         .await?;
     let organisers: Vec<Organiser> = res.json().await?;

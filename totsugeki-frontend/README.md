@@ -8,8 +8,8 @@ Website in web assembly.
 
 Use node lts: `nvm install --lts`
 
-Tournament server address and other environment variables are loaded at build
-time. Load environment variable from `.env` file at the root of this repo:
+Api address and other environment variables are loaded at build time. Load
+environment variable from `.env` file at the root of this repo:
 `export $(xargs < .env)`
 
 ```bash
