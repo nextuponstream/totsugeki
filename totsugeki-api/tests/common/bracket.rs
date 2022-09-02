@@ -6,8 +6,10 @@ use chrono::prelude::*;
 use poem::test::{TestJson, TestJsonObject};
 use reqwest::StatusCode;
 use totsugeki::{
-    bracket::{Format, Id as BracketId, POSTResult, Raw, StartBracketPOST, GET, POST},
-    matches::{Id as MatchId, Match, MatchGET, Opponent, ReportedResult},
+    bracket::{Id as BracketId, POSTResult, Raw, StartBracketPOST, GET, POST},
+    format::Format,
+    matches::{Id as MatchId, Match, MatchGET, ReportedResult},
+    opponent::Opponent,
     organiser::Id as OrganiserId,
     player::{Id as PlayerId, Player},
     seeding::Method as SeedingMethod,
@@ -26,7 +28,11 @@ pub fn parse_bracket_post_response(response: TestJson) -> POSTResult {
     let discussion_channel_id =
         DiscussionChannelId::parse_str(discussion_channel_id_raw).expect("discussion channel id");
 
-    POSTResult::from(bracket_id, organiser_id, discussion_channel_id)
+    POSTResult {
+        bracket_id,
+        organiser_id,
+        discussion_channel_id,
+    }
 }
 
 fn parse_players(response: &TestJsonObject) -> Vec<Player> {
@@ -130,12 +136,8 @@ pub fn parse_matches(response: &TestJsonObject) -> Vec<Match> {
                 .get("players")
                 .string_array()
                 .iter()
-                .map(|p| match *p {
-                    "BYE" => Opponent::Bye,
-                    "?" => Opponent::Unknown,
-                    _ => Opponent::Player(PlayerId::parse_str(p).expect("uuid")),
-                })
-                .collect::<Vec<Opponent>>()
+                .map(|p| p.parse::<Opponent>().expect("opponent"))
+                .collect::<Vec<_>>()
                 .try_into()
                 .expect("2 opponents");
             let seeds = m
@@ -146,10 +148,8 @@ pub fn parse_matches(response: &TestJsonObject) -> Vec<Match> {
                 .collect::<Vec<usize>>()
                 .try_into()
                 .expect("seeds");
-            let winner = m.get("winner").string();
-            let winner = Opponent::try_from(winner.to_string()).expect("winner");
-            let looser = m.get("looser").string();
-            let looser = Opponent::try_from(looser.to_string()).expect("looser");
+            let winner = m.get("winner").string().parse().expect("winner");
+            let looser = m.get("looser").string().parse().expect("looser");
 
             let reported_results = m.get("reported_results").string_array();
             let rr_1 = reported_results
@@ -164,7 +164,15 @@ pub fn parse_matches(response: &TestJsonObject) -> Vec<Match> {
                 .expect("parsed reported result");
             let reported_results = [rr_1.0, rr_2.0];
 
-            Match::from(id, players, seeds, winner, looser, reported_results).expect("match")
+            Match::try_from(MatchGET::new(
+                id,
+                players,
+                seeds,
+                winner,
+                looser,
+                reported_results,
+            ))
+            .expect("match")
         })
         .collect::<Vec<Match>>()
 }
@@ -232,7 +240,6 @@ pub async fn players_join_new_bracket_and_bracket_starts(
         automatic_match_validation,
     )
     .await;
-    tournament_organiser_starts_bracket(&test_api, channel_internal_id, service).await;
     let bracket = n_players_join_bracket(
         &test_api,
         participants,
@@ -241,6 +248,7 @@ pub async fn players_join_new_bracket_and_bracket_starts(
         post_result.bracket_id,
     )
     .await;
+    tournament_organiser_starts_bracket(&test_api, channel_internal_id, service).await;
     (bracket, organiser_name)
 }
 

@@ -12,6 +12,9 @@ pub async fn validate_match_for_predicted_seeds(
     matches: &Vec<MatchGET>,
 ) {
     debug!("Tournament organiser validates match for seed {x} and {y}");
+    for m in matches {
+        debug!("{m:?}");
+    }
     let match_to_validate = matches
         .iter()
         .find(|m| m.seeds[0] == x && m.seeds[1] == y)

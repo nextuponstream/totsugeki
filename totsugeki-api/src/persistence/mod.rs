@@ -7,13 +7,17 @@ use std::fmt::Display;
 use std::str::FromStr;
 use std::sync::{PoisonError, RwLockReadGuard, RwLockWriteGuard};
 use totsugeki::matches::MatchResultParsingError;
+use totsugeki::DiscussionChannelId;
 use totsugeki::{
-    bracket::{Error as BracketError, FormatParsingError, Id as BracketId, POSTResult, Raw},
+    bracket::{
+        CreateRequest, Error as BracketError, Id as BracketId, POSTResult,
+        ParsingError as BracketParsingError, Raw,
+    },
+    format::ParsingError as FormatParsingError,
     join::POSTResponseBody,
-    matches::{Error as MatchError, Id as MatchId, NextMatchGETResponseRaw},
+    matches::{Id as MatchId, NextMatchGETResponseRaw},
     organiser::Organiser,
-    player::Id as PlayerId,
-    seeding::{Error as SeedingError, ParsingError as SeedingParsingError},
+    seeding::ParsingError as SeedingParsingError,
 };
 
 /// Error while parsing ``InteralIdType`` of service used
@@ -48,69 +52,61 @@ pub enum Error<'a> {
     PoisonedReadLock(PoisonError<DatabaseReadLock<'a>>),
     /// Lock to the database is poisoned when attempting to write
     PoisonedWriteLock(PoisonError<DatabaseWriteLock<'a>>),
-    /// Database error with error code
-    Code(String),
-    /// Denied access
+    /// User was denied access to ressource
     Denied(String),
     /// Parsing error
     Parsing(String),
-    /// Unknown
-    Unknown(String),
+    /// Data is not present when it should be
+    Corrupted(String),
     /// Bracket is not registered
     UnregisteredBracket(BracketId),
     /// Discussion channel for `Service` using provided id is not registered
     UnregisteredDiscussionChannel(Service, String),
-    /// No active bracket for provided discussion channel
-    NoActiveBracketInDiscussionChannel,
+    /// User searched for active bracket in discussion channel but there was
+    /// none to be found
+    NoActiveBracketInDiscussionChannel(DiscussionChannelId),
     /// Player was not found
-    PlayerNotFound,
-    /// Next match was not found for this bracket
-    NextMatchNotFound,
-    /// There is either not enough players in bracket
-    NoNextMatch,
-    /// To many players causes math overflow
-    Seeding(SeedingError),
-    /// No opponent was found to report result against
-    NoOpponent,
-    /// Match could not be updated
-    Match(MatchError),
+    UnregisteredPlayer,
     /// Player searched for his next match in bracket but his was eliminated
     EliminatedFromBracket,
-    /// Organiser was not found. Organiser used `Service` with provided id
-    OrganiserNotFound(Service, String),
-    /// Bracket is inactive
-    BracketInactive(PlayerId, BracketId),
     /// Cannot update bracket
     UpdateBracket(BracketError),
+    /// Query cannot be answered for bracket
+    BadBracketQuery(BracketError),
+    /// Unknown match
+    UnknownMatch(MatchId),
+}
+
+impl<'a> From<BracketParsingError> for Error<'a> {
+    fn from(e: BracketParsingError) -> Self {
+        Self::Parsing(format!("Could not parse bracket: {e}"))
+    }
 }
 
 impl<'a> From<BracketError> for Error<'a> {
     fn from(e: BracketError) -> Self {
-        Self::UpdateBracket(e)
-    }
-}
-
-impl<'a> From<chrono::ParseError> for Error<'a> {
-    fn from(e: chrono::ParseError) -> Self {
-        Self::Parsing(format!("Timestamp: {e}"))
+        match e {
+            BracketError::Seeding(_)
+            | BracketError::MissingArgument(_, _)
+            | BracketError::PlayerUpdate(_)
+            | BracketError::UnknownMatch(_)
+            | BracketError::Match(_)
+            | BracketError::UnknownPlayer(_, _)
+            | BracketError::Players(_, _)
+            | BracketError::BarredFromEntering(_, _)
+            | BracketError::AcceptResults(_, _)
+            | BracketError::NoMatchToPlay(_, _) => Self::UpdateBracket(e),
+            BracketError::NoNextMatch(_)
+            | BracketError::NoGeneratedMatches
+            | BracketError::EliminatedFromBracket(_)
+            | BracketError::PlayerIsNotParticipant(_, _) => Self::BadBracketQuery(e),
+        }
     }
 }
 
 impl<'a> From<MatchResultParsingError> for Error<'a> {
     fn from(e: MatchResultParsingError) -> Self {
         Self::Parsing(format!("Match result: {e}"))
-    }
-}
-
-impl<'a> From<MatchError> for Error<'a> {
-    fn from(e: MatchError) -> Self {
-        Self::Match(e)
-    }
-}
-
-impl<'a> From<SeedingError> for Error<'a> {
-    fn from(e: totsugeki::seeding::Error) -> Self {
-        Self::Seeding(e)
     }
 }
 
@@ -129,7 +125,7 @@ impl<'a> From<PoisonError<DatabaseWriteLock<'a>>> for Error<'a> {
 impl<'a> Display for Error<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::Code(msg) | Error::Unknown(msg) | Error::Parsing(msg) => writeln!(f, "{msg}"),
+            Error::Corrupted(msg) | Error::Parsing(msg) => writeln!(f, "{msg}"),
             Error::Denied(msg) => writeln!(f, "Reason: {msg}"),
             Error::PoisonedReadLock(e) => e.fmt(f),
             Error::PoisonedWriteLock(e) => e.fmt(f),
@@ -138,19 +134,14 @@ impl<'a> Display for Error<'a> {
                 f,
                 "Discussion channel is not registered"
             ),
-            Error::NoActiveBracketInDiscussionChannel => {
-                writeln!(f, "There is no active bracket in this discussion channel")
+            Error::NoActiveBracketInDiscussionChannel(id) => {
+                writeln!(f, "There is no active bracket in discussion channel ({id})")
             }
-            Error::PlayerNotFound => writeln!(f, "Player is not registered"),
-            Error::NextMatchNotFound => writeln!(f, "Next match was not found"),
-            Error::NoNextMatch => write!(f, "There is no match for you to play."),
-            Error::Seeding(e) => e.fmt(f),
-            Error::NoOpponent => write!(f, "No opponent"),
-            Error::Match(_e) => write!(f, "Match could not be updated"),
+            Error::UnregisteredPlayer => writeln!(f, "Player is not registered"),
             Error::EliminatedFromBracket => write!(f, "There is no match for you to play because you have been eliminated from the bracket."),
-            Error::OrganiserNotFound(_, _) => write!(f, "Organiser not found"),
-            Error::BracketInactive(_, bracket_id) => write!(f, "Bracket \"{bracket_id}\" does not accept match result reports"),
             Error::UpdateBracket(e) => write!(f, "Bracket cannot be updated: {e}"),
+            Error::BadBracketQuery(e) => write!(f, "Unable to answer query: {e}"),
+            Error::UnknownMatch(id) => write!(f, "Unknown match: {id}"),
         }
     }
 }
@@ -173,28 +164,6 @@ impl<'a> From<uuid::Error> for Error<'a> {
     }
 }
 
-/// Parameters to create a bracket
-pub struct BracketRequest<'b> {
-    /// requested bracket name
-    pub bracket_name: &'b str,
-    /// requested bracket format
-    pub bracket_format: &'b str,
-    /// seeding method of requested bracket
-    pub seeding_method: &'b str,
-    /// Organiser name of requested bracket
-    pub organiser_name: &'b str,
-    /// Organiser id of requested bracket while using service
-    pub organiser_internal_id: &'b str,
-    /// Id of internal channel
-    pub internal_channel_id: &'b str,
-    /// Type of service used to make request
-    pub service_type_id: &'b str,
-    /// Advertised start time
-    pub start_time: &'b str,
-    /// Automatically validate match if both players agree
-    pub automatic_match_validation: bool,
-}
-
 impl<'a> From<totsugeki::player::Error> for Error<'a> {
     fn from(e: totsugeki::player::Error) -> Self {
         Self::Parsing(format!("could not form players group: {e:?}")) // FIXME don't use string
@@ -213,8 +182,7 @@ pub trait DBAccessor {
     ///
     /// # Errors
     /// Returns error if bracket could not be persisted
-    fn create_bracket<'a, 'b, 'c>(&'a self, r: BracketRequest<'b>)
-        -> Result<POSTResult, Error<'c>>;
+    fn create_bracket<'a, 'b, 'c>(&'a self, r: CreateRequest<'b>) -> Result<POSTResult, Error<'c>>;
 
     /// Create tournament organiser
     ///

@@ -56,31 +56,23 @@ fn log_error(e: &Error) {
     match e {
         Error::PoisonedReadLock(e) => error!("{e}"),
         Error::PoisonedWriteLock(e) => error!("{e}"),
-        Error::Code(e) | Error::Unknown(e) => error!("{e}"),
+        Error::Corrupted(e) => error!("Data corruption: {e}"),
         Error::Denied(e) => warn!("{e}"),
         Error::Parsing(e) => warn!("User input could not be parsed: {e}"),
         Error::UnregisteredBracket(b_id) => warn!("User searched for unknown bracket: {b_id}"),
         Error::UnregisteredDiscussionChannel(service, id) => {
             warn!("Unregistered discussion channel requested for service \"{service}\" with id \"{id}\"");
         }
-        Error::NoActiveBracketInDiscussionChannel => {
-            warn!("User did not find active bracket in discussion channel");
+        Error::NoActiveBracketInDiscussionChannel(id) => {
+            warn!("User did not find active bracket in discussion channel \"{id}\"");
         }
-        Error::PlayerNotFound => warn!("A user searched for an unknown player"),
-        Error::NextMatchNotFound => error!("User could not get their next match"),
-        // TODO add more info for debugging
-        Error::NoNextMatch => {
-            warn!("User wanted to know their next match but there is none for them");
-        }
-        Error::Seeding(e) => error!("Seeding is impossible: {e}"),
-        Error::NoOpponent => warn!("User searched for opponent but there was none"),
-        Error::Match(e) => warn!("User could not update match status: {e}"),
+        Error::UnregisteredPlayer => warn!("User searched for an unregistered player"),
         Error::EliminatedFromBracket => {
             warn!("Player searched for their next match but they were eliminated from the bracket");
         }
-        Error::OrganiserNotFound(service, id) => warn!("Requested organiser was not found. Organiser used service \"{service}\" with id: \"{id}\""),
-        Error::BracketInactive(user_id, bracket_id) => warn!("User {user_id} reported a result for bracket \"{bracket_id}\" but it is inactive"),
         Error::UpdateBracket(e) => warn!("Bracket could not be updated: {e}"),
+        Error::BadBracketQuery(e) => warn!("Bad bracket query: {e}"),
+        Error::UnknownMatch(match_id) => warn!("User wants to updated unknown match: {match_id}"),
     }
 }
 

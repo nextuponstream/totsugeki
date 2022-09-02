@@ -6,6 +6,7 @@ use chrono::prelude::*;
 use common::{
     bracket::{
         parse_bracket_get_response, parse_bracket_post_response, parse_brackets_get_response,
+        players_join_new_bracket_and_bracket_starts,
     },
     db_types_to_test,
     next_match::assert_next_matches,
@@ -15,12 +16,13 @@ use poem::http::StatusCode;
 use std::collections::HashSet;
 use test_log::test;
 use totsugeki::{
-    bracket::{Format, Id as BracketId, POST},
+    bracket::{Id as BracketId, POST},
+    format::Format,
     join::{POSTRequestBody, POSTResponseBody},
     matches::NextMatchGETRequest,
     organiser::Id as OrganiserId,
     player::Id as PlayerId,
-    seeding::Method as SeedingMethod,
+    seeding::Method,
 };
 use totsugeki_api::Service;
 use tracing::{info, trace};
@@ -47,7 +49,7 @@ async fn players_join_bracket() {
         let channel_internal_id = "1".to_string();
         let service_type_id = Service::Discord.to_string();
         let format = Format::SingleElimination.to_string();
-        let seeding_method = SeedingMethod::Strict.to_string();
+        let seeding_method = Method::Strict.to_string();
         let start_time = Utc.ymd(2000, 1, 1).and_hms(0, 0, 0).to_string();
         let body = POST {
             bracket_name: bracket_name.clone(),
@@ -98,7 +100,7 @@ async fn players_join_bracket() {
             // When a player joins, matches get updated automatically
             let res = test_api
                 .cli
-                .get(format!("/bracket/{}", bracket_post_resp.get_bracket_id()))
+                .get(format!("/bracket/{}", bracket_post_resp.bracket_id))
                 .send()
                 .await;
             res.assert_status_is_ok();
@@ -134,14 +136,14 @@ async fn players_join_bracket() {
             brackets.iter().any(|b| {
                 let mut unique_players = HashSet::new();
 
-                b.get_id() == bracket_post_resp.get_bracket_id()
-                    && b.get_bracket_name() == bracket_name
-                    && b.get_player_ids().len() == 8
+                b.bracket_id == bracket_post_resp.bracket_id
+                    && b.bracket_name == bracket_name
+                    && b.players.len() == 8
                     // https://stackoverflow.com/a/46767732
-                    && b.get_player_ids().iter().all(|p| unique_players.insert(p))
+                    && b.players.iter().all(|p| unique_players.insert(p))
             }),
             "no matching bracket id for \"{}\" in:\n {brackets:?}",
-            bracket_post_resp.get_bracket_id()
+            bracket_post_resp.bracket_id
         );
 
         test_api.clean_db().await;
@@ -162,14 +164,13 @@ async fn bracket_initial_next_opponent_are_correct() {
     for db_type in db_types_to_test() {
         let test_api = test_api(db_type).await;
 
-        // Given my-favorite-to has created a bracket named weekly
         let bracket_name = "weekly".to_string(); // TODO generate name
         let organiser_name = "my-favorite-to".to_string();
         let organiser_internal_id = "1".to_string();
         let channel_internal_id = "1".to_string();
         let service_type_id = Service::Discord;
         let format = Format::SingleElimination.to_string();
-        let seeding_method = SeedingMethod::Strict.to_string();
+        let seeding_method = Method::Strict.to_string();
         let start_time = Utc.ymd(2000, 1, 1).and_hms(0, 0, 0).to_string();
         let body = POST {
             bracket_name: bracket_name.clone(),
@@ -236,7 +237,7 @@ async fn bracket_initial_next_opponent_are_correct() {
             // When a player joins, matches get updated automatically
             let res = test_api
                 .cli
-                .get(format!("/bracket/{}", bracket_post_resp.get_bracket_id()))
+                .get(format!("/bracket/{}", bracket_post_resp.bracket_id))
                 .send()
                 .await;
             res.assert_status_is_ok();
@@ -262,8 +263,8 @@ async fn bracket_initial_next_opponent_are_correct() {
                         .send()
                         .await;
                     res.assert_status(StatusCode::NOT_FOUND);
-                    res.assert_text("There is no match for you to play.").await;
-                    trace!("Expected answer was that match is not found (404)");
+                    res.assert_text("Unable to answer query: No matches were generated yet")
+                        .await;
                 }
                 3 => {
                     assert_next_matches(
@@ -345,5 +346,52 @@ async fn reporting_result_using_service_is_protected() {
         let test_api = test_api(db_type).await;
         let res = test_api.cli.post("/bracket/report").send().await;
         res.assert_status(StatusCode::UNAUTHORIZED);
+    }
+}
+
+#[tokio::test]
+async fn new_participants_cannot_join_bracket_after_it_has_started() {
+    for db_type in db_types_to_test() {
+        let test_api = test_api(db_type).await;
+        let organiser_internal_id = "1";
+        let channel_internal_id = "1";
+        let format = Format::default();
+        let seeding_method = Method::default();
+        let service = Service::Discord;
+        let (bracket, _organiser_name) = players_join_new_bracket_and_bracket_starts(
+            &test_api,
+            organiser_internal_id,
+            channel_internal_id,
+            service,
+            format,
+            seeding_method,
+            Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
+            3,
+            false,
+        )
+        .await;
+        let id = bracket.bracket_id;
+
+        let player_internal_id = "4".to_string();
+        let player_name = "player4".to_string();
+        let body = POSTRequestBody::new(
+            player_internal_id,
+            player_name,
+            channel_internal_id.to_string(),
+            service.to_string(),
+        );
+
+        let resp = test_api
+            .cli
+            .post("/join")
+            .header("X-API-Key", test_api.authorization_header.as_str())
+            .body_json(&body)
+            .send()
+            .await;
+        resp.assert_status(StatusCode::FORBIDDEN);
+        resp.assert_text(format!(
+            "Bracket cannot be updated: Bracket \"{id}\" does not accept new participants"
+        ))
+        .await;
     }
 }

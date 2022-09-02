@@ -10,7 +10,8 @@ use common::{
 use poem::test::TestJson;
 use std::collections::{HashMap, HashSet};
 use totsugeki::{
-    bracket::{FinalizedBrackets, Format, Id as BracketId, POST},
+    bracket::{FinalizedBrackets, Id as BracketId, POST},
+    format::Format,
     organiser::{Id as OrganiserId, Organiser},
     seeding::Method,
     DiscussionChannelId,
@@ -92,11 +93,11 @@ async fn new_organiser_is_generated_when_bracket_is_created_if_unknown() {
 
         assert!(
             organisers.iter().any(
-                |o| o.get_organiser_id() == bracket_post_resp.get_organiser_id()
+                |o| o.get_id() == bracket_post_resp.organiser_id
                     && o.get_organiser_name() == organiser_name.as_str()
             ),
             "no matching organiser id for \"{}\" and name \"{organiser_name}\" in:\n {organisers:?}",
-            bracket_post_resp.get_organiser_id()
+            bracket_post_resp.organiser_id
         );
 
         test_api.clean_db().await;
@@ -184,20 +185,20 @@ async fn running_two_brackets_at_the_same_time() {
 
         assert!(
             organisers.iter().any(
-                |o| o.get_organiser_id() == bracket_post_resp_game_1.get_organiser_id()
+                |o| o.get_id() == bracket_post_resp_game_1.organiser_id
                     && o.get_organiser_name() == organiser_name.as_str()
                     && o.get_active_brackets().iter().any(|b|
-                        b.0 == &bracket_post_resp_game_1.get_discussion_channel_id()
-                        && b.1 == &bracket_post_resp_game_1.get_bracket_id()
+                        b.0 == &bracket_post_resp_game_1.discussion_channel_id
+                        && b.1 == &bracket_post_resp_game_1.bracket_id
                     )
                     && o.get_active_brackets().iter().any(|b|
-                        b.0 == &bracket_post_resp_game_2.get_discussion_channel_id()
-                        && b.1 == &bracket_post_resp_game_2.get_bracket_id()
+                        b.0 == &bracket_post_resp_game_2.discussion_channel_id
+                        && b.1 == &bracket_post_resp_game_2.bracket_id
                     )
             ),
             "no matching organiser id for weekly \"{}\", weekly-return \"{}\", with organiser name \"{organiser_name}\" in:\n {organisers:?}",
-            bracket_post_resp_game_1.get_organiser_id(),
-            bracket_post_resp_game_2.get_organiser_id()
+            bracket_post_resp_game_1.organiser_id,
+            bracket_post_resp_game_2.organiser_id
         );
 
         test_api.clean_db().await;
