@@ -1,6 +1,6 @@
 //! bracket routes
 use crate::log_error;
-use crate::persistence::{BracketRequest, Error};
+use crate::persistence::Error;
 use crate::ApiKeyServiceAuthorization;
 use crate::SharedDb;
 use crate::GET;
@@ -10,7 +10,7 @@ use poem_openapi::payload::Json;
 use poem_openapi::OpenApi;
 use totsugeki::bracket::{StartBracketPOST, POST};
 use totsugeki::{
-    bracket::{Id as BracketId, POSTResult, Raw},
+    bracket::{CreateRequest, Id as BracketId, POSTResult, Raw},
     matches::{Id as MatchId, MatchResultPOST, NextMatchGETRequest, NextMatchGETResponseRaw},
 };
 use tracing::info;
@@ -29,7 +29,7 @@ impl Api {
         _auth: ApiKeyServiceAuthorization,
         r: Json<POST>,
     ) -> Result<Json<POSTResult>> {
-        let db_request = BracketRequest {
+        let db_request = CreateRequest {
             bracket_name: r.bracket_name.as_str(),
             bracket_format: r.format.as_str(),
             seeding_method: r.seeding_method.as_str(),
@@ -198,7 +198,7 @@ impl Api {
 /// Database call to create new active bracket from issued discussion channel
 fn create_new_active_bracket<'a, 'b, 'c>(
     db: &'a SharedDb,
-    r: BracketRequest<'b>,
+    r: CreateRequest<'b>,
 ) -> Result<POSTResult, Error<'c>>
 where
     'a: 'c,

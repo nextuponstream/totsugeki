@@ -118,12 +118,12 @@ impl Component for View {
                                  <tr>
                                     <td>
                                         <Link<Route>
-                                            to={Route::Bracket { bracket_id: b.get_id() }}>
-                                            {b.get_bracket_name()}
+                                            to={Route::Bracket { bracket_id: b.bracket_id }}>
+                                            {b.bracket_name.clone()}
                                         </Link<Route>>
                                     </td>
-                                    <td>{b.get_start_time().to_string()}</td>
-                                    <td>{b.get_id()}</td>
+                                    <td>{b.start_time.to_string()}</td>
+                                    <td>{b.bracket_id}</td>
                                  </tr>
                              }).collect::<Html>()
                          }</tbody>

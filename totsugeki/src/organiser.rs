@@ -1,6 +1,6 @@
 //! Organiser domain
 
-use crate::{bracket::Id as BracketId, ActiveBrackets};
+use crate::{bracket::Id as BracketId, ActiveBrackets, DiscussionChannelId};
 #[cfg(feature = "poem-openapi")]
 use poem_openapi::Object;
 use serde::{Deserialize, Serialize};
@@ -30,13 +30,9 @@ pub struct Organiser {
 impl Organiser {
     /// Create new organiser of events
     #[must_use]
-    pub fn new(
-        organiser_id: Id,
-        organiser_name: String,
-        active_brackets: Option<ActiveBrackets>,
-    ) -> Self {
+    pub fn new(organiser_name: String, active_brackets: Option<ActiveBrackets>) -> Self {
         Self {
-            organiser_id,
+            organiser_id: Id::new_v4(),
             organiser_name,
             active_brackets: if let Some(a) = active_brackets {
                 a
@@ -65,7 +61,7 @@ impl Organiser {
 
     #[must_use]
     /// Get UUID of organiser
-    pub fn get_organiser_id(&self) -> Id {
+    pub fn get_id(&self) -> Id {
         self.organiser_id
     }
 
@@ -85,6 +81,21 @@ impl Organiser {
     /// Get active brackets
     pub fn get_finalized_brackets(&self) -> FinalizedBrackets {
         self.finalized_brackets.clone()
+    }
+
+    #[must_use]
+    /// Set active bracket in discussion channel for organiser. Returns
+    /// updated organiser
+    pub fn add_active_bracket(
+        self,
+        discussion_channel_id: DiscussionChannelId,
+        bracket_id: BracketId,
+    ) -> Self {
+        let mut updated_organiser = self;
+        updated_organiser
+            .active_brackets
+            .insert(discussion_channel_id, bracket_id);
+        updated_organiser
     }
 }
 
@@ -113,7 +124,7 @@ pub struct GETResponse {
 impl From<Organiser> for GETResponse {
     fn from(o: Organiser) -> Self {
         Self {
-            organiser_id: o.get_organiser_id(),
+            organiser_id: o.get_id(),
             organiser_name: o.get_organiser_name(),
             active_brackets: o.get_active_brackets(),
             finalized_brackets: o.get_finalized_brackets(),

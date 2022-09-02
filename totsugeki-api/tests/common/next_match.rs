@@ -5,15 +5,17 @@ use poem::test::TestJson;
 use reqwest::StatusCode;
 use totsugeki::{
     bracket::Id as BracketId,
-    matches::{Id as MatchId, NextMatchGET, NextMatchGETRequest, Opponent},
+    matches::{Id as MatchId, NextMatchGET, NextMatchGETRequest},
+    opponent::Opponent,
     player::Id as PlayerId,
 };
 use totsugeki_api::Service;
+use tracing::trace;
 
 /// Parse response for next match
 pub fn parse_next_match_get_response(r: TestJson) -> NextMatchGET {
     let o = r.value().object();
-    let opponent = Opponent::try_from(o.get("opponent").string().to_string()).expect("opponent");
+    let opponent = o.get("opponent").string().parse().expect("opponent");
     let match_id = MatchId::parse_str(o.get("match_id").string()).expect("match id");
     let bracket_id = BracketId::parse_str(o.get("bracket_id").string()).expect("bracket id");
     let player_name = o.get("player_name").string().to_string();
@@ -144,6 +146,7 @@ pub async fn assert_player_is_eliminated(
     channel_internal_id: &str,
     service_type_id: Service,
 ) {
+    trace!("Asserting player is eliminated");
     let body = NextMatchGETRequest {
         player_internal_id: player.to_string(),
         channel_internal_id: channel_internal_id.to_string(),
@@ -158,7 +161,7 @@ pub async fn assert_player_is_eliminated(
         .await;
     res.assert_status(StatusCode::NOT_FOUND);
     res.assert_text(
-        "There is no match for you to play because you have been eliminated from the bracket.",
+        "Unable to answer query: There is no match for you to play because you were eliminated from the bracket",
     )
     .await;
 }
@@ -170,6 +173,7 @@ pub async fn assert_player_has_no_next_match(
     channel_internal_id: &str,
     service_type_id: Service,
 ) {
+    trace!("Asserting player has no next match");
     let body = NextMatchGETRequest {
         player_internal_id: player.to_string(),
         channel_internal_id: channel_internal_id.to_string(),
@@ -183,5 +187,8 @@ pub async fn assert_player_has_no_next_match(
         .send()
         .await;
     res.assert_status(StatusCode::NOT_FOUND);
-    res.assert_text("There is no match for you to play.").await;
+    res.assert_text(
+        "Unable to answer query: There is no match for you to play because you won the bracket",
+    )
+    .await;
 }

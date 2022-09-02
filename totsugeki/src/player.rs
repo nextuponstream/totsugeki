@@ -118,9 +118,9 @@ impl Players {
         Ok(players)
     }
 
-    /// Return players ids
+    /// Return players ids as a list
     #[must_use]
-    pub fn get_players(self) -> Vec<Player> {
+    pub fn get_players_list(self) -> Vec<Player> {
         self.players
     }
 

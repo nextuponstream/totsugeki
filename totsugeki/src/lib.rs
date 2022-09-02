@@ -15,8 +15,10 @@ use std::sync::{LockResult, RwLock, RwLockReadGuard};
 use uuid::Uuid;
 
 pub mod bracket;
+pub mod format;
 pub mod join;
 pub mod matches;
+pub mod opponent;
 pub mod organiser;
 pub mod player;
 pub mod seeding;

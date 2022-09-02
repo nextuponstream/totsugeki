@@ -52,10 +52,13 @@ async fn join(ctx: &Context, msg: &Message, mut _args: Args) -> CommandResult {
                     RequestError::Request(ref re, ref e_msg) => {
                         msg.reply(ctx, e_msg.as_str()).await?;
                         if let Some(status) = re.status() {
-                            if status == StatusCode::BAD_REQUEST {
-                                warn!("{e_msg}");
-                                return Ok::<CommandResult, CommandError>(Ok(()));
-                            }
+                            match status {
+                                StatusCode::BAD_REQUEST | StatusCode::FORBIDDEN => {
+                                    warn!("{e_msg}");
+                                    return Ok::<CommandResult, CommandError>(Ok(()));
+                                }
+                                _ => {}
+                            };
                         }
                         error!("{e_msg}");
                     }

@@ -1,14 +1,15 @@
 //! Create bracket
 
 use crate::get_client;
-use crate::{Api, DiscordChannel};
+use crate::Api;
 use chrono::{NaiveDateTime, Utc};
 use chrono_tz::Tz;
 use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandError, CommandResult};
 use serenity::model::channel::Message;
 use serenity::prelude::*;
-use totsugeki::bracket::RequestParameters;
+use totsugeki::bracket::POST;
+use totsugeki_api::Service;
 use totsugeki_api_request::bracket::create as create_bracket;
 use tracing::{info, span, warn, Level};
 
@@ -44,7 +45,6 @@ async fn create(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         let organiser_id = organiser_id.to_string();
         let organiser_name = msg.guild(&ctx).expect("guild").name;
         let discussion_channel_id = msg.channel_id;
-        let discord_channel = DiscordChannel::new(None, discussion_channel_id);
         let start_time = match NaiveDateTime::parse_from_str(start_time.as_str(), "%Y-%m-%d:%H:%M")
         {
             Ok(s) => s,
@@ -89,24 +89,25 @@ async fn create(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         let start_time = start_time.with_timezone(&Utc);
         let start_time= format!("{start_time:?}");
 
-        let parameters = RequestParameters {
-            bracket_name: bracket_name.as_str(),
-            bracket_format: format.as_str(),
-            organiser_name: organiser_name.as_str(),
-            organiser_id: organiser_id.as_str(),
-            discussion_channel: discord_channel,
-            seeding_method: seeding_method.as_str(),
-            start_time: start_time.as_str(),
-            automatic_match_validation,
+        let body = POST {
+            bracket_name: bracket_name.clone(),
+            organiser_name,
+            organiser_internal_id: organiser_id,
+            channel_internal_id: discussion_channel_id.to_string(),
+            service_type_id: Service::Discord.to_string(),
+            format,
+            seeding_method,
+            start_time,
+            automatic_match_validation
         };
-        info!("{:?}", parameters);
         create_bracket(
             get_client(api.accept_invalid_certs)?,
             api.get_connection_string().as_str(),
             api.get_authorization_header().as_str(),
-            parameters,
+            body,
         )
         .await?;
+        info!("Bracket created");
         msg.reply(ctx, bracket_name).await?;
         // workaround: https://rust-lang.github.io/async-book/07_workarounds/02_err_in_async_blocks.html
         Ok::<CommandResult, CommandError>(Ok(()))

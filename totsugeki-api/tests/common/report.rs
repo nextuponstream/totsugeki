@@ -3,6 +3,7 @@
 use totsugeki::matches::Id as MatchId;
 use totsugeki::matches::{MatchResultPOST, ReportedResult};
 use totsugeki_api::Service;
+use tracing::debug;
 
 use super::TotsugekiApiTestClient;
 
@@ -65,6 +66,7 @@ pub async fn both_player_report_match_result(
         "players with seed {} and {} are not playing the same match",
         player_internal_id_1, player_internal_id_2
     );
+    debug!("Reported results OK by {player_internal_id_1} and {player_internal_id_2}");
 
     match_id_1
 }

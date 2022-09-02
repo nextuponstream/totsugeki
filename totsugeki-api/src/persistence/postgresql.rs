@@ -2,7 +2,7 @@
 
 use super::DBAccessor;
 use totsugeki::{
-    bracket::Id as BracketId,
+    bracket::{CreateRequest, Id as BracketId},
     matches::{Id as MatchId, NextMatchGETResponseRaw},
 };
 
@@ -94,7 +94,7 @@ impl DBAccessor for Accessor {
 
     fn create_bracket<'a, 'b, 'c>(
         &'a self,
-        r: super::BracketRequest<'b>,
+        r: CreateRequest<'b>,
     ) -> Result<totsugeki::bracket::POSTResult, super::Error<'c>> {
         todo!()
     }

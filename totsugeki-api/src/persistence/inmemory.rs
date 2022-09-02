@@ -1,26 +1,23 @@
 //! In-memory database
-use super::BracketRequest;
-use crate::persistence::{DBAccessor, Error};
-use crate::{ApiServiceId, ApiServiceUser};
-use chrono::{DateTime, Utc};
+use crate::{
+    persistence::{DBAccessor, Error},
+    ApiServiceId, ApiServiceUser,
+};
 use serenity::model::id::{ChannelId, GuildId, UserId};
 use serenity::model::misc::{ChannelIdParseError, UserIdParseError};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
-use totsugeki::bracket::{Format, Id as BracketId};
-use totsugeki::join::POSTResponseBody;
-use totsugeki::matches::{Opponent, ReportedResult};
-use totsugeki::organiser::Id as OrganiserId;
-use totsugeki::player::Player;
 use totsugeki::{
-    bracket::{ActiveBrackets, Bracket, POSTResult, Raw},
-    matches::{Error as MatchError, Id as MatchId, NextMatchGETResponseRaw},
+    bracket::{ActiveBrackets, Bracket, CreateRequest, Id as BracketId, POSTResult, Raw},
+    join::POSTResponseBody,
+    matches::ReportedResult,
+    matches::{Id as MatchId, NextMatchGETResponseRaw},
+    organiser::Id as OrganiserId,
     organiser::Organiser,
-    seeding::Method as SeedingMethod,
+    player::{Id as PlayerId, Player},
+    DiscussionChannelId,
 };
-use totsugeki::{player::Id as PlayerId, DiscussionChannelId};
-use tracing::{debug, info, trace};
-use uuid::Uuid;
+use tracing::{debug, info};
 
 use super::{ParseServiceInternalIdError, Service};
 
@@ -63,7 +60,7 @@ pub struct InMemoryDatabase {
     discord_internal_guilds: DiscordInternalGuilds,
     /// All registered discord users who are Totsugeki users
     discord_internal_users: DiscordInternalUsers,
-    /// Find quickly active brackets with discussion channel ID
+    /// Get active bracket in discussion channel
     discussion_channel_active_brackets: DiscussionChannelActiveBrackets,
     /// All organisers of brackets
     bracket_organiser: BracketOrganiser,
@@ -77,32 +74,16 @@ impl DBAccessor for InMemoryDBAccessor {
         Ok(())
     }
 
-    fn create_bracket<'a, 'b, 'c>(
-        &'a self,
-        r: BracketRequest<'b>,
-    ) -> Result<POSTResult, Error<'c>> {
-        let bracket_name = r.bracket_name;
-        let bracket_format = r.bracket_format;
-        let seeding_method = r.seeding_method;
+    fn create_bracket<'a, 'b, 'c>(&'a self, r: CreateRequest<'b>) -> Result<POSTResult, Error<'c>> {
         let organiser_name = r.organiser_name;
         let organiser_internal_id = r.organiser_internal_id;
         let internal_channel_id = r.internal_channel_id;
-        let internal_id_type = r.service_type_id.parse::<Service>()?;
-        let mut db = self.db.write().expect("database"); // FIXME bubble up error
-        let format = bracket_format.parse::<Format>()?;
-        let seeding_method = seeding_method.parse::<SeedingMethod>()?;
-        let start_time: DateTime<Utc> = r.start_time.parse()?;
-        let b = Bracket::new(
-            bracket_name,
-            format,
-            seeding_method,
-            start_time,
-            r.automatic_match_validation,
-        );
+        let service = r.service_type_id.parse::<Service>()?;
+        let b = Bracket::try_from(r)?;
 
-        // find if global id exists already for channel
-        let mut discussion_channel_id = Uuid::new_v4(); // if channel is not registered yet
-        match internal_id_type {
+        let mut db = self.db.write().expect("database"); // FIXME bubble up error
+
+        match service {
             Service::Discord => {
                 let internal_channel_id = match internal_channel_id.parse::<ChannelId>() {
                     Ok(v) => v,
@@ -112,58 +93,50 @@ impl DBAccessor for InMemoryDBAccessor {
                         return Err(Error::Parsing(msg));
                     }
                 };
-                if let Some(m) = db.discord_internal_channel.get(&internal_channel_id) {
-                    discussion_channel_id = *m;
-                } else {
-                    db.discord_internal_channel
-                        .insert(internal_channel_id, discussion_channel_id);
-                }
-            }
-        }
-
-        // find if global id already exists for organiser
-        let mut organiser_id = Uuid::new_v4();
-        match internal_id_type {
-            Service::Discord => {
+                let (discussion_channel_id, is_new_channel) =
+                    if let Some(m) = db.discord_internal_channel.get(&internal_channel_id) {
+                        (*m, false)
+                    } else {
+                        (DiscussionChannelId::new_v4(), true)
+                    };
                 let id = parse_dicord_id(organiser_internal_id)?;
                 let internal_organiser_id = GuildId::from(id);
-                if let Some(id) = db.discord_internal_guilds.get(&internal_organiser_id) {
-                    organiser_id = *id;
-                } else {
-                    db.discord_internal_guilds
-                        .insert(internal_organiser_id, organiser_id);
+                let organiser_id = db.discord_internal_guilds.get(&internal_organiser_id);
+
+                let updated_organiser = add_bracket_to_organiser_active_brackets(
+                    &db,
+                    organiser_id,
+                    organiser_name.to_string(),
+                    b.get_id(),
+                    discussion_channel_id,
+                );
+
+                // save service specific data
+                let organiser_id = updated_organiser.get_id();
+                db.discord_internal_channel
+                    .insert(internal_channel_id, discussion_channel_id);
+                db.discord_internal_guilds
+                    .insert(internal_organiser_id, organiser_id);
+
+                // save all other data
+                db.organisers.insert(organiser_id, updated_organiser);
+                db.discussion_channel_active_brackets
+                    .insert(discussion_channel_id, b.get_id());
+                db.bracket_organiser.insert(b.get_id(), organiser_id);
+                db.brackets.insert(b.get_id(), b.clone());
+
+                info!("Created new bracket {b}");
+                if is_new_channel {
+                    info!("Registered new discussion channel ({service}): {discussion_channel_id}");
                 }
+
+                Ok(POSTResult {
+                    bracket_id: b.get_id(),
+                    organiser_id,
+                    discussion_channel_id,
+                })
             }
         }
-
-        // Update organiser
-        let mut active_brackets = ActiveBrackets::new();
-        if let Some(m) = db.organisers.iter_mut().find(|o| o.0 == &organiser_id) {
-            let o = m.1;
-            active_brackets = o.get_active_brackets();
-            active_brackets.insert(discussion_channel_id, b.get_id());
-            organiser_id = o.get_organiser_id();
-        } else {
-            active_brackets.insert(discussion_channel_id, b.get_id());
-        }
-        let o = Organiser::new(
-            organiser_id,
-            organiser_name.to_string(),
-            Some(active_brackets),
-        );
-        db.organisers.insert(organiser_id, o);
-
-        db.discussion_channel_active_brackets
-            .insert(discussion_channel_id, b.get_id());
-        db.bracket_organiser.insert(b.get_id(), organiser_id);
-
-        // use uuid of service, then id of discussion_channel_id as key to get organiser id as val in kv map
-        db.brackets.insert(b.get_id(), b.clone());
-        Ok(POSTResult::from(
-            b.get_id(),
-            organiser_id,
-            discussion_channel_id,
-        ))
 
         // NOTE: to synchronise id of organiser across services, you would need to a sync endpoint otherwise
         // it will create many uuid for the same "real" organiser
@@ -181,11 +154,8 @@ impl DBAccessor for InMemoryDBAccessor {
 
     fn create_organiser<'a, 'b, 'c>(&'a self, organiser_name: &'b str) -> Result<(), Error<'c>> {
         let mut db = self.db.write().expect("database"); // FIXME bubble up error
-        let organiser_id = Uuid::new_v4();
-        db.organisers.insert(
-            organiser_id,
-            Organiser::new(organiser_id, organiser_name.to_string(), None),
-        );
+        let organiser = Organiser::new(organiser_name.to_string(), None);
+        db.organisers.insert(organiser.get_id(), organiser);
         Ok(())
     }
 
@@ -244,8 +214,6 @@ impl DBAccessor for InMemoryDBAccessor {
 
                 if let Some(id) = db.discord_internal_users.get(&player_internal_id) {
                     player_id = *id;
-                } else {
-                    info!("New player joined: {player_id}");
                 }
 
                 db.discord_internal_users
@@ -260,7 +228,7 @@ impl DBAccessor for InMemoryDBAccessor {
                     })?;
 
                 let organiser_id = db.bracket_organiser.get(bracket_id).ok_or_else(|| {
-                    Error::Unknown(format!(
+                    Error::Corrupted(format!(
                         "No organiser is responsible for bracket {bracket_id}"
                     ))
                 })?;
@@ -272,15 +240,16 @@ impl DBAccessor for InMemoryDBAccessor {
                 };
 
                 let b = db.brackets.get(bracket_id).ok_or_else(|| {
-                    Error::Unknown(format!("No bracket found for id: \"{bracket_id}\""))
+                    Error::Corrupted(format!("No bracket found for id: \"{bracket_id}\""))
                 })?;
                 let b = b.clone();
                 let id = b.get_id();
-                let updated_bracket = b.add_new_player(Player {
+                let updated_bracket = b.join(Player {
                     id: player_id,
                     name: player_name.to_string(),
                 })?;
                 db.brackets.insert(id, updated_bracket);
+                info!("New player joined: {player_id}");
 
                 Ok(body)
             }
@@ -360,11 +329,22 @@ impl DBAccessor for InMemoryDBAccessor {
         let (bracket, player_id) =
             get_bracket_info(&db, service_type, channel_internal_id, player_internal_id)?;
 
-        match bracket.get_format() {
-            Format::SingleElimination => {
-                search_next_opponent_in_single_elimination_bracket(&bracket, player_id)
-            }
-        }
+        let (opponent, match_id, opponent_name) = bracket.next_opponent(player_id)?;
+        info!(
+            "\"{player_id}\" searched for his next opponent (\"{opponent}\") in bracket \"{}\"",
+            bracket.get_id()
+        );
+
+        let m = bracket.get_matches();
+        let relevant_match = m.iter().find(|m| m.get_id() == match_id).expect("match");
+        debug!("{match_id}: {relevant_match}");
+
+        Ok(NextMatchGETResponseRaw {
+            opponent: opponent.to_string(),
+            match_id,
+            bracket_id: bracket.get_id(),
+            player_name: opponent_name,
+        })
     }
 
     fn report_result<'a, 'b, 'c>(
@@ -380,41 +360,12 @@ impl DBAccessor for InMemoryDBAccessor {
         let service_type = service_type_id.parse::<Service>()?;
         let (bracket, player_id) =
             get_bracket_info(&db, service_type, channel_internal_id, player_internal_id)?;
-        let player = Opponent::Player(player_id);
 
-        if !bracket.is_accepting_match_results() {
-            return Err(Error::BracketInactive(player_id, bracket.get_id()));
-        }
+        let (updated_bracket, affected_match_id) = bracket.report_result(player_id, result)?;
+        db.brackets
+            .insert(updated_bracket.get_id(), updated_bracket);
 
-        match bracket.get_format() {
-            Format::SingleElimination => {
-                if bracket.get_matches().is_empty() {
-                    return Err(Error::NoNextMatch);
-                }
-
-                let matches = bracket.get_matches();
-                let match_to_update = matches.iter().find(|m| {
-                    (m.get_players()[0] == player || m.get_players()[1] == player)
-                        && m.get_winner() == Opponent::Unknown
-                });
-
-                match match_to_update {
-                    Some(m) => {
-                        let bracket = match db.brackets.get_mut(&bracket.get_id()) {
-                            Some(b) => b,
-                            None => {
-                                return Err(Error::Unknown(
-                                    "Cannot update bracket because it's missing".to_string(),
-                                ))
-                            }
-                        };
-                        bracket.update_match_result(m.get_id(), result, player_id)?;
-                        Ok(m.get_id())
-                    }
-                    None => Err(Error::NoNextMatch),
-                }
-            }
-        }
+        Ok(affected_match_id)
     }
 
     fn validate_result<'a, 'b>(&'a self, match_id: MatchId) -> Result<(), Error<'b>> {
@@ -425,13 +376,19 @@ impl DBAccessor for InMemoryDBAccessor {
             .iter_mut()
             .find(|b| (*b.1).get_matches().iter().any(|m| m.get_id() == match_id));
 
-        match bracket_to_update {
-            Some(b) => {
-                (*b.1).validate_match_result(match_id)?;
-                Ok(())
-            }
-            None => return Err(Error::Match(MatchError::NotFound)),
-        }
+        let updated_bracket = match bracket_to_update {
+            Some(b) => b.1.clone().validate_match_result(match_id)?,
+            None => return Err(Error::UnknownMatch(match_id)),
+        };
+
+        let bracket_id = updated_bracket.get_id();
+        db.brackets
+            .insert(updated_bracket.get_id(), updated_bracket);
+        info!(
+            "Match \"{match_id}\" validated in bracket \"{}\"",
+            bracket_id
+        );
+        Ok(())
     }
 
     fn start_bracket<'a, 'b, 'c>(
@@ -442,7 +399,7 @@ impl DBAccessor for InMemoryDBAccessor {
         let mut db = self.db.write().expect("database"); // FIXME bubble up error
         let active_bracket = find_active_bracket(&mut db, internal_channel_id, service)?;
 
-        active_bracket.accept_match_results();
+        active_bracket.start();
         Ok(active_bracket.get_id())
     }
 
@@ -501,7 +458,7 @@ fn find_active_bracket_id<'a, 'b, 'c>(
     db: &'a InMemoryDatabase,
     internal_channel_id: &'b str,
     service: &'b str,
-) -> Result<(BracketId, Uuid, Service), Error<'c>> {
+) -> Result<(BracketId, DiscussionChannelId, Service), Error<'c>> {
     let service = service.parse::<Service>()?;
     match service {
         Service::Discord => {
@@ -518,7 +475,7 @@ fn find_active_bracket_id<'a, 'b, 'c>(
             };
             let active_bracket = match db.discussion_channel_active_brackets.get(&channel_id) {
                 Some(id) => *id,
-                None => return Err(Error::NoActiveBracketInDiscussionChannel),
+                None => return Err(Error::NoActiveBracketInDiscussionChannel(channel_id)),
             };
 
             Ok((active_bracket, channel_id, service))
@@ -580,7 +537,7 @@ fn get_bracket_info<'a, 'b, 'c>(
 
             let active_bracket_id = match db.discussion_channel_active_brackets.get(channel_id) {
                 Some(id) => id,
-                None => return Err(Error::NoActiveBracketInDiscussionChannel),
+                None => return Err(Error::NoActiveBracketInDiscussionChannel(*channel_id)),
             };
 
             let bracket = match db.brackets.iter().find(|b| b.0 == active_bracket_id) {
@@ -591,80 +548,35 @@ fn get_bracket_info<'a, 'b, 'c>(
             let player_internal_id = player_internal_id.parse::<UserId>()?;
             match db.discord_internal_users.get(&player_internal_id) {
                 Some(player_id) => Ok((bracket, *player_id)),
-                None => Err(Error::PlayerNotFound),
+                None => Err(Error::UnregisteredPlayer),
             }
         }
     }
 }
 
-/// Search next opponent in single elimination bracket
-fn search_next_opponent_in_single_elimination_bracket<'a>(
-    bracket: &Bracket,
-    player_id: PlayerId,
-) -> Result<NextMatchGETResponseRaw, Error<'a>> {
-    if bracket.get_matches().is_empty() {
-        return Err(Error::NoNextMatch);
-    }
-
-    let matches = bracket.get_matches();
-    let player = Opponent::Player(player_id);
-
-    let next_match = matches.iter().find(|m| {
-        (m.get_players()[0] == player || m.get_players()[1] == player)
-            && m.get_winner() == Opponent::Unknown
-    });
-    debug!("player is looking for his next match: {player_id}");
-    debug!("players in bracket: {:?}", bracket.get_players());
-    for m in bracket.get_matches() {
-        debug!("{m:?}");
-    }
-    let relevant_match = match next_match {
-        Some(m) => m,
-        None => {
-            if bracket
-                .get_players()
-                .get_players()
-                .iter()
-                .map(Player::get_id)
-                .any(|id| id == player_id)
-            {
-                let matches = bracket.get_matches();
-                let last_match = matches.iter().last().expect("last match");
-                if let Opponent::Player(id) = last_match.get_winner() {
-                    if id == player_id {
-                        return Err(Error::NoNextMatch);
-                    }
-                }
-                return Err(Error::EliminatedFromBracket);
+/// Add bracket to organiser's active bracket and return updated organiser
+fn add_bracket_to_organiser_active_brackets(
+    db: &InMemoryDatabase,
+    organiser_id: Option<&OrganiserId>,
+    organiser_name: String,
+    bracket_id: BracketId,
+    discussion_channel_id: DiscussionChannelId,
+) -> Organiser {
+    match organiser_id {
+        Some(id) => match db.organisers.get(id) {
+            Some(o) => o
+                .clone()
+                .add_active_bracket(discussion_channel_id, bracket_id),
+            None => {
+                let mut active_bracket = ActiveBrackets::default();
+                active_bracket.insert(discussion_channel_id, bracket_id);
+                Organiser::new(organiser_name, Some(active_bracket))
             }
-            return Err(Error::NextMatchNotFound);
+        },
+        None => {
+            let mut active_bracket = ActiveBrackets::default();
+            active_bracket.insert(discussion_channel_id, bracket_id);
+            Organiser::new(organiser_name, Some(active_bracket))
         }
-    };
-
-    let opponent = if relevant_match.get_players()[0] == player {
-        relevant_match.get_players()[1]
-    } else {
-        relevant_match.get_players()[0]
-    };
-
-    trace!("relevant match found");
-    let players = bracket.get_players();
-    let player_name = match opponent {
-        Opponent::Player(opponent_id) => players
-            .get_players()
-            .iter()
-            .find(|p| p.id == opponent_id)
-            .map_or_else(
-                || Opponent::Unknown.to_string(),
-                totsugeki::player::Player::get_name,
-            ),
-        _ => Opponent::Unknown.to_string(),
-    };
-
-    Ok(NextMatchGETResponseRaw {
-        opponent: opponent.to_string(),
-        match_id: relevant_match.get_id(),
-        bracket_id: bracket.get_id(),
-        player_name,
-    })
+    }
 }

@@ -7,7 +7,7 @@ use common::{
     db_types_to_test, test_api,
 };
 use poem::http::StatusCode;
-use totsugeki::{bracket::Format, seeding::Method as SeedingMethod};
+use totsugeki::{format::Format, seeding::Method as SeedingMethod};
 
 #[tokio::test]
 async fn posting_bracket_requires_authorization() {
@@ -57,15 +57,15 @@ async fn someone_creates_bracket() {
         assert!(
             brackets
                 .iter()
-                .any(|b| b.get_id() == bracket_post_resp.get_bracket_id()),
+                .any(|b| b.bracket_id == bracket_post_resp.bracket_id),
             "no matching bracket id for \"{}\" in:\n {brackets:?}",
-            bracket_post_resp.get_bracket_id()
+            bracket_post_resp.bracket_id
         );
 
         // Retrieving directly works too
         let resp = test_api
             .cli
-            .get(format!("/bracket/{}", bracket_post_resp.get_bracket_id()))
+            .get(format!("/bracket/{}", bracket_post_resp.bracket_id))
             .send()
             .await;
         resp.assert_status_is_ok();
@@ -74,7 +74,7 @@ async fn someone_creates_bracket() {
         let r = r.value().object();
         assert_eq!(
             r.get("bracket_id").string(),
-            bracket_post_resp.get_bracket_id().to_string()
+            bracket_post_resp.bracket_id.to_string()
         );
         assert_eq!(r.get("bracket_name").string(), bracket_name);
         assert_eq!(r.get("format").string(), format.to_string());
@@ -133,10 +133,10 @@ async fn search_bracket() {
         assert!(
             brackets
                 .iter()
-                .any(|b| b.get_id() == bracket_post_resp.get_bracket_id()
-                    && b.get_bracket_name() == bracket_name),
+                .any(|b| b.bracket_id == bracket_post_resp.bracket_id
+                    && b.bracket_name == bracket_name),
             "no matching bracket id for \"{}\" in:\n {brackets:?}",
-            bracket_post_resp.get_bracket_id()
+            bracket_post_resp.bracket_id
         );
 
         test_api.clean_db().await;

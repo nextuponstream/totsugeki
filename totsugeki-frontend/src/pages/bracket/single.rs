@@ -74,24 +74,25 @@ impl Component for View {
                 <progress class="progress is-medium is-dark" max="100" />
             },
             FetchState::Success(bracket) => {
-                let players = bracket.get_players();
+                let players = bracket.get_players_list();
                 let players = players.iter().map(|p| {
                     html! { <p>{ p.get_name() }</p> }
                 });
-                let matches = bracket.get_matches();
-                let matches = matches.iter().map(|m| {
-                    let player_1 = print_player_name(m.get_players()[0], &bracket.get_players())
-                        .unwrap_or_else(|| "ERROR".to_string());
-                    let player_2 = print_player_name(m.get_players()[1], &bracket.get_players())
-                        .unwrap_or_else(|| "ERROR".to_string());
+                let matches = bracket.matches.iter().map(|m| {
+                    let player_1 =
+                        print_player_name(m.get_players()[0], &bracket.get_players_list())
+                            .unwrap_or_else(|| "ERROR".to_string());
+                    let player_2 =
+                        print_player_name(m.get_players()[1], &bracket.get_players_list())
+                            .unwrap_or_else(|| "ERROR".to_string());
                     html! { <p>{ player_1 }<b>{ " VS " }</b>{ player_2 } </p> }
                 });
                 html! {
                     <div class="content">
-                        <p>{ "Bracket: " } {bracket.get_bracket_name()} {" ("} {bracket.get_id()} {")"}</p>
-                        <p>{ "Start time: " } {bracket.get_start_time().to_string()}</p>
-                        <p>{ "Format: " } {bracket.get_format().to_string()}</p>
-                        <p>{ "Seeding type: " } {bracket.get_seeding_method().to_string()}</p>
+                        <p>{ "Bracket: " } {bracket.bracket_name.clone()} {" ("} {bracket.bracket_id} {")"}</p>
+                        <p>{ "Start time: " } {bracket.start_time.to_string()}</p>
+                        <p>{ "Format: " } {bracket.format.to_string()}</p>
+                        <p>{ "Seeding type: " } {bracket.seeding_method.to_string()}</p>
                         <p>{ "Players:"}</p>
                         { for players }
                         <p>{ "Matches:"}</p>
