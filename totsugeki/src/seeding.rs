@@ -718,8 +718,8 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn single_elimination_matches_generation_does_not_break_for_with_high_entrance_numbers() {
-        // TODO optimize, it takes ~5-10 seconds
         (0..10).for_each(|_| {
             let mut rng = rand::thread_rng();
             let n = rng.gen_range(3..3000);
