@@ -3,6 +3,7 @@
 pub mod bracket;
 pub mod join;
 pub mod next_match;
+pub mod players;
 pub mod report;
 pub mod validate;
 

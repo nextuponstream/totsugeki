@@ -107,6 +107,7 @@ impl Component for View {
                 RequestError::BracketParsingError(e) => html! { e.to_string() },
                 RequestError::MatchIdParsingError(e) => html! { e.to_string() },
                 RequestError::NextMatch(e) => html! { e.to_string() },
+                RequestError::PlayerParsingError(e) => html! { e.to_string() },
             },
         }
     }

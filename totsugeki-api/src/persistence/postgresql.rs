@@ -4,6 +4,7 @@ use super::DBAccessor;
 use totsugeki::{
     bracket::{CreateRequest, Id as BracketId},
     matches::{Id as MatchId, NextMatchGETResponseRaw},
+    player::{Players, GET as PlayersGET},
 };
 
 /// Postgresql database
@@ -144,6 +145,13 @@ impl DBAccessor for Accessor {
         service_type_id: &'b str,
         players: Vec<String>,
     ) -> Result<BracketId, super::Error<'c>> {
+        todo!()
+    }
+
+    fn list_players<'a, 'b>(
+        &'a self,
+        r: &PlayersGET,
+    ) -> Result<(BracketId, Players), super::Error<'b>> {
         todo!()
     }
 }

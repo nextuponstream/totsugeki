@@ -17,6 +17,7 @@ use totsugeki::{
     join::POSTResponseBody,
     matches::{Id as MatchId, NextMatchGETResponseRaw},
     organiser::Organiser,
+    player::{Players, GET as PlayersGET},
     seeding::ParsingError as SeedingParsingError,
 };
 
@@ -254,6 +255,12 @@ pub trait DBAccessor {
         &'a self,
         offset: i64,
     ) -> Result<Vec<ApiServiceUser>, Error<'b>>;
+
+    /// Returns players in active bracket
+    ///
+    /// # Errors
+    /// Thrown when if discussion channel is unregistered
+    fn list_players<'a, 'b>(&'a self, r: &PlayersGET) -> Result<(BracketId, Players), Error<'b>>;
 
     /// Register service API user
     ///

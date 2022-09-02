@@ -3,6 +3,7 @@
 use crate::RequestError;
 use crate::HTTP_PREFIX;
 use totsugeki::bracket::{Id as BracketId, POSTResult, Raw, GET as BracketGET, POST};
+use totsugeki::player::{Players, PlayersRaw, GET as PlayersGET};
 
 /// Create brackets
 ///
@@ -71,4 +72,29 @@ pub async fn get_from_id(
         .await?;
     let bracket: BracketGET = res.json().await?;
     Ok(bracket.try_into()?)
+}
+
+/// Return player list of active bracket in discussion channel
+///
+/// # Errors
+/// thrown when network is unavailable
+pub async fn fetch_players(
+    client: reqwest::Client,
+    api_url: &str,
+    body: PlayersGET,
+) -> Result<(BracketId, Players), RequestError> {
+    let res = client
+        .get(format!("{HTTP_PREFIX}{api_url}/bracket/players"))
+        .json(&body)
+        .send()
+        .await?;
+    let info: PlayersRaw = res.json().await?;
+    let players = Players::from_raw_id(
+        info.players
+            .into_iter()
+            .map(|id| id.to_string())
+            .zip(info.player_names.into_iter())
+            .collect(),
+    )?;
+    Ok((info.bracket_id, players))
 }
