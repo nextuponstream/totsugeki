@@ -53,6 +53,10 @@ async fn validate(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
                     msg.reply(ctx, e.to_string()).await?;
                     error!("User could not request bracket: {e}");
                 }
+                RequestError::PlayerParsingError(ref e) => {
+                    msg.reply(ctx, e.to_string()).await?;
+                    error!("User could not request bracket: {e}");
+                }
             };
             Err(e.into())
         } else {

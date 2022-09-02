@@ -3,15 +3,17 @@ use crate::log_error;
 use crate::persistence::Error;
 use crate::ApiKeyServiceAuthorization;
 use crate::SharedDb;
-use crate::GET;
+use crate::GET as BracketGET;
 use poem::Result;
 use poem_openapi::param::Path;
 use poem_openapi::payload::Json;
 use poem_openapi::OpenApi;
 use totsugeki::bracket::{StartBracketPOST, POST};
+use totsugeki::player::PlayersRaw;
 use totsugeki::{
     bracket::{CreateRequest, Id as BracketId, POSTResult, Raw},
     matches::{Id as MatchId, MatchResultPOST, NextMatchGETRequest, NextMatchGETResponseRaw},
+    player::{Player, GET as PlayersGET},
 };
 use tracing::info;
 
@@ -56,7 +58,7 @@ impl Api {
         &self,
         db: SharedDb<'a>,
         bracket_id: Path<BracketId>,
-    ) -> Result<Json<GET>> {
+    ) -> Result<Json<BracketGET>> {
         info!("{}", bracket_id.0);
         match get_bracket(&db, bracket_id.0) {
             Ok(bracket) => Ok(Json(bracket.try_into()?)),
@@ -74,7 +76,7 @@ impl Api {
         &self,
         db: SharedDb<'a>,
         offset: Path<i64>,
-    ) -> Result<Json<Vec<GET>>> {
+    ) -> Result<Json<Vec<BracketGET>>> {
         info!("{}", offset.0);
         match list_brackets(&db, offset.0) {
             Ok(brackets) => {
@@ -99,13 +101,13 @@ impl Api {
         db: SharedDb<'a>,
         bracket_name: Path<String>,
         offset: Path<i64>,
-    ) -> Result<Json<Vec<GET>>> {
+    ) -> Result<Json<Vec<BracketGET>>> {
         info!("{}, {}", bracket_name.0, offset.0);
         match find_bracket(&db, bracket_name.0.as_str(), offset.0) {
             Ok(brackets) => {
                 let mut b_api_vec = vec![];
                 for b in brackets {
-                    let b_api: GET = b.try_into()?;
+                    let b_api: BracketGET = b.try_into()?;
                     b_api_vec.push(b_api);
                 }
                 Ok(Json(b_api_vec))
@@ -187,6 +189,25 @@ impl Api {
     ) -> Result<Json<BracketId>> {
         match start(&db, &r.0) {
             Ok(bracket_id) => Ok(Json(bracket_id)),
+            Err(e) => {
+                log_error(&e);
+                Err(e.into())
+            }
+        }
+    }
+
+    /// Return players in active bracket
+    ///
+    /// Useful to issue before seeding.
+    #[oai(path = "/bracket/players", method = "get")]
+    #[tracing::instrument(name = "List players", skip(self, db))]
+    async fn list_players<'a>(
+        &self,
+        db: SharedDb<'a>,
+        r: Json<PlayersGET>,
+    ) -> Result<Json<PlayersRaw>> {
+        match list_players_in_bracket(&db, &r.0) {
+            Ok(players) => Ok(Json(players)),
             Err(e) => {
                 log_error(&e);
                 Err(e.into())
@@ -286,4 +307,24 @@ where
 {
     let db = db.read()?;
     db.start_bracket(&r.channel_internal_id, &r.service_type_id)
+}
+
+/// List players in bracket
+fn list_players_in_bracket<'a, 'b>(
+    db: &'a SharedDb,
+    r: &PlayersGET,
+) -> Result<PlayersRaw, Error<'b>>
+where
+    'a: 'b,
+{
+    let db = db.read()?;
+    let (bracket_id, players) = db.list_players(r)?;
+    let players = players.get_players_list();
+    let players_ids = players.iter().map(Player::get_id).collect();
+    let players_names = players.iter().map(Player::get_name).collect();
+    Ok(PlayersRaw {
+        bracket_id,
+        players: players_ids,
+        player_names: players_names,
+    })
 }

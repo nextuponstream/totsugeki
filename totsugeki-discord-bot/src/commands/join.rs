@@ -74,6 +74,10 @@ async fn join(ctx: &Context, msg: &Message, mut _args: Args) -> CommandResult {
                         msg.reply(ctx, format!("{e}")).await?;
                         error!("User could not request bracket: {e}");
                     }
+                    RequestError::PlayerParsingError(ref e) => {
+                        msg.reply(ctx, format!("{e}")).await?;
+                        error!("User could not request bracket: {e}");
+                    }
                 };
 
                 Err(e.into())

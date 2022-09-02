@@ -15,7 +15,7 @@
 use std::fmt::{self, Formatter};
 use totsugeki::{
     bracket::ParsingError as BracketParsingError, matches::NextMatchGETParsingError,
-    ServiceRegisterPOST,
+    player::Error as PlayerError, ServiceRegisterPOST,
 };
 
 pub mod bracket;
@@ -40,6 +40,8 @@ pub enum RequestError {
     MatchIdParsingError(uuid::Error),
     /// Error parsing next match
     NextMatch(NextMatchGETParsingError),
+    /// Cannot parse players in response
+    PlayerParsingError(PlayerError),
 }
 
 impl From<NextMatchGETParsingError> for RequestError {
@@ -57,10 +59,13 @@ impl From<uuid::Error> for RequestError {
 impl std::fmt::Display for RequestError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            RequestError::Request(_, msg) => writeln!(f, "{msg}"),
+            RequestError::Request(_, msg) => write!(f, "{msg}"),
             RequestError::BracketParsingError(e) => e.fmt(f),
-            RequestError::MatchIdParsingError(e) => writeln!(f, "Could not parse match id: {e}"),
+            RequestError::MatchIdParsingError(e) => write!(f, "Could not parse match id: {e}"),
             RequestError::NextMatch(e) => e.fmt(f),
+            RequestError::PlayerParsingError(e) => {
+                write!(f, "Cannot parse players in response: {e}")
+            }
         }
     }
 }
@@ -81,6 +86,12 @@ impl std::error::Error for RequestError {}
 impl From<BracketParsingError> for RequestError {
     fn from(e: BracketParsingError) -> Self {
         Self::BracketParsingError(e)
+    }
+}
+
+impl From<PlayerError> for RequestError {
+    fn from(e: PlayerError) -> Self {
+        Self::PlayerParsingError(e)
     }
 }
 

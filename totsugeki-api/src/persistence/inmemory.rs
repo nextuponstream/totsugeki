@@ -14,7 +14,7 @@ use totsugeki::{
     matches::{Id as MatchId, NextMatchGETResponseRaw},
     organiser::Id as OrganiserId,
     organiser::Organiser,
-    player::{Id as PlayerId, Player},
+    player::{Id as PlayerId, Player, Players, GET as PlayersGET},
     DiscussionChannelId,
 };
 use tracing::{debug, info};
@@ -431,6 +431,21 @@ impl DBAccessor for InMemoryDBAccessor {
         }
 
         Ok(active_bracket.get_id())
+    }
+
+    fn list_players<'a, 'b>(&'a self, r: &PlayersGET) -> Result<(BracketId, Players), Error<'b>> {
+        let db = self.db.read().expect("database"); // FIXME bubble up error
+        let (active_bracket_id, _, _) = find_active_bracket_id(
+            &db,
+            r.internal_discussion_channel_id.as_str(),
+            r.service.as_str(),
+        )?;
+        let players = match db.brackets.get(&active_bracket_id) {
+            Some(b) => b.get_players(),
+            None => return Err(Error::UnregisteredBracket(active_bracket_id)),
+        };
+
+        Ok((active_bracket_id, players))
     }
 }
 

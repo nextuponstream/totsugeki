@@ -675,6 +675,7 @@ pub struct POSTResult {
 /// Bracket GET response
 #[derive(Serialize, Deserialize, Debug)]
 #[cfg_attr(feature = "poem-openapi", derive(Object))]
+#[cfg_attr(feature = "poem-openapi", oai(rename = "BracketGET"))]
 pub struct GET {
     /// Identifier of bracket
     pub bracket_id: Id,
