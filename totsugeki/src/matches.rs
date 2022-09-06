@@ -9,46 +9,27 @@ use crate::{
 use poem_openapi::Object;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
+use thiserror::Error;
 use tracing::debug;
 
 /// Error while creating a match
-#[derive(Debug, Clone)]
+#[derive(Error, Debug, Clone)]
 pub enum Error {
     /// Players reported different match outcome
+    #[error("Players reported different match outcomes: {} and {} were reported", .0[0], .0[1])]
     PlayersReportedDifferentMatchOutcome([ReportedResult; 2]),
     /// Mathematical overflow happened, cannot proceed
+    #[error("Error. Unable to proceed further.")]
     MathOverflow,
     /// Cannot update match because player is Unknown
+    #[error("Player with id \"{0}\" is unknown. Players in this match are: {} VS {}", .1[0], .1[1])]
     UnknownPlayer(PlayerId, MatchPlayers),
     /// Cannot update match result because an opponent is missing
+    #[error("Cannot report result in a match where opponent is missing. Current players: {} VS {}", .0[0], .0[1])]
     MissingOpponent(MatchPlayers),
     /// Match got into a really bad state where an unknown player has result
+    #[error("Error. Unable to proceed further.")]
     UnknownPlayerWithReportedResults,
-}
-
-impl std::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Error::PlayersReportedDifferentMatchOutcome(r) => {
-                write!(
-                    f,
-                    "Players reported different match outcomes: {} and {} were reported",
-                    r[0], r[1]
-                )
-            }
-            Error::UnknownPlayer(id, players) => write!(
-                f,
-                "Player with id \"{id}\" is unknown. Players in this match are: {} VS {}",
-                players[0], players[1]
-            ),
-            Error::MissingOpponent(players) => write!(
-                f,
-                "Cannot report result in a match where opponent is missing. Current players: {} VS {}", players[0], players[1]
-            ),
-            Error::MathOverflow
-    |            Error::UnknownPlayerWithReportedResults => write!(f, "Error. Unable to proceed further."),
-        }
-    }
 }
 
 /// Seeds of players
@@ -76,20 +57,11 @@ impl std::fmt::Display for ReportedResult {
 }
 
 /// Error while parsing match result
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum MatchResultParsingError {
     /// Could not parse
+    #[error("Match could not be parsed")]
     CouldNotParseResult,
-}
-
-impl std::fmt::Display for MatchResultParsingError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            MatchResultParsingError::CouldNotParseResult => {
-                writeln!(f, "Match could not be parsed")
-            }
-        }
-    }
 }
 
 impl FromStr for ReportedResult {
@@ -356,40 +328,25 @@ impl MatchGET {
 }
 
 /// Error while converting response from network
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum MatchParsingError {
     /// Could not parse bracket id for match
-    Opponent(ParsingOpponentError),
+    #[error("Match opponent id could not be parsed: {0}")]
+    Opponent(#[from] ParsingOpponentError),
     /// Could not gather opponents for a match
+    #[error(
+        "Could not use opponents to generate match. Is there two opponents?\nOpponents: {0:?}"
+    )]
     GatherOpponents(Vec<Opponent>),
     /// Reported result could not be parsed
-    ReportedResult(MatchResultParsingError),
+    #[error("Reported results could not be parsed: {0}")]
+    ReportedResult(#[from] MatchResultParsingError),
     /// Winner is not one of the players in the match
+    #[error("Winner is not a participant of the match")]
     UnknownWinner,
     /// Looser is not one of the players in the match
+    #[error("Looser is not a participant of the match")]
     UnknownLooser,
-}
-
-impl std::fmt::Display for MatchParsingError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            MatchParsingError::Opponent(e) => {
-                write!(f, "Match opponent id could not be parsed: {e}")
-            }
-            MatchParsingError::GatherOpponents(o) => {
-                write!(f, "Could not use opponents to generate match. Is there two opponents?\nOpponents: {o:?}")
-            }
-            MatchParsingError::ReportedResult(e) => {
-                writeln!(f, "Reported results could not be parsed: {e}")
-            }
-            MatchParsingError::UnknownWinner => {
-                write!(f, "Winner is not a participant of the match")
-            }
-            MatchParsingError::UnknownLooser => {
-                write!(f, "Looser is not a participant of the match")
-            }
-        }
-    }
 }
 
 impl TryFrom<MatchGET> for Match {
@@ -424,12 +381,7 @@ impl TryFrom<MatchGET> for Match {
     }
 }
 
-impl From<MatchResultParsingError> for MatchParsingError {
-    fn from(e: MatchResultParsingError) -> Self {
-        Self::ReportedResult(e)
-    }
-}
-
+// NOTE: here because Vec<T> does not implement std::error::Error when used with try_into
 impl From<Vec<Opponent>> for MatchParsingError {
     fn from(opponents: Vec<Opponent>) -> Self {
         MatchParsingError::GatherOpponents(opponents)
@@ -494,20 +446,11 @@ pub struct NextMatchGETResponse {
 }
 
 /// Error while parsing next match
-#[derive(Debug, Clone)]
+#[derive(Error, Debug, Clone)]
 pub enum NextMatchGETParsingError {
     /// Could not parse opponent
-    Opponent(ParsingOpponentError),
-}
-
-impl std::error::Error for NextMatchGETParsingError {}
-
-impl std::fmt::Display for NextMatchGETParsingError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            NextMatchGETParsingError::Opponent(e) => e.fmt(f),
-        }
-    }
+    #[error("{0}")]
+    Opponent(#[from] ParsingOpponentError),
 }
 
 impl TryFrom<NextMatchGETResponse> for NextMatchGET {
@@ -520,12 +463,6 @@ impl TryFrom<NextMatchGETResponse> for NextMatchGET {
             bracket_id: r.bracket_id,
             player_name: r.player_name,
         })
-    }
-}
-
-impl From<ParsingOpponentError> for NextMatchGETParsingError {
-    fn from(e: ParsingOpponentError) -> Self {
-        Self::Opponent(e)
     }
 }
 
@@ -589,10 +526,4 @@ pub struct NextMatchGETResponseRaw {
     pub bracket_id: BracketId,
     /// Opponent name
     pub player_name: String,
-}
-
-impl From<ParsingOpponentError> for MatchParsingError {
-    fn from(e: ParsingOpponentError) -> Self {
-        Self::Opponent(e)
-    }
 }

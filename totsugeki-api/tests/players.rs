@@ -3,11 +3,8 @@ pub mod common;
 
 use chrono::prelude::*;
 use common::{
-    bracket::create_bracket,
-    db_types_to_test,
-    join::n_players_join_bracket,
-    players::{parse_players, query_players},
-    test_api,
+    bracket::create_bracket, db_types_to_test, join::n_players_join_bracket,
+    players::query_players, test_api,
 };
 use test_log::test;
 use totsugeki::{
@@ -53,7 +50,7 @@ async fn bracket_returns_information_about_its_players_as_they_join() {
         let test_api = test_api(db_type).await;
         let internal_discussion_channel_id = "1";
         let service = Service::Discord;
-        let (bracket, _, _) = create_bracket(
+        let (_, _, _) = create_bracket(
             &test_api,
             "1",
             internal_discussion_channel_id,
@@ -79,7 +76,7 @@ async fn bracket_returns_information_about_its_players_as_they_join() {
             bracket_id,
         )
         .await;
-        let (bracket_id, players) = query_players(&test_api, &body).await;
+        let (_, players) = query_players(&test_api, &body).await;
         assert_eq!(players.clone().get_players_list().len(), 9);
         let player_group: Players = bracket.players.try_into().expect("player group");
         assert!(player_group.contains_same_players(&players));

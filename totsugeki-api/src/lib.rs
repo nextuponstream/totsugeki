@@ -8,7 +8,10 @@
 #![warn(clippy::unwrap_used)]
 #![doc = include_str!("../README.md")]
 
+mod critical;
+mod parsing;
 pub mod persistence;
+mod resource;
 pub mod routes;
 
 use crate::persistence::{inmemory::InMemoryDBAccessor, DBAccessor, Error};
@@ -25,7 +28,9 @@ use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 use std::boxed::Box;
 use std::collections::HashSet;
+use std::str::FromStr;
 use std::sync::Arc;
+use thiserror::Error;
 use totsugeki::{
     bracket::{Id as BracketId, GET},
     ReadLock,
@@ -54,25 +59,10 @@ pub fn hmac(server_key: &[u8]) -> Hmac<Sha256> {
 /// Log error are the appropriate level
 fn log_error(e: &Error) {
     match e {
-        Error::PoisonedReadLock(e) => error!("{e}"),
-        Error::PoisonedWriteLock(e) => error!("{e}"),
-        Error::Corrupted(e) => error!("Data corruption: {e}"),
-        Error::Denied(e) => warn!("{e}"),
-        Error::Parsing(e) => warn!("User input could not be parsed: {e}"),
-        Error::UnregisteredBracket(b_id) => warn!("User searched for unknown bracket: {b_id}"),
-        Error::UnregisteredDiscussionChannel(service, id) => {
-            warn!("Unregistered discussion channel requested for service \"{service}\" with id \"{id}\"");
-        }
-        Error::NoActiveBracketInDiscussionChannel(id) => {
-            warn!("User did not find active bracket in discussion channel \"{id}\"");
-        }
-        Error::UnregisteredPlayer => warn!("User searched for an unregistered player"),
-        Error::EliminatedFromBracket => {
-            warn!("Player searched for their next match but they were eliminated from the bracket");
-        }
-        Error::UpdateBracket(e) => warn!("Bracket could not be updated: {e}"),
-        Error::BadBracketQuery(e) => warn!("Bad bracket query: {e}"),
-        Error::UnknownMatch(match_id) => warn!("User wants to updated unknown match: {match_id}"),
+        Error::Critical(e) => error!("{e:?}"),
+        Error::ParseUserInput(e) => warn!("{e}"),
+        Error::NotFound(e) => warn!("{e}"),
+        Error::Forbidden(e) => warn!("{e}"),
     }
 }
 
@@ -87,6 +77,25 @@ impl std::fmt::Display for Service {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Service::Discord => write!(f, "discord"),
+        }
+    }
+}
+
+/// Error while parsing ``InteralIdType`` of service used
+#[derive(Error, Debug)]
+pub enum ParseServiceInternalIdError {
+    /// Parsing error
+    #[error("could not parse {0}")]
+    Parse(String),
+}
+
+impl FromStr for Service {
+    type Err = ParseServiceInternalIdError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "discord" => Ok(Self::Discord),
+            _ => Err(ParseServiceInternalIdError::Parse(s.to_string())),
         }
     }
 }

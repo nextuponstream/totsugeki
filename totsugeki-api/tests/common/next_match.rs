@@ -140,11 +140,12 @@ pub async fn assert_next_matches(
 }
 
 /// Assert player with `seed` is eliminated
-pub async fn assert_player_is_eliminated(
+pub async fn assert_player_is_eliminated_from_bracket(
     test_api: &TotsugekiApiTestClient,
     player: usize,
     channel_internal_id: &str,
     service_type_id: Service,
+    bracket_id: BracketId,
 ) {
     trace!("Asserting player is eliminated");
     let body = NextMatchGETRequest {
@@ -161,7 +162,7 @@ pub async fn assert_player_is_eliminated(
         .await;
     res.assert_status(StatusCode::NOT_FOUND);
     res.assert_text(
-        "Unable to answer query: There is no match for you to play because you were eliminated from the bracket",
+        format!("Unable to answer query:\n\tThere is no match for you to play because you were eliminated from bracket {bracket_id}"),
     )
     .await;
 }
@@ -172,6 +173,7 @@ pub async fn assert_player_has_no_next_match(
     player: usize,
     channel_internal_id: &str,
     service_type_id: Service,
+    bracket_id: BracketId,
 ) {
     trace!("Asserting player has no next match");
     let body = NextMatchGETRequest {
@@ -187,8 +189,8 @@ pub async fn assert_player_has_no_next_match(
         .send()
         .await;
     res.assert_status(StatusCode::NOT_FOUND);
-    res.assert_text(
-        "Unable to answer query: There is no match for you to play because you won the bracket",
-    )
+    res.assert_text(format!(
+        "Unable to answer query:\n\tThere is no match for you to play because you won the bracket {bracket_id}",
+    ))
     .await;
 }

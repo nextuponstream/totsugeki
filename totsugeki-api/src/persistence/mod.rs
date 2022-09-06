@@ -2,176 +2,75 @@
 pub mod inmemory;
 pub mod postgresql;
 
-use crate::{ApiServiceId, ApiServiceUser, Service};
-use std::fmt::Display;
-use std::str::FromStr;
-use std::sync::{PoisonError, RwLockReadGuard, RwLockWriteGuard};
-use totsugeki::matches::MatchResultParsingError;
-use totsugeki::DiscussionChannelId;
+use crate::{
+    critical::{DatabaseReadLock, Error as CriticalError},
+    parsing::Error as UserInputError,
+    resource::Error as ResourceError,
+    ApiServiceId, ApiServiceUser, Service,
+};
+use std::sync::PoisonError;
+use thiserror::Error;
 use totsugeki::{
-    bracket::{
-        CreateRequest, Error as BracketError, Id as BracketId, POSTResult,
-        ParsingError as BracketParsingError, Raw,
-    },
-    format::ParsingError as FormatParsingError,
+    bracket::{CreateRequest, Error as BracketError, Id as BracketId, POSTResult, Raw},
     join::POSTResponseBody,
     matches::{Id as MatchId, NextMatchGETResponseRaw},
     organiser::Organiser,
     player::{Players, GET as PlayersGET},
-    seeding::ParsingError as SeedingParsingError,
 };
 
-/// Error while parsing ``InteralIdType`` of service used
-#[derive(Debug)]
-pub enum ParseServiceInternalIdError {
-    /// Parsing error
-    Parse(String),
+/// Error while persisting data
+#[derive(Error, Debug)]
+pub enum Error<'a> {
+    /// 400: user input could not be parsed
+    #[error("Could not parse: {0}")]
+    ParseUserInput(#[from] UserInputError),
+    /// 403: user action is illegal
+    #[error("Action is forbidden:\n\t{0}")]
+    Forbidden(ResourceError),
+    /// 404: user requested unknown ressource
+    #[error("Unable to answer query:\n\t{0}")]
+    NotFound(ResourceError),
+    /// 500: critical error
+    // NOTE: using #[from] macro does not work. Lifetime does not play well
+    #[error("Critical error")]
+    Critical(CriticalError<'a>),
 }
 
-impl FromStr for Service {
-    type Err = ParseServiceInternalIdError;
+impl<'a> From<CriticalError<'a>> for Error<'a> {
+    fn from(e: CriticalError<'a>) -> Self {
+        Self::Critical(e)
+    }
+}
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "discord" => Ok(Self::Discord),
-            _ => Err(ParseServiceInternalIdError::Parse(format!(
-                "could not parse {s}"
-            ))),
+impl<'a> From<ResourceError> for Error<'a> {
+    fn from(e: ResourceError) -> Self {
+        match e {
+            ResourceError::UnknownDiscussionChannel(_)
+            | ResourceError::UnknownPlayer
+            | ResourceError::UnknownActiveBracketForDiscussionChannel(_)
+            | ResourceError::UnknownBracket(_)
+            | ResourceError::UnknownResource(_) => Self::NotFound(e),
+
+            ResourceError::ForbiddenBracketUpdate(_) => Self::Forbidden(e),
         }
     }
 }
 
-/// Read lock to database
-pub type DatabaseReadLock<'a> = RwLockReadGuard<'a, Box<dyn DBAccessor + Send + Sync>>;
-/// Write lock to database
-pub type DatabaseWriteLock<'a> = RwLockWriteGuard<'a, Box<dyn DBAccessor + Send + Sync>>;
-
-/// Error while persisting data
-#[derive(Debug)]
-pub enum Error<'a> {
-    /// Lock to the database is poisoned when attempting to read
-    PoisonedReadLock(PoisonError<DatabaseReadLock<'a>>),
-    /// Lock to the database is poisoned when attempting to write
-    PoisonedWriteLock(PoisonError<DatabaseWriteLock<'a>>),
-    /// User was denied access to ressource
-    Denied(String),
-    /// Parsing error
-    Parsing(String),
-    /// Data is not present when it should be
-    Corrupted(String),
-    /// Bracket is not registered
-    UnregisteredBracket(BracketId),
-    /// Discussion channel for `Service` using provided id is not registered
-    UnregisteredDiscussionChannel(Service, String),
-    /// User searched for active bracket in discussion channel but there was
-    /// none to be found
-    NoActiveBracketInDiscussionChannel(DiscussionChannelId),
-    /// Player was not found
-    UnregisteredPlayer,
-    /// Player searched for his next match in bracket but his was eliminated
-    EliminatedFromBracket,
-    /// Cannot update bracket
-    UpdateBracket(BracketError),
-    /// Query cannot be answered for bracket
-    BadBracketQuery(BracketError),
-    /// Unknown match
-    UnknownMatch(MatchId),
-}
-
-impl<'a> From<BracketParsingError> for Error<'a> {
-    fn from(e: BracketParsingError) -> Self {
-        Self::Parsing(format!("Could not parse bracket: {e}"))
-    }
-}
-
+// Bracket... are resources. Then we return a resource error when user is
+// trying to query/update the state
 impl<'a> From<BracketError> for Error<'a> {
     fn from(e: BracketError) -> Self {
-        match e {
-            BracketError::Seeding(_)
-            | BracketError::MissingArgument(_, _)
-            | BracketError::PlayerUpdate(_)
-            | BracketError::UnknownMatch(_)
-            | BracketError::Match(_)
-            | BracketError::UnknownPlayer(_, _)
-            | BracketError::Players(_, _)
-            | BracketError::BarredFromEntering(_, _)
-            | BracketError::AcceptResults(_, _)
-            | BracketError::NoMatchToPlay(_, _) => Self::UpdateBracket(e),
-            BracketError::NoNextMatch(_)
-            | BracketError::NoGeneratedMatches
-            | BracketError::EliminatedFromBracket(_)
-            | BracketError::PlayerIsNotParticipant(_, _) => Self::BadBracketQuery(e),
-        }
-    }
-}
-
-impl<'a> From<MatchResultParsingError> for Error<'a> {
-    fn from(e: MatchResultParsingError) -> Self {
-        Self::Parsing(format!("Match result: {e}"))
+        ResourceError::from(e).into()
     }
 }
 
 impl<'a> From<PoisonError<DatabaseReadLock<'a>>> for Error<'a> {
     fn from(e: PoisonError<DatabaseReadLock<'a>>) -> Self {
-        Error::PoisonedReadLock(e)
+        CriticalError::from(e).into()
     }
 }
 
-impl<'a> From<PoisonError<DatabaseWriteLock<'a>>> for Error<'a> {
-    fn from(e: PoisonError<DatabaseWriteLock<'a>>) -> Self {
-        Error::PoisonedWriteLock(e)
-    }
-}
-
-impl<'a> Display for Error<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Error::Corrupted(msg) | Error::Parsing(msg) => writeln!(f, "{msg}"),
-            Error::Denied(msg) => writeln!(f, "Reason: {msg}"),
-            Error::PoisonedReadLock(e) => e.fmt(f),
-            Error::PoisonedWriteLock(e) => e.fmt(f),
-            Error::UnregisteredBracket(b_id) => writeln!(f, "Bracket \"{b_id}\" is unregistered"),
-            Error::UnregisteredDiscussionChannel(_, _) => writeln!(
-                f,
-                "Discussion channel is not registered"
-            ),
-            Error::NoActiveBracketInDiscussionChannel(id) => {
-                writeln!(f, "There is no active bracket in discussion channel ({id})")
-            }
-            Error::UnregisteredPlayer => writeln!(f, "Player is not registered"),
-            Error::EliminatedFromBracket => write!(f, "There is no match for you to play because you have been eliminated from the bracket."),
-            Error::UpdateBracket(e) => write!(f, "Bracket cannot be updated: {e}"),
-            Error::BadBracketQuery(e) => write!(f, "Unable to answer query: {e}"),
-            Error::UnknownMatch(id) => write!(f, "Unknown match: {id}"),
-        }
-    }
-}
-
-impl<'a> From<SeedingParsingError> for Error<'a> {
-    fn from(e: SeedingParsingError) -> Self {
-        Error::Parsing(format!("Could not parse seed: {e:?}"))
-    }
-}
-
-impl<'a> From<FormatParsingError> for Error<'a> {
-    fn from(e: FormatParsingError) -> Self {
-        Error::Parsing(format!("Could not parse bracket: {e:?}"))
-    }
-}
-
-impl<'a> From<uuid::Error> for Error<'a> {
-    fn from(e: uuid::Error) -> Self {
-        Error::Parsing(format!("Uuid could not be parsed: {e}")) // TODO better error propagation
-    }
-}
-
-impl<'a> From<totsugeki::player::Error> for Error<'a> {
-    fn from(e: totsugeki::player::Error) -> Self {
-        Self::Parsing(format!("could not form players group: {e:?}")) // FIXME don't use string
-    }
-}
-
-/// Datase underlying the api
+/// Modify application state with relevant methods
 pub trait DBAccessor {
     /// Clean database to run tests
     ///
@@ -226,7 +125,7 @@ pub trait DBAccessor {
         player_internal_id: &'b str,
         player_name: &'b str,
         channel_internal_id: &'b str,
-        service_type_id: &'b str,
+        service: &'b str,
     ) -> Result<POSTResponseBody, Error<'c>>;
 
     /// Get bracket using id
@@ -280,7 +179,7 @@ pub trait DBAccessor {
         &'a self,
         player_internal_id: &'b str,
         channel_internal_id: &'b str,
-        service_type_id: &'b str,
+        service: &'b str,
     ) -> Result<NextMatchGETResponseRaw, Error<'c>>;
 
     /// Let player report result for his active match
@@ -291,7 +190,7 @@ pub trait DBAccessor {
         &'a self,
         player_internal_id: &'b str,
         channel_internal_id: &'b str,
-        service_type_id: &'b str,
+        service: &'b str,
         result: &'b str,
     ) -> Result<MatchId, Error<'c>>;
 
@@ -309,7 +208,7 @@ pub trait DBAccessor {
     fn start_bracket<'a, 'b, 'c>(
         &'a self,
         internal_channel_id: &'b str,
-        service_type_id: &'b str,
+        service: &'b str,
         // TODO add optionnal player list from name|id to seed bracket
     ) -> Result<BracketId, Error<'c>>;
 
@@ -322,7 +221,7 @@ pub trait DBAccessor {
     fn bar_from_entering_bracket<'a, 'b, 'c>(
         &'a self,
         internal_channel_id: &'b str,
-        service_type_id: &'b str,
+        service: &'b str,
     ) -> Result<BracketId, Error<'c>>;
 
     /// Seed active bracket in discussion channel

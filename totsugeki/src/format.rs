@@ -1,6 +1,7 @@
 //! Format of bracket
 
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 /// All bracket formats
 #[derive(PartialEq, Eq, Copy, Clone, Deserialize, Serialize, Debug)]
@@ -36,20 +37,12 @@ impl Default for Format {
 }
 
 /// Parsing error for Format type
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum ParsingError {
     /// Unknown format was provided
+    #[error(
+        "Unknown bracket format: \"{0}\". Please try another format such as: \"{}\"",
+        Format::default()
+    )]
     Unknown(String),
-}
-
-impl std::fmt::Display for ParsingError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ParsingError::Unknown(format) => writeln!(
-                f,
-                "Unknown bracket format: \"{format}\". Please try another format such as: \"{}\"",
-                Format::default()
-            ),
-        }
-    }
 }

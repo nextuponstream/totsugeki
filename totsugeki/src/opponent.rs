@@ -2,6 +2,7 @@
 
 use crate::player::Id as PlayerId;
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 /// Opponent in a match
 #[derive(Debug, Copy, Serialize, Deserialize, PartialEq, Eq, Clone, Default)]
@@ -23,18 +24,11 @@ impl std::fmt::Display for Opponent {
 }
 
 /// Error while parsing Opponent
-#[derive(Debug, Clone)]
+#[derive(Error, Debug, Clone)]
 pub enum ParsingOpponentError {
-    /// Id
-    Id(uuid::Error),
-}
-
-impl std::fmt::Display for ParsingOpponentError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ParsingOpponentError::Id(e) => e.fmt(f),
-        }
-    }
+    /// Could not parse opponent id
+    #[error("{0}")]
+    Id(#[from] uuid::Error),
 }
 
 impl std::str::FromStr for Opponent {
@@ -45,11 +39,5 @@ impl std::str::FromStr for Opponent {
             "?" => Opponent::Unknown,
             _ => Opponent::Player(PlayerId::try_from(s)?),
         })
-    }
-}
-
-impl From<uuid::Error> for ParsingOpponentError {
-    fn from(e: uuid::Error) -> Self {
-        Self::Id(e)
     }
 }

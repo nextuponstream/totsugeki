@@ -11,7 +11,8 @@ use common::{
     db_types_to_test,
     join::n_players_join_bracket,
     next_match::{
-        assert_next_matches, assert_player_has_no_next_match, assert_player_is_eliminated,
+        assert_next_matches, assert_player_has_no_next_match,
+        assert_player_is_eliminated_from_bracket,
     },
     report::both_player_report_match_result,
     test_api,
@@ -73,7 +74,7 @@ async fn participants_cannot_report_result_until_bracket_starts() {
             .await;
         res.assert_status(StatusCode::FORBIDDEN);
         res.assert_text(format!(
-            "Bracket cannot be updated: Bracket \"{}\" does not accept reported results at the moment",
+            "Action is forbidden:\n\tBracket \"{}\" does not accept reported results at the moment",
             bracket.bracket_id
         ))
         .await;
@@ -153,7 +154,7 @@ async fn match_results_cannot_be_reported_once_bracket_has_ended() {
             .await;
         res.assert_status(StatusCode::FORBIDDEN);
         res.assert_text(format!(
-            "Bracket cannot be updated: Bracket \"{}\" does not accept reported results at the moment",
+            "Action is forbidden:\n\tBracket \"{}\" does not accept reported results at the moment",
             bracket.bracket_id
         ))
         .await;
@@ -198,7 +199,7 @@ async fn reporting_result_for_first_round_3_man() {
         let player1 = bracket.players[0].get_id();
         trace!("Top seed reporting a match should have no effect since he has not opponent yet");
         res.assert_status(StatusCode::FORBIDDEN);
-        res.assert_text(format!("Bracket cannot be updated: Cannot report result in a match where opponent is missing. Current players: {player1} VS ?")).await;
+        res.assert_text(format!("Action is forbidden:\n\tCannot report result in a match where opponent is missing. Current players: {player1} VS ?")).await;
 
         both_player_report_match_result(
             &test_api,
@@ -228,7 +229,14 @@ async fn reporting_result_for_first_round_3_man() {
         )
         .await;
 
-        assert_player_is_eliminated(&test_api, 3, channel_internal_id, service).await;
+        assert_player_is_eliminated_from_bracket(
+            &test_api,
+            3,
+            channel_internal_id,
+            service,
+            bracket.bracket_id,
+        )
+        .await;
     }
 }
 
@@ -339,9 +347,23 @@ async fn running_5_man_single_elimination_api() {
         // noone has matches
         for s in 1..=5 {
             if s == 3 {
-                assert_player_has_no_next_match(&test_api, s, channel_internal_id, service).await;
+                assert_player_has_no_next_match(
+                    &test_api,
+                    s,
+                    channel_internal_id,
+                    service,
+                    bracket.bracket_id,
+                )
+                .await;
             } else {
-                assert_player_is_eliminated(&test_api, s, channel_internal_id, service).await;
+                assert_player_is_eliminated_from_bracket(
+                    &test_api,
+                    s,
+                    channel_internal_id,
+                    service,
+                    bracket.bracket_id,
+                )
+                .await;
             }
         }
     }
@@ -510,9 +532,23 @@ async fn running_8_man_single_elimination_bracket() {
         // noone has matches
         for s in 1..=8 {
             if s == 5 {
-                assert_player_has_no_next_match(&test_api, s, channel_internal_id, service).await;
+                assert_player_has_no_next_match(
+                    &test_api,
+                    s,
+                    channel_internal_id,
+                    service,
+                    bracket.bracket_id,
+                )
+                .await;
             } else {
-                assert_player_is_eliminated(&test_api, s, channel_internal_id, service).await;
+                assert_player_is_eliminated_from_bracket(
+                    &test_api,
+                    s,
+                    channel_internal_id,
+                    service,
+                    bracket.bracket_id,
+                )
+                .await;
             }
         }
     }
@@ -701,9 +737,23 @@ async fn running_9_man_single_elimination_bracket() {
         // noone has matches
         for s in 1..=9 {
             if s == 3 {
-                assert_player_has_no_next_match(&test_api, s, channel_internal_id, service).await;
+                assert_player_has_no_next_match(
+                    &test_api,
+                    s,
+                    channel_internal_id,
+                    service,
+                    bracket.bracket_id,
+                )
+                .await;
             } else {
-                assert_player_is_eliminated(&test_api, s, channel_internal_id, service).await;
+                assert_player_is_eliminated_from_bracket(
+                    &test_api,
+                    s,
+                    channel_internal_id,
+                    service,
+                    bracket.bracket_id,
+                )
+                .await;
             }
         }
     }

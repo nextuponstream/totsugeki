@@ -4,6 +4,7 @@ use crate::bracket::Id as BracketId;
 #[cfg(feature = "poem-openapi")]
 use poem_openapi::Object;
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 use uuid::Uuid;
 
 /// A player is referenced by their ID and their username
@@ -49,28 +50,15 @@ pub struct Players {
     players: Vec<Player>,
 }
 
-/// Error while interacting with players
-#[derive(Debug, Eq, PartialEq)]
+/// Error while forming group of players
+#[derive(Error, Debug, Eq, PartialEq)]
 pub enum Error {
     /// Player already exist in this group of player
+    #[error("Player already present in group")]
     AlreadyPresent,
     /// Player id could not be parsed
-    PlayerId(uuid::Error),
-}
-
-impl std::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Error::AlreadyPresent => writeln!(f, "Player already present in group"),
-            Error::PlayerId(_e) => writeln!(f, "Player id parsing failed"),
-        }
-    }
-}
-
-impl From<uuid::Error> for Error {
-    fn from(e: uuid::Error) -> Self {
-        Self::PlayerId(e)
-    }
+    #[error("Player id parsing failed")]
+    PlayerId(#[from] uuid::Error),
 }
 
 impl Players {
