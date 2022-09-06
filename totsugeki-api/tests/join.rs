@@ -242,7 +242,7 @@ async fn bracket_initial_next_opponent_are_correct() {
                 .await;
             res.assert_status_is_ok();
             let r = res.json().await;
-            let _bracket = parse_bracket_get_response(r);
+            let bracket = parse_bracket_get_response(r);
             match i {
                 1 | 2 => {
                     // When bracket is too small, no matches are generated.
@@ -263,8 +263,11 @@ async fn bracket_initial_next_opponent_are_correct() {
                         .send()
                         .await;
                     res.assert_status(StatusCode::NOT_FOUND);
-                    res.assert_text("Unable to answer query: No matches were generated yet")
-                        .await;
+                    res.assert_text(format!(
+                        "Unable to answer query:\n\tNo matches were generated yet for bracket {}",
+                        bracket.bracket_id
+                    ))
+                    .await;
                 }
                 3 => {
                     assert_next_matches(
@@ -349,7 +352,7 @@ async fn reporting_result_using_service_is_protected() {
     }
 }
 
-#[tokio::test]
+#[test(tokio::test)]
 async fn new_participants_cannot_join_bracket_after_it_has_started() {
     for db_type in db_types_to_test() {
         let test_api = test_api(db_type).await;
@@ -390,7 +393,7 @@ async fn new_participants_cannot_join_bracket_after_it_has_started() {
             .await;
         resp.assert_status(StatusCode::FORBIDDEN);
         resp.assert_text(format!(
-            "Bracket cannot be updated: Bracket \"{id}\" does not accept new participants"
+            "Action is forbidden:\n\tBracket \"{id}\" does not accept new participants"
         ))
         .await;
     }

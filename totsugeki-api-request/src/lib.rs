@@ -12,7 +12,7 @@
 //! **Note**: reqwest `danger_accept_invalid_certs` method does not compile to wasm target
 //! which is why reqwest client is passed as a parameter. frontend is the only crate compiling to wasm
 //! but discord bot makes the same request. This parameter being added to the parameter list is a necessary code smell.
-use std::fmt::{self, Formatter};
+use thiserror::Error;
 use totsugeki::{
     bracket::ParsingError as BracketParsingError, matches::NextMatchGETParsingError,
     player::Error as PlayerError, ServiceRegisterPOST,
@@ -30,44 +30,23 @@ pub mod validate;
 const HTTP_PREFIX: &str = "https://";
 
 /// Error while making request to the api
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum RequestError {
     /// Request error
+    #[error("{1}")]
     Request(reqwest::Error, String),
     /// Bracket parsing error
-    BracketParsingError(BracketParsingError),
+    #[error("{0}")]
+    BracketParsingError(#[from] BracketParsingError),
     /// Match id parsing error
-    MatchIdParsingError(uuid::Error),
+    #[error("Could not parse match id: {0}")]
+    MatchIdParsingError(#[from] uuid::Error),
     /// Error parsing next match
-    NextMatch(NextMatchGETParsingError),
+    #[error("{0}")]
+    NextMatch(#[from] NextMatchGETParsingError),
     /// Cannot parse players in response
-    PlayerParsingError(PlayerError),
-}
-
-impl From<NextMatchGETParsingError> for RequestError {
-    fn from(e: NextMatchGETParsingError) -> Self {
-        Self::NextMatch(e)
-    }
-}
-
-impl From<uuid::Error> for RequestError {
-    fn from(e: uuid::Error) -> Self {
-        Self::MatchIdParsingError(e)
-    }
-}
-
-impl std::fmt::Display for RequestError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            RequestError::Request(_, msg) => write!(f, "{msg}"),
-            RequestError::BracketParsingError(e) => e.fmt(f),
-            RequestError::MatchIdParsingError(e) => write!(f, "Could not parse match id: {e}"),
-            RequestError::NextMatch(e) => e.fmt(f),
-            RequestError::PlayerParsingError(e) => {
-                write!(f, "Cannot parse players in response: {e}")
-            }
-        }
-    }
+    #[error("{0}")]
+    PlayerParsingError(#[from] PlayerError),
 }
 
 impl From<reqwest::Error> for RequestError {
@@ -78,20 +57,6 @@ impl From<reqwest::Error> for RequestError {
             None => String::new(),
         };
         RequestError::Request(e, format!("Request to Api has failed: {}{}", status, msg))
-    }
-}
-
-impl std::error::Error for RequestError {}
-
-impl From<BracketParsingError> for RequestError {
-    fn from(e: BracketParsingError) -> Self {
-        Self::BracketParsingError(e)
-    }
-}
-
-impl From<PlayerError> for RequestError {
-    fn from(e: PlayerError) -> Self {
-        Self::PlayerParsingError(e)
     }
 }
 

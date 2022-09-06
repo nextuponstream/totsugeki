@@ -8,6 +8,7 @@ use crate::{
 use rand::prelude::*;
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 /// Seeding method
 #[derive(Copy, Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
@@ -29,18 +30,11 @@ impl std::fmt::Display for Method {
 }
 
 /// Seeding method parsing error
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum ParsingError {
     /// Unknown seeding method was found
+    #[error("Seeding method is unknown")]
     Unknown,
-}
-
-impl std::fmt::Display for ParsingError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ParsingError::Unknown => writeln!(f, "Seeding method is unknown"),
-        }
-    }
 }
 
 impl std::str::FromStr for Method {
@@ -62,27 +56,21 @@ impl Default for Method {
 }
 
 /// Seeding cannot proceed
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Error, Debug)]
 pub enum Error {
     /// You cannot seed a bracket of 0 players
+    #[error("Not enough players")]
     NotEnoughPlayers,
     /// The os generator panicked while generating a random number
-    Rng,
+    #[error("RNG is unavailable")]
+    Rng(#[from] rand::Error),
     /// Shuffle could not yield players
-    Shuffle(PlayerError),
+    #[error("A shuffling operation could not be performed: {0}")]
+    Shuffle(#[from] PlayerError),
     /// Mathematical overflow
+    // TODO this should be an oppaque error
+    #[error("A mathematical overflow happened")]
     MathOverflow,
-}
-
-impl std::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Error::NotEnoughPlayers => writeln!(f, "Not enough players"),
-            Error::Rng => writeln!(f, "RNG is unavailable"),
-            Error::Shuffle(e) => writeln!(f, "A shuffling operation could not be performed: {e}"),
-            Error::MathOverflow => writeln!(f, "A mathematical overflow happened"),
-        }
-    }
 }
 
 /// Returns ordered list of players according to the seeding method.
@@ -91,7 +79,8 @@ impl std::fmt::Display for Error {
 /// weakest.
 ///
 /// # Errors
-/// Returns an error when filling an empty bracket
+/// Returns an error when filling an empty bracket or group of players cannot
+/// be formed
 pub fn seed(method: &Method, players: Players) -> Result<Players, Error> {
     if players.len() < 3 {
         return Err(Error::NotEnoughPlayers);
@@ -111,7 +100,8 @@ pub fn seed(method: &Method, players: Players) -> Result<Players, Error> {
     }
 }
 
-/// Returns tournament matches for `n` players. Matches are separated by rounds.
+/// Returns tournament matches for `n` players. Matches are separated by
+/// rounds.
 ///
 /// Top seed plays the least matches. He will face predicted higher seeds only
 /// later in the bracket. Top seed plays at most one more match than anyone
@@ -245,18 +235,6 @@ fn seeding_initial_round(
         )
         .expect("match"),
     );
-}
-
-impl From<rand::Error> for Error {
-    fn from(_: rand::Error) -> Self {
-        Self::Rng
-    }
-}
-
-impl From<PlayerError> for Error {
-    fn from(e: PlayerError) -> Self {
-        Self::Shuffle(e)
-    }
 }
 
 #[cfg(test)]
