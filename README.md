@@ -10,7 +10,7 @@ discord bot.
 * [x] let player see their !nextmatch opponent
 * [x] TO !validatematch
 * [ ] !quit bracket (for players)
-* [ ] !start bracket (for tournament organisers)
+* [x] !start bracket (for tournament organisers)
 * [ ] !dq player
 * [ ] double elimination format
 * [ ] database queries

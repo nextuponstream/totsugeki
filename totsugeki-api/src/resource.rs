@@ -36,8 +36,7 @@ pub enum Error {
 impl From<BracketError> for Error {
     fn from(e: BracketError) -> Self {
         match e {
-            BracketError::Players(_, _)
-            | BracketError::Match(_)
+            BracketError::Match(_)
             | BracketError::PlayerUpdate(_)
             | BracketError::BarredFromEntering(_, _)
             | BracketError::AcceptResults(_, _)
