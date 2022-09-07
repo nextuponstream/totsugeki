@@ -17,7 +17,7 @@ use tracing::{span, Level};
 #[allowed_roles("TO")]
 async fn validate(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     // NOTE: workaround since instrument macro conflict with discords
-    let span = span!(Level::INFO, "Validate match command");
+    let span = span!(Level::INFO, "Validate match");
     span.in_scope(|| async {
         let match_id = args.single::<MatchId>()?;
         let api = {

@@ -43,11 +43,13 @@ impl Player {
 /// Player identifier
 pub type Id = Uuid;
 
-/// Ordered list of players. Used to seed a bracket
+/// Participants of bracket
+///
+/// Participants are ordered by seeding position from strongest to weakest
 #[derive(Default, Debug, Clone)]
-pub struct Players {
+pub struct Participants {
     /// players from this group
-    players: Vec<Player>,
+    participants: Vec<Player>,
 }
 
 /// Error while forming group of players
@@ -61,42 +63,42 @@ pub enum Error {
     PlayerId(#[from] uuid::Error),
 }
 
-impl Players {
-    /// Add player to bracket
+impl Participants {
+    /// Add player to participants
     ///
     /// # Errors
-    /// Returns an error if player already exists in this group
+    /// thrown if player is already present
     pub fn add(&mut self, new_player: Player) -> Result<(), Error> {
         if self
-            .players
+            .participants
             .iter()
             .any(|p| p.get_id() == new_player.get_id())
         {
             Err(Error::AlreadyPresent)
         } else {
-            self.players.push(new_player);
+            self.participants.push(new_player);
             Ok(())
         }
     }
 
-    /// Number of players
+    /// Number of participants
     #[must_use]
     pub fn len(&self) -> usize {
-        self.players.len()
+        self.participants.len()
     }
 
-    /// Returns `true` if there is no players
+    /// Returns `true` if there is no participants
     #[must_use]
     pub fn is_empty(&self) -> bool {
-        self.players.is_empty()
+        self.participants.is_empty()
     }
 
-    /// Form player group from raw player ids
+    /// Form participants with provided (id, name) pairs
     ///
     /// # Errors
-    /// Returns an error if two same players are added
-    pub fn from_raw_id(players_to_add: Vec<(String, String)>) -> Result<Players, Error> {
-        let mut players = Players::default();
+    /// thrown error if two same players are added
+    pub fn from_raw_id(players_to_add: Vec<(String, String)>) -> Result<Participants, Error> {
+        let mut players = Participants::default();
         for p in players_to_add {
             let id = Id::parse_str(&p.0)?;
             let p = Player { id, name: p.1 };
@@ -107,25 +109,25 @@ impl Players {
         Ok(players)
     }
 
-    /// Return players ids as a list
+    /// Return participants as a list of players
     #[must_use]
     pub fn get_players_list(self) -> Vec<Player> {
-        self.players
+        self.participants
     }
 
-    /// Returns true if both group of players contains the same players
+    /// Returns true if both group of participants have the same players,
     /// disregarding order
     #[must_use]
-    pub fn contains_same_players(&self, other_group: &Players) -> bool {
+    pub fn have_same_participants(&self, other_group: &Participants) -> bool {
         let mut players = self
-            .players
+            .participants
             .clone()
             .iter()
             .map(Player::get_id)
             .collect::<Vec<Id>>();
         players.sort();
         let mut other_players = other_group
-            .players
+            .participants
             .clone()
             .iter()
             .map(Player::get_id)
@@ -141,21 +143,21 @@ impl std::fmt::Display for Player {
     }
 }
 
-impl std::fmt::Display for Players {
+impl std::fmt::Display for Participants {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Players:")?;
-        for p in &self.players {
+        for p in &self.participants {
             writeln!(f, "{p}")?;
         }
         Ok(())
     }
 }
 
-impl TryFrom<Vec<Player>> for Players {
+impl TryFrom<Vec<Player>> for Participants {
     type Error = Error;
 
     fn try_from(players: Vec<Player>) -> Result<Self, Self::Error> {
-        let mut result = Players::default();
+        let mut result = Participants::default();
         for p in players {
             result.add(p)?;
         }
@@ -163,11 +165,11 @@ impl TryFrom<Vec<Player>> for Players {
     }
 }
 
-impl TryFrom<Vec<(&Id, &String)>> for Players {
+impl TryFrom<Vec<(&Id, &String)>> for Participants {
     type Error = Error;
 
     fn try_from(players: Vec<(&Id, &String)>) -> Result<Self, Self::Error> {
-        let mut result = Players::default();
+        let mut result = Participants::default();
         for p in players {
             let p = Player {
                 id: *p.0,
@@ -209,13 +211,13 @@ mod tests {
     #[test]
     fn adding_two_same_players_returns_error() {
         let same_player = Player::new("same_player".to_string());
-        let mut players = Players::default();
+        let mut players = Participants::default();
         assert!(players.add(same_player.clone()).is_ok());
         let e = players.add(same_player);
         assert!(e.is_err(), "adding the same player did not return an error");
         match e.as_ref().expect_err("error") {
             Error::AlreadyPresent => {}
-            _ => panic!("expected AlreadyPresent but got {e:?}"),
+            Error::PlayerId(_) => panic!("expected AlreadyPresent but got {e:?}"),
         }
     }
 }

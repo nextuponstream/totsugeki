@@ -8,12 +8,13 @@ use poem::Result;
 use poem_openapi::param::Path;
 use poem_openapi::payload::Json;
 use poem_openapi::OpenApi;
-use totsugeki::bracket::{StartBracketPOST, POST};
+use totsugeki::bracket::{CommandPOST, POST};
 use totsugeki::player::PlayersRaw;
 use totsugeki::{
     bracket::{CreateRequest, Id as BracketId, POSTResult, Raw},
     matches::{Id as MatchId, MatchResultPOST, NextMatchGETRequest, NextMatchGETResponseRaw},
     player::{Player, GET as PlayersGET},
+    seeding::POST as SeedPOST,
 };
 use tracing::info;
 
@@ -178,14 +179,14 @@ impl Api {
         }
     }
 
-    /// Validate result of bracket by TO
+    /// Start bracket (accept results) and return id of bracket affected
     #[oai(path = "/bracket/start", method = "post")]
     #[tracing::instrument(name = "Start bracket", skip(self, db, _auth))]
     async fn start_bracket<'a>(
         &self,
         db: SharedDb<'a>,
         _auth: ApiKeyServiceAuthorization,
-        r: Json<StartBracketPOST>,
+        r: Json<CommandPOST>,
     ) -> Result<Json<BracketId>> {
         match start(&db, &r.0) {
             Ok(bracket_id) => Ok(Json(bracket_id)),
@@ -208,6 +209,38 @@ impl Api {
     ) -> Result<Json<PlayersRaw>> {
         match list_players_in_bracket(&db, &r.0) {
             Ok(players) => Ok(Json(players)),
+            Err(e) => {
+                log_error(&e);
+                Err(e.into())
+            }
+        }
+    }
+
+    /// Return bracket id after seeding
+    #[oai(path = "/bracket/seed", method = "post")]
+    #[tracing::instrument(name = "Seed bracket", skip(self, db))]
+    async fn seed<'a>(&self, db: SharedDb<'a>, r: Json<SeedPOST>) -> Result<Json<BracketId>> {
+        match seed_bracket(&db, r.0) {
+            Ok(bracket_id) => Ok(Json(bracket_id)),
+            Err(e) => {
+                log_error(&e);
+                Err(e.into())
+            }
+        }
+    }
+
+    /// Close bracket (prevent new participants from entering) and return id of
+    /// affected bracket
+    #[oai(path = "/bracket/close", method = "post")]
+    #[tracing::instrument(name = "Close bracket", skip(self, db, _auth))]
+    async fn close_bracket<'a>(
+        &self,
+        db: SharedDb<'a>,
+        _auth: ApiKeyServiceAuthorization,
+        r: Json<CommandPOST>,
+    ) -> Result<Json<BracketId>> {
+        match close(&db, &r.0) {
+            Ok(bracket_id) => Ok(Json(bracket_id)),
             Err(e) => {
                 log_error(&e);
                 Err(e.into())
@@ -301,7 +334,7 @@ where
 }
 
 /// Update bracket to start accepting match results
-fn start<'a, 'b>(db: &'a SharedDb, r: &StartBracketPOST) -> Result<BracketId, Error<'b>>
+fn start<'a, 'b>(db: &'a SharedDb, r: &CommandPOST) -> Result<BracketId, Error<'b>>
 where
     'a: 'b,
 {
@@ -327,4 +360,22 @@ where
         players: players_ids,
         player_names: players_names,
     })
+}
+
+/// Seed players in bracket
+fn seed_bracket<'a, 'b>(db: &'a SharedDb, r: SeedPOST) -> Result<BracketId, Error<'b>>
+where
+    'a: 'b,
+{
+    let db = db.read()?;
+    db.seed_bracket(&r.internal_channel_id, &r.service, r.players)
+}
+
+/// Update bracket by closing it
+fn close<'a, 'b>(db: &'a SharedDb, r: &CommandPOST) -> Result<BracketId, Error<'b>>
+where
+    'a: 'b,
+{
+    let db = db.read()?;
+    db.close_bracket(&r.channel_internal_id, &r.service_type_id)
 }

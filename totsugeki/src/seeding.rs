@@ -3,8 +3,10 @@
 use crate::{
     matches::Match,
     opponent::Opponent,
-    player::{Error as PlayerError, Id as PlayerId, Player, Players},
+    player::{Error as PlayerError, Id as PlayerId, Participants, Player},
 };
+#[cfg(feature = "poem-openapi")]
+use poem_openapi::Object;
 use rand::prelude::*;
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
@@ -81,7 +83,7 @@ pub enum Error {
 /// # Errors
 /// Returns an error when filling an empty bracket or group of players cannot
 /// be formed
-pub fn seed(method: &Method, players: Players) -> Result<Players, Error> {
+pub fn seed(method: &Method, players: Participants) -> Result<Participants, Error> {
     if players.len() < 3 {
         return Err(Error::NotEnoughPlayers);
     }
@@ -93,7 +95,7 @@ pub fn seed(method: &Method, players: Players) -> Result<Players, Error> {
             let mut rng = OsRng::default();
             let mut players = players.get_players_list();
             players.shuffle(&mut rng);
-            let players = Players::try_from(players)?;
+            let players = Participants::try_from(players)?;
             Ok(players)
         }
         Method::Strict => Ok(players),
@@ -108,7 +110,9 @@ pub fn seed(method: &Method, players: Players) -> Result<Players, Error> {
 /// else.
 /// # Errors
 /// Throws error when math overflow happens
-pub fn get_balanced_round_matches_top_seed_favored(players: &Players) -> Result<Vec<Match>, Error> {
+pub fn get_balanced_round_matches_top_seed_favored(
+    players: &Participants,
+) -> Result<Vec<Match>, Error> {
     // Matches are built bottom-up:
     // * for n
     // * compute #byes = `next_power_of_two(n)` - n
@@ -203,7 +207,7 @@ pub fn get_balanced_round_matches_top_seed_favored(players: &Players) -> Result<
 /// Seeding initial round for single elimination bracket
 fn seeding_initial_round(
     available_players: &mut Vec<usize>,
-    players: &Players,
+    players: &Participants,
     this_round: &mut Vec<Match>,
 ) {
     let top_seed = available_players.remove(0);
@@ -237,6 +241,19 @@ fn seeding_initial_round(
     );
 }
 
+/// Request to seed a bracket
+#[derive(Serialize, Deserialize, Debug)]
+#[cfg_attr(feature = "poem-openapi", derive(Object))]
+#[cfg_attr(feature = "poem-openapi", oai(rename = "SeedingPOST"))]
+pub struct POST {
+    /// Discussion channel internal id
+    pub internal_channel_id: String,
+    /// Service
+    pub service: String,
+    /// List of seeded players
+    pub players: Vec<String>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -244,7 +261,7 @@ mod tests {
     use crate::player::Player;
     use rand::Rng;
 
-    fn assert_seeding_returns_error(players: Players) {
+    fn assert_seeding_returns_error(players: Participants) {
         let e = seed(&Method::Random, players);
         assert!(e.is_err());
         if let Error::NotEnoughPlayers = e.expect_err("error") {
@@ -255,7 +272,7 @@ mod tests {
 
     #[test]
     fn need_at_least_three_persons_to_run_a_bracket() {
-        let mut players = Players::default();
+        let mut players = Participants::default();
         assert_seeding_returns_error(players.clone());
 
         players
@@ -288,7 +305,7 @@ mod tests {
         let pink = players.get(1).expect("pink").get_id();
         let cute_cat = players.get(2).expect("cute_cat").get_id();
 
-        let players = Players::try_from(players_copy).expect("players");
+        let players = Participants::try_from(players_copy).expect("players");
         let matches =
             get_balanced_round_matches_top_seed_favored(&players).expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches
@@ -333,7 +350,7 @@ mod tests {
         let guy = players.get(2).expect("guy").get_id();
         let cute_cat = players.get(3).expect("cute_cat").get_id();
 
-        let players = Players::try_from(players_copy).expect("players");
+        let players = Participants::try_from(players_copy).expect("players");
         let matches =
             get_balanced_round_matches_top_seed_favored(&players).expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches
@@ -388,7 +405,7 @@ mod tests {
         let guy = players.get(3).expect("guy").get_id();
         let cute_cat = players.get(4).expect("cute_cat").get_id();
 
-        let players = Players::try_from(players_copy).expect("players");
+        let players = Participants::try_from(players_copy).expect("players");
         let matches =
             get_balanced_round_matches_top_seed_favored(&players).expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches
@@ -453,7 +470,7 @@ mod tests {
         let guy = players.get(4).expect("guy").get_id();
         let cute_cat = players.get(5).expect("cute_cat").get_id();
 
-        let players = Players::try_from(players_copy).expect("players");
+        let players = Participants::try_from(players_copy).expect("players");
         let matches =
             get_balanced_round_matches_top_seed_favored(&players).expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches
@@ -529,7 +546,7 @@ mod tests {
         let fg_enjoyer = players.get(5).expect("fg_enjoyer").get_id();
         let cute_cat = players.get(6).expect("cute_cat").get_id();
 
-        let players = Players::try_from(players_copy).expect("players");
+        let players = Participants::try_from(players_copy).expect("players");
         let matches =
             get_balanced_round_matches_top_seed_favored(&players).expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches
@@ -615,7 +632,7 @@ mod tests {
         let fg_enjoyer = players.get(6).expect("fg_enjoyer").get_id();
         let cute_cat = players.get(7).expect("cute_cat").get_id();
 
-        let players = Players::try_from(players_copy).expect("players");
+        let players = Participants::try_from(players_copy).expect("players");
         let matches =
             get_balanced_round_matches_top_seed_favored(&players).expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches
@@ -705,7 +722,7 @@ mod tests {
             (0..n).for_each(|i| {
                 players.push(Player::new(format!("player{i}")));
             });
-            let players = Players::try_from(players).expect("players");
+            let players = Participants::try_from(players).expect("players");
             let players = seed(&Method::Strict, players).expect("seeded players");
             let _matches = get_balanced_round_matches_top_seed_favored(&players);
         });

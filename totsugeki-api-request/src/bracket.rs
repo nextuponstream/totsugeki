@@ -3,7 +3,8 @@
 use crate::RequestError;
 use crate::HTTP_PREFIX;
 use totsugeki::bracket::{Id as BracketId, POSTResult, Raw, GET as BracketGET, POST};
-use totsugeki::player::{Players, PlayersRaw, GET as PlayersGET};
+use totsugeki::player::{Participants, PlayersRaw, GET as PlayersGET};
+use totsugeki::seeding::POST as SeedPOST;
 
 /// Create brackets
 ///
@@ -82,14 +83,14 @@ pub async fn fetch_players(
     client: reqwest::Client,
     api_url: &str,
     body: PlayersGET,
-) -> Result<(BracketId, Players), RequestError> {
+) -> Result<(BracketId, Participants), RequestError> {
     let res = client
         .get(format!("{HTTP_PREFIX}{api_url}/bracket/players"))
         .json(&body)
         .send()
         .await?;
     let info: PlayersRaw = res.json().await?;
-    let players = Players::from_raw_id(
+    let players = Participants::from_raw_id(
         info.players
             .into_iter()
             .map(|id| id.to_string())
@@ -97,4 +98,36 @@ pub async fn fetch_players(
             .collect(),
     )?;
     Ok((info.bracket_id, players))
+}
+
+/// Seed active bracket in discussion channel
+///
+/// # Errors
+/// thrown when network is unavailable
+pub async fn seed(
+    client: reqwest::Client,
+    api_url: &str,
+    authorization_header: &str,
+    body: SeedPOST,
+) -> Result<BracketId, RequestError> {
+    let res = client
+        .post(format!("{HTTP_PREFIX}{api_url}/bracket/seed"))
+        .header("X-API-Key", authorization_header)
+        .json(&body)
+        .send()
+        .await?;
+    // use _ref so res is not consumed
+    match res.error_for_status_ref() {
+        Ok(_) => {
+            let mut response = res.text().await?;
+            response.pop();
+            response.remove(0);
+            let bracket_id = BracketId::parse_str(response.as_str())?;
+            Ok(bracket_id)
+        }
+        Err(r) => {
+            let txt = res.text().await?;
+            Err(RequestError::Request(r, txt))
+        }
+    }
 }

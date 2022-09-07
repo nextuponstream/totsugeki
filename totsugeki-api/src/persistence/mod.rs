@@ -15,7 +15,7 @@ use totsugeki::{
     join::POSTResponseBody,
     matches::{Id as MatchId, NextMatchGETResponseRaw},
     organiser::Organiser,
-    player::{Players, GET as PlayersGET},
+    player::{Participants, GET as PlayersGET},
 };
 
 /// Error while persisting data
@@ -159,7 +159,10 @@ pub trait DBAccessor {
     ///
     /// # Errors
     /// Thrown when if discussion channel is unregistered
-    fn list_players<'a, 'b>(&'a self, r: &PlayersGET) -> Result<(BracketId, Players), Error<'b>>;
+    fn list_players<'a, 'b>(
+        &'a self,
+        r: &PlayersGET,
+    ) -> Result<(BracketId, Participants), Error<'b>>;
 
     /// Register service API user
     ///
@@ -218,7 +221,7 @@ pub trait DBAccessor {
     ///
     /// # Errors
     /// Returns an error if there is no active bracket in channel
-    fn bar_from_entering_bracket<'a, 'b, 'c>(
+    fn close_bracket<'a, 'b, 'c>(
         &'a self,
         internal_channel_id: &'b str,
         service: &'b str,

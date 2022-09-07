@@ -1,19 +1,19 @@
-//! Start bracket command
+//! Close bracket to prevent new participants from entering
 
 use crate::{get_client, Api, DiscordChannel};
 use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{CommandError, CommandResult};
 use serenity::model::channel::Message;
 use serenity::prelude::*;
-use totsugeki_api_request::start::post;
+use totsugeki_api_request::close::post;
 use tracing::{span, warn, Level};
 
 #[command]
-#[description = "Start bracket. Allows people to start reporting match results."]
+#[description = "Close bracket. Prevent new participants from joining. May be used before seeding bracket to prevent surprise participations when seeding."]
 #[allowed_roles("TO")]
-async fn start(ctx: &Context, msg: &Message) -> CommandResult {
+async fn close(ctx: &Context, msg: &Message) -> CommandResult {
     // NOTE: workaround since instrument macro conflict with discords
-    let span = span!(Level::INFO, "Start bracket");
+    let span = span!(Level::INFO, "Close bracket");
     span.in_scope(|| async {
         let api = {
             let data_read = ctx.data.read().await;
@@ -36,11 +36,11 @@ async fn start(ctx: &Context, msg: &Message) -> CommandResult {
             Ok(id) => id,
             Err(e) => {
                 msg.reply(ctx, format!("{e}")).await?;
-                warn!("User could not start bracket: {e}");
+                warn!("User could not close bracket: {e}");
                 return Err(e.into());
             }
         };
-        msg.reply(ctx, format!("Bracket \"{bracket_id}\" started"))
+        msg.reply(ctx, format!("Bracket \"{bracket_id}\" closed"))
             .await?;
         // workaround: https://rust-lang.github.io/async-book/07_workarounds/02_err_in_async_blocks.html
         Ok::<CommandResult, CommandError>(Ok(()))

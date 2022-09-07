@@ -20,7 +20,7 @@ use totsugeki::{
     matches::{Id as MatchId, NextMatchGETResponseRaw},
     organiser::Id as OrganiserId,
     organiser::Organiser,
-    player::{Id as PlayerId, Player, Players, GET as PlayersGET},
+    player::{Id as PlayerId, Participants, Player, GET as PlayersGET},
     DiscussionChannelId,
 };
 use tracing::{debug, info};
@@ -387,22 +387,48 @@ impl DBAccessor for InMemoryDBAccessor {
         service: &'b str,
     ) -> Result<BracketId, Error<'c>> {
         let mut db = self.db.write().expect("database"); // FIXME bubble up error
-        let active_bracket = find_active_bracket(&mut db, internal_channel_id, service)?;
+        let (active_bracket_id, _, _) = find_active_bracket_id(&db, internal_channel_id, service)?;
+        let active_bracket = db.brackets.get(&active_bracket_id);
+        match active_bracket {
+            Some(b) => {
+                let updated_bracket = b.clone().start();
+                db.brackets
+                    .insert(updated_bracket.get_id(), updated_bracket);
 
-        active_bracket.start();
-        Ok(active_bracket.get_id())
+                Ok(active_bracket_id)
+            }
+            None => {
+                return Err(CriticalError::Corrupted(format!(
+                    "No bracket found for id: \"{active_bracket_id}\""
+                ))
+                .into())
+            }
+        }
     }
 
-    fn bar_from_entering_bracket<'a, 'b, 'c>(
+    fn close_bracket<'a, 'b, 'c>(
         &'a self,
         internal_channel_id: &'b str,
         service: &'b str,
     ) -> Result<BracketId, Error<'c>> {
         let mut db = self.db.write().expect("database"); // FIXME bubble up error
-        let active_bracket = find_active_bracket(&mut db, internal_channel_id, service)?;
+        let (active_bracket_id, _, _) = find_active_bracket_id(&db, internal_channel_id, service)?;
+        let active_bracket = db.brackets.get(&active_bracket_id);
+        match active_bracket {
+            Some(b) => {
+                let updated_bracket = b.clone().close();
+                db.brackets
+                    .insert(updated_bracket.get_id(), updated_bracket);
 
-        active_bracket.bar_from_entering();
-        Ok(active_bracket.get_id())
+                Ok(active_bracket_id)
+            }
+            None => {
+                return Err(CriticalError::Corrupted(format!(
+                    "No bracket found for id: \"{active_bracket_id}\""
+                ))
+                .into())
+            }
+        }
     }
 
     fn seed_bracket<'a, 'b, 'c>(
@@ -411,10 +437,10 @@ impl DBAccessor for InMemoryDBAccessor {
         service: &'b str,
         players: Vec<String>,
     ) -> Result<BracketId, Error<'c>> {
+        let players = parse_players(&players)?;
+
         let mut db = self.db.write().expect("database"); // FIXME bubble up error
         let (active_bracket_id, _, _) = find_active_bracket_id(&db, internal_channel_id, service)?;
-
-        let players = parse_players(&players)?;
         let bracket = db.brackets.get(&active_bracket_id).ok_or_else(|| {
             CriticalError::Corrupted(format!("No bracket found for id: \"{active_bracket_id}\""))
         })?;
@@ -426,7 +452,10 @@ impl DBAccessor for InMemoryDBAccessor {
         Ok(active_bracket_id)
     }
 
-    fn list_players<'a, 'b>(&'a self, r: &PlayersGET) -> Result<(BracketId, Players), Error<'b>> {
+    fn list_players<'a, 'b>(
+        &'a self,
+        r: &PlayersGET,
+    ) -> Result<(BracketId, Participants), Error<'b>> {
         let db = self.db.read().expect("database"); // FIXME bubble up error
         let (active_bracket_id, _, _) = find_active_bracket_id(
             &db,
@@ -434,27 +463,11 @@ impl DBAccessor for InMemoryDBAccessor {
             r.service.as_str(),
         )?;
         let players = match db.brackets.get(&active_bracket_id) {
-            Some(b) => b.get_players(),
+            Some(b) => b.get_participants(),
             None => return Err(ResourceError::UnknownResource(active_bracket_id).into()),
         };
 
         Ok((active_bracket_id, players))
-    }
-}
-
-/// Return active bracket in discussion channel, parsed discussion channel id and service
-///
-/// # Errors
-/// Returns an error if there is no active channel
-fn find_active_bracket<'a, 'b, 'c>(
-    db: &'a mut InMemoryDatabase,
-    internal_channel_id: &'b str,
-    service: &'b str,
-) -> Result<&'a mut Bracket, Error<'c>> {
-    let (active_bracket_id, _, _) = find_active_bracket_id(db, internal_channel_id, service)?;
-    match db.brackets.get_mut(&active_bracket_id) {
-        Some(b) => Ok(b),
-        None => Err(ResourceError::UnknownResource(active_bracket_id).into()),
     }
 }
 
