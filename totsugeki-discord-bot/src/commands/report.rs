@@ -1,13 +1,14 @@
 //! Report match results
 
 use crate::{get_client, Api, DiscordChannel};
+use reqwest::StatusCode;
 use serenity::{
     client::Context,
     framework::standard::{macros::command, Args, CommandError, CommandResult},
     model::channel::Message,
 };
-use totsugeki_api_request::report::result;
-use tracing::error;
+use totsugeki_api_request::{report::result, RequestError};
+use tracing::{error, warn};
 use tracing::{span, Level};
 
 #[command]
@@ -42,9 +43,38 @@ async fn report(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         {
             Ok(br) => br,
             Err(e) => {
-                error!("{e}");
-                msg.reply(ctx, "An error happened while updating match result.")
-                    .await?;
+                match e {
+                    RequestError::Request(ref re, ref e_msg) => {
+                        msg.reply(ctx, e_msg.as_str()).await?;
+                        if let Some(status) = re.status() {
+                            match status {
+                                StatusCode::BAD_REQUEST | StatusCode::FORBIDDEN => {
+                                    warn!("{e_msg}");
+                                    return Ok::<CommandResult, CommandError>(Ok(()));
+                                }
+                                _ => {}
+                            };
+                        }
+                        error!("{e_msg}");
+                    }
+                    RequestError::BracketParsingError(ref e) => {
+                        msg.reply(ctx, format!("{e}")).await?;
+                        warn!("User could not request bracket: {e}");
+                    }
+                    RequestError::MatchIdParsingError(ref e) => {
+                        msg.reply(ctx, format!("{e}")).await?;
+                        warn!("User could not request bracket: {e}");
+                    }
+                    RequestError::NextMatch(ref e) => {
+                        msg.reply(ctx, format!("{e}")).await?;
+                        error!("User could not request bracket: {e}");
+                    }
+                    RequestError::PlayerParsingError(ref e) => {
+                        msg.reply(ctx, format!("{e}")).await?;
+                        error!("User could not request bracket: {e}");
+                    }
+                };
+
                 return Err(e.into());
             }
         };
