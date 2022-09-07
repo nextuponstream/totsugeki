@@ -60,7 +60,7 @@ impl Default for Method {
 /// Seeding cannot proceed
 #[derive(Error, Debug)]
 pub enum Error {
-    /// You cannot seed a bracket of 0 players
+    /// You cannot seed a bracket with less than 3 players
     #[error("Not enough players")]
     NotEnoughPlayers,
     /// The os generator panicked while generating a random number
@@ -70,12 +70,14 @@ pub enum Error {
     #[error("A shuffling operation could not be performed: {0}")]
     Shuffle(#[from] PlayerError),
     /// Mathematical overflow
-    // TODO this should be an oppaque error
     #[error("A mathematical overflow happened")]
     MathOverflow,
+    /// Seeding needs to use the same participants
+    #[error("Participants used for seeding differ from current participants:\nused: {0}\nactual participants: {1}")]
+    DifferentParticipants(Participants, Participants),
 }
 
-/// Returns ordered list of players according to the seeding method.
+/// Returns updated participants after changing seeding position
 ///
 /// With `Strict` method, `players` are expected to be ranked from strongest to
 /// weakest.
@@ -83,8 +85,12 @@ pub enum Error {
 /// # Errors
 /// Returns an error when filling an empty bracket or group of players cannot
 /// be formed
-pub fn seed(method: &Method, players: Participants) -> Result<Participants, Error> {
-    if players.len() < 3 {
+pub fn seed(
+    method: &Method,
+    seeding: Participants,
+    participants: Participants,
+) -> Result<Participants, Error> {
+    if participants.len() < 3 {
         return Err(Error::NotEnoughPlayers);
     }
 
@@ -93,12 +99,18 @@ pub fn seed(method: &Method, players: Participants) -> Result<Participants, Erro
             let mut key = [0u8; 16];
             OsRng.try_fill_bytes(&mut key)?;
             let mut rng = OsRng::default();
-            let mut players = players.get_players_list();
+            let mut players = participants.get_players_list();
             players.shuffle(&mut rng);
             let players = Participants::try_from(players)?;
             Ok(players)
         }
-        Method::Strict => Ok(players),
+        Method::Strict => {
+            if participants.have_same_participants(&seeding) {
+                Ok(seeding)
+            } else {
+                Err(Error::DifferentParticipants(seeding, participants))
+            }
+        }
     }
 }
 
@@ -261,8 +273,11 @@ mod tests {
     use crate::player::Player;
     use rand::Rng;
 
-    fn assert_seeding_returns_error(players: Participants) {
-        let e = seed(&Method::Random, players);
+    fn assert_seeding_returns_not_enough_player_error(
+        players: Participants,
+        current_participants: Participants,
+    ) {
+        let e = seed(&Method::Random, players, current_participants);
         assert!(e.is_err());
         if let Error::NotEnoughPlayers = e.expect_err("error") {
         } else {
@@ -271,19 +286,19 @@ mod tests {
     }
 
     #[test]
-    fn need_at_least_three_persons_to_run_a_bracket() {
+    fn cannot_seed_bracket_without_3_players_minimum() {
         let mut players = Participants::default();
-        assert_seeding_returns_error(players.clone());
+        assert_seeding_returns_not_enough_player_error(players.clone(), players.clone());
 
         players
             .add(Player::new("player1".to_string()))
             .expect("player added");
-        assert_seeding_returns_error(players.clone());
+        assert_seeding_returns_not_enough_player_error(players.clone(), players.clone());
 
         players
             .add(Player::new("player2".to_string()))
             .expect("player added");
-        assert_seeding_returns_error(players.clone());
+        assert_seeding_returns_not_enough_player_error(players.clone(), players.clone());
 
         assert_eq!(
             players.len(),
@@ -723,7 +738,7 @@ mod tests {
                 players.push(Player::new(format!("player{i}")));
             });
             let players = Participants::try_from(players).expect("players");
-            let players = seed(&Method::Strict, players).expect("seeded players");
+            let players = seed(&Method::Strict, players.clone(), players).expect("seeded players");
             let _matches = get_balanced_round_matches_top_seed_favored(&players);
         });
     }

@@ -44,9 +44,6 @@ pub enum Error {
     /// Unknown player provided for seeding
     #[error("Unknown player \"{0}\" cannot be used for seeding. Use the following players: {1} of bracket {2}")]
     UnknownPlayer(PlayerId, Participants, BracketId),
-    /// Provided players for seeding do not match players in bracket
-    #[error("Provided players cannot be used: {0}\nUse the following players: {1}")]
-    Players(Participants, Participants),
     /// Cannot add player when they are barred from entering
     #[error("Bracket \"{1}\" does not accept new participants")]
     BarredFromEntering(PlayerId, BracketId),
@@ -221,6 +218,7 @@ impl Bracket {
         if self.accept_match_results {
             return Err(Error::Started(self.bracket_id));
         }
+
         let mut player_group = Participants::default();
         for sorted_player in players {
             let players = self.get_participants().get_players_list();
@@ -236,10 +234,7 @@ impl Bracket {
             };
             player_group.add(player.clone())?;
         }
-        let updated_players = seed(&self.seeding_method, player_group)?;
-        if !self.participants.have_same_participants(&updated_players) {
-            return Err(Error::Players(updated_players, self.participants));
-        }
+        let updated_players = seed(&self.seeding_method, player_group, self.participants)?;
         let updated_matches = get_balanced_round_matches_top_seed_favored(&updated_players)?;
         Ok(Self {
             participants: updated_players,
@@ -1132,5 +1127,84 @@ mod tests {
                 _ => panic!("Expected Started error, got {e}"),
             },
         }
+    }
+
+    #[test]
+    fn seeding_single_elimination_bracket_with_wrong_players_fails() {
+        let p1_id = PlayerId::new_v4();
+        let p2_id = PlayerId::new_v4();
+        let p3_id = PlayerId::new_v4();
+        let unknown_player = PlayerId::new_v4();
+        let player_ids = vec![p1_id, p2_id, p3_id];
+        let player_names = vec!["p1".to_string(), "p2".to_string(), "p3".to_string()];
+        let players = Participants::from_raw_id(
+            player_ids
+                .iter()
+                .zip(player_names.iter())
+                .map(|p| (p.0.to_string(), p.1.clone()))
+                .collect(),
+        )
+        .expect("players");
+        let matches = get_balanced_round_matches_top_seed_favored(&players).expect("matches");
+        let bracket_id = BracketId::new_v4();
+        let bracket: Bracket = Raw {
+            bracket_id,
+            bracket_name: "bracket".to_string(),
+            players: player_ids,
+            player_names,
+            matches,
+            format: Format::SingleElimination,
+            seeding_method: SeedingMethod::Strict,
+            start_time: Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
+            accept_match_results: false,
+            automatic_match_validation: false,
+            barred_from_entering: true,
+        }
+        .try_into()
+        .expect("bracket");
+
+        // Unknown player
+        let seeding = vec![p3_id, p2_id, unknown_player];
+        let expected_participants = bracket.get_participants();
+        let expected_bracket_id = bracket_id;
+        match bracket.clone().update_seeding(&seeding) {
+            Ok(b) => panic!("Expected error, bracket: {b}"),
+            Err(e) => match e {
+                Error::UnknownPlayer(id, p, bracket_id) => {
+                    assert_eq!(id, unknown_player);
+                    assert!(p.have_same_participants(&expected_participants));
+                    assert_eq!(bracket_id, expected_bracket_id);
+                }
+                _ => panic!("Expected Players error, got {e}"),
+            },
+        };
+
+        // no players
+        let seeding = vec![];
+        match bracket.clone().update_seeding(&seeding) {
+            Ok(b) => panic!("Expected error, bracket: {b}"),
+            Err(e) => match e {
+                Error::Seeding(e) => match e {
+                    SeedingError::DifferentParticipants(wrong_p, _actual_p) => {
+                        assert!(wrong_p.is_empty());
+                    }
+                    _ => panic!("Expected DifferentParticipants error, got {e}"),
+                },
+                _ => panic!("Expected Seeding error, got {e}"),
+            },
+        };
+
+        // duplicate player
+        let seeding = vec![p1_id, p1_id, p1_id];
+        match bracket.update_seeding(&seeding) {
+            Ok(b) => panic!("Expected error, bracket: {b}"),
+            Err(e) => match e {
+                Error::PlayerUpdate(e) => match e {
+                    PlayerError::AlreadyPresent => {}
+                    PlayerError::PlayerId(_) => panic!("Expected AlreadyPresent error, got {e}"),
+                },
+                _ => panic!("Expected Seeding error, got {e}"),
+            },
+        };
     }
 }
