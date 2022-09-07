@@ -4,13 +4,16 @@ use super::TotsugekiApiTestClient;
 use poem::test::TestJsonObject;
 use totsugeki::{
     bracket::Id as BracketId,
-    player::{Players, GET},
+    player::{Participants, GET},
 };
 
-pub async fn query_players(test_api: &TotsugekiApiTestClient, body: &GET) -> (BracketId, Players) {
+pub async fn query_players(
+    test_api: &TotsugekiApiTestClient,
+    body: &GET,
+) -> (BracketId, Participants) {
     let resp = test_api
         .cli
-        .get(format!("/bracket/players"))
+        .get("/bracket/players".to_string())
         .body_json(body)
         .send()
         .await;
@@ -26,19 +29,19 @@ pub async fn query_players(test_api: &TotsugekiApiTestClient, body: &GET) -> (Br
     (bracket_id, players)
 }
 
-pub fn parse_players(r: &TestJsonObject) -> Players {
-    let players: Vec<String> = r
-        .get("players")
-        .string_array()
-        .iter()
-        .map(|p| p.to_string())
-        .collect();
-    let player_names = r
-        .get("player_names")
-        .string_array()
-        .iter()
-        .map(|n| n.to_string())
-        .collect::<Vec<String>>();
-    Players::from_raw_id(players.into_iter().zip(player_names.into_iter()).collect())
-        .expect("player group")
+pub fn parse_players(r: &TestJsonObject) -> Participants {
+    Participants::from_raw_id(
+        r.get("players")
+            .string_array()
+            .iter()
+            .map(|p| p.to_string())
+            .zip(
+                r.get("player_names")
+                    .string_array()
+                    .iter()
+                    .map(|n| n.to_string()),
+            )
+            .collect(),
+    )
+    .expect("player group")
 }

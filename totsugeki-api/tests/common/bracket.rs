@@ -6,7 +6,7 @@ use chrono::prelude::*;
 use poem::test::{TestJson, TestJsonObject};
 use reqwest::StatusCode;
 use totsugeki::{
-    bracket::{Id as BracketId, POSTResult, Raw, StartBracketPOST, GET, POST},
+    bracket::{CommandPOST, Id as BracketId, POSTResult, Raw, GET, POST},
     format::Format,
     matches::{Id as MatchId, Match, MatchGET, ReportedResult},
     opponent::Opponent,
@@ -68,7 +68,7 @@ pub fn parse_bracket_get_response(response: TestJson) -> GET {
         matches: matches
             .iter()
             .map(|m| {
-                let m: MatchGET = m.clone().into();
+                let m: MatchGET = (*m).into();
                 m
             })
             .collect(),
@@ -178,6 +178,7 @@ pub fn parse_matches(response: &TestJsonObject) -> Vec<Match> {
 }
 
 /// Create bracket. Returns Bracket response, bracket name and organiser name
+#[allow(clippy::too_many_arguments)]
 pub async fn create_bracket(
     test_api: &TotsugekiApiTestClient,
     organiser_internal_id: &str,
@@ -218,6 +219,7 @@ pub async fn create_bracket(
 }
 
 /// Create a bracket with many joining `participants` and start bracket. Returns Bracket and organiser name
+#[allow(clippy::too_many_arguments)]
 pub async fn players_join_new_bracket_and_bracket_starts(
     test_api: &TotsugekiApiTestClient,
     organiser_internal_id: &str,
@@ -241,14 +243,14 @@ pub async fn players_join_new_bracket_and_bracket_starts(
     )
     .await;
     let bracket = n_players_join_bracket(
-        &test_api,
+        test_api,
         participants,
         channel_internal_id,
         service,
         post_result.bracket_id,
     )
     .await;
-    tournament_organiser_starts_bracket(&test_api, channel_internal_id, service).await;
+    tournament_organiser_starts_bracket(test_api, channel_internal_id, service).await;
     (bracket, organiser_name)
 }
 
@@ -257,7 +259,7 @@ pub async fn tournament_organiser_starts_bracket(
     channel_internal_id: &str,
     service: Service,
 ) {
-    let body_start = StartBracketPOST {
+    let body_start = CommandPOST {
         channel_internal_id: channel_internal_id.to_string(),
         service_type_id: service.to_string(),
     };

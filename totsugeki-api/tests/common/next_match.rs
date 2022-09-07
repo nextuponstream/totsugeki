@@ -55,7 +55,7 @@ pub async fn assert_next_opponent(
     assert_eq!(
         next_match.opponent,
         Opponent::Player(*players.get(y - 1).expect("seeded player")),
-        "seed {x} is not playing against seed {y}:\n{players:?}"
+        "seed {x} is not playing against seed {y}:\nCurrent seeding (1, 2...): {players:?}"
     );
 }
 

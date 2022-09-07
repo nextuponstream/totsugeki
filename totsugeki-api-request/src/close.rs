@@ -1,4 +1,4 @@
-//! Start bracket and accept match results
+//! Close bracket and bar new participants from entering
 
 use crate::{RequestError, HTTP_PREFIX};
 use totsugeki::{
@@ -6,7 +6,7 @@ use totsugeki::{
     DiscussionChannel,
 };
 
-/// Start bracket in discussion channel
+/// Close active bracket in discussion channel
 ///
 /// # Errors
 /// Thrown when request could not be processed by the server
@@ -21,7 +21,7 @@ pub async fn post<T: DiscussionChannel>(
         service_type_id: discussion_channel.get_service_type(),
     };
     let res = client
-        .post(format!("{HTTP_PREFIX}{api_url}/bracket/start"))
+        .post(format!("{HTTP_PREFIX}{api_url}/bracket/close"))
         .header("X-API-Key", authorization_header)
         .json(&body)
         .send()
