@@ -12,7 +12,7 @@ use std::sync::PoisonError;
 use thiserror::Error;
 use totsugeki::{
     bracket::{CreateRequest, Error as BracketError, Id as BracketId, POSTResult, Raw},
-    join::POSTResponseBody,
+    join::POSTResponse,
     matches::{Id as MatchId, NextMatchGETResponseRaw},
     organiser::Organiser,
     player::{Participants, GET as PlayersGET},
@@ -155,7 +155,7 @@ pub trait DBAccessor {
         player_name: &'b str,
         channel_internal_id: &'b str,
         service: &'b str,
-    ) -> Result<POSTResponseBody, Error<'c>>;
+    ) -> Result<POSTResponse, Error<'c>>;
 
     /// List brackets
     ///
@@ -189,7 +189,7 @@ pub trait DBAccessor {
 
     /// Let participant quit bracket before it starts and return id of bracket.
     ///
-    /// Use discussion channel to determine which bracket to start
+    /// Use discussion channel to determine which bracket to update
     ///
     /// # Errors
     /// Returns an error if the database is unavailable
@@ -198,6 +198,20 @@ pub trait DBAccessor {
         internal_channel_id: &'b str,
         service: &'b str,
         player_internal_id: &'b str,
+    ) -> Result<BracketId, Error<'c>>;
+
+    /// Let TO remove player from bracket before it starts and return id of
+    /// affected bracket.
+    ///
+    /// Use discussion channel to determine which bracket to update
+    ///
+    /// # Errors
+    /// Returns an error if the database is unavailable
+    fn remove_player<'a, 'b, 'c>(
+        &'a self,
+        internal_channel_id: &'b str,
+        service: &'b str,
+        player_id: &'b str,
     ) -> Result<BracketId, Error<'c>>;
 
     /// Register service API user

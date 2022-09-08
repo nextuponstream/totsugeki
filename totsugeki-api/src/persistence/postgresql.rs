@@ -84,7 +84,7 @@ impl DBAccessor for Accessor {
         player_name: &'b str,
         channel_internal_id: &'b str,
         service_type_id: &'b str,
-    ) -> Result<totsugeki::join::POSTResponseBody, super::Error<'c>> {
+    ) -> Result<totsugeki::join::POSTResponse, super::Error<'c>> {
         todo!()
     }
 
@@ -161,6 +161,15 @@ impl DBAccessor for Accessor {
     }
 
     fn validate_result<'a, 'b>(&'a self, match_id: MatchId) -> Result<(), super::Error<'b>> {
+        todo!()
+    }
+
+    fn remove_player<'a, 'b, 'c>(
+        &'a self,
+        internal_channel_id: &'b str,
+        service: &'b str,
+        player_id: &'b str,
+    ) -> Result<BracketId, super::Error<'c>> {
         todo!()
     }
 }

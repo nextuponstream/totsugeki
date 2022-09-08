@@ -2,7 +2,7 @@
 
 use totsugeki::{
     bracket::{Id as BracketId, GET},
-    join::POSTRequestBody,
+    join::POST,
 };
 use totsugeki_api::Service;
 
@@ -17,7 +17,7 @@ pub async fn player_join_bracket(
     bracket_id: BracketId,
 ) -> GET {
     let player_name = format!("player_{internal_player_id}");
-    let body = POSTRequestBody::new(
+    let body = POST::new(
         internal_player_id.to_string(),
         player_name,
         channel_internal_id.to_string(),

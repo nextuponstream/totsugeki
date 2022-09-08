@@ -62,6 +62,11 @@ pub fn parse_players(players: &[String]) -> Result<Vec<PlayerIdentifier>, Error>
         .collect::<Result<Vec<_>, _>>()?)
 }
 
+/// Parse player id
+pub fn parse_player(id: &str) -> Result<PlayerIdentifier, Error> {
+    Ok(PlayerIdentifier::parse_str(id)?)
+}
+
 /// Parse service from user input
 pub fn parse_service(service: &str) -> Result<Service, Error> {
     Ok(service.parse::<Service>()?)

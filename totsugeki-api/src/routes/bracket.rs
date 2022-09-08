@@ -15,6 +15,7 @@ use totsugeki::{
     matches::{Id as MatchId, MatchResultPOST, NextMatchGETRequest, NextMatchGETResponseRaw},
     player::{Player, GET as PlayersGET},
     quit::POST as QuitPOST,
+    remove::POST as RemovePOST,
     seeding::POST as SeedPOST,
 };
 use tracing::info;
@@ -219,8 +220,13 @@ impl Api {
 
     /// Return bracket id after seeding
     #[oai(path = "/bracket/seed", method = "post")]
-    #[tracing::instrument(name = "Seed bracket", skip(self, db))]
-    async fn seed<'a>(&self, db: SharedDb<'a>, r: Json<SeedPOST>) -> Result<Json<BracketId>> {
+    #[tracing::instrument(name = "Seed bracket", skip(self, db, _auth))]
+    async fn seed<'a>(
+        &self,
+        db: SharedDb<'a>,
+        _auth: ApiKeyServiceAuthorization,
+        r: Json<SeedPOST>,
+    ) -> Result<Json<BracketId>> {
         match seed_bracket(&db, r.0) {
             Ok(bracket_id) => Ok(Json(bracket_id)),
             Err(e) => {
@@ -260,6 +266,24 @@ impl Api {
         r: Json<QuitPOST>,
     ) -> Result<Json<BracketId>> {
         match quit_bracket(&db, &r.0) {
+            Ok(bracket_id) => Ok(Json(bracket_id)),
+            Err(e) => {
+                log_error(&e);
+                Err(e.into())
+            }
+        }
+    }
+
+    /// Remove player from bracket and return id of affected bracket
+    #[oai(path = "/bracket/remove", method = "post")]
+    #[tracing::instrument(name = "Remove player from bracket", skip(self, db, _auth))]
+    async fn remove<'a>(
+        &self,
+        db: SharedDb<'a>,
+        _auth: ApiKeyServiceAuthorization,
+        r: Json<RemovePOST>,
+    ) -> Result<Json<BracketId>> {
+        match remove_player(&db, &r.0) {
             Ok(bracket_id) => Ok(Json(bracket_id)),
             Err(e) => {
                 log_error(&e);
@@ -400,11 +424,20 @@ where
     db.close_bracket(&r.channel_internal_id, &r.service_type_id)
 }
 
-/// Update bracket by closing it
+/// Let player quit bracket
 fn quit_bracket<'a, 'b>(db: &'a SharedDb, r: &QuitPOST) -> Result<BracketId, Error<'b>>
 where
     'a: 'b,
 {
     let db = db.read()?;
     db.quit_bracket(&r.internal_channel_id, &r.service, &r.internal_player_id)
+}
+
+/// Remove player from bracket
+fn remove_player<'a, 'b>(db: &'a SharedDb, r: &RemovePOST) -> Result<BracketId, Error<'b>>
+where
+    'a: 'b,
+{
+    let db = db.read()?;
+    db.remove_player(&r.internal_channel_id, &r.service, &r.player_id)
 }

@@ -10,6 +10,64 @@ use poem::http::StatusCode;
 use totsugeki::{format::Format, seeding::Method as SeedingMethod};
 
 #[tokio::test]
+async fn removing_player_from_bracket_requires_authorization() {
+    for db_type in db_types_to_test() {
+        let test_api = test_api(db_type).await;
+        let res = test_api.cli.post("/bracket/remove").send().await;
+        res.assert_status(StatusCode::UNAUTHORIZED);
+    }
+}
+
+#[tokio::test]
+async fn quitting_bracket_requires_authorization() {
+    for db_type in db_types_to_test() {
+        let test_api = test_api(db_type).await;
+        let res = test_api.cli.post("/bracket/quit").send().await;
+        res.assert_status(StatusCode::UNAUTHORIZED);
+    }
+}
+
+#[tokio::test]
+async fn validating_bracket_requires_authorization() {
+    for db_type in db_types_to_test() {
+        let test_api = test_api(db_type).await;
+        let resp = test_api.cli.post("/bracket/validate/1234").send().await;
+        resp.assert_status(StatusCode::UNAUTHORIZED);
+        test_api.clean_db().await;
+    }
+}
+
+#[tokio::test]
+async fn seeding_bracket_requires_authorization() {
+    for db_type in db_types_to_test() {
+        let test_api = test_api(db_type).await;
+        let resp = test_api.cli.post("/bracket/seed").send().await;
+        resp.assert_status(StatusCode::UNAUTHORIZED);
+        test_api.clean_db().await;
+    }
+}
+
+#[tokio::test]
+async fn closing_bracket_requires_authorization() {
+    for db_type in db_types_to_test() {
+        let test_api = test_api(db_type).await;
+        let resp = test_api.cli.post("/bracket/close").send().await;
+        resp.assert_status(StatusCode::UNAUTHORIZED);
+        test_api.clean_db().await;
+    }
+}
+
+#[tokio::test]
+async fn starting_bracket_requires_authorization() {
+    for db_type in db_types_to_test() {
+        let test_api = test_api(db_type).await;
+        let resp = test_api.cli.post("/bracket/start").send().await;
+        resp.assert_status(StatusCode::UNAUTHORIZED);
+        test_api.clean_db().await;
+    }
+}
+
+#[tokio::test]
 async fn posting_bracket_requires_authorization() {
     for db_type in db_types_to_test() {
         let test_api = test_api(db_type).await;
