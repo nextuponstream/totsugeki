@@ -14,7 +14,7 @@ use tracing::{span, Level};
 #[usage = "<BRACKET NAME> <OFFSET (use 0)>"]
 async fn find(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     // NOTE: workaround since instrument macro conflict with discords
-    let span = span!(Level::INFO, "Find bracket by name command");
+    let span = span!(Level::INFO, "Find bracket by name");
     span.in_scope(|| async {
         let bracket_name = args.single::<String>()?;
         let offset = args.single::<i64>()?;

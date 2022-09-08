@@ -21,6 +21,7 @@ pub mod matches;
 pub mod opponent;
 pub mod organiser;
 pub mod player;
+pub mod quit;
 pub mod seeding;
 
 /// Discussion channel identifier
