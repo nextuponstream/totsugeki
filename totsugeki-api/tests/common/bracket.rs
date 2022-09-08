@@ -272,3 +272,14 @@ pub async fn tournament_organiser_starts_bracket(
         .await;
     res.assert_status(StatusCode::OK);
 }
+
+pub async fn get_bracket(test_api: &TotsugekiApiTestClient, bracket_id: BracketId) -> GET {
+    let res = test_api
+        .cli
+        .get(format!("/bracket/{bracket_id}"))
+        .send()
+        .await;
+    res.assert_status(StatusCode::OK);
+    let res = res.json().await;
+    parse_bracket_get_response(res)
+}

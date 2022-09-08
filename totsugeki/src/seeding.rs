@@ -290,13 +290,13 @@ mod tests {
         let mut players = Participants::default();
         assert_seeding_returns_not_enough_player_error(players.clone(), players.clone());
 
-        players
-            .add(Player::new("player1".to_string()))
+        players = players
+            .add_participant(Player::new("player1".to_string()))
             .expect("player added");
         assert_seeding_returns_not_enough_player_error(players.clone(), players.clone());
 
-        players
-            .add(Player::new("player2".to_string()))
+        players = players
+            .add_participant(Player::new("player2".to_string()))
             .expect("player added");
         assert_seeding_returns_not_enough_player_error(players.clone(), players.clone());
 

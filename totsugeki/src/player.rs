@@ -1,6 +1,6 @@
 //! player
 
-use crate::bracket::Id as BracketId;
+use crate::{bracket::Id as BracketId, player::Id as PlayerId};
 #[cfg(feature = "poem-openapi")]
 use poem_openapi::Object;
 use serde::{Deserialize, Serialize};
@@ -68,7 +68,7 @@ impl Participants {
     ///
     /// # Errors
     /// thrown if player is already present
-    pub fn add(&mut self, new_player: Player) -> Result<(), Error> {
+    pub fn add_participant(self, new_player: Player) -> Result<Self, Error> {
         if self
             .participants
             .iter()
@@ -76,21 +76,12 @@ impl Participants {
         {
             Err(Error::AlreadyPresent)
         } else {
-            self.participants.push(new_player);
-            Ok(())
+            let mut updated_participants = self.participants;
+            updated_participants.push(new_player);
+            Ok(Self {
+                participants: updated_participants,
+            })
         }
-    }
-
-    /// Number of participants
-    #[must_use]
-    pub fn len(&self) -> usize {
-        self.participants.len()
-    }
-
-    /// Returns `true` if there is no participants
-    #[must_use]
-    pub fn is_empty(&self) -> bool {
-        self.participants.is_empty()
     }
 
     /// Form participants with provided (id, name) pairs
@@ -102,9 +93,10 @@ impl Participants {
         for p in players_to_add {
             let id = Id::parse_str(&p.0)?;
             let p = Player { id, name: p.1 };
-            if let Err(e) = players.add(p) {
-                return Err(e);
-            }
+            players = match players.add_participant(p) {
+                Ok(updated_players) => updated_players,
+                Err(e) => return Err(e),
+            };
         }
         Ok(players)
     }
@@ -135,6 +127,33 @@ impl Participants {
         other_players.sort();
         players == other_players
     }
+
+    /// Returns `true` if there is no participants
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.participants.is_empty()
+    }
+
+    /// Number of participants
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.participants.len()
+    }
+
+    /// Remove participant
+    ///
+    /// # Errors
+    /// thrown if participant does not belong to this group
+    #[must_use]
+    pub fn remove(self, participant_id: PlayerId) -> Self {
+        Self {
+            participants: self
+                .participants
+                .into_iter()
+                .filter(|p| p.get_id() != participant_id)
+                .collect::<Vec<_>>(),
+        }
+    }
 }
 
 impl std::fmt::Display for Player {
@@ -159,7 +178,7 @@ impl TryFrom<Vec<Player>> for Participants {
     fn try_from(players: Vec<Player>) -> Result<Self, Self::Error> {
         let mut result = Participants::default();
         for p in players {
-            result.add(p)?;
+            result = result.add_participant(p)?;
         }
         Ok(result)
     }
@@ -175,7 +194,7 @@ impl TryFrom<Vec<(&Id, &String)>> for Participants {
                 id: *p.0,
                 name: p.1.to_string(),
             };
-            result.add(p)?;
+            result = result.add_participant(p)?;
         }
         Ok(result)
     }
@@ -212,8 +231,10 @@ mod tests {
     fn adding_two_same_players_returns_error() {
         let same_player = Player::new("same_player".to_string());
         let mut players = Participants::default();
-        assert!(players.add(same_player.clone()).is_ok());
-        let e = players.add(same_player);
+        players = players
+            .add_participant(same_player.clone())
+            .expect("players");
+        let e = players.add_participant(same_player);
         assert!(e.is_err(), "adding the same player did not return an error");
         match e.as_ref().expect_err("error") {
             Error::AlreadyPresent => {}

@@ -14,6 +14,7 @@ use totsugeki::{
     bracket::{CreateRequest, Id as BracketId, POSTResult, Raw},
     matches::{Id as MatchId, MatchResultPOST, NextMatchGETRequest, NextMatchGETResponseRaw},
     player::{Player, GET as PlayersGET},
+    quit::POST as QuitPOST,
     seeding::POST as SeedPOST,
 };
 use tracing::info;
@@ -247,6 +248,25 @@ impl Api {
             }
         }
     }
+
+    /// Quit bracket bracket (prevent new participants from entering) and return id of
+    /// affected bracket
+    #[oai(path = "/bracket/quit", method = "post")]
+    #[tracing::instrument(name = "Quit bracket", skip(self, db, _auth))]
+    async fn quit<'a>(
+        &self,
+        db: SharedDb<'a>,
+        _auth: ApiKeyServiceAuthorization,
+        r: Json<QuitPOST>,
+    ) -> Result<Json<BracketId>> {
+        match quit_bracket(&db, &r.0) {
+            Ok(bracket_id) => Ok(Json(bracket_id)),
+            Err(e) => {
+                log_error(&e);
+                Err(e.into())
+            }
+        }
+    }
 }
 
 /// Database call to create new active bracket from issued discussion channel
@@ -378,4 +398,13 @@ where
 {
     let db = db.read()?;
     db.close_bracket(&r.channel_internal_id, &r.service_type_id)
+}
+
+/// Update bracket by closing it
+fn quit_bracket<'a, 'b>(db: &'a SharedDb, r: &QuitPOST) -> Result<BracketId, Error<'b>>
+where
+    'a: 'b,
+{
+    let db = db.read()?;
+    db.quit_bracket(&r.internal_channel_id, &r.service, &r.internal_player_id)
 }

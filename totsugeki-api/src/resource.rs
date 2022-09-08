@@ -40,7 +40,7 @@ impl From<BracketError> for Error {
             | BracketError::PlayerUpdate(_)
             | BracketError::BarredFromEntering(_, _)
             | BracketError::AcceptResults(_, _)
-            | BracketError::Started(_)
+            | BracketError::Started(_, _)
             | BracketError::Seeding(_) => Self::ForbiddenBracketUpdate(e),
 
             BracketError::PlayerIsNotParticipant(_, _)

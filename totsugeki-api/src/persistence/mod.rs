@@ -78,6 +78,18 @@ pub trait DBAccessor {
     /// Returns an error when database could not be cleaned
     fn clean<'a, 'b>(&'a self) -> Result<(), Error<'b>>;
 
+    /// Bar new participants from entering active bracket in discusion channel
+    ///
+    /// This make it easy to seed bracket
+    ///
+    /// # Errors
+    /// Returns an error if there is no active bracket in channel
+    fn close_bracket<'a, 'b, 'c>(
+        &'a self,
+        internal_channel_id: &'b str,
+        service: &'b str,
+    ) -> Result<BracketId, Error<'c>>;
+
     /// Create bracket with name `bracket_name`. If organiser is not know, create organiser with name `organiser_name`
     ///
     /// # Errors
@@ -100,6 +112,17 @@ pub trait DBAccessor {
         offset: i64,
     ) -> Result<Vec<Raw>, Error<'c>>;
 
+    /// Return next match for this player
+    ///
+    /// # Errors
+    /// Returns an error if there is no match to be played
+    fn find_next_match<'a, 'b, 'c>(
+        &'a self,
+        player_internal_id: &'b str,
+        channel_internal_id: &'b str,
+        service: &'b str,
+    ) -> Result<NextMatchGETResponseRaw, Error<'c>>;
+
     /// Find organisers with `organiser_name` filter
     ///
     /// # Errors
@@ -109,6 +132,12 @@ pub trait DBAccessor {
         organiser_name: &'b str,
         offset: i64,
     ) -> Result<Vec<Organiser>, Error<'c>>;
+
+    /// Get bracket using id
+    ///
+    /// # Errors
+    /// Returns an error if database could not be accessed
+    fn get_bracket<'a, 'b>(&'a self, bracket_id: BracketId) -> Result<Raw, Error<'b>>;
 
     /// Initialize database if no database is present
     ///
@@ -128,12 +157,6 @@ pub trait DBAccessor {
         service: &'b str,
     ) -> Result<POSTResponseBody, Error<'c>>;
 
-    /// Get bracket using id
-    ///
-    /// # Errors
-    /// Returns an error if database could not be accessed
-    fn get_bracket<'a, 'b>(&'a self, bracket_id: BracketId) -> Result<Raw, Error<'b>>;
-
     /// List brackets
     ///
     /// # Errors
@@ -145,15 +168,6 @@ pub trait DBAccessor {
     /// # Errors
     /// Returns an error if database could not be accessed
     fn list_organisers<'a, 'b>(&'a self, offset: i64) -> Result<Vec<Organiser>, Error<'b>>;
-
-    /// Register service API user
-    ///
-    /// # Errors
-    /// Returns an error if database could not be accessed
-    fn list_service_api_user<'a, 'b>(
-        &'a self,
-        offset: i64,
-    ) -> Result<Vec<ApiServiceUser>, Error<'b>>;
 
     /// Returns players in active bracket
     ///
@@ -168,22 +182,33 @@ pub trait DBAccessor {
     ///
     /// # Errors
     /// Returns an error if database could not be accessed
+    fn list_service_api_user<'a, 'b>(
+        &'a self,
+        offset: i64,
+    ) -> Result<Vec<ApiServiceUser>, Error<'b>>;
+
+    /// Let participant quit bracket before it starts and return id of bracket.
+    ///
+    /// Use discussion channel to determine which bracket to start
+    ///
+    /// # Errors
+    /// Returns an error if the database is unavailable
+    fn quit_bracket<'a, 'b, 'c>(
+        &'a self,
+        internal_channel_id: &'b str,
+        service: &'b str,
+        player_internal_id: &'b str,
+    ) -> Result<BracketId, Error<'c>>;
+
+    /// Register service API user
+    ///
+    /// # Errors
+    /// Returns an error if database could not be accessed
     fn register_service_api_user<'a, 'b, 'c>(
         &'a self,
         service_name: &'b str,
         service_description: &'b str,
     ) -> Result<ApiServiceId, Error<'c>>;
-
-    /// Return next match for this player
-    ///
-    /// # Errors
-    /// Returns an error if there is no match to be played
-    fn find_next_match<'a, 'b, 'c>(
-        &'a self,
-        player_internal_id: &'b str,
-        channel_internal_id: &'b str,
-        service: &'b str,
-    ) -> Result<NextMatchGETResponseRaw, Error<'c>>;
 
     /// Let player report result for his active match
     ///
@@ -197,11 +222,16 @@ pub trait DBAccessor {
         result: &'b str,
     ) -> Result<MatchId, Error<'c>>;
 
-    /// Let tournament organiser validate match result
+    /// Seed active bracket in discussion channel
     ///
     /// # Errors
-    /// Returns an error if result cannot be parsed
-    fn validate_result<'a, 'b>(&'a self, match_id: MatchId) -> Result<(), Error<'b>>;
+    /// Returns an error if there is no bracket to seed
+    fn seed_bracket<'a, 'b, 'c>(
+        &'a self,
+        internal_channel_id: &'b str,
+        service: &'b str,
+        players: Vec<String>,
+    ) -> Result<BracketId, Error<'c>>;
 
     /// Start bracket and allow participants to report result. Use discussion
     /// channel to determine which bracket to start.
@@ -215,26 +245,9 @@ pub trait DBAccessor {
         // TODO add optionnal player list from name|id to seed bracket
     ) -> Result<BracketId, Error<'c>>;
 
-    /// Bar new participants from entering active bracket in discusion channel
-    ///
-    /// This make it easy to seed bracket
+    /// Let tournament organiser validate match result
     ///
     /// # Errors
-    /// Returns an error if there is no active bracket in channel
-    fn close_bracket<'a, 'b, 'c>(
-        &'a self,
-        internal_channel_id: &'b str,
-        service: &'b str,
-    ) -> Result<BracketId, Error<'c>>;
-
-    /// Seed active bracket in discussion channel
-    ///
-    /// # Errors
-    /// Returns an error if there is no bracket to seed
-    fn seed_bracket<'a, 'b, 'c>(
-        &'a self,
-        internal_channel_id: &'b str,
-        service: &'b str,
-        players: Vec<String>,
-    ) -> Result<BracketId, Error<'c>>;
+    /// Returns an error if result cannot be parsed
+    fn validate_result<'a, 'b>(&'a self, match_id: MatchId) -> Result<(), Error<'b>>;
 }

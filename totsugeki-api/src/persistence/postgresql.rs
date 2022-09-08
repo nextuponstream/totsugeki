@@ -20,6 +20,21 @@ impl DBAccessor for Accessor {
         todo!()
     }
 
+    fn close_bracket<'a, 'b, 'c>(
+        &'a self,
+        internal_channel_id: &'b str,
+        service_type_id: &'b str,
+    ) -> Result<BracketId, super::Error<'c>> {
+        todo!()
+    }
+
+    fn create_bracket<'a, 'b, 'c>(
+        &'a self,
+        r: CreateRequest<'b>,
+    ) -> Result<totsugeki::bracket::POSTResult, super::Error<'c>> {
+        todo!()
+    }
+
     fn create_organiser<'a, 'b, 'c>(
         &'a self,
         organiser_name: &'b str,
@@ -35,6 +50,15 @@ impl DBAccessor for Accessor {
         todo!()
     }
 
+    fn find_next_match<'a, 'b, 'c>(
+        &'a self,
+        player_internal_id: &'b str,
+        channel_internal_id: &'b str,
+        service_type_id: &'b str,
+    ) -> Result<NextMatchGETResponseRaw, super::Error<'c>> {
+        todo!()
+    }
+
     fn find_organisers<'a, 'b, 'c>(
         &'a self,
         organiser_name: &'b str,
@@ -43,7 +67,24 @@ impl DBAccessor for Accessor {
         todo!()
     }
 
+    fn get_bracket<'a, 'b, 'c>(
+        &'a self,
+        bracket_id: BracketId,
+    ) -> Result<totsugeki::bracket::Raw, super::Error<'c>> {
+        todo!()
+    }
+
     fn init(&self) -> Result<(), super::Error> {
+        todo!()
+    }
+
+    fn join_bracket<'a, 'b, 'c>(
+        &'a self,
+        player_internal_id: &'b str,
+        player_name: &'b str,
+        channel_internal_id: &'b str,
+        service_type_id: &'b str,
+    ) -> Result<totsugeki::join::POSTResponseBody, super::Error<'c>> {
         todo!()
     }
 
@@ -61,10 +102,26 @@ impl DBAccessor for Accessor {
         todo!()
     }
 
+    fn list_players<'a, 'b>(
+        &'a self,
+        r: &PlayersGET,
+    ) -> Result<(BracketId, Participants), super::Error<'b>> {
+        todo!()
+    }
+
     fn list_service_api_user<'a, 'b, 'c>(
         &'a self,
         offset: i64,
     ) -> Result<Vec<crate::ApiServiceUser>, super::Error<'c>> {
+        todo!()
+    }
+
+    fn quit_bracket<'a, 'b, 'c>(
+        &'a self,
+        internal_channel_id: &'b str,
+        service: &'b str,
+        player_internal_id: &'b str,
+    ) -> Result<BracketId, super::Error<'c>> {
         todo!()
     }
 
@@ -73,39 +130,6 @@ impl DBAccessor for Accessor {
         service_name: &'b str,
         service_description: &'b str,
     ) -> Result<crate::ApiServiceId, super::Error<'c>> {
-        todo!()
-    }
-
-    fn join_bracket<'a, 'b, 'c>(
-        &'a self,
-        player_internal_id: &'b str,
-        player_name: &'b str,
-        channel_internal_id: &'b str,
-        service_type_id: &'b str,
-    ) -> Result<totsugeki::join::POSTResponseBody, super::Error<'c>> {
-        todo!()
-    }
-
-    fn get_bracket<'a, 'b, 'c>(
-        &'a self,
-        bracket_id: BracketId,
-    ) -> Result<totsugeki::bracket::Raw, super::Error<'c>> {
-        todo!()
-    }
-
-    fn create_bracket<'a, 'b, 'c>(
-        &'a self,
-        r: CreateRequest<'b>,
-    ) -> Result<totsugeki::bracket::POSTResult, super::Error<'c>> {
-        todo!()
-    }
-
-    fn find_next_match<'a, 'b, 'c>(
-        &'a self,
-        player_internal_id: &'b str,
-        channel_internal_id: &'b str,
-        service_type_id: &'b str,
-    ) -> Result<NextMatchGETResponseRaw, super::Error<'c>> {
         todo!()
     }
 
@@ -119,7 +143,12 @@ impl DBAccessor for Accessor {
         todo!()
     }
 
-    fn validate_result<'a, 'b>(&'a self, match_id: MatchId) -> Result<(), super::Error<'b>> {
+    fn seed_bracket<'a, 'b, 'c>(
+        &'a self,
+        internal_channel_id: &'b str,
+        service_type_id: &'b str,
+        players: Vec<String>,
+    ) -> Result<BracketId, super::Error<'c>> {
         todo!()
     }
 
@@ -131,27 +160,7 @@ impl DBAccessor for Accessor {
         todo!()
     }
 
-    fn close_bracket<'a, 'b, 'c>(
-        &'a self,
-        internal_channel_id: &'b str,
-        service_type_id: &'b str,
-    ) -> Result<BracketId, super::Error<'c>> {
-        todo!()
-    }
-
-    fn seed_bracket<'a, 'b, 'c>(
-        &'a self,
-        internal_channel_id: &'b str,
-        service_type_id: &'b str,
-        players: Vec<String>,
-    ) -> Result<BracketId, super::Error<'c>> {
-        todo!()
-    }
-
-    fn list_players<'a, 'b>(
-        &'a self,
-        r: &PlayersGET,
-    ) -> Result<(BracketId, Participants), super::Error<'b>> {
+    fn validate_result<'a, 'b>(&'a self, match_id: MatchId) -> Result<(), super::Error<'b>> {
         todo!()
     }
 }
