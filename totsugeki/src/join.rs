@@ -5,10 +5,11 @@ use crate::{bracket::Id as BracketId, organiser::Id as OrganiserId, player::Id a
 use poem_openapi::Object;
 use serde::{Deserialize, Serialize};
 
-/// /join POST response body
 #[derive(Debug, Serialize, Deserialize)]
 #[cfg_attr(feature = "poem-openapi", derive(Object))]
-pub struct POSTResponseBody {
+#[cfg_attr(feature = "poem-openapi", oai(rename = "JoinPOSTResponse"))]
+/// /join POST response body
+pub struct POSTResponse {
     /// Player identifier
     pub player_id: PlayerId,
     /// bracket identifier
@@ -19,8 +20,9 @@ pub struct POSTResponseBody {
 
 #[derive(Serialize, Debug)]
 #[cfg_attr(feature = "poem-openapi", derive(Object))]
+#[cfg_attr(feature = "poem-openapi", oai(rename = "JoinPOST"))]
 /// Join POST request body
-pub struct POSTRequestBody {
+pub struct POST {
     /// Player internal id
     pub player_internal_id: String,
     /// player_name: String,
@@ -31,7 +33,7 @@ pub struct POSTRequestBody {
     pub service_type_id: String,
 }
 
-impl POSTRequestBody {
+impl POST {
     /// Create new Join POST request body
     #[must_use]
     pub fn new(

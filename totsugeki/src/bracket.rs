@@ -328,7 +328,7 @@ impl Bracket {
         if self.accept_match_results {
             return Err(Error::Started(
                 self.bracket_id,
-                ". As a player, you can quit the bracket by forfeiting or ask an admin to DQ you."
+                ". As a player, you can quit the bracket by forfeiting or ask an admin to disqualify you."
                     .into(),
             ));
         }

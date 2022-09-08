@@ -3,7 +3,7 @@
 use crate::{log_error, persistence::Error, ApiKeyServiceAuthorization, SharedDb};
 use poem::Result;
 use poem_openapi::{payload::Json, OpenApi};
-use totsugeki::join::{POSTRequestBody, POSTResponseBody};
+use totsugeki::join::{POSTResponse, POST};
 
 /// Join Api
 pub struct Api;
@@ -17,8 +17,8 @@ impl Api {
         &self,
         db: SharedDb<'a>,
         _auth: ApiKeyServiceAuthorization,
-        join_request: Json<POSTRequestBody>,
-    ) -> Result<Json<POSTResponseBody>> {
+        join_request: Json<POST>,
+    ) -> Result<Json<POSTResponse>> {
         match join(&db, &join_request.0) {
             Ok(r) => Ok(Json(r)),
             Err(e) => {
@@ -30,7 +30,7 @@ impl Api {
 }
 
 /// Call to database for player to join active bracket in discussion channel
-fn join<'a, 'b>(db: &'a SharedDb, j: &POSTRequestBody) -> Result<POSTResponseBody, Error<'b>>
+fn join<'a, 'b>(db: &'a SharedDb, j: &POST) -> Result<POSTResponse, Error<'b>>
 where
     'a: 'b,
 {

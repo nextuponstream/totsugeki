@@ -24,6 +24,7 @@ pub mod join;
 pub mod next_match;
 pub mod organiser;
 pub mod quit;
+pub mod remove;
 pub mod report;
 pub mod start;
 pub mod validate;

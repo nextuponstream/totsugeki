@@ -9,7 +9,7 @@ discord bot.
 * [x] report !result
 * [x] let player see their !nextmatch opponent
 * [x] TO !validatematch
-* [ ] !quit bracket (for players)
+* [x] !quit bracket (for players)
 * [x] !start bracket (for tournament organisers)
 * [ ] !dq player
 * [ ] double elimination format

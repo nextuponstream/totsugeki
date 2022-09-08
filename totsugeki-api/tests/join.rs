@@ -16,9 +16,9 @@ use poem::http::StatusCode;
 use std::collections::HashSet;
 use test_log::test;
 use totsugeki::{
-    bracket::{Id as BracketId, POST},
+    bracket::{Id as BracketId, POST as BracketPOST},
     format::Format,
-    join::{POSTRequestBody, POSTResponseBody},
+    join::{POSTResponse, POST as JoinPOST},
     matches::NextMatchGETRequest,
     organiser::Id as OrganiserId,
     player::Id as PlayerId,
@@ -51,7 +51,7 @@ async fn players_join_bracket() {
         let format = Format::SingleElimination.to_string();
         let seeding_method = Method::Strict.to_string();
         let start_time = Utc.ymd(2000, 1, 1).and_hms(0, 0, 0).to_string();
-        let body = POST {
+        let body = BracketPOST {
             bracket_name: bracket_name.clone(),
             organiser_name,
             organiser_internal_id,
@@ -81,7 +81,7 @@ async fn players_join_bracket() {
             let player_name = format!("player_{i}");
             let channel_internal_id = channel_internal_id.clone();
             let service_type_id = service_type_id.clone();
-            let body = POSTRequestBody::new(
+            let body = JoinPOST::new(
                 player_internal_id,
                 player_name,
                 channel_internal_id,
@@ -172,7 +172,7 @@ async fn bracket_initial_next_opponent_are_correct() {
         let format = Format::SingleElimination.to_string();
         let seeding_method = Method::Strict.to_string();
         let start_time = Utc.ymd(2000, 1, 1).and_hms(0, 0, 0).to_string();
-        let body = POST {
+        let body = BracketPOST {
             bracket_name: bracket_name.clone(),
             organiser_name,
             organiser_internal_id,
@@ -203,7 +203,7 @@ async fn bracket_initial_next_opponent_are_correct() {
             let player_name = format!("player_{i}");
             info!("{player_name} wants to join");
             let channel_internal_id = channel_internal_id.clone();
-            let body = POSTRequestBody::new(
+            let body = JoinPOST::new(
                 player_internal_id.clone(),
                 player_name.clone(),
                 channel_internal_id.clone(),
@@ -220,7 +220,7 @@ async fn bracket_initial_next_opponent_are_correct() {
             join_resp.assert_status_is_ok();
             let join_resp = join_resp.json().await;
             let join_resp = join_resp.value().object();
-            let join_resp = POSTResponseBody {
+            let join_resp = POSTResponse {
                 player_id: PlayerId::try_from(join_resp.get("player_id").string())
                     .expect("player id"),
                 bracket_id: BracketId::try_from(join_resp.get("bracket_id").string())
@@ -377,7 +377,7 @@ async fn new_participants_cannot_join_bracket_after_it_has_started() {
 
         let player_internal_id = "4".to_string();
         let player_name = "player4".to_string();
-        let body = POSTRequestBody::new(
+        let body = JoinPOST::new(
             player_internal_id,
             player_name,
             channel_internal_id.to_string(),

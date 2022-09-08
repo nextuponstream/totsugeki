@@ -5,7 +5,7 @@ use crate::{
     critical::Error as CriticalError,
     parsing::{
         parse_bracket, parse_discord_channel_id, parse_discord_guild_id, parse_discord_user_id,
-        parse_match_result, parse_players, parse_service,
+        parse_match_result, parse_player, parse_players, parse_service,
     },
     persistence::{DBAccessor, Error},
     resource::Error as ResourceError,
@@ -16,7 +16,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use totsugeki::{
     bracket::{ActiveBrackets, Bracket, CreateRequest, Id as BracketId, POSTResult, Raw},
-    join::POSTResponseBody,
+    join::POSTResponse,
     matches::{Id as MatchId, NextMatchGETResponseRaw},
     organiser::Id as OrganiserId,
     organiser::Organiser,
@@ -260,7 +260,7 @@ impl DBAccessor for InMemoryDBAccessor {
         player_name: &'b str,
         channel_internal_id: &'b str,
         service_type_id: &'b str,
-    ) -> Result<totsugeki::join::POSTResponseBody, Error<'c>> {
+    ) -> Result<totsugeki::join::POSTResponse, Error<'c>> {
         let mut db = self.db.write().expect("database"); // FIXME bubble up error
         let (bracket_id, _, service) =
             find_active_bracket_id(&db, channel_internal_id, service_type_id)?;
@@ -284,7 +284,7 @@ impl DBAccessor for InMemoryDBAccessor {
                     ))
                 })?;
 
-                let body = POSTResponseBody {
+                let body = POSTResponse {
                     player_id,
                     bracket_id,
                     organiser_id: *organiser_id,
@@ -490,6 +490,31 @@ impl DBAccessor for InMemoryDBAccessor {
         match db.brackets.get(&active_bracket_id) {
             Some(b) => {
                 let updated_bracket = b.clone().remove_participant(player_id)?;
+                db.brackets
+                    .insert(updated_bracket.get_id(), updated_bracket);
+
+                Ok(active_bracket_id)
+            }
+            None => {
+                return Err(CriticalError::Corrupted(format!(
+                    "No bracket found for id: \"{active_bracket_id}\""
+                ))
+                .into())
+            }
+        }
+    }
+
+    fn remove_player<'a, 'b, 'c>(
+        &'a self,
+        internal_channel_id: &'b str,
+        service: &'b str,
+        player_id: &'b str,
+    ) -> Result<BracketId, Error<'c>> {
+        let mut db = self.db.write().expect("database"); // FIXME bubble up error
+        let (active_bracket_id, _, _) = find_active_bracket_id(&db, internal_channel_id, service)?;
+        match db.brackets.get(&active_bracket_id) {
+            Some(b) => {
+                let updated_bracket = b.clone().remove_participant(parse_player(player_id)?)?;
                 db.brackets
                     .insert(updated_bracket.get_id(), updated_bracket);
 
