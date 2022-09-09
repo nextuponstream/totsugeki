@@ -41,6 +41,9 @@ impl From<BracketError> for Error {
             | BracketError::BarredFromEntering(_, _)
             | BracketError::AcceptResults(_, _)
             | BracketError::Started(_, _)
+            | BracketError::NotStarted(_, _)
+            | BracketError::AllMatchesPlayed(_)
+            | BracketError::PlayerDisqualified(_, _)
             | BracketError::Seeding(_) => Self::ForbiddenBracketUpdate(e),
 
             BracketError::PlayerIsNotParticipant(_, _)
