@@ -154,6 +154,14 @@ impl Participants {
                 .collect::<Vec<_>>(),
         }
     }
+
+    /// Returns true if player is one of the participants
+    #[must_use]
+    pub fn contains(&self, participant_id: PlayerId) -> bool {
+        self.participants
+            .iter()
+            .any(|p| p.get_id() == participant_id)
+    }
 }
 
 impl std::fmt::Display for Player {

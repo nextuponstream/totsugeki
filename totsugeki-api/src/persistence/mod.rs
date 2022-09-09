@@ -102,6 +102,20 @@ pub trait DBAccessor {
     /// Returns an error if tournament organiser could not be persisted
     fn create_organiser<'a, 'b, 'c>(&'a self, organiser_name: &'b str) -> Result<(), Error<'c>>;
 
+    /// Let TO remove player from running bracket and return id of affected
+    /// bracket. Every match against disqualified player is automatically won.
+    ///
+    /// Uses discussion channel to determine which bracket to update.
+    ///
+    /// # Errors
+    /// Returns an error if the database is unavailable
+    fn disqualify_player<'a, 'b, 'c>(
+        &'a self,
+        internal_channel_id: &'b str,
+        service: &'b str,
+        player_id: &'b str,
+    ) -> Result<BracketId, Error<'c>>;
+
     /// Find brackets with `bracket_name` filter
     ///
     /// # Errors
@@ -200,20 +214,6 @@ pub trait DBAccessor {
         player_internal_id: &'b str,
     ) -> Result<BracketId, Error<'c>>;
 
-    /// Let TO remove player from bracket before it starts and return id of
-    /// affected bracket.
-    ///
-    /// Use discussion channel to determine which bracket to update
-    ///
-    /// # Errors
-    /// Returns an error if the database is unavailable
-    fn remove_player<'a, 'b, 'c>(
-        &'a self,
-        internal_channel_id: &'b str,
-        service: &'b str,
-        player_id: &'b str,
-    ) -> Result<BracketId, Error<'c>>;
-
     /// Register service API user
     ///
     /// # Errors
@@ -223,6 +223,20 @@ pub trait DBAccessor {
         service_name: &'b str,
         service_description: &'b str,
     ) -> Result<ApiServiceId, Error<'c>>;
+
+    /// Let TO remove player from bracket before it starts and return id of
+    /// affected bracket.
+    ///
+    /// Uses discussion channel to determine which bracket to update
+    ///
+    /// # Errors
+    /// Returns an error if the database is unavailable
+    fn remove_player<'a, 'b, 'c>(
+        &'a self,
+        internal_channel_id: &'b str,
+        service: &'b str,
+        player_id: &'b str,
+    ) -> Result<BracketId, Error<'c>>;
 
     /// Let player report result for his active match
     ///

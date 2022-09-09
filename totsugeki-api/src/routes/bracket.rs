@@ -291,6 +291,24 @@ impl Api {
             }
         }
     }
+
+    /// Remove player from bracket and return id of affected bracket
+    #[oai(path = "/bracket/disqualify", method = "post")]
+    #[tracing::instrument(name = "Disqualify player from bracket", skip(self, db, _auth))]
+    async fn disqualify<'a>(
+        &self,
+        db: SharedDb<'a>,
+        _auth: ApiKeyServiceAuthorization,
+        r: Json<RemovePOST>,
+    ) -> Result<Json<BracketId>> {
+        match disqualify_player(&db, &r.0) {
+            Ok(bracket_id) => Ok(Json(bracket_id)),
+            Err(e) => {
+                log_error(&e);
+                Err(e.into())
+            }
+        }
+    }
 }
 
 /// Database call to create new active bracket from issued discussion channel
@@ -440,4 +458,13 @@ where
 {
     let db = db.read()?;
     db.remove_player(&r.internal_channel_id, &r.service, &r.player_id)
+}
+
+/// Disqualify player from bracket
+fn disqualify_player<'a, 'b>(db: &'a SharedDb, r: &RemovePOST) -> Result<BracketId, Error<'b>>
+where
+    'a: 'b,
+{
+    let db = db.read()?;
+    db.disqualify_player(&r.internal_channel_id, &r.service, &r.player_id)
 }

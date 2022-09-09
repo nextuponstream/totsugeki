@@ -10,7 +10,6 @@ use poem_openapi::Object;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use thiserror::Error;
-use tracing::debug;
 
 /// Error while creating a match
 #[derive(Error, Debug, Clone)]
@@ -102,6 +101,20 @@ pub struct Match {
 }
 
 impl Match {
+    /// Returns true if both opponents are present but a winner has yet to be
+    /// declared
+    #[must_use]
+    pub fn is_playable(&self) -> bool {
+        if let Opponent::Player(_) = self.looser {
+            if let Opponent::Player(_) = self.players[0] {
+                if let Opponent::Player(_) = self.players[1] {
+                    return self.winner == Opponent::Unknown;
+                }
+            }
+        }
+        false
+    }
+
     /// Get matches to send
     #[must_use]
     pub fn get_sendable_matches(matches: &Vec<Vec<Match>>) -> Vec<Vec<MatchGET>> {
@@ -181,6 +194,37 @@ impl Match {
             reported_results: self.reported_results,
         }
     }
+
+    /// Returns true if one of the player has id `player_id`
+    #[must_use]
+    pub fn contains(self, player_id: PlayerId) -> bool {
+        if let Opponent::Player(id) = self.players[0] {
+            if id == player_id {
+                return true;
+            }
+        }
+        if let Opponent::Player(id) = self.players[1] {
+            if id == player_id {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    /// Set looser of this match (when disqualified)
+    ///
+    /// # Errors
+    /// thrown when looser is not a participant of the match
+    pub fn set_looser(self, player_id: PlayerId) -> Result<Self, Error> {
+        if !self.contains(player_id) {
+            return Err(Error::UnknownPlayer(player_id, self.players));
+        }
+        Ok(Self {
+            looser: Opponent::Player(player_id),
+            ..self
+        })
+    }
 }
 
 impl std::fmt::Display for Match {
@@ -248,8 +292,42 @@ impl Match {
     /// # Errors
     /// Returns an error if reported scores don't not agree on the winner
     pub fn update_outcome(self) -> Result<(Match, usize, PlayerId), Error> {
-        let [(s11, s12), (s21, s22)] = self.reported_results;
         let seed_of_expected_winner = self.get_seeds()[0];
+        // if there is a disqualified player, try to set the winner
+        if let Opponent::Player(dq_player_id) = self.looser {
+            if let Opponent::Player(id) = self.players[0] {
+                if id == dq_player_id {
+                    if let Opponent::Player(id) = self.players[1] {
+                        return Ok((
+                            Self {
+                                winner: Opponent::Player(id),
+                                ..self
+                            },
+                            seed_of_expected_winner,
+                            id,
+                        ));
+                    }
+                }
+            }
+            if let Opponent::Player(id) = self.players[1] {
+                if id == dq_player_id {
+                    if let Opponent::Player(id) = self.players[0] {
+                        return Ok((
+                            Self {
+                                winner: Opponent::Player(id),
+                                ..self
+                            },
+                            seed_of_expected_winner,
+                            id,
+                        ));
+                    }
+                }
+            }
+
+            return Err(Error::MissingOpponent(self.players));
+        }
+
+        let [(s11, s12), (s21, s22)] = self.reported_results;
         let winner = if s11 > s12 && s21 < s22 {
             self.players[0]
         } else if s11 < s12 && s21 > s22 {
@@ -265,8 +343,6 @@ impl Match {
             Opponent::Player(id) => id,
             Opponent::Unknown => return Err(Error::UnknownPlayerWithReportedResults),
         };
-
-        debug!("winner: {winner}");
 
         Ok((
             Match {
@@ -526,4 +602,22 @@ pub struct NextMatchGETResponseRaw {
     pub bracket_id: BracketId,
     /// Opponent name
     pub player_name: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn match_contains_both_players() {
+        let p1 = PlayerId::new_v4();
+        let player_1 = Opponent::Player(p1);
+        let p2 = PlayerId::new_v4();
+        let player_2 = Opponent::Player(p2);
+        let unknown = PlayerId::new_v4();
+        let m = Match::new([player_1, player_2], [1, 2]).expect("match");
+        assert!(m.contains(p1));
+        assert!(m.contains(p2));
+        assert!(!m.contains(unknown));
+    }
 }

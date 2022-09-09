@@ -11,7 +11,7 @@ discord bot.
 * [x] TO !validatematch
 * [x] !quit bracket (for players)
 * [x] !start bracket (for tournament organisers)
-* [ ] !dq player
+* [x] !dq player
 * [ ] double elimination format
 * [ ] database queries
 

@@ -42,6 +42,15 @@ impl DBAccessor for Accessor {
         todo!()
     }
 
+    fn disqualify_player<'a, 'b, 'c>(
+        &'a self,
+        internal_channel_id: &'b str,
+        service: &'b str,
+        player_id: &'b str,
+    ) -> Result<BracketId, super::Error<'c>> {
+        todo!()
+    }
+
     fn find_brackets<'a, 'b, 'c>(
         &'a self,
         bracket_name: &'b str,
@@ -133,6 +142,15 @@ impl DBAccessor for Accessor {
         todo!()
     }
 
+    fn remove_player<'a, 'b, 'c>(
+        &'a self,
+        internal_channel_id: &'b str,
+        service: &'b str,
+        player_id: &'b str,
+    ) -> Result<BracketId, super::Error<'c>> {
+        todo!()
+    }
+
     fn report_result<'a, 'b, 'c>(
         &'a self,
         player_internal_id: &'b str,
@@ -161,15 +179,6 @@ impl DBAccessor for Accessor {
     }
 
     fn validate_result<'a, 'b>(&'a self, match_id: MatchId) -> Result<(), super::Error<'b>> {
-        todo!()
-    }
-
-    fn remove_player<'a, 'b, 'c>(
-        &'a self,
-        internal_channel_id: &'b str,
-        service: &'b str,
-        player_id: &'b str,
-    ) -> Result<BracketId, super::Error<'c>> {
         todo!()
     }
 }
