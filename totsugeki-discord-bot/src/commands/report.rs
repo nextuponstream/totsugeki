@@ -31,7 +31,7 @@ async fn report(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         let discord_channel = DiscordChannel::new(None, discussion_channel_id);
         let player_internal_id = msg.author.id;
 
-        let match_id = match result(
+        let response = match result(
             get_client(api.accept_invalid_certs)?,
             &api.get_connection_string(),
             &api.get_authorization_header(),
@@ -79,8 +79,14 @@ async fn report(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
             }
         };
 
-        msg.reply(ctx, format!("Result reported for match: {match_id}"))
-            .await?;
+        msg.reply(
+            ctx,
+            format!(
+                "Match: {}. {}",
+                response.affected_match_id, response.message
+            ),
+        )
+        .await?;
         // workaround: https://rust-lang.github.io/async-book/07_workarounds/02_err_in_async_blocks.html
         Ok::<CommandResult, CommandError>(Ok(()))
     })

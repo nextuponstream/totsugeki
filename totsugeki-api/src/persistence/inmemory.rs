@@ -17,13 +17,13 @@ use std::sync::{Arc, RwLock};
 use totsugeki::{
     bracket::{ActiveBrackets, Bracket, CreateRequest, Id as BracketId, POSTResult, Raw},
     join::POSTResponse,
-    matches::{Id as MatchId, NextMatchGETResponseRaw},
+    matches::{Error as MatchError, Id as MatchId, NextMatchGETResponseRaw, ReportResultPOST},
     organiser::Id as OrganiserId,
     organiser::Organiser,
     player::{Id as PlayerId, Participants, Player, GET as PlayersGET},
     DiscussionChannelId,
 };
-use tracing::{debug, info};
+use tracing::info;
 
 /// In-memory database
 #[derive(Default)]
@@ -236,10 +236,6 @@ impl DBAccessor for InMemoryDBAccessor {
             "\"{player_id}\" searched for his next opponent (\"{opponent}\") in bracket \"{}\"",
             bracket.get_id()
         );
-
-        let m = bracket.get_matches();
-        let relevant_match = m.iter().find(|m| m.get_id() == match_id).expect("match");
-        debug!("{match_id}: {relevant_match}");
 
         Ok(NextMatchGETResponseRaw {
             opponent: opponent.to_string(),
@@ -472,18 +468,51 @@ impl DBAccessor for InMemoryDBAccessor {
         channel_internal_id: &'b str,
         service: &'b str,
         result: &'b str,
-    ) -> Result<MatchId, Error<'c>> {
+    ) -> Result<ReportResultPOST, Error<'c>> {
         let result = parse_match_result(result)?;
         let mut db = self.db.write().expect("database"); // FIXME not good
         let service = parse_service(service)?;
         let (bracket, player_id) =
             get_bracket_info(&db, service, channel_internal_id, player_internal_id)?;
 
-        let (updated_bracket, affected_match_id) = bracket.report_result(player_id, result)?;
-        db.brackets
-            .insert(updated_bracket.get_id(), updated_bracket);
+        let (bracket, affected_match_id) = bracket.report_result(player_id, result)?;
+        let bracket_with_reported_result = bracket.clone();
+        if bracket.is_validating_matches_automatically() {
+            match bracket.validate_match_result(affected_match_id) {
+                Ok(b) => {
+                    db.brackets.insert(b.get_id(), b);
+                    return Ok(ReportResultPOST {
+                        affected_match_id,
+                        message: "Result reported and match validated".into(),
+                    });
+                }
+                Err(e) => match e {
+                    totsugeki::bracket::Error::Match(
+                        MatchError::PlayersReportedDifferentMatchOutcome(_),
+                    ) => {
+                        // Even though match can't be validated, we still
+                        // update the bracket but add a warning
+                        db.brackets.insert(
+                            bracket_with_reported_result.get_id(),
+                            bracket_with_reported_result,
+                        );
+                        return Ok(ReportResultPOST {
+                            affected_match_id,
+                            message: "Result reported".into(),
+                        });
+                    }
+                    _ => {
+                        return Err(e.into());
+                    }
+                },
+            }
+        }
+        db.brackets.insert(bracket.get_id(), bracket);
 
-        Ok(affected_match_id)
+        Ok(ReportResultPOST {
+            affected_match_id,
+            message: "Result reported".into(),
+        })
     }
 
     fn seed_bracket<'a, 'b, 'c>(

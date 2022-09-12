@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use thiserror::Error;
 
-/// Error while creating a match
+/// Error while interacting with match
 #[derive(Error, Debug, Clone)]
 pub enum Error {
     /// Players reported different match outcome
@@ -94,24 +94,27 @@ pub struct Match {
     seeds: Seeds,
     /// The winner of this match
     winner: Opponent,
-    /// The looser of this match
-    looser: Opponent,
+    /// The looser of this match by disqualification
+    automatic_looser: Opponent,
     /// Result reported by players
     reported_results: MatchReportedResult,
 }
 
 impl Match {
-    /// Returns true if both opponents are present but a winner has yet to be
-    /// declared
+    /// Returns true if one of the player has id `player_id`
     #[must_use]
-    pub fn is_playable(&self) -> bool {
-        if let Opponent::Player(_) = self.looser {
-            if let Opponent::Player(_) = self.players[0] {
-                if let Opponent::Player(_) = self.players[1] {
-                    return self.winner == Opponent::Unknown;
-                }
+    pub fn contains(self, player_id: PlayerId) -> bool {
+        if let Opponent::Player(id) = self.players[0] {
+            if id == player_id {
+                return true;
             }
         }
+        if let Opponent::Player(id) = self.players[1] {
+            if id == player_id {
+                return true;
+            }
+        }
+
         false
     }
 
@@ -129,6 +132,63 @@ impl Match {
         }
 
         result
+    }
+
+    /// Returns true if player the automatic looser of this match is given
+    /// player
+    #[must_use]
+    pub fn is_automatic_looser_by_disqualification(&self, player_id: PlayerId) -> bool {
+        if let Opponent::Player(looser_id) = self.automatic_looser {
+            return looser_id == player_id;
+        }
+        false
+    }
+
+    /// Returns true if both opponents are present but a winner has yet to be
+    /// declared
+    #[must_use]
+    pub fn is_playable(&self) -> bool {
+        if let Opponent::Player(_) = self.automatic_looser {
+            if let Opponent::Player(_) = self.players[0] {
+                if let Opponent::Player(_) = self.players[1] {
+                    return self.winner == Opponent::Unknown;
+                }
+            }
+        }
+        false
+    }
+
+    /// Set looser of this match (when disqualified)
+    ///
+    /// # Errors
+    /// thrown when looser is not a participant of the match
+    pub fn set_looser(self, player_id: PlayerId) -> Result<Self, Error> {
+        if !self.contains(player_id) {
+            return Err(Error::UnknownPlayer(player_id, self.players));
+        }
+        Ok(Self {
+            automatic_looser: Opponent::Player(player_id),
+            ..self
+        })
+    }
+
+    #[must_use]
+    /// Set player of match and return updated match
+    pub fn set_player(self, player_id: PlayerId, is_player_1: bool) -> Match {
+        let player = Opponent::Player(player_id);
+        let players = if is_player_1 {
+            [player, self.players[1]]
+        } else {
+            [self.players[0], player]
+        };
+        Match {
+            id: self.id,
+            players,
+            seeds: self.seeds,
+            winner: self.winner,
+            automatic_looser: self.automatic_looser,
+            reported_results: self.reported_results,
+        }
     }
 
     /// Update match result and return updated match
@@ -157,7 +217,7 @@ impl Match {
                 players: self.players,
                 seeds: self.seeds,
                 winner: self.winner,
-                looser: self.looser,
+                automatic_looser: self.automatic_looser,
                 reported_results,
             })
         } else if self.players[1] == player {
@@ -168,62 +228,12 @@ impl Match {
                 players: self.players,
                 seeds: self.seeds,
                 winner: self.winner,
-                looser: self.looser,
+                automatic_looser: self.automatic_looser,
                 reported_results,
             })
         } else {
             Err(Error::UnknownPlayer(player_id, self.players))
         }
-    }
-
-    #[must_use]
-    /// Set player of match and return updated match
-    pub fn set_player(self, player_id: PlayerId, is_player_1: bool) -> Match {
-        let player = Opponent::Player(player_id);
-        let players = if is_player_1 {
-            [player, self.players[1]]
-        } else {
-            [self.players[0], player]
-        };
-        Match {
-            id: self.id,
-            players,
-            seeds: self.seeds,
-            winner: self.winner,
-            looser: self.looser,
-            reported_results: self.reported_results,
-        }
-    }
-
-    /// Returns true if one of the player has id `player_id`
-    #[must_use]
-    pub fn contains(self, player_id: PlayerId) -> bool {
-        if let Opponent::Player(id) = self.players[0] {
-            if id == player_id {
-                return true;
-            }
-        }
-        if let Opponent::Player(id) = self.players[1] {
-            if id == player_id {
-                return true;
-            }
-        }
-
-        false
-    }
-
-    /// Set looser of this match (when disqualified)
-    ///
-    /// # Errors
-    /// thrown when looser is not a participant of the match
-    pub fn set_looser(self, player_id: PlayerId) -> Result<Self, Error> {
-        if !self.contains(player_id) {
-            return Err(Error::UnknownPlayer(player_id, self.players));
-        }
-        Ok(Self {
-            looser: Opponent::Player(player_id),
-            ..self
-        })
     }
 }
 
@@ -250,7 +260,7 @@ impl Match {
             id: Id::new_v4(),
             players,
             winner: Opponent::Unknown,
-            looser: Opponent::Unknown,
+            automatic_looser: Opponent::Unknown,
             seeds,
             reported_results: [(0_i8, 0_i8), (0_i8, 0)],
         })
@@ -265,7 +275,7 @@ impl Match {
     /// Get looser of match. Loosers are always players
     #[must_use]
     pub fn get_looser(&self) -> Opponent {
-        self.looser
+        self.automatic_looser
     }
 
     /// Get players for this match
@@ -294,7 +304,7 @@ impl Match {
     pub fn update_outcome(self) -> Result<(Match, usize, PlayerId), Error> {
         let seed_of_expected_winner = self.get_seeds()[0];
         // if there is a disqualified player, try to set the winner
-        if let Opponent::Player(dq_player_id) = self.looser {
+        if let Opponent::Player(dq_player_id) = self.automatic_looser {
             if let Opponent::Player(id) = self.players[0] {
                 if id == dq_player_id {
                     if let Opponent::Player(id) = self.players[1] {
@@ -350,7 +360,7 @@ impl Match {
                 players: self.players,
                 seeds: self.seeds,
                 winner,
-                looser: self.looser,
+                automatic_looser: self.automatic_looser,
                 reported_results: self.reported_results,
             },
             seed_of_expected_winner,
@@ -448,7 +458,7 @@ impl TryFrom<MatchGET> for Match {
             players,
             seeds: m.seeds,
             winner,
-            looser,
+            automatic_looser: looser,
             reported_results: [
                 m.reported_results[0].parse::<ReportedResult>()?.0,
                 m.reported_results[0].parse::<ReportedResult>()?.0,
@@ -471,7 +481,7 @@ impl From<Match> for MatchGET {
             players: m.players.map(|p| p.to_string()),
             seeds: m.seeds,
             winner: m.winner.to_string(),
-            looser: m.looser.to_string(),
+            looser: m.automatic_looser.to_string(),
             reported_results: [
                 ReportedResult(m.reported_results[0]).to_string(),
                 ReportedResult(m.reported_results[1]).to_string(),
@@ -569,11 +579,11 @@ impl std::fmt::Display for NextMatchGET {
 #[cfg_attr(feature = "poem-openapi", derive(Object))]
 pub struct MatchResultPOST {
     /// Player id using service
-    pub player_internal_id: String,
+    pub internal_player_id: String,
     /// Discussion channel id of service
-    pub channel_internal_id: String,
+    pub internal_channel_id: String,
     /// Service used to make call
-    pub service_type_id: String,
+    pub service: String,
     /// Result as reported by the player
     pub result: String,
 }
@@ -587,6 +597,16 @@ pub struct ValidateMatchPOST {
     pub service_type_id: String,
     /// Result as reported by the player
     pub match_id: String,
+}
+
+/// Reponse to player reporting result with affected match id and some message
+#[derive(Serialize, Deserialize, Debug)]
+#[cfg_attr(feature = "poem-openapi", derive(Object))]
+pub struct ReportResultPOST {
+    /// Id of affected match
+    pub affected_match_id: Id,
+    /// Additionnal message which may contain a warning
+    pub message: String,
 }
 
 /// Raw response to next match query: Opponent is not parsed
