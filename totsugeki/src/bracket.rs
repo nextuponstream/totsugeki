@@ -79,9 +79,12 @@ pub enum Error {
     /// Bracket is over: all matches were played
     #[error("Bracket {0} is over")]
     AllMatchesPlayed(BracketId),
-    /// Player is disqualified
+    /// Player is disqualified, no update permitted
     #[error("Player {1} is disqualified from bracket {0}")]
     PlayerDisqualified(BracketId, PlayerId),
+    /// Player query is impossible because they are disqualified
+    #[error("You are disqualified (DQ'ed) from bracket {0}")]
+    DisqualifiedPlayerHasNoNextOpponent(BracketId, PlayerId),
 }
 
 /// Active brackets
@@ -195,15 +198,6 @@ impl Bracket {
         }
     }
 
-    /// Returns true if bracket is over (all matches are played)
-    #[must_use]
-    fn is_over(&self) -> bool {
-        !self
-            .matches
-            .iter()
-            .any(|m| m.get_winner() == Opponent::Unknown)
-    }
-
     /// Disqualify player from bracket, advance opponent in bracket and returns
     /// updated bracket
     ///
@@ -311,6 +305,21 @@ impl Bracket {
         self.is_closed
     }
 
+    /// Returns true if bracket is over (all matches are played)
+    #[must_use]
+    fn is_over(&self) -> bool {
+        !self
+            .matches
+            .iter()
+            .any(|m| m.get_winner() == Opponent::Unknown)
+    }
+
+    /// Returns true if match are validated automatically whenever possible
+    #[must_use]
+    pub fn is_validating_matches_automatically(&self) -> bool {
+        self.automatic_match_validation
+    }
+
     /// Let `player` join participants and returns an updated version of the bracket
     ///
     /// # Errors
@@ -364,6 +373,13 @@ impl Bracket {
         }
         if self.matches.is_empty() {
             return Err(Error::NoGeneratedMatches(self.bracket_id));
+        }
+
+        if self.is_disqualified(player_id) {
+            return Err(Error::DisqualifiedPlayerHasNoNextOpponent(
+                self.bracket_id,
+                player_id,
+            ));
         }
 
         let player = Opponent::Player(player_id);
@@ -449,6 +465,9 @@ impl Bracket {
         if !self.accept_match_results {
             return Err(Error::AcceptResults(player_id, self.bracket_id));
         }
+        if self.is_disqualified(player_id) {
+            return Err(Error::PlayerDisqualified(self.bracket_id, player_id));
+        }
         let player = Opponent::Player(player_id);
         let match_to_update = self.matches.iter().find(|m| {
             (m.get_players()[0] == player || m.get_players()[1] == player)
@@ -464,6 +483,14 @@ impl Bracket {
             }
             None => Err(Error::NoMatchToPlay(player_id, bracket_id)),
         }
+    }
+
+    /// Returns true if player has been disqualified from bracket
+    #[must_use]
+    fn is_disqualified(&self, player_id: PlayerId) -> bool {
+        self.matches
+            .iter()
+            .any(|m| m.is_automatic_looser_by_disqualification(player_id))
     }
 
     /// Start bracket: bar people from entering and accept match results

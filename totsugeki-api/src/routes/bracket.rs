@@ -9,6 +9,7 @@ use poem_openapi::param::Path;
 use poem_openapi::payload::Json;
 use poem_openapi::OpenApi;
 use totsugeki::bracket::{CommandPOST, POST};
+use totsugeki::matches::ReportResultPOST;
 use totsugeki::player::PlayersRaw;
 use totsugeki::{
     bracket::{CreateRequest, Id as BracketId, POSTResult, Raw},
@@ -153,9 +154,9 @@ impl Api {
         db: SharedDb<'a>,
         _auth: ApiKeyServiceAuthorization,
         r: Json<MatchResultPOST>,
-    ) -> Result<Json<MatchId>> {
+    ) -> Result<Json<ReportResultPOST>> {
         match report(&db, &r.0) {
-            Ok(m_id) => Ok(Json(m_id)),
+            Ok(response) => Ok(Json(response)),
             Err(e) => {
                 log_error(&e);
                 Err(e.into())
@@ -390,15 +391,15 @@ where
 }
 
 /// Report match result
-fn report<'a, 'b>(db: &'a SharedDb, r: &MatchResultPOST) -> Result<MatchId, Error<'b>>
+fn report<'a, 'b>(db: &'a SharedDb, r: &MatchResultPOST) -> Result<ReportResultPOST, Error<'b>>
 where
     'a: 'b,
 {
     let db = db.read()?;
     db.report_result(
-        &r.player_internal_id,
-        &r.channel_internal_id,
-        &r.service_type_id,
+        &r.internal_player_id,
+        &r.internal_channel_id,
+        &r.service,
         &r.result,
     )
 }

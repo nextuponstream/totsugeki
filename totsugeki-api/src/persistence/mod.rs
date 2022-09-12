@@ -13,7 +13,7 @@ use thiserror::Error;
 use totsugeki::{
     bracket::{CreateRequest, Error as BracketError, Id as BracketId, POSTResult, Raw},
     join::POSTResponse,
-    matches::{Id as MatchId, NextMatchGETResponseRaw},
+    matches::{Id as MatchId, NextMatchGETResponseRaw, ReportResultPOST},
     organiser::Organiser,
     player::{Participants, GET as PlayersGET},
 };
@@ -261,7 +261,7 @@ pub trait DBAccessor {
         channel_internal_id: &'b str,
         service: &'b str,
         result: &'b str,
-    ) -> Result<MatchId, Error<'c>>;
+    ) -> Result<ReportResultPOST, Error<'c>>;
 
     /// Seed active bracket in discussion channel
     ///

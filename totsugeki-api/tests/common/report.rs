@@ -1,11 +1,10 @@
 //! Report match results
 
+use super::TotsugekiApiTestClient;
 use totsugeki::matches::Id as MatchId;
-use totsugeki::matches::{MatchResultPOST, ReportedResult};
+use totsugeki::matches::{MatchResultPOST, ReportResultPOST, ReportedResult};
 use totsugeki_api::Service;
 use tracing::debug;
-
-use super::TotsugekiApiTestClient;
 
 /// player report his `result` from a discussion channel
 pub async fn player_reports_match_result(
@@ -14,14 +13,14 @@ pub async fn player_reports_match_result(
     channel_internal_id: &str,
     service: Service,
     result: ReportedResult,
-) -> MatchId {
+) -> ReportResultPOST {
     let body = MatchResultPOST {
-        player_internal_id: player_internal_id.to_string(),
-        channel_internal_id: channel_internal_id.to_string(),
-        service_type_id: service.to_string(),
+        internal_player_id: player_internal_id.to_string(),
+        internal_channel_id: channel_internal_id.to_string(),
+        service: service.to_string(),
         result: result.to_string(),
     };
-    let mut res = test_api
+    let res = test_api
         .cli
         .post("/bracket/report")
         .header("X-API-Key", test_api.authorization_header.as_str())
@@ -29,10 +28,16 @@ pub async fn player_reports_match_result(
         .send()
         .await;
     res.assert_status_is_ok();
-    let mut response = res.0.take_body().into_string().await.expect("response");
-    response.pop();
-    response.remove(0);
-    MatchId::parse_str(response.as_str()).expect("match id")
+    let response = res.json().await;
+    let r = response.value().object();
+    let affected_match_id =
+        MatchId::parse_str(r.get("affected_match_id").string()).expect("affected match id");
+    println!("{r:?}");
+    let message = r.get("message").string().to_string();
+    ReportResultPOST {
+        affected_match_id,
+        message,
+    }
 }
 
 /// Both player report their results and returns match id.
@@ -45,7 +50,7 @@ pub async fn both_player_report_match_result(
     reported_result: ReportedResult,
 ) -> MatchId {
     debug!("Reporting match for player {player_internal_id_1} and {player_internal_id_2}");
-    let match_id_1 = player_reports_match_result(
+    let resp_1 = player_reports_match_result(
         test_api,
         player_internal_id_1,
         channel_internal_id,
@@ -53,7 +58,7 @@ pub async fn both_player_report_match_result(
         reported_result,
     )
     .await;
-    let match_id_2 = player_reports_match_result(
+    let resp_2 = player_reports_match_result(
         test_api,
         player_internal_id_2,
         channel_internal_id,
@@ -63,11 +68,11 @@ pub async fn both_player_report_match_result(
     .await;
 
     assert_eq!(
-        match_id_1, match_id_2,
+        resp_1.affected_match_id, resp_2.affected_match_id,
         "players with seed {} and {} are not playing the same match",
         player_internal_id_1, player_internal_id_2
     );
     debug!("Reported results OK by {player_internal_id_1} and {player_internal_id_2}");
 
-    match_id_1
+    resp_1.affected_match_id
 }

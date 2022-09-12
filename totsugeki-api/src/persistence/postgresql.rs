@@ -3,7 +3,7 @@
 use super::DBAccessor;
 use totsugeki::{
     bracket::{CreateRequest, Id as BracketId},
-    matches::{Id as MatchId, NextMatchGETResponseRaw},
+    matches::{Id as MatchId, NextMatchGETResponseRaw, ReportResultPOST},
     player::{Participants, GET as PlayersGET},
 };
 
@@ -157,7 +157,7 @@ impl DBAccessor for Accessor {
         channel_internal_id: &'b str,
         service_type_id: &'b str,
         result: &'b str,
-    ) -> Result<MatchId, super::Error<'c>> {
+    ) -> Result<ReportResultPOST, super::Error<'c>> {
         todo!()
     }
 
