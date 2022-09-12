@@ -1,6 +1,8 @@
 //! Common setup/teardown methods
 
 pub mod bracket;
+pub mod disqualify;
+pub mod forfeit;
 pub mod join;
 pub mod next_match;
 pub mod players;

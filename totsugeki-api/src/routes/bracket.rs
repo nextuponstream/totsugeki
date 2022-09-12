@@ -255,8 +255,7 @@ impl Api {
         }
     }
 
-    /// Quit bracket bracket (prevent new participants from entering) and return id of
-    /// affected bracket
+    /// Quit bracket bracket and return id of affected bracket
     #[oai(path = "/bracket/quit", method = "post")]
     #[tracing::instrument(name = "Quit bracket", skip(self, db, _auth))]
     async fn quit<'a>(
@@ -302,6 +301,24 @@ impl Api {
         r: Json<RemovePOST>,
     ) -> Result<Json<BracketId>> {
         match disqualify_player(&db, &r.0) {
+            Ok(bracket_id) => Ok(Json(bracket_id)),
+            Err(e) => {
+                log_error(&e);
+                Err(e.into())
+            }
+        }
+    }
+
+    /// Forfeit in bracket and return id of affected bracket
+    #[oai(path = "/bracket/forfeit", method = "post")]
+    #[tracing::instrument(name = "Forfeit bracket", skip(self, db, _auth))]
+    async fn forfeit<'a>(
+        &self,
+        db: SharedDb<'a>,
+        _auth: ApiKeyServiceAuthorization,
+        r: Json<QuitPOST>,
+    ) -> Result<Json<BracketId>> {
+        match forfeit_bracket(&db, &r.0) {
             Ok(bracket_id) => Ok(Json(bracket_id)),
             Err(e) => {
                 log_error(&e);
@@ -467,4 +484,13 @@ where
 {
     let db = db.read()?;
     db.disqualify_player(&r.internal_channel_id, &r.service, &r.player_id)
+}
+
+/// Let player quit bracket
+fn forfeit_bracket<'a, 'b>(db: &'a SharedDb, r: &QuitPOST) -> Result<BracketId, Error<'b>>
+where
+    'a: 'b,
+{
+    let db = db.read()?;
+    db.forfeit(&r.internal_channel_id, &r.service, &r.internal_player_id)
 }

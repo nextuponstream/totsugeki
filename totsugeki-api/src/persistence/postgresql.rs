@@ -181,4 +181,13 @@ impl DBAccessor for Accessor {
     fn validate_result<'a, 'b>(&'a self, match_id: MatchId) -> Result<(), super::Error<'b>> {
         todo!()
     }
+
+    fn forfeit<'a, 'b, 'c>(
+        &'a self,
+        internal_channel_id: &'b str,
+        service: &'b str,
+        player_internal_id: &'b str,
+    ) -> Result<BracketId, super::Error<'c>> {
+        todo!()
+    }
 }
