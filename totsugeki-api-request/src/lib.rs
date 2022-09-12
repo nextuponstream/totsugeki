@@ -21,6 +21,7 @@ use totsugeki::{
 pub mod bracket;
 pub mod close;
 pub mod disqualify;
+pub mod forfeit;
 pub mod join;
 pub mod next_match;
 pub mod organiser;

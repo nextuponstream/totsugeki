@@ -606,10 +606,11 @@ impl Bracket {
                 .find(|m| m.get_looser() != Opponent::Unknown && m.is_playable())
                 .expect("match to with disqualified player")
                 .get_id();
-            let (updated_match, _, _) = match matches.iter().find(|m| m.get_id() == match_id) {
-                Some(m) => m.update_outcome()?,
-                None => return Err(Error::UnknownMatch(match_id)),
-            };
+            let (updated_match, seed_of_expected_winner, _) =
+                match matches.iter().find(|m| m.get_id() == match_id) {
+                    Some(m) => m.update_outcome()?,
+                    None => return Err(Error::UnknownMatch(match_id)),
+                };
             matches = matches
                 .iter()
                 .map(|m| {
@@ -1765,53 +1766,6 @@ mod tests {
             Err(e) => match e {
                 Error::AllMatchesPlayed(_) => {}
                 _ => panic!("Expected AcceptResults error but got {e}"),
-            },
-        };
-    }
-
-    #[test]
-    fn disqualifying_twice_the_same_player_has_no_effect() {
-        let p1_id = PlayerId::new_v4();
-        let p2_id = PlayerId::new_v4();
-        let p3_id = PlayerId::new_v4();
-        let player_ids = vec![p1_id, p2_id, p3_id];
-        let player_names = vec!["p1".to_string(), "p2".to_string(), "p3".to_string()];
-        let players = Participants::from_raw_id(
-            player_ids
-                .iter()
-                .zip(player_names.iter())
-                .map(|p| (p.0.to_string(), p.1.clone()))
-                .collect(),
-        )
-        .expect("players");
-        let matches = get_balanced_round_matches_top_seed_favored(&players).expect("matches");
-        let bracket_id = BracketId::new_v4();
-        let bracket: Bracket = Raw {
-            bracket_id,
-            bracket_name: "bracket".to_string(),
-            players: player_ids,
-            player_names,
-            matches,
-            format: Format::SingleElimination,
-            seeding_method: SeedingMethod::Strict,
-            start_time: Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
-            accept_match_results: false,
-            automatic_match_validation: false,
-            barred_from_entering: true,
-        }
-        .try_into()
-        .expect("bracket");
-        let bracket = bracket.start();
-        let bracket = bracket
-            .disqualify_participant(p2_id)
-            .expect("bracket with player 2 disqualified");
-        match bracket.disqualify_participant(p2_id) {
-            Ok(_) => {
-                panic!("Expected error when disqualifying same participant twice but got none")
-            }
-            Err(e) => match e {
-                Error::PlayerDisqualified(_, _) => {}
-                _ => panic!("Expected PlayerDisqualified error but got {e}"),
             },
         };
     }

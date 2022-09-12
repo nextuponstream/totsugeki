@@ -28,6 +28,15 @@ async fn quitting_bracket_requires_authorization() {
 }
 
 #[tokio::test]
+async fn forfeiting_requires_authorization() {
+    for db_type in db_types_to_test() {
+        let test_api = test_api(db_type).await;
+        let res = test_api.cli.post("/bracket/forfeit").send().await;
+        res.assert_status(StatusCode::UNAUTHORIZED);
+    }
+}
+
+#[tokio::test]
 async fn validating_bracket_requires_authorization() {
     for db_type in db_types_to_test() {
         let test_api = test_api(db_type).await;

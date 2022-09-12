@@ -551,6 +551,41 @@ impl DBAccessor for InMemoryDBAccessor {
         );
         Ok(())
     }
+
+    fn forfeit<'a, 'b, 'c>(
+        &'a self,
+        internal_channel_id: &'b str,
+        service: &'b str,
+        internal_player_id: &'b str,
+    ) -> Result<BracketId, Error<'c>> {
+        let mut db = self.db.write().expect("database"); // FIXME bubble up error
+        let (active_bracket_id, _, service) =
+            find_active_bracket_id(&db, internal_channel_id, service)?;
+        let player_id = match service {
+            Service::Discord => {
+                let user_id = parse_discord_user_id(internal_player_id)?;
+                match db.discord_internal_users.get(&user_id) {
+                    Some(player_id) => *player_id,
+                    None => return Err(ResourceError::UnknownPlayer.into()),
+                }
+            }
+        };
+        match db.brackets.get(&active_bracket_id) {
+            Some(b) => {
+                let updated_bracket = b.clone().disqualify_participant(player_id)?;
+                db.brackets
+                    .insert(updated_bracket.get_id(), updated_bracket);
+
+                Ok(active_bracket_id)
+            }
+            None => {
+                return Err(CriticalError::Corrupted(format!(
+                    "No bracket found for id: \"{active_bracket_id}\""
+                ))
+                .into())
+            }
+        }
+    }
 }
 
 /// Return active bracket id in discussion channel, parsed discussion channel id and service

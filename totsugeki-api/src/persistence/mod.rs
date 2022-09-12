@@ -147,6 +147,19 @@ pub trait DBAccessor {
         offset: i64,
     ) -> Result<Vec<Organiser>, Error<'c>>;
 
+    /// Let participant forfeit and return id of bracket
+    ///
+    /// Use discussion channel to determine which bracket to update
+    ///
+    /// # Errors
+    /// Returns an error if the database is unavailable
+    fn forfeit<'a, 'b, 'c>(
+        &'a self,
+        internal_channel_id: &'b str,
+        service: &'b str,
+        player_internal_id: &'b str,
+    ) -> Result<BracketId, Error<'c>>;
+
     /// Get bracket using id
     ///
     /// # Errors

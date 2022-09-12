@@ -44,6 +44,7 @@ pub async fn both_player_report_match_result(
     service: Service,
     reported_result: ReportedResult,
 ) -> MatchId {
+    debug!("Reporting match for player {player_internal_id_1} and {player_internal_id_2}");
     let match_id_1 = player_reports_match_result(
         test_api,
         player_internal_id_1,
