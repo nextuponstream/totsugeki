@@ -31,7 +31,7 @@ impl DBAccessor for Accessor {
     fn create_bracket<'a, 'b, 'c>(
         &'a self,
         r: CreateRequest<'b>,
-    ) -> Result<totsugeki::bracket::POSTResult, super::Error<'c>> {
+    ) -> Result<totsugeki::bracket::http_responses::POSTResult, super::Error<'c>> {
         todo!()
     }
 
@@ -55,7 +55,7 @@ impl DBAccessor for Accessor {
         &'a self,
         bracket_name: &'b str,
         offset: i64,
-    ) -> Result<Vec<totsugeki::bracket::Raw>, super::Error<'c>> {
+    ) -> Result<Vec<totsugeki::bracket::raw::Raw>, super::Error<'c>> {
         todo!()
     }
 
@@ -79,7 +79,7 @@ impl DBAccessor for Accessor {
     fn get_bracket<'a, 'b, 'c>(
         &'a self,
         bracket_id: BracketId,
-    ) -> Result<totsugeki::bracket::Raw, super::Error<'c>> {
+    ) -> Result<totsugeki::bracket::raw::Raw, super::Error<'c>> {
         todo!()
     }
 
@@ -100,7 +100,7 @@ impl DBAccessor for Accessor {
     fn list_brackets<'a, 'b>(
         &'a self,
         offset: i64,
-    ) -> Result<Vec<totsugeki::bracket::Raw>, super::Error<'b>> {
+    ) -> Result<Vec<totsugeki::bracket::raw::Raw>, super::Error<'b>> {
         todo!()
     }
 

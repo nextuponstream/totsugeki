@@ -6,7 +6,11 @@ use chrono::prelude::*;
 use poem::test::{TestJson, TestJsonObject};
 use reqwest::StatusCode;
 use totsugeki::{
-    bracket::{CommandPOST, Id as BracketId, POSTResult, Raw, GET, POST},
+    bracket::{
+        http_responses::{CommandPOST, POSTResult, GET, POST},
+        raw::Raw,
+        Id as BracketId,
+    },
     format::Format,
     matches::{Id as MatchId, Match, MatchGET, ReportedResult},
     opponent::Opponent,

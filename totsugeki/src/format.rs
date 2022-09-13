@@ -8,6 +8,8 @@ use thiserror::Error;
 pub enum Format {
     /// Single elimination tournament
     SingleElimination,
+    /// Double elimination tournament
+    DoubleElimination,
     // TODO add other style of tournament
 }
 
@@ -15,6 +17,7 @@ impl std::fmt::Display for Format {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Format::SingleElimination => write!(f, "single-elimination"),
+            Format::DoubleElimination => write!(f, "double-elimination"),
         }
     }
 }
@@ -25,6 +28,7 @@ impl std::str::FromStr for Format {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "single-elimination" => Ok(Format::SingleElimination),
+            "double-elimination" => Ok(Format::DoubleElimination),
             _ => Err(ParsingError::Unknown(s.to_string())),
         }
     }

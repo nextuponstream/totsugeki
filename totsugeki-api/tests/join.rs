@@ -16,7 +16,10 @@ use poem::http::StatusCode;
 use std::collections::HashSet;
 use test_log::test;
 use totsugeki::{
-    bracket::{Id as BracketId, POST as BracketPOST},
+    bracket::{
+        http_responses::{GET, POST as BracketPOST},
+        Id as BracketId,
+    },
     format::Format,
     join::{POSTResponse, POST as JoinPOST},
     matches::NextMatchGETRequest,
@@ -361,18 +364,19 @@ async fn new_participants_cannot_join_bracket_after_it_has_started() {
         let format = Format::default();
         let seeding_method = Method::default();
         let service = Service::Discord;
-        let (bracket, _organiser_name) = players_join_new_bracket_and_bracket_starts(
-            &test_api,
-            organiser_internal_id,
-            channel_internal_id,
-            service,
-            format,
-            seeding_method,
-            Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
-            3,
-            false,
-        )
-        .await;
+        let (bracket, _organiser_name): (GET, String) =
+            players_join_new_bracket_and_bracket_starts(
+                &test_api,
+                organiser_internal_id,
+                channel_internal_id,
+                service,
+                format,
+                seeding_method,
+                Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
+                3,
+                false,
+            )
+            .await;
         let id = bracket.bracket_id;
 
         let player_internal_id = "4".to_string();

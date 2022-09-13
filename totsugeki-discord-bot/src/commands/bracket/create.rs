@@ -8,7 +8,7 @@ use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandError, CommandResult};
 use serenity::model::channel::Message;
 use serenity::prelude::*;
-use totsugeki::bracket::POST;
+use totsugeki::bracket::http_responses::POST;
 use totsugeki_api::Service;
 use totsugeki_api_request::bracket::create as create_bracket;
 use tracing::{info, span, warn, Level};

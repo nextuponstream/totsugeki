@@ -2,8 +2,8 @@
 
 use crate::common::api::Api;
 use crate::get_client;
+use totsugeki::bracket::raw::Raw;
 use totsugeki::bracket::Id as BracketId;
-use totsugeki::bracket::Raw;
 use totsugeki::matches::print_player_name;
 use totsugeki_api_request::{bracket::get_from_id, RequestError};
 use yew::prelude::*;

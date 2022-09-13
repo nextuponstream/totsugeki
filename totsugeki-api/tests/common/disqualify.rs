@@ -1,7 +1,7 @@
 //! Disqualify players test utils
 
 use totsugeki::{
-    bracket::{Id as BracketId, GET},
+    bracket::{http_responses::GET, Id as BracketId},
     player::Id as PlayerId,
     remove::POST,
 };

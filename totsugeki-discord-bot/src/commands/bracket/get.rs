@@ -4,7 +4,7 @@ use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandError, CommandResult};
 use serenity::model::channel::Message;
 use serenity::prelude::*;
-use totsugeki::bracket::RawBrackets;
+use totsugeki::bracket::raw::Brackets;
 use totsugeki_api_request::bracket::fetch;
 use tracing::error;
 use tracing::{span, Level};
@@ -40,7 +40,7 @@ async fn get(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                 return Err(e.into());
             }
         };
-        let brackets = RawBrackets::new(brackets);
+        let brackets = Brackets::new(brackets);
         if brackets.get_brackets().is_empty() {
             msg.reply(ctx, "None found").await?;
         } else {

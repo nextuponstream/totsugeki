@@ -21,6 +21,7 @@ use common::{
 use poem::http::StatusCode;
 use test_log::test;
 use totsugeki::{
+    bracket::http_responses::GET,
     format::Format,
     matches::{MatchResultPOST, ReportedResult},
     player::Id as PlayerId,
@@ -103,7 +104,7 @@ async fn match_results_cannot_be_reported_once_bracket_has_ended() {
         let organiser_id = "1";
         let channel_internal_id = "1";
         let service = Service::Discord;
-        let (bracket, _) = players_join_new_bracket_and_bracket_starts(
+        let (bracket, _): (GET, String) = players_join_new_bracket_and_bracket_starts(
             &test_api,
             organiser_id,
             channel_internal_id,
@@ -169,7 +170,7 @@ async fn reporting_result_for_first_round_3_man() {
         let organiser_id = "1";
         let channel_internal_id = "1";
         let service = Service::Discord;
-        let (bracket, _) = players_join_new_bracket_and_bracket_starts(
+        let (bracket, _): (GET, String) = players_join_new_bracket_and_bracket_starts(
             &test_api,
             organiser_id,
             channel_internal_id,
@@ -232,6 +233,86 @@ async fn reporting_result_for_first_round_3_man() {
         assert_player_is_eliminated_from_bracket(
             &test_api,
             3,
+            channel_internal_id,
+            service,
+            bracket.bracket_id,
+        )
+        .await;
+    }
+}
+
+#[test(tokio::test)]
+async fn players_disagreeing_on_a_result_allows_correction_from_both_side() {
+    for db_type in db_types_to_test() {
+        let test_api = test_api(db_type).await;
+
+        let organiser_id = "1";
+        let channel_internal_id = "1";
+        let service = Service::Discord;
+        let (bracket, _) = players_join_new_bracket_and_bracket_starts(
+            &test_api,
+            organiser_id,
+            channel_internal_id,
+            service,
+            Format::SingleElimination,
+            Method::Strict,
+            Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
+            3,
+            true,
+        )
+        .await;
+
+        player_reports_match_result(
+            &test_api,
+            "2",
+            channel_internal_id,
+            service,
+            ReportedResult((2, 0)),
+        )
+        .await;
+        player_reports_match_result(
+            &test_api,
+            "3",
+            channel_internal_id,
+            service,
+            ReportedResult((2, 0)),
+        )
+        .await;
+        // Then they agree
+        player_reports_match_result(
+            &test_api,
+            "2",
+            channel_internal_id,
+            service,
+            ReportedResult((1, 2)),
+        )
+        .await;
+        player_reports_match_result(
+            &test_api,
+            "3",
+            channel_internal_id,
+            service,
+            ReportedResult((2, 1)),
+        )
+        .await;
+
+        assert_next_matches(
+            &[],
+            &[(1, 3)],
+            &bracket
+                .players
+                .iter()
+                .map(|p| p.get_id())
+                .collect::<Vec<PlayerId>>(),
+            &test_api,
+            channel_internal_id.to_string(),
+            service,
+        )
+        .await;
+
+        assert_player_is_eliminated_from_bracket(
+            &test_api,
+            2,
             channel_internal_id,
             service,
             bracket.bracket_id,

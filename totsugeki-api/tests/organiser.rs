@@ -10,7 +10,7 @@ use common::{
 use poem::test::TestJson;
 use std::collections::{HashMap, HashSet};
 use totsugeki::{
-    bracket::{FinalizedBrackets, Id as BracketId, POST},
+    bracket::{http_responses::POST, FinalizedBrackets, Id as BracketId},
     format::Format,
     organiser::{Id as OrganiserId, Organiser},
     seeding::Method,
