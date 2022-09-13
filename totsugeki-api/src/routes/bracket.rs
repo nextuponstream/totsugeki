@@ -8,11 +8,14 @@ use poem::Result;
 use poem_openapi::param::Path;
 use poem_openapi::payload::Json;
 use poem_openapi::OpenApi;
-use totsugeki::bracket::{CommandPOST, POST};
 use totsugeki::matches::ReportResultPOST;
 use totsugeki::player::PlayersRaw;
 use totsugeki::{
-    bracket::{CreateRequest, Id as BracketId, POSTResult, Raw},
+    bracket::{
+        http_responses::{CommandPOST, POSTResult, POST},
+        raw::Raw,
+        CreateRequest, Id as BracketId,
+    },
     matches::{Id as MatchId, MatchResultPOST, NextMatchGETRequest, NextMatchGETResponseRaw},
     player::{Player, GET as PlayersGET},
     quit::POST as QuitPOST,
@@ -40,9 +43,9 @@ impl Api {
             bracket_format: r.format.as_str(),
             seeding_method: r.seeding_method.as_str(),
             organiser_name: r.organiser_name.as_str(),
-            organiser_internal_id: r.organiser_internal_id.as_str(),
+            internal_organiser_id: r.organiser_internal_id.as_str(),
             internal_channel_id: r.channel_internal_id.as_str(),
-            service_type_id: r.service_type_id.as_str(),
+            service: r.service_type_id.as_str(),
             start_time: r.start_time.as_str(),
             automatic_match_validation: r.automatic_match_validation,
         };

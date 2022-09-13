@@ -15,7 +15,10 @@ use serenity::model::id::{ChannelId, GuildId, UserId};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use totsugeki::{
-    bracket::{ActiveBrackets, Bracket, CreateRequest, Id as BracketId, POSTResult, Raw},
+    bracket::{
+        http_responses::POSTResult, raw::Raw, ActiveBrackets, Bracket, CreateRequest,
+        Id as BracketId,
+    },
     join::POSTResponse,
     matches::{Error as MatchError, Id as MatchId, NextMatchGETResponseRaw, ReportResultPOST},
     organiser::Id as OrganiserId,
@@ -105,9 +108,9 @@ impl DBAccessor for InMemoryDBAccessor {
 
     fn create_bracket<'a, 'b, 'c>(&'a self, r: CreateRequest<'b>) -> Result<POSTResult, Error<'c>> {
         let organiser_name = r.organiser_name;
-        let organiser_internal_id = r.organiser_internal_id;
+        let organiser_internal_id = r.internal_organiser_id;
         let internal_channel_id = r.internal_channel_id;
-        let service = parse_service(r.service_type_id)?;
+        let service = parse_service(r.service)?;
         let b = parse_bracket(r)?;
 
         let mut db = self.db.write().expect("database"); // FIXME bubble up error
@@ -492,6 +495,8 @@ impl DBAccessor for InMemoryDBAccessor {
                     ) => {
                         // Even though match can't be validated, we still
                         // update the bracket but add a warning
+                        // FIXME add test where players correct reported
+                        // results for match to be validated
                         db.brackets.insert(
                             bracket_with_reported_result.get_id(),
                             bracket_with_reported_result,

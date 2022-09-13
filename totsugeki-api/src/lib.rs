@@ -32,7 +32,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 use thiserror::Error;
 use totsugeki::{
-    bracket::{Id as BracketId, GET},
+    bracket::{http_responses::GET, Id as BracketId},
     ReadLock,
 };
 use tracing::{error, warn};

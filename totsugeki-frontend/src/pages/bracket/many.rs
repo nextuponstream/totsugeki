@@ -2,7 +2,7 @@
 
 use crate::common::api::Props;
 use crate::{get_client, routes::Route};
-use totsugeki::bracket::Raw;
+use totsugeki::bracket::raw::Raw;
 use totsugeki_api_request::{bracket::fetch, RequestError};
 use web_sys::HtmlInputElement;
 use yew::prelude::*;

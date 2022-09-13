@@ -11,7 +11,9 @@ use crate::{
 use std::sync::PoisonError;
 use thiserror::Error;
 use totsugeki::{
-    bracket::{CreateRequest, Error as BracketError, Id as BracketId, POSTResult, Raw},
+    bracket::{
+        http_responses::POSTResult, raw::Raw, CreateRequest, Error as BracketError, Id as BracketId,
+    },
     join::POSTResponse,
     matches::{Id as MatchId, NextMatchGETResponseRaw, ReportResultPOST},
     organiser::Organiser,

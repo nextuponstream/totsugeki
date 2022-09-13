@@ -1,7 +1,7 @@
 // Joining brackets
 
 use totsugeki::{
-    bracket::{Id as BracketId, GET},
+    bracket::{http_responses::GET, Id as BracketId},
     join::POST,
 };
 use totsugeki_api::Service;

@@ -2,7 +2,7 @@
 
 use crate::{RequestError, HTTP_PREFIX};
 use totsugeki::{
-    bracket::{CommandPOST, Id as BracketId},
+    bracket::{http_responses::CommandPOST, Id as BracketId},
     DiscussionChannel,
 };
 

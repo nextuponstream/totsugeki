@@ -2,7 +2,11 @@
 
 use crate::RequestError;
 use crate::HTTP_PREFIX;
-use totsugeki::bracket::{Id as BracketId, POSTResult, Raw, GET as BracketGET, POST};
+use totsugeki::bracket::{
+    http_responses::{POSTResult, GET as BracketGET, POST},
+    raw::Raw,
+    Id as BracketId,
+};
 use totsugeki::player::{Participants, PlayersRaw, GET as PlayersGET};
 use totsugeki::seeding::POST as SeedPOST;
 

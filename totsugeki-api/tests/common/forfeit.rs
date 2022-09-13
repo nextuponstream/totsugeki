@@ -1,7 +1,7 @@
 //! Forfeiting players test utils
 
 use totsugeki::{
-    bracket::{Id as BracketId, GET},
+    bracket::{http_responses::GET, Id as BracketId},
     quit::POST,
 };
 use totsugeki_api::Service;
