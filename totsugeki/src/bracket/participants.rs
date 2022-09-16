@@ -4,7 +4,7 @@
 use super::{Bracket, Error};
 use crate::{
     player::{Id as PlayerId, Participants, Player},
-    seeding::get_balanced_round_matches_top_seed_favored,
+    seeding::single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored,
 };
 
 impl Bracket {
@@ -72,7 +72,10 @@ mod tests {
     use crate::{
         bracket::{raw::Raw, Format, Id as BracketId},
         player::Participants,
-        seeding::{get_balanced_round_matches_top_seed_favored, Method as SeedingMethod},
+        seeding::{
+            single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored,
+            Method as SeedingMethod,
+        },
     };
     use chrono::prelude::*;
 

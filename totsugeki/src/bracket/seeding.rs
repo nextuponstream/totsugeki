@@ -3,7 +3,7 @@
 use crate::{
     bracket::{Bracket, Error},
     player::{Id as PlayerId, Participants},
-    seeding::{get_balanced_round_matches_top_seed_favored, seed},
+    seeding::seed,
 };
 
 impl Bracket {
@@ -33,7 +33,7 @@ impl Bracket {
             player_group = player_group.add_participant(player.clone())?;
         }
         let participants = seed(&self.seeding_method, player_group, self.participants)?;
-        let matches = get_balanced_round_matches_top_seed_favored(&participants)?;
+        let matches = self.format.get_matches(&participants)?;
         Ok(Self {
             participants,
             matches,
@@ -51,7 +51,10 @@ mod tests {
         matches::{Id as MatchId, Match, MatchGET},
         opponent::Opponent,
         player::Error as PlayerError,
-        seeding::{Error as SeedingError, Method as SeedingMethod},
+        seeding::{
+            single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored,
+            Error as SeedingError, Method as SeedingMethod,
+        },
     };
     use chrono::prelude::*;
 
@@ -170,7 +173,7 @@ mod tests {
             Err(e) => match e {
                 Error::PlayerUpdate(e) => match e {
                     PlayerError::AlreadyPresent => {}
-                    PlayerError::PlayerId(_) => panic!("Expected AlreadyPresent error, got {e}"),
+                    _ => panic!("Expected AlreadyPresent error, got {e}"),
                 },
                 _ => panic!("Expected Seeding error, got {e}"),
             },

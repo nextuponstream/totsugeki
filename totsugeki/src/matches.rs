@@ -29,6 +29,9 @@ pub enum Error {
     /// Match got into a really bad state where an unknown player has result
     #[error("Error. Unable to proceed further.")]
     UnknownPlayerWithReportedResults,
+    /// Cannot instantiate match with two same player
+    #[error("Error. Cannot use same player as both player of a match.")]
+    SamePlayer,
 }
 
 /// Seeds of players
@@ -235,6 +238,33 @@ impl Match {
             Err(Error::UnknownPlayer(player_id, self.players))
         }
     }
+
+    /// Create new looser bracket match where opponents are unknown yet
+    #[must_use]
+    pub fn new_looser_bracket_match(seeds: [usize; 2]) -> Self {
+        Match {
+            id: Id::new_v4(),
+            players: [Opponent::Unknown, Opponent::Unknown],
+            seeds,
+            winner: Opponent::Unknown,
+            automatic_looser: Opponent::Unknown,
+            reported_results: [(0, 0), (0, 0)],
+        }
+    }
+
+    /// Create looser bracket match where opponents are unknown yet
+    #[must_use]
+    #[cfg(test)]
+    pub fn looser_bracket_match(id: Id, seeds: [usize; 2]) -> Self {
+        Match {
+            id,
+            players: [Opponent::Unknown, Opponent::Unknown],
+            seeds,
+            winner: Opponent::Unknown,
+            automatic_looser: Opponent::Unknown,
+            reported_results: [(0, 0), (0, 0)],
+        }
+    }
 }
 
 impl std::fmt::Display for Match {
@@ -245,31 +275,10 @@ impl std::fmt::Display for Match {
 }
 
 impl Match {
-    /// Create new match with two opponents.
-    /// Expected inputs are:
-    /// * `Some(Some(PLAYER_ID))`, when opponent is know
-    /// * `Some(None)`, if bye opponent
-    /// * `None` if unknown (for instance, final round match)
-    ///
-    /// Winner is automatically set if bye opponent is set
-    ///
-    /// # Errors
-    /// Returns an error if bye opponent does not have a known opponent
-    pub fn new(players: [Opponent; 2], seeds: [usize; 2]) -> Result<Match, Error> {
-        Ok(Self {
-            id: Id::new_v4(),
-            players,
-            winner: Opponent::Unknown,
-            automatic_looser: Opponent::Unknown,
-            seeds,
-            reported_results: [(0_i8, 0_i8), (0_i8, 0)],
-        })
-    }
-
-    /// Get winner of match. Winners are players
+    /// Get id of match
     #[must_use]
-    pub fn get_winner(&self) -> Opponent {
-        self.winner
+    pub fn get_id(&self) -> Id {
+        self.id
     }
 
     /// Get looser of match. Loosers are always players
@@ -290,10 +299,34 @@ impl Match {
         self.seeds
     }
 
-    /// Get id of match
+    /// Get winner of match. Winners are players
     #[must_use]
-    pub fn get_id(&self) -> Id {
-        self.id
+    pub fn get_winner(&self) -> Opponent {
+        self.winner
+    }
+
+    /// Create new match with two opponents
+    ///
+    /// Winner is automatically set if bye opponent is set
+    ///
+    /// # Errors
+    /// Returns an error if bye opponent does not have a known opponent
+    pub fn new(players: [Opponent; 2], seeds: [usize; 2]) -> Result<Match, Error> {
+        if let Opponent::Player(p1_id) = players[0] {
+            if let Opponent::Player(p2_id) = players[1] {
+                if p1_id == p2_id {
+                    return Err(Error::SamePlayer);
+                }
+            }
+        }
+        Ok(Self {
+            id: Id::new_v4(),
+            players,
+            winner: Opponent::Unknown,
+            automatic_looser: Opponent::Unknown,
+            seeds,
+            reported_results: [(0_i8, 0_i8), (0_i8, 0)],
+        })
     }
 
     /// Set match outcome using reported results. Returns updated match, seed
@@ -639,5 +672,19 @@ mod tests {
         assert!(m.contains(p1));
         assert!(m.contains(p2));
         assert!(!m.contains(unknown));
+    }
+
+    #[test]
+    fn cannot_create_match_with_same_player() {
+        let p = PlayerId::new_v4();
+        let player = Opponent::Player(p);
+        if let Err(e) = Match::new([player, player], [1, 2]) {
+            match e {
+                Error::SamePlayer => {}
+                _ => panic!("Expected error SamePlayer but got {e}"),
+            }
+        } else {
+            panic!("Expected error but got none")
+        }
     }
 }

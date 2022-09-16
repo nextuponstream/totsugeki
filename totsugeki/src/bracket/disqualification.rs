@@ -83,7 +83,10 @@ mod tests {
         matches::ReportedResult,
         opponent::Opponent,
         player::Participants,
-        seeding::{get_balanced_round_matches_top_seed_favored, Method as SeedingMethod},
+        seeding::{
+            single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored,
+            Method as SeedingMethod,
+        },
     };
     use chrono::prelude::*;
 
