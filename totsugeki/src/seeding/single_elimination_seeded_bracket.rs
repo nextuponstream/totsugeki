@@ -1,125 +1,21 @@
-//! Seed brackets with seeding methods
+//! Generate seeded matches for single elimination
 
 use crate::{
     matches::Match,
     opponent::Opponent,
-    player::{Error as PlayerError, Id as PlayerId, Participants, Player},
+    player::{Id as PlayerId, Participants, Player},
+    seeding::Error,
 };
-#[cfg(feature = "poem-openapi")]
-use poem_openapi::Object;
-use rand::prelude::*;
-use rand::rngs::OsRng;
-use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
-/// Seeding method
-#[derive(Copy, Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
-pub enum Method {
-    /// Randomize who plays against who
-    Random,
-    /// Sort players by perceived strength to avoid pitting them against each
-    /// other early in the bracket
-    Strict,
-}
+use super::seeding_initial_round;
 
-impl std::fmt::Display for Method {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Method::Random => write!(f, "random"),
-            Method::Strict => write!(f, "strict"),
-        }
-    }
-}
-
-/// Seeding method parsing error
-#[derive(Error, Debug)]
-pub enum ParsingError {
-    /// Unknown seeding method was found
-    #[error("Seeding method is unknown")]
-    Unknown,
-}
-
-impl std::str::FromStr for Method {
-    type Err = ParsingError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s {
-            "random" => Self::Random,
-            "strict" => Self::Strict,
-            _ => return Err(ParsingError::Unknown),
-        })
-    }
-}
-
-impl Default for Method {
-    fn default() -> Self {
-        Self::Strict
-    }
-}
-
-/// Seeding cannot proceed
-#[derive(Error, Debug)]
-pub enum Error {
-    /// You cannot seed a bracket with less than 3 players
-    #[error("Not enough players")]
-    NotEnoughPlayers,
-    /// The os generator panicked while generating a random number
-    #[error("RNG is unavailable")]
-    Rng(#[from] rand::Error),
-    /// Shuffle could not yield players
-    #[error("A shuffling operation could not be performed: {0}")]
-    Shuffle(#[from] PlayerError),
-    /// Mathematical overflow
-    #[error("A mathematical overflow happened")]
-    MathOverflow,
-    /// Seeding needs to use the same participants
-    #[error("Participants used for seeding differ from current participants:\nused: {0}\nactual participants: {1}")]
-    DifferentParticipants(Participants, Participants),
-}
-
-/// Returns updated participants after changing seeding position
+/// Returns tournament matches for `n` players in a list. Used for generating
+/// single elimination bracket or winner bracket in double elimination format.
 ///
-/// With `Strict` method, `players` are expected to be ranked from strongest to
-/// weakest.
+/// Top seed plays the least matches. They will face predicted higher seeds
+/// only later in the bracket. Top seed plays at most one more match than
+/// anyone else.
 ///
-/// # Errors
-/// Returns an error when filling an empty bracket or group of players cannot
-/// be formed
-pub fn seed(
-    method: &Method,
-    seeding: Participants,
-    participants: Participants,
-) -> Result<Participants, Error> {
-    if participants.len() < 3 {
-        return Err(Error::NotEnoughPlayers);
-    }
-
-    match method {
-        Method::Random => {
-            let mut key = [0u8; 16];
-            OsRng.try_fill_bytes(&mut key)?;
-            let mut rng = OsRng::default();
-            let mut players = participants.get_players_list();
-            players.shuffle(&mut rng);
-            let players = Participants::try_from(players)?;
-            Ok(players)
-        }
-        Method::Strict => {
-            if participants.have_same_participants(&seeding) {
-                Ok(seeding)
-            } else {
-                Err(Error::DifferentParticipants(seeding, participants))
-            }
-        }
-    }
-}
-
-/// Returns tournament matches for `n` players. Matches are separated by
-/// rounds.
-///
-/// Top seed plays the least matches. He will face predicted higher seeds only
-/// later in the bracket. Top seed plays at most one more match than anyone
-/// else.
 /// # Errors
 /// Throws error when math overflow happens
 pub fn get_balanced_round_matches_top_seed_favored(
@@ -215,98 +111,17 @@ pub fn get_balanced_round_matches_top_seed_favored(
 
     Ok(round_matches.into_iter().flatten().collect())
 }
-
-/// Seeding initial round for single elimination bracket
-fn seeding_initial_round(
-    available_players: &mut Vec<usize>,
-    players: &Participants,
-    this_round: &mut Vec<Match>,
-) {
-    let top_seed = available_players.remove(0);
-    let top_seed_player = *players
-        .clone()
-        .get_players_list()
-        .iter()
-        .map(Player::get_id)
-        .collect::<Vec<PlayerId>>()
-        .get(top_seed - 1)
-        .expect("player id");
-    let bottom_seed = available_players.pop().expect("bottom seed");
-    let bottom_seed_player = *players
-        .clone()
-        .get_players_list()
-        .iter()
-        .map(Player::get_id)
-        .collect::<Vec<PlayerId>>()
-        .get(bottom_seed - 1)
-        .expect("player id");
-
-    this_round.push(
-        Match::new(
-            [
-                Opponent::Player(top_seed_player),
-                Opponent::Player(bottom_seed_player),
-            ],
-            [top_seed, bottom_seed],
-        )
-        .expect("match"),
-    );
-}
-
-/// Request to seed a bracket
-#[derive(Serialize, Deserialize, Debug)]
-#[cfg_attr(feature = "poem-openapi", derive(Object))]
-#[cfg_attr(feature = "poem-openapi", oai(rename = "SeedingPOST"))]
-pub struct POST {
-    /// Discussion channel internal id
-    pub internal_channel_id: String,
-    /// Service
-    pub service: String,
-    /// List of seeded players
-    pub players: Vec<String>,
-}
-
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::matches::{Id as MatchId, MatchGET};
-    use crate::player::Player;
+    use crate::seeding::single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored;
+    use crate::seeding::{seed, Method};
+    use crate::{
+        matches::Match,
+        opponent::Opponent,
+        player::{Participants, Player},
+    };
     use rand::Rng;
-
-    fn assert_seeding_returns_not_enough_player_error(
-        players: Participants,
-        current_participants: Participants,
-    ) {
-        let e = seed(&Method::Random, players, current_participants);
-        assert!(e.is_err());
-        if let Error::NotEnoughPlayers = e.expect_err("error") {
-        } else {
-            panic!("should return NotEnoughPlayers");
-        }
-    }
-
-    #[test]
-    fn cannot_seed_bracket_without_3_players_minimum() {
-        let mut players = Participants::default();
-        assert_seeding_returns_not_enough_player_error(players.clone(), players.clone());
-
-        players = players
-            .add_participant(Player::new("player1".to_string()))
-            .expect("player added");
-        assert_seeding_returns_not_enough_player_error(players.clone(), players.clone());
-
-        players = players
-            .add_participant(Player::new("player2".to_string()))
-            .expect("player added");
-        assert_seeding_returns_not_enough_player_error(players.clone(), players.clone());
-
-        assert_eq!(
-            players.len(),
-            2,
-            "there should be two players, found: {}",
-            players.len()
-        );
-    }
 
     #[test]
     fn single_elimination_favors_top_seed_3_man() {

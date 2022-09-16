@@ -52,7 +52,7 @@ pub struct Participants {
     participants: Vec<Player>,
 }
 
-/// Error while forming group of players
+/// Error while forming or querying group of players
 #[derive(Error, Debug, Eq, PartialEq)]
 pub enum Error {
     /// Player already exist in this group of player
@@ -61,6 +61,9 @@ pub enum Error {
     /// Player id could not be parsed
     #[error("Player id parsing failed")]
     PlayerId(#[from] uuid::Error),
+    /// Referenced player is unknown in this group of participants
+    #[error("Player {0} is not in this group")]
+    Unknown(PlayerId),
 }
 
 impl Participants {
@@ -162,6 +165,19 @@ impl Participants {
             .iter()
             .any(|p| p.get_id() == participant_id)
     }
+
+    /// Return seed of player
+    ///
+    /// # Errors
+    /// thrown when player does not exist
+    pub fn get_seed(&self, player: &Player) -> Result<usize, Error> {
+        for (i, p) in self.participants.iter().enumerate() {
+            if p.get_id() == player.get_id() {
+                return Ok(i + 1);
+            }
+        }
+        Err(Error::Unknown(player.get_id()))
+    }
 }
 
 impl std::fmt::Display for Player {
@@ -246,7 +262,7 @@ mod tests {
         assert!(e.is_err(), "adding the same player did not return an error");
         match e.as_ref().expect_err("error") {
             Error::AlreadyPresent => {}
-            Error::PlayerId(_) => panic!("expected AlreadyPresent but got {e:?}"),
+            _ => panic!("expected AlreadyPresent but got {e:?}"),
         }
     }
 }
