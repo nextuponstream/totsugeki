@@ -2,7 +2,9 @@
 
 use super::TotsugekiApiTestClient;
 use totsugeki::matches::Id as MatchId;
-use totsugeki::matches::{MatchResultPOST, ReportResultPOST, ReportedResult};
+use totsugeki::matches::{
+    PlayerMatchResultPOST, ReportResultPOST, ReportedResult, TournamentOrganiserMatchResultPOST,
+};
 use totsugeki_api::Service;
 use tracing::debug;
 
@@ -14,7 +16,7 @@ pub async fn player_reports_match_result(
     service: Service,
     result: ReportedResult,
 ) -> ReportResultPOST {
-    let body = MatchResultPOST {
+    let body = PlayerMatchResultPOST {
         internal_player_id: player_internal_id.to_string(),
         internal_channel_id: channel_internal_id.to_string(),
         service: service.to_string(),
@@ -22,7 +24,7 @@ pub async fn player_reports_match_result(
     };
     let res = test_api
         .cli
-        .post("/bracket/report")
+        .post("/bracket/report/player")
         .header("X-API-Key", test_api.authorization_header.as_str())
         .body_json(&body)
         .send()
@@ -75,4 +77,38 @@ pub async fn both_player_report_match_result(
     debug!("Reported results OK by {player_internal_id_1} and {player_internal_id_2}");
 
     resp_1.affected_match_id
+}
+
+/// Tournament organiser reports match result
+pub async fn tournament_organiser_reports_match_result(
+    test_api: &TotsugekiApiTestClient,
+    channel_internal_id: &str,
+    service: Service,
+    player1: &str,
+    reported_result: ReportedResult,
+    player2: &str,
+) -> MatchId {
+    let body = TournamentOrganiserMatchResultPOST {
+        internal_channel_id: channel_internal_id.into(),
+        service: service.to_string(),
+        player1: player1.into(),
+        result: reported_result.to_string(),
+        player2: player2.into(),
+    };
+    let res = test_api
+        .cli
+        .post("/bracket/report/tournament_organiser")
+        .header("X-API-Key", test_api.authorization_header.as_str())
+        .body_json(&body)
+        .send()
+        .await;
+    res.assert_status_is_ok();
+    let response = res.json().await;
+    let r = response.value().object();
+    let affected_match_id =
+        MatchId::parse_str(r.get("affected_match_id").string()).expect("affected match id");
+    println!("{r:?}");
+    let _message = r.get("message").string().to_string();
+
+    affected_match_id
 }

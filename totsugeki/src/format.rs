@@ -17,9 +17,9 @@ use crate::{
 /// All bracket formats
 #[derive(PartialEq, Eq, Copy, Clone, Deserialize, Serialize, Debug)]
 pub enum Format {
-    /// Single elimination tournament
+    /// Players are eliminated after their first loss
     SingleElimination,
-    /// Double elimination tournament
+    /// Players are eliminated after their second loss
     DoubleElimination,
     // TODO add other style of tournament
 }

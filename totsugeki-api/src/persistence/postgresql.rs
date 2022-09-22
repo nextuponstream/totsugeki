@@ -76,6 +76,15 @@ impl DBAccessor for Accessor {
         todo!()
     }
 
+    fn forfeit<'a, 'b, 'c>(
+        &'a self,
+        internal_channel_id: &'b str,
+        service: &'b str,
+        player_internal_id: &'b str,
+    ) -> Result<BracketId, super::Error<'c>> {
+        todo!()
+    }
+
     fn get_bracket<'a, 'b, 'c>(
         &'a self,
         bracket_id: BracketId,
@@ -178,16 +187,18 @@ impl DBAccessor for Accessor {
         todo!()
     }
 
-    fn validate_result<'a, 'b>(&'a self, match_id: MatchId) -> Result<(), super::Error<'b>> {
+    fn tournament_organiser_reports_result<'a, 'b, 'c>(
+        &'a self,
+        channel_internal_id: &'b str,
+        service: &'b str,
+        player1_id: &'b str,
+        result: &'b str,
+        player2_id: &'b str,
+    ) -> Result<ReportResultPOST, super::Error<'c>> {
         todo!()
     }
 
-    fn forfeit<'a, 'b, 'c>(
-        &'a self,
-        internal_channel_id: &'b str,
-        service: &'b str,
-        player_internal_id: &'b str,
-    ) -> Result<BracketId, super::Error<'c>> {
+    fn validate_result<'a, 'b>(&'a self, match_id: MatchId) -> Result<(), super::Error<'b>> {
         todo!()
     }
 }

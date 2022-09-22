@@ -12,7 +12,7 @@ use reqwest::StatusCode;
 use test_log::test;
 use totsugeki::{
     format::Format,
-    matches::{Match, MatchResultPOST, NextMatchGETRequest, ReportedResult},
+    matches::{Match, NextMatchGETRequest, PlayerMatchResultPOST, ReportedResult},
     opponent::Opponent,
     seeding::Method,
 };
@@ -286,7 +286,7 @@ async fn disqualified_player_cannot_report_result() {
         )
         .await;
 
-        let body = MatchResultPOST {
+        let body = PlayerMatchResultPOST {
             internal_player_id: "1".to_string(),
             internal_channel_id: internal_channel_id.to_string(),
             service: service.to_string(),
@@ -294,7 +294,7 @@ async fn disqualified_player_cannot_report_result() {
         };
         let res = test_api
             .cli
-            .post("/bracket/report")
+            .post("/bracket/report/player")
             .header("X-API-Key", test_api.authorization_header.as_str())
             .body_json(&body)
             .send()

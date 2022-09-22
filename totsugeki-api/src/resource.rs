@@ -53,6 +53,7 @@ impl From<BracketError> for Error {
             | BracketError::NoMatchToPlay(_, _)
             | BracketError::UnknownPlayer(_, _, _)
             | BracketError::DisqualifiedPlayerHasNoNextOpponent(_, _)
+            | BracketError::NoMatchToUpdate(_, _)
             | BracketError::UnknownMatch(_) => Self::UnknownBracket(e),
         }
     }

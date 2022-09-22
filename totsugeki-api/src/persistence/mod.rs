@@ -265,6 +265,20 @@ pub trait DBAccessor {
         result: &'b str,
     ) -> Result<ReportResultPOST, Error<'c>>;
 
+    /// Let tournament organiser report result. Has the same effect as both
+    /// players reporting the same score.
+    ///
+    /// # Errors
+    /// Returns an error if result cannot be parsed
+    fn tournament_organiser_reports_result<'a, 'b, 'c>(
+        &'a self,
+        channel_internal_id: &'b str,
+        service: &'b str,
+        player1_id: &'b str,
+        result: &'b str,
+        player2_id: &'b str,
+    ) -> Result<ReportResultPOST, Error<'c>>;
+
     /// Seed active bracket in discussion channel
     ///
     /// # Errors

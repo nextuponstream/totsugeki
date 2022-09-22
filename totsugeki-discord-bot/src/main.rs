@@ -14,7 +14,7 @@ use tracing_log::LogTracer;
 use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
 
 #[group]
-#[commands(next_match, ping, join, report, validate)]
+#[commands(next_match, ping, join, report, validate, tournament_organiser_reports)]
 #[summary = "Main available commands"]
 #[sub_groups("bracket")]
 pub struct General;

@@ -32,6 +32,12 @@ pub enum Error {
     /// Cannot instantiate match with two same player
     #[error("Error. Cannot use same player as both player of a match.")]
     SamePlayer,
+    /// Partitionning of double elimination matches cannot proceed
+    #[error("Number of matches needs to be 2*n - 1, n being the number of participants, got: {0}")]
+    WrongNumberOfMatches(usize),
+    /// Cannot set opponent without a player id
+    #[error("Need a player id for opponent")]
+    OpponentIsNotAPlayer,
 }
 
 /// Seeds of players
@@ -103,6 +109,13 @@ pub struct Match {
     reported_results: MatchReportedResult,
 }
 
+impl std::fmt::Display for Match {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "\t{} vs {}", self.players[0], self.players[1])?;
+        writeln!(f, "winner: {}", self.winner)
+    }
+}
+
 impl Match {
     /// Returns true if one of the player has id `player_id`
     #[must_use]
@@ -121,6 +134,44 @@ impl Match {
         false
     }
 
+    /// Compose double elimination matches
+    pub(crate) fn double_elimination(
+        winners: &[Match],
+        losers: &[Match],
+        grand_finals: Match,
+        reset: Match,
+    ) -> Vec<Match> {
+        let mut matches: Vec<Match> = winners.into();
+        matches.append(&mut losers.into());
+        matches.push(grand_finals);
+        matches.push(reset);
+        matches
+    }
+
+    /// Get id of match
+    #[must_use]
+    pub fn get_id(&self) -> Id {
+        self.id
+    }
+
+    /// Get looser of match. Loosers are always players
+    #[must_use]
+    pub fn get_looser(&self) -> Opponent {
+        self.automatic_looser
+    }
+
+    /// Get players for this match
+    #[must_use]
+    pub fn get_players(&self) -> MatchPlayers {
+        self.players
+    }
+
+    /// Get seeds of (predicted) player
+    #[must_use]
+    pub fn get_seeds(&self) -> Seeds {
+        self.seeds
+    }
+
     /// Get matches to send
     #[must_use]
     pub fn get_sendable_matches(matches: &Vec<Vec<Match>>) -> Vec<Vec<MatchGET>> {
@@ -137,6 +188,12 @@ impl Match {
         result
     }
 
+    /// Get winner of match. Winners are players
+    #[must_use]
+    pub fn get_winner(&self) -> Opponent {
+        self.winner
+    }
+
     /// Returns true if player the automatic looser of this match is given
     /// player
     #[must_use]
@@ -145,6 +202,31 @@ impl Match {
             return looser_id == player_id;
         }
         false
+    }
+
+    #[must_use]
+    /// Returns true if this match is where loser arrives
+    pub(crate) fn is_first_loser_match(self, expected_seed: usize) -> bool {
+        if let Opponent::Unknown = self.players[0] {
+            if self.seeds[0] == expected_seed {
+                return true;
+            };
+        }
+        if let Opponent::Unknown = self.players[1] {
+            if self.seeds[1] == expected_seed {
+                return true;
+            };
+        }
+
+        false
+    }
+
+    /// Returns true if match is over
+    #[must_use]
+    pub fn is_over(&self) -> bool {
+        self.players[0] != Opponent::Unknown
+            && self.players[1] != Opponent::Unknown
+            && (self.winner != Opponent::Unknown || self.automatic_looser != Opponent::Unknown)
     }
 
     /// Returns true if both opponents are present but a winner has yet to be
@@ -161,6 +243,78 @@ impl Match {
         false
     }
 
+    /// Create looser bracket match where opponents are unknown yet
+    #[must_use]
+    #[cfg(test)]
+    pub fn looser_bracket_match(id: Id, seeds: [usize; 2]) -> Self {
+        Match {
+            id,
+            players: [Opponent::Unknown, Opponent::Unknown],
+            seeds,
+            winner: Opponent::Unknown,
+            automatic_looser: Opponent::Unknown,
+            reported_results: [(0, 0), (0, 0)],
+        }
+    }
+
+    /// Create new match with two opponents
+    ///
+    /// Winner is automatically set if bye opponent is set
+    ///
+    /// # Errors
+    /// Returns an error if bye opponent does not have a known opponent
+    pub fn new(players: [Opponent; 2], seeds: [usize; 2]) -> Result<Match, Error> {
+        if let Opponent::Player(p1_id) = players[0] {
+            if let Opponent::Player(p2_id) = players[1] {
+                if p1_id == p2_id {
+                    return Err(Error::SamePlayer);
+                }
+            }
+        }
+        Ok(Self {
+            id: Id::new_v4(),
+            players,
+            winner: Opponent::Unknown,
+            automatic_looser: Opponent::Unknown,
+            seeds,
+            reported_results: [(0_i8, 0_i8), (0_i8, 0)],
+        })
+    }
+
+    /// Create new looser bracket match where opponents are unknown yet
+    #[must_use]
+    pub fn new_looser_bracket_match(seeds: [usize; 2]) -> Self {
+        Match {
+            id: Id::new_v4(),
+            players: [Opponent::Unknown, Opponent::Unknown],
+            seeds,
+            winner: Opponent::Unknown,
+            automatic_looser: Opponent::Unknown,
+            reported_results: [(0, 0), (0, 0)],
+        }
+    }
+
+    /// Partitions double elimination bracket matches in winner bracket, looser
+    /// bracket, grand finals and grand finals reset
+    pub(crate) fn partition_double_elimination_matches(
+        matches: &[Match],
+        n: usize,
+    ) -> Result<(Vec<Match>, Vec<Match>, Match, Match), Error> {
+        if matches.len() != 2 * n - 1 {
+            return Err(Error::WrongNumberOfMatches(matches.len()));
+        }
+        let total_winner_bracket_matches = n - 1;
+        let (winner_bracket, other) = matches.split_at(total_winner_bracket_matches);
+        let (grand_finals_reset, other) = other.split_last().expect("grand finals reset");
+        let (grand_finals, loser_bracket) = other.split_last().expect("grand finals");
+        Ok((
+            winner_bracket.to_vec(),
+            loser_bracket.to_vec(),
+            *grand_finals,
+            *grand_finals_reset,
+        ))
+    }
+
     /// Set looser of this match (when disqualified)
     ///
     /// # Errors
@@ -175,6 +329,27 @@ impl Match {
         })
     }
 
+    /// Set opponent of match
+    ///
+    /// Motivation for this function is to return an error which can be coerced
+    /// whereas `set_player` forces you to have an Id
+    ///
+    /// # Errors
+    /// thrown if opponent is not a player
+    pub(crate) fn set_opponent(self, id: PlayerId, is_player_1: bool) -> Self {
+        assert!(
+            !self.contains(id),
+            "cannot set opponent when already in the match"
+        );
+        let player = Opponent::Player(id);
+        let players = if is_player_1 {
+            [player, self.players[1]]
+        } else {
+            [self.players[0], player]
+        };
+        Self { players, ..self }
+    }
+
     #[must_use]
     /// Set player of match and return updated match
     pub fn set_player(self, player_id: PlayerId, is_player_1: bool) -> Match {
@@ -184,14 +359,100 @@ impl Match {
         } else {
             [self.players[0], player]
         };
-        Match {
-            id: self.id,
-            players,
-            seeds: self.seeds,
-            winner: self.winner,
-            automatic_looser: self.automatic_looser,
-            reported_results: self.reported_results,
+        Match { players, ..self }
+    }
+
+    /// Returns true if the stronger seed won
+    #[must_use]
+    pub(crate) fn stronger_seed_wins(&self) -> bool {
+        assert!(self.seeds[0] != self.seeds[1]);
+        if self.seeds[0] < self.seeds[1] {
+            if let Opponent::Player(id) = self.players[0] {
+                if let Opponent::Player(winner) = self.winner {
+                    return winner == id;
+                }
+            }
+        } else if let Opponent::Player(id) = self.players[1] {
+            if let Opponent::Player(winner) = self.winner {
+                return winner == id;
+            }
         }
+        false
+    }
+
+    /// Set match outcome using reported results. Returns updated match, winner
+    /// id and looser id
+    ///
+    /// # Errors
+    /// Returns an error if reported scores don't not agree on the winner
+    pub fn update_outcome(self) -> Result<(Match, PlayerId, PlayerId), Error> {
+        // if there is a disqualified player, try to set the winner
+        if let Opponent::Player(dq_player_id) = self.automatic_looser {
+            if let Opponent::Player(id) = self.players[0] {
+                if id == dq_player_id {
+                    if let Opponent::Player(id) = self.players[1] {
+                        return Ok((
+                            Self {
+                                winner: Opponent::Player(id),
+                                ..self
+                            },
+                            id,
+                            dq_player_id,
+                        ));
+                    }
+                }
+            }
+            if let Opponent::Player(id) = self.players[1] {
+                if id == dq_player_id {
+                    if let Opponent::Player(id) = self.players[0] {
+                        return Ok((
+                            Self {
+                                winner: Opponent::Player(id),
+                                ..self
+                            },
+                            id,
+                            dq_player_id,
+                        ));
+                    }
+                }
+            }
+
+            return Err(Error::MissingOpponent(self.players));
+        }
+
+        let [(s11, s12), (s21, s22)] = self.reported_results;
+        let (winner, looser) = if s11 > s12 && s21 < s22 {
+            (self.players[0], self.players[1])
+        } else if s11 < s12 && s21 > s22 {
+            (self.players[1], self.players[0])
+        } else {
+            return Err(Error::PlayersReportedDifferentMatchOutcome([
+                ReportedResult((self.reported_results[0].0, self.reported_results[0].1)),
+                ReportedResult((self.reported_results[1].0, self.reported_results[1].1)),
+            ]));
+        };
+
+        let winner_id = match winner {
+            Opponent::Player(id) => id,
+            Opponent::Unknown => return Err(Error::UnknownPlayerWithReportedResults),
+        };
+        let loser_id = match looser {
+            Opponent::Player(id) => id,
+            Opponent::Unknown => return Err(Error::UnknownPlayerWithReportedResults),
+        };
+
+        Ok((
+            Match {
+                id: self.id,
+                players: self.players,
+                seeds: self.seeds,
+                winner,
+                automatic_looser: self.automatic_looser,
+                reported_results: self.reported_results,
+            },
+            winner_id,
+            loser_id,
+        ))
     }
 
     /// Update match result and return updated match
@@ -237,168 +498,6 @@ impl Match {
         } else {
             Err(Error::UnknownPlayer(player_id, self.players))
         }
-    }
-
-    /// Create new looser bracket match where opponents are unknown yet
-    #[must_use]
-    pub fn new_looser_bracket_match(seeds: [usize; 2]) -> Self {
-        Match {
-            id: Id::new_v4(),
-            players: [Opponent::Unknown, Opponent::Unknown],
-            seeds,
-            winner: Opponent::Unknown,
-            automatic_looser: Opponent::Unknown,
-            reported_results: [(0, 0), (0, 0)],
-        }
-    }
-
-    /// Create looser bracket match where opponents are unknown yet
-    #[must_use]
-    #[cfg(test)]
-    pub fn looser_bracket_match(id: Id, seeds: [usize; 2]) -> Self {
-        Match {
-            id,
-            players: [Opponent::Unknown, Opponent::Unknown],
-            seeds,
-            winner: Opponent::Unknown,
-            automatic_looser: Opponent::Unknown,
-            reported_results: [(0, 0), (0, 0)],
-        }
-    }
-}
-
-impl std::fmt::Display for Match {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "\t{} vs {}", self.players[0], self.players[1])?;
-        writeln!(f, "winner: {}", self.winner)
-    }
-}
-
-impl Match {
-    /// Get id of match
-    #[must_use]
-    pub fn get_id(&self) -> Id {
-        self.id
-    }
-
-    /// Get looser of match. Loosers are always players
-    #[must_use]
-    pub fn get_looser(&self) -> Opponent {
-        self.automatic_looser
-    }
-
-    /// Get players for this match
-    #[must_use]
-    pub fn get_players(&self) -> MatchPlayers {
-        self.players
-    }
-
-    /// Get seeds of (predicted) player
-    #[must_use]
-    pub fn get_seeds(&self) -> Seeds {
-        self.seeds
-    }
-
-    /// Get winner of match. Winners are players
-    #[must_use]
-    pub fn get_winner(&self) -> Opponent {
-        self.winner
-    }
-
-    /// Create new match with two opponents
-    ///
-    /// Winner is automatically set if bye opponent is set
-    ///
-    /// # Errors
-    /// Returns an error if bye opponent does not have a known opponent
-    pub fn new(players: [Opponent; 2], seeds: [usize; 2]) -> Result<Match, Error> {
-        if let Opponent::Player(p1_id) = players[0] {
-            if let Opponent::Player(p2_id) = players[1] {
-                if p1_id == p2_id {
-                    return Err(Error::SamePlayer);
-                }
-            }
-        }
-        Ok(Self {
-            id: Id::new_v4(),
-            players,
-            winner: Opponent::Unknown,
-            automatic_looser: Opponent::Unknown,
-            seeds,
-            reported_results: [(0_i8, 0_i8), (0_i8, 0)],
-        })
-    }
-
-    /// Set match outcome using reported results. Returns updated match, seed
-    /// of expected winner and winner id
-    ///
-    /// # Errors
-    /// Returns an error if reported scores don't not agree on the winner
-    pub fn update_outcome(self) -> Result<(Match, usize, PlayerId), Error> {
-        let seed_of_expected_winner = self.get_seeds()[0];
-        // if there is a disqualified player, try to set the winner
-        if let Opponent::Player(dq_player_id) = self.automatic_looser {
-            if let Opponent::Player(id) = self.players[0] {
-                if id == dq_player_id {
-                    if let Opponent::Player(id) = self.players[1] {
-                        return Ok((
-                            Self {
-                                winner: Opponent::Player(id),
-                                ..self
-                            },
-                            seed_of_expected_winner,
-                            id,
-                        ));
-                    }
-                }
-            }
-            if let Opponent::Player(id) = self.players[1] {
-                if id == dq_player_id {
-                    if let Opponent::Player(id) = self.players[0] {
-                        return Ok((
-                            Self {
-                                winner: Opponent::Player(id),
-                                ..self
-                            },
-                            seed_of_expected_winner,
-                            id,
-                        ));
-                    }
-                }
-            }
-
-            return Err(Error::MissingOpponent(self.players));
-        }
-
-        let [(s11, s12), (s21, s22)] = self.reported_results;
-        let winner = if s11 > s12 && s21 < s22 {
-            self.players[0]
-        } else if s11 < s12 && s21 > s22 {
-            self.players[1]
-        } else {
-            return Err(Error::PlayersReportedDifferentMatchOutcome([
-                ReportedResult((self.reported_results[0].0, self.reported_results[0].1)),
-                ReportedResult((self.reported_results[1].0, self.reported_results[1].1)),
-            ]));
-        };
-
-        let winner_id = match winner {
-            Opponent::Player(id) => id,
-            Opponent::Unknown => return Err(Error::UnknownPlayerWithReportedResults),
-        };
-
-        Ok((
-            Match {
-                id: self.id,
-                players: self.players,
-                seeds: self.seeds,
-                winner,
-                automatic_looser: self.automatic_looser,
-                reported_results: self.reported_results,
-            },
-            seed_of_expected_winner,
-            winner_id,
-        ))
     }
 }
 
@@ -607,10 +706,10 @@ impl std::fmt::Display for NextMatchGET {
     }
 }
 
-/// Report match result
+/// Player reports match result
 #[derive(Serialize, Debug)]
 #[cfg_attr(feature = "poem-openapi", derive(Object))]
-pub struct MatchResultPOST {
+pub struct PlayerMatchResultPOST {
     /// Player id using service
     pub internal_player_id: String,
     /// Discussion channel id of service
@@ -619,6 +718,23 @@ pub struct MatchResultPOST {
     pub service: String,
     /// Result as reported by the player
     pub result: String,
+}
+
+/// Tournament organiser reports match result where player 1 scored result x-y
+/// against player 2
+#[derive(Serialize, Debug)]
+#[cfg_attr(feature = "poem-openapi", derive(Object))]
+pub struct TournamentOrganiserMatchResultPOST {
+    /// Discussion channel id of service
+    pub internal_channel_id: String,
+    /// Service used to make call
+    pub service: String,
+    /// Player 1
+    pub player1: String,
+    /// Result as reported by the player
+    pub result: String,
+    /// Player 2
+    pub player2: String,
 }
 
 /// Validate match
@@ -632,7 +748,7 @@ pub struct ValidateMatchPOST {
     pub match_id: String,
 }
 
-/// Reponse to player reporting result with affected match id and some message
+/// Reponse to reporting result with affected match id and some message
 #[derive(Serialize, Deserialize, Debug)]
 #[cfg_attr(feature = "poem-openapi", derive(Object))]
 pub struct ReportResultPOST {
@@ -686,5 +802,83 @@ mod tests {
         } else {
             panic!("Expected error but got none")
         }
+    }
+
+    #[test]
+    fn stronger_seeds_wins() {
+        let p1 = Player::new("p1".into());
+        let p2 = Player::new("p2".into());
+        let m = Match::new(
+            [Opponent::Player(p1.get_id()), Opponent::Player(p2.get_id())],
+            [1, 2],
+        )
+        .expect("match");
+        assert!(!m.is_over());
+        let m = m
+            .update_reported_result(p1.get_id(), ReportedResult((2, 0)))
+            .expect("match p1 result");
+        let m = m
+            .update_reported_result(p2.get_id(), ReportedResult((0, 2)))
+            .expect("match p2 result");
+        let (m, _, _) = m.update_outcome().expect("validation");
+        assert!(m.is_over());
+        assert!(
+            m.stronger_seed_wins(),
+            "expected p1 with higher seed to win"
+        );
+
+        let m = Match::new(
+            [Opponent::Player(p1.get_id()), Opponent::Player(p2.get_id())],
+            [1, 2],
+        )
+        .expect("match");
+        assert!(!m.is_over());
+        let m = m
+            .update_reported_result(p2.get_id(), ReportedResult((2, 0)))
+            .expect("match p2 result");
+        let m = m
+            .update_reported_result(p1.get_id(), ReportedResult((0, 2)))
+            .expect("match p1 result");
+        let (m, _, _) = m.update_outcome().expect("validation");
+        assert!(m.is_over());
+        assert!(
+            !m.stronger_seed_wins(),
+            "expected p2 with lower seed to win"
+        );
+
+        let m = Match::new(
+            [Opponent::Player(p1.get_id()), Opponent::Player(p2.get_id())],
+            [2, 1],
+        )
+        .expect("match");
+        assert!(!m.is_over());
+        let m = m
+            .update_reported_result(p1.get_id(), ReportedResult((2, 0)))
+            .expect("match p1 result");
+        let m = m
+            .update_reported_result(p2.get_id(), ReportedResult((0, 2)))
+            .expect("match p2 result");
+        let (m, _, _) = m.update_outcome().expect("validation");
+        assert!(m.is_over());
+        assert!(!m.stronger_seed_wins(), "p1 with lower seed to win");
+
+        let m = Match::new(
+            [Opponent::Player(p1.get_id()), Opponent::Player(p2.get_id())],
+            [2, 1],
+        )
+        .expect("match");
+        assert!(!m.is_over());
+        let m = m
+            .update_reported_result(p2.get_id(), ReportedResult((2, 0)))
+            .expect("match p1 result");
+        let m = m
+            .update_reported_result(p1.get_id(), ReportedResult((0, 2)))
+            .expect("match p1 result");
+        let (m, _, _) = m.update_outcome().expect("validation");
+        assert!(m.is_over());
+        assert!(
+            m.stronger_seed_wins(),
+            "expected p2 with higher seed to win"
+        );
     }
 }
