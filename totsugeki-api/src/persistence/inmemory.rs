@@ -265,6 +265,41 @@ impl DBAccessor for InMemoryDBAccessor {
             .collect::<Vec<Organiser>>())
     }
 
+    fn forfeit<'a, 'b, 'c>(
+        &'a self,
+        internal_channel_id: &'b str,
+        service: &'b str,
+        internal_player_id: &'b str,
+    ) -> Result<BracketId, Error<'c>> {
+        let mut db = self.db.write().expect("database"); // FIXME bubble up error
+        let (active_bracket_id, _, service) =
+            find_active_bracket_id(&db, internal_channel_id, service)?;
+        let player_id = match service {
+            Service::Discord => {
+                let user_id = parse_discord_user_id(internal_player_id)?;
+                match db.discord_internal_users.get(&user_id) {
+                    Some(player_id) => *player_id,
+                    None => return Err(ResourceError::UnknownPlayer.into()),
+                }
+            }
+        };
+        match db.brackets.get(&active_bracket_id) {
+            Some(b) => {
+                let updated_bracket = b.clone().disqualify_participant(player_id)?;
+                db.brackets
+                    .insert(updated_bracket.get_id(), updated_bracket);
+
+                Ok(active_bracket_id)
+            }
+            None => {
+                return Err(CriticalError::Corrupted(format!(
+                    "No bracket found for id: \"{active_bracket_id}\""
+                ))
+                .into())
+            }
+        }
+    }
+
     fn get_bracket<'a, 'b, 'c>(&'a self, bracket_id: BracketId) -> Result<Raw, Error<'c>> {
         let db = self.db.read().expect("database"); // FIXME bubble up error
         let bracket = match db.brackets.get(&bracket_id) {
@@ -495,8 +530,6 @@ impl DBAccessor for InMemoryDBAccessor {
                     ) => {
                         // Even though match can't be validated, we still
                         // update the bracket but add a warning
-                        // FIXME add test where players correct reported
-                        // results for match to be validated
                         db.brackets.insert(
                             bracket_with_reported_result.get_id(),
                             bracket_with_reported_result,
@@ -565,6 +598,48 @@ impl DBAccessor for InMemoryDBAccessor {
         }
     }
 
+    fn tournament_organiser_reports_result<'a, 'b, 'c>(
+        &'a self,
+        channel_internal_id: &'b str,
+        service: &'b str,
+        player1_id: &'b str,
+        result: &'b str,
+        player2_id: &'b str,
+    ) -> Result<ReportResultPOST, Error<'c>> {
+        let result = parse_match_result(result)?;
+        let player1_id = parse_player(player1_id)?;
+        let player2_id = parse_player(player2_id)?;
+        let mut db = self.db.write().expect("database"); // FIXME not good
+        let (active_bracket_id, _, _) = find_active_bracket_id(&db, channel_internal_id, service)?;
+        let active_bracket = db.brackets.get(&active_bracket_id);
+        match active_bracket {
+            Some(b) => {
+                let (bracket, affected_match_id) = b.clone().tournament_organiser_reports_result(
+                    player1_id,
+                    (result.0 .0, result.0 .1),
+                    player2_id,
+                )?;
+                let bracket = if bracket.is_validating_matches_automatically() {
+                    bracket.validate_match_result(affected_match_id)?
+                } else {
+                    bracket
+                };
+                db.brackets.insert(active_bracket_id, bracket);
+
+                Ok(ReportResultPOST {
+                    affected_match_id,
+                    message: "".into(),
+                })
+            }
+            None => {
+                return Err(CriticalError::Corrupted(format!(
+                    "No bracket found for id: \"{active_bracket_id}\""
+                ))
+                .into())
+            }
+        }
+    }
+
     fn validate_result<'a, 'b>(&'a self, match_id: MatchId) -> Result<(), Error<'b>> {
         let mut db = self.db.write().expect("database");
 
@@ -584,41 +659,6 @@ impl DBAccessor for InMemoryDBAccessor {
             bracket_id
         );
         Ok(())
-    }
-
-    fn forfeit<'a, 'b, 'c>(
-        &'a self,
-        internal_channel_id: &'b str,
-        service: &'b str,
-        internal_player_id: &'b str,
-    ) -> Result<BracketId, Error<'c>> {
-        let mut db = self.db.write().expect("database"); // FIXME bubble up error
-        let (active_bracket_id, _, service) =
-            find_active_bracket_id(&db, internal_channel_id, service)?;
-        let player_id = match service {
-            Service::Discord => {
-                let user_id = parse_discord_user_id(internal_player_id)?;
-                match db.discord_internal_users.get(&user_id) {
-                    Some(player_id) => *player_id,
-                    None => return Err(ResourceError::UnknownPlayer.into()),
-                }
-            }
-        };
-        match db.brackets.get(&active_bracket_id) {
-            Some(b) => {
-                let updated_bracket = b.clone().disqualify_participant(player_id)?;
-                db.brackets
-                    .insert(updated_bracket.get_id(), updated_bracket);
-
-                Ok(active_bracket_id)
-            }
-            None => {
-                return Err(CriticalError::Corrupted(format!(
-                    "No bracket found for id: \"{active_bracket_id}\""
-                ))
-                .into())
-            }
-        }
     }
 }
 

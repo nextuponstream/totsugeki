@@ -4,6 +4,7 @@ mod disqualification;
 mod getter_setter;
 pub mod http_responses;
 mod participants;
+mod progression;
 mod query_state;
 pub mod raw;
 mod seeding;
@@ -83,6 +84,9 @@ pub enum Error {
     /// Player query is impossible because they are disqualified
     #[error("You are disqualified (DQ'ed) from bracket {0}")]
     DisqualifiedPlayerHasNoNextOpponent(BracketId, PlayerId),
+    /// There is no match to update with given id
+    #[error("There is no match to update with id {1}")]
+    NoMatchToUpdate(Vec<Match>, MatchId),
 }
 
 /// Bracket identifier
@@ -154,10 +158,10 @@ impl Bracket {
     }
 
     /// Report result for a match in this bracket. Returns updated bracket and
-    /// affected match id
+    /// affected match id. This method does not affect other matches.
     ///
     /// # Errors
-    /// Thrown when result cannot be parsed
+    /// thrown when result cannot be parsed
     pub fn report_result(
         self,
         player_id: PlayerId,
@@ -178,12 +182,36 @@ impl Bracket {
         match match_to_update {
             Some(m) => {
                 let affected_match_id = m.get_id();
-                let updated_bracket =
-                    self.update_match_result(affected_match_id, result, player_id)?;
-                Ok((updated_bracket, affected_match_id))
+                let bracket = self.update_match_result(affected_match_id, result, player_id)?;
+                Ok((bracket, affected_match_id))
             }
             None => Err(Error::NoMatchToPlay(player_id, bracket_id)),
         }
+    }
+
+    /// Report results for player 1 and the reverse result for the other
+    /// player. Returns updated bracket and affected match id
+    ///
+    /// Assuming physically, both players comes up to the tournament organiser
+    /// to report the result, then both player agree on the match outcome.
+    ///
+    /// # Errors
+    /// thrown when result cannot be parsed
+    ///
+    /// # Panics
+    /// When both affected matches are not the same
+    pub fn tournament_organiser_reports_result(
+        self,
+        player_1: PlayerId,
+        result_player_1: (i8, i8),
+        player_2: PlayerId,
+    ) -> Result<(Bracket, MatchId), Error> {
+        let result_player_1 = ReportedResult(result_player_1);
+        let (bracket, first_affected_match) = self.report_result(player_1, result_player_1)?;
+        let (bracket, second_affected_match) =
+            bracket.report_result(player_2, result_player_1.reverse())?;
+        assert_eq!(first_affected_match, second_affected_match);
+        Ok((bracket, first_affected_match))
     }
 
     /// Start bracket: bar people from entering and accept match results
@@ -224,122 +252,6 @@ impl Bracket {
                 }
             })
             .collect();
-        Ok(Self { matches, ..self })
-    }
-
-    /// Validate match result and return updated bracket. Winner moves forward
-    /// in bracket. If final match is validated, then bracket will stop
-    /// accepting match result.
-    ///
-    /// # Errors
-    /// Thrown when given match id is unknown or when reported results differ
-    pub fn validate_match_result(self, match_id: MatchId) -> Result<Self, Error> {
-        // declare winner if there is one
-        let (updated_match, seed_of_expected_winner, winner_id) =
-            match self.matches.iter().find(|m| m.get_id() == match_id) {
-                Some(m) => m.update_outcome()?,
-                None => return Err(Error::UnknownMatch(match_id)),
-            };
-        let matches: Vec<_> = self
-            .matches
-            .iter()
-            .map(|m| {
-                if m.get_id() == updated_match.get_id() {
-                    updated_match
-                } else {
-                    *m
-                }
-            })
-            .collect();
-
-        let last_match = matches.last().expect("last match");
-        if last_match.get_id() == match_id {
-            return Ok(Self {
-                accept_match_results: false,
-                matches,
-                ..self
-            });
-        }
-
-        // winner moves forward in bracket
-        let index = matches
-            .iter()
-            .position(|m| m.get_id() == updated_match.get_id())
-            .expect("reference to updated match");
-        let mut iter = matches.iter().skip(index + 1);
-        let m = iter
-            .find(|m| m.get_seeds().contains(&seed_of_expected_winner))
-            .expect("match where winner plays next");
-        let updated_match = m.set_player(winner_id, m.get_seeds()[0] == seed_of_expected_winner);
-        let mut matches: Vec<Match> = matches
-            .iter()
-            .map(|m| {
-                if m.get_id() == updated_match.get_id() {
-                    updated_match
-                } else {
-                    *m
-                }
-            })
-            .collect();
-
-        // Set winner to all matches were a player is disqualified
-        while matches
-            .iter()
-            .any(|m| m.get_looser() != Opponent::Unknown && m.is_playable())
-        {
-            let match_id = matches
-                .iter()
-                .find(|m| m.get_looser() != Opponent::Unknown && m.is_playable())
-                .expect("match to with disqualified player")
-                .get_id();
-            let (updated_match, seed_of_expected_winner, _) =
-                match matches.iter().find(|m| m.get_id() == match_id) {
-                    Some(m) => m.update_outcome()?,
-                    None => return Err(Error::UnknownMatch(match_id)),
-                };
-            matches = matches
-                .iter()
-                .map(|m| {
-                    if m.get_id() == updated_match.get_id() {
-                        updated_match
-                    } else {
-                        *m
-                    }
-                })
-                .collect();
-
-            let last_match = matches.last().expect("last match");
-            if last_match.get_id() == match_id {
-                return Ok(Self {
-                    accept_match_results: false,
-                    matches,
-                    ..self
-                });
-            }
-
-            // winner moves forward in bracket
-            let index = matches
-                .iter()
-                .position(|m| m.get_id() == updated_match.get_id())
-                .expect("reference to updated match");
-            let mut iter = matches.iter().skip(index + 1);
-            let m = iter
-                .find(|m| m.get_seeds().contains(&seed_of_expected_winner))
-                .expect("match where winner plays next");
-            let updated_match =
-                m.set_player(winner_id, m.get_seeds()[0] == seed_of_expected_winner);
-            matches = matches
-                .iter()
-                .map(|m| {
-                    if m.get_id() == updated_match.get_id() {
-                        updated_match
-                    } else {
-                        *m
-                    }
-                })
-                .collect();
-        }
-
         Ok(Self { matches, ..self })
     }
 }

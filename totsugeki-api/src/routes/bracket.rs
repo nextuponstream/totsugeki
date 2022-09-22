@@ -16,7 +16,10 @@ use totsugeki::{
         raw::Raw,
         CreateRequest, Id as BracketId,
     },
-    matches::{Id as MatchId, MatchResultPOST, NextMatchGETRequest, NextMatchGETResponseRaw},
+    matches::{
+        Id as MatchId, NextMatchGETRequest, NextMatchGETResponseRaw, PlayerMatchResultPOST,
+        TournamentOrganiserMatchResultPOST,
+    },
     player::{Player, GET as PlayersGET},
     quit::POST as QuitPOST,
     remove::POST as RemovePOST,
@@ -126,7 +129,7 @@ impl Api {
         }
     }
 
-    /// Return opponent of next match
+    /// Return opponent of next match for querying participant
     #[oai(path = "/next_match", method = "get")]
     #[tracing::instrument(name = "Find next match", skip(self, db, _auth))]
     async fn next_match<'a>(
@@ -149,16 +152,37 @@ impl Api {
         }
     }
 
-    /// Report result of bracket match
-    #[oai(path = "/bracket/report", method = "post")]
-    #[tracing::instrument(name = "Report match result", skip(self, db, _auth))]
-    async fn report_match_result<'a>(
+    /// Player reports result of bracket match
+    #[oai(path = "/bracket/report/player", method = "post")]
+    #[tracing::instrument(name = "Player reports match result", skip(self, db, _auth))]
+    async fn player_reports_match_result<'a>(
         &self,
         db: SharedDb<'a>,
         _auth: ApiKeyServiceAuthorization,
-        r: Json<MatchResultPOST>,
+        r: Json<PlayerMatchResultPOST>,
     ) -> Result<Json<ReportResultPOST>> {
-        match report(&db, &r.0) {
+        match players_reports(&db, &r.0) {
+            Ok(response) => Ok(Json(response)),
+            Err(e) => {
+                log_error(&e);
+                Err(e.into())
+            }
+        }
+    }
+
+    /// Tournament organiser reports result of bracket match
+    #[oai(path = "/bracket/report/tournament_organiser", method = "post")]
+    #[tracing::instrument(
+        name = "Tournament organiser reports match result",
+        skip(self, db, _auth)
+    )]
+    async fn tournament_organiser_reports_match_result<'a>(
+        &self,
+        db: SharedDb<'a>,
+        _auth: ApiKeyServiceAuthorization,
+        r: Json<TournamentOrganiserMatchResultPOST>,
+    ) -> Result<Json<ReportResultPOST>> {
+        match tournament_organiser_reports(&db, &r.0) {
             Ok(response) => Ok(Json(response)),
             Err(e) => {
                 log_error(&e);
@@ -393,8 +417,11 @@ where
     db.find_next_match(player_internal_id, channel_internal_id, service_type_id)
 }
 
-/// Report match result
-fn report<'a, 'b>(db: &'a SharedDb, r: &MatchResultPOST) -> Result<ReportResultPOST, Error<'b>>
+/// Player reports match result
+fn players_reports<'a, 'b>(
+    db: &'a SharedDb,
+    r: &PlayerMatchResultPOST,
+) -> Result<ReportResultPOST, Error<'b>>
 where
     'a: 'b,
 {
@@ -404,6 +431,24 @@ where
         &r.internal_channel_id,
         &r.service,
         &r.result,
+    )
+}
+
+/// Tournament organiser reports match result
+fn tournament_organiser_reports<'a, 'b>(
+    db: &'a SharedDb,
+    r: &TournamentOrganiserMatchResultPOST,
+) -> Result<ReportResultPOST, Error<'b>>
+where
+    'a: 'b,
+{
+    let db = db.read()?;
+    db.tournament_organiser_reports_result(
+        &r.internal_channel_id,
+        &r.service,
+        &r.player1,
+        &r.result,
+        &r.player2,
     )
 }
 

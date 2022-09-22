@@ -2,10 +2,7 @@
 //! join/forfeit
 
 use super::{Bracket, Error};
-use crate::{
-    player::{Id as PlayerId, Participants, Player},
-    seeding::single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored,
-};
+use crate::player::{Id as PlayerId, Participants, Player};
 
 impl Bracket {
     /// Regenerate matches. Used when participants are added or removed
@@ -19,7 +16,7 @@ impl Bracket {
         let matches = if updated_participants.len() < 3 {
             vec![]
         } else {
-            get_balanced_round_matches_top_seed_favored(&updated_participants)?
+            self.format.get_matches(&updated_participants)?
         };
         Ok(Self {
             participants: updated_participants,

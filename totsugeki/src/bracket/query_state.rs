@@ -2,7 +2,8 @@
 
 use crate::{
     bracket::{Bracket, Error},
-    matches::Id as MatchId,
+    format::Format::{DoubleElimination, SingleElimination},
+    matches::{Id as MatchId, Match},
     opponent::Opponent,
     player::{Id as PlayerId, Player},
 };
@@ -16,13 +17,29 @@ impl Bracket {
             .any(|m| m.is_automatic_looser_by_disqualification(player_id))
     }
 
+    /// Returns true if bracket is over
+    fn bracket_is_over(bracket_matches: &[Match]) -> bool {
+        !bracket_matches.iter().any(|m| !m.is_over())
+    }
+
     /// Returns true if bracket is over (all matches are played)
     #[must_use]
     pub(super) fn is_over(&self) -> bool {
-        !self
-            .matches
-            .iter()
-            .any(|m| m.get_winner() == Opponent::Unknown)
+        match self.format {
+            SingleElimination => Self::bracket_is_over(&self.matches),
+            DoubleElimination => {
+                let (winner_bracket, looser_bracket, gf, gfr) =
+                    Match::partition_double_elimination_matches(
+                        &self.matches,
+                        self.participants.len(),
+                    )
+                    .expect("partition");
+                Self::bracket_is_over(&winner_bracket)
+                    && Self::bracket_is_over(&looser_bracket)
+                    && gf.is_over()
+                    && (gf.stronger_seed_wins() || gfr.is_over())
+            }
+        }
     }
 
     /// Return next opponent for `player_id`, relevant match and player name

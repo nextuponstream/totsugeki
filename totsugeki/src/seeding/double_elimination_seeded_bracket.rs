@@ -185,7 +185,7 @@ mod tests {
             matches,
             vec![
                 Match::try_from(MatchGET::new(
-                    match_ids.pop().expect("match id"),
+                    match_ids.pop().expect("id"),
                     [Opponent::Player(p2_id), Opponent::Player(p3_id)],
                     [2, 3],
                     Opponent::Unknown,
@@ -194,7 +194,7 @@ mod tests {
                 ))
                 .expect("match"),
                 Match::try_from(MatchGET::new(
-                    match_ids.pop().expect("match id"),
+                    match_ids.pop().expect("id"),
                     [Opponent::Player(p1_id), Opponent::Unknown],
                     [1, 2],
                     Opponent::Unknown,
@@ -202,9 +202,9 @@ mod tests {
                     [(0, 0), (0, 0)],
                 ))
                 .expect("match"),
-                Match::looser_bracket_match(match_ids.pop().expect("match id"), [2, 3]),
-                Match::looser_bracket_match(match_ids.pop().expect("match id"), [1, 2]),
-                Match::looser_bracket_match(match_ids.pop().expect("match id"), [1, 2]),
+                Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3]),
+                Match::looser_bracket_match(match_ids.pop().expect("id"), [1, 2]),
+                Match::looser_bracket_match(match_ids.pop().expect("id"), [1, 2]),
             ],
             "returned {} matches with expected count of 5",
             matches.len()
@@ -230,8 +230,8 @@ mod tests {
         assert_eq!(
             matches,
             vec![
-                Match::looser_bracket_match(match_ids.pop().expect("match id"), [3, 4]),
-                Match::looser_bracket_match(match_ids.pop().expect("match id"), [2, 3]),
+                Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4]),
+                Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3]),
             ],
             "returned {} matches with expected count of 2",
             matches.len()
@@ -265,9 +265,9 @@ mod tests {
         assert_eq!(
             matches,
             vec![
-                Match::looser_bracket_match(match_ids.pop().expect("match id"), [4, 5]),
-                Match::looser_bracket_match(match_ids.pop().expect("match id"), [3, 4]),
-                Match::looser_bracket_match(match_ids.pop().expect("match id"), [2, 3]),
+                Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5]),
+                Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4]),
+                Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3]),
             ],
         );
     }
@@ -297,10 +297,10 @@ mod tests {
                 .collect::<Vec<[usize; 2]>>()
         );
         let expected_matches = vec![
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [3, 6]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [4, 5]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [3, 4]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [2, 3]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3]),
         ];
 
         assert_eq!(
@@ -343,11 +343,11 @@ mod tests {
                 .collect::<Vec<[usize; 2]>>(),
         );
         let expected_matches = vec![
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [6, 7]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [3, 6]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [4, 5]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [3, 4]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [2, 3]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 7]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3]),
         ];
 
         assert_eq!(
@@ -390,12 +390,12 @@ mod tests {
                 .collect::<Vec<[usize; 2]>>(),
         );
         let expected_matches = vec![
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [5, 8]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [6, 7]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [3, 6]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [4, 5]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [3, 4]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [2, 3]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 8]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 7]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3]),
         ];
 
         assert_eq!(
@@ -438,13 +438,13 @@ mod tests {
                 .collect::<Vec<[usize; 2]>>(),
         );
         let expected_matches = vec![
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [8, 9]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [5, 8]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [6, 7]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [3, 6]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [4, 5]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [3, 4]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [2, 3]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [8, 9]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 8]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 7]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3]),
         ];
 
         assert_eq!(
@@ -487,14 +487,14 @@ mod tests {
                 .collect::<Vec<[usize; 2]>>(),
         );
         let expected_matches = vec![
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [7, 10]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [8, 9]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [5, 8]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [6, 7]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [3, 6]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [4, 5]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [3, 4]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [2, 3]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [7, 10]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [8, 9]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 8]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 7]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3]),
         ];
 
         assert_eq!(
@@ -537,15 +537,15 @@ mod tests {
                 .collect::<Vec<[usize; 2]>>(),
         );
         let expected_matches = vec![
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [6, 11]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [7, 10]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [8, 9]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [5, 8]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [6, 7]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [3, 6]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [4, 5]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [3, 4]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [2, 3]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 11]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [7, 10]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [8, 9]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 8]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 7]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3]),
         ];
 
         assert_eq!(
@@ -588,16 +588,16 @@ mod tests {
                 .collect::<Vec<[usize; 2]>>(),
         );
         let expected_matches = vec![
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [5, 12]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [6, 11]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [7, 10]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [8, 9]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [5, 8]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [6, 7]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [3, 6]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [4, 5]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [3, 4]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [2, 3]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 12]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 11]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [7, 10]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [8, 9]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 8]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 7]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3]),
         ];
 
         assert_eq!(
@@ -640,20 +640,20 @@ mod tests {
                 .collect::<Vec<[usize; 2]>>(),
         );
         let expected_matches = vec![
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [9, 16]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [10, 15]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [11, 14]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [12, 13]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [5, 12]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [6, 11]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [7, 10]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [8, 9]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [5, 8]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [6, 7]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [3, 6]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [4, 5]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [3, 4]),
-            Match::looser_bracket_match(match_ids.pop().expect("match id"), [2, 3]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [9, 16]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [10, 15]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [11, 14]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [12, 13]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 12]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 11]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [7, 10]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [8, 9]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 8]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 7]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3]),
         ];
 
         assert_eq!(
