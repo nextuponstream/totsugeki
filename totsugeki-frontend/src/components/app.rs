@@ -22,6 +22,7 @@ impl Component for App {
         false
     }
 
+    #[allow(clippy::let_unit_value)]
     fn view(&self, _ctx: &Context<Self>) -> Html {
         html! {
             <BrowserRouter>

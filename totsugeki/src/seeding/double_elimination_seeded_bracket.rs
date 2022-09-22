@@ -152,29 +152,25 @@ mod tests {
     use crate::format::Format;
     use crate::matches::{Id as MatchId, Match, MatchGET};
     use crate::opponent::Opponent;
-    use crate::player::{Id as PlayerId, Participants, Player};
+    use crate::player::{Participants, Player};
     use crate::seeding::double_elimination_seeded_bracket::get_looser_bracket_matches_top_seed_favored;
 
     #[test]
     fn double_elimination_bracket_all_matches_generation_3_man() {
         // test if grand finals, grand finals reset and winner bracket is
         // generated
-        let p1_id = PlayerId::new_v4();
-        let p2_id = PlayerId::new_v4();
-        let p3_id = PlayerId::new_v4();
-        let player_ids = vec![p1_id, p2_id, p3_id];
-        let player_names: Vec<String> = vec!["p1".into(), "p2".into(), "p3".into()];
-        let players = Participants::from_raw_id(
-            player_ids
-                .iter()
-                .zip(player_names.iter())
-                .map(|p| (p.0.to_string(), p.1.clone()))
-                .collect(),
-        )
-        .expect("players");
+        let mut players = vec![];
+        for i in 1..=3 {
+            let p = Player::new(format!("p{i}"));
+            players.push(p);
+        }
+        let participants = Participants::try_from(players.clone()).expect("participants");
+        players.reverse();
+        players.push(Player::new("don't use".into()));
+        players.reverse();
 
         let matches = Format::DoubleElimination
-            .get_matches(&players)
+            .get_matches(&participants)
             .expect("matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
@@ -186,19 +182,22 @@ mod tests {
             vec![
                 Match::try_from(MatchGET::new(
                     match_ids.pop().expect("id"),
-                    [Opponent::Player(p2_id), Opponent::Player(p3_id)],
+                    &[
+                        Opponent::Player(players[2].clone()),
+                        Opponent::Player(players[3].clone())
+                    ],
                     [2, 3],
-                    Opponent::Unknown,
-                    Opponent::Unknown,
+                    &Opponent::Unknown,
+                    &Opponent::Unknown,
                     [(0, 0), (0, 0)],
                 ))
                 .expect("match"),
                 Match::try_from(MatchGET::new(
                     match_ids.pop().expect("id"),
-                    [Opponent::Player(p1_id), Opponent::Unknown],
+                    &[Opponent::Player(players[1].clone()), Opponent::Unknown],
                     [1, 2],
-                    Opponent::Unknown,
-                    Opponent::Unknown,
+                    &Opponent::Unknown,
+                    &Opponent::Unknown,
                     [(0, 0), (0, 0)],
                 ))
                 .expect("match"),
@@ -221,11 +220,7 @@ mod tests {
         }
 
         let matches = get_looser_bracket_matches_top_seed_favored(&participants).expect("matches");
-        let mut match_ids: Vec<MatchId> = matches
-            .iter()
-            .map(crate::matches::Match::get_id)
-            .rev()
-            .collect();
+        let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(matches.len(), 2, "expected 2 matches, got: {matches:?}");
         assert_eq!(
             matches,

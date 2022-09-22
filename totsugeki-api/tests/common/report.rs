@@ -1,7 +1,9 @@
 //! Report match results
 
+use crate::common::bracket::parse_matches;
+
 use super::TotsugekiApiTestClient;
-use totsugeki::matches::Id as MatchId;
+use totsugeki::matches::{Id as MatchId, Match};
 use totsugeki::matches::{
     PlayerMatchResultPOST, ReportResultPOST, ReportedResult, TournamentOrganiserMatchResultPOST,
 };
@@ -15,7 +17,7 @@ pub async fn player_reports_match_result(
     channel_internal_id: &str,
     service: Service,
     result: ReportedResult,
-) -> ReportResultPOST {
+) -> (ReportResultPOST, Vec<Match>) {
     let body = PlayerMatchResultPOST {
         internal_player_id: player_internal_id.to_string(),
         internal_channel_id: channel_internal_id.to_string(),
@@ -36,10 +38,19 @@ pub async fn player_reports_match_result(
         MatchId::parse_str(r.get("affected_match_id").string()).expect("affected match id");
     println!("{r:?}");
     let message = r.get("message").string().to_string();
-    ReportResultPOST {
-        affected_match_id,
-        message,
-    }
+    let new_matches_to_play = parse_matches(&r);
+    let matches = new_matches_to_play
+        .iter()
+        .map(|m| m.clone().into())
+        .collect();
+    (
+        ReportResultPOST {
+            affected_match_id,
+            message,
+            matches,
+        },
+        new_matches_to_play,
+    )
 }
 
 /// Both player report their results and returns match id.
@@ -50,7 +61,7 @@ pub async fn both_player_report_match_result(
     channel_internal_id: &str,
     service: Service,
     reported_result: ReportedResult,
-) -> MatchId {
+) -> (MatchId, Vec<Match>) {
     debug!("Reporting match for player {player_internal_id_1} and {player_internal_id_2}");
     let resp_1 = player_reports_match_result(
         test_api,
@@ -70,13 +81,13 @@ pub async fn both_player_report_match_result(
     .await;
 
     assert_eq!(
-        resp_1.affected_match_id, resp_2.affected_match_id,
+        resp_1.0.affected_match_id, resp_2.0.affected_match_id,
         "players with seed {} and {} are not playing the same match",
         player_internal_id_1, player_internal_id_2
     );
     debug!("Reported results OK by {player_internal_id_1} and {player_internal_id_2}");
 
-    resp_1.affected_match_id
+    (resp_1.0.affected_match_id, resp_2.1)
 }
 
 /// Tournament organiser reports match result
@@ -85,14 +96,14 @@ pub async fn tournament_organiser_reports_match_result(
     channel_internal_id: &str,
     service: Service,
     player1: &str,
-    reported_result: ReportedResult,
+    reported_result: (i8, i8),
     player2: &str,
-) -> MatchId {
+) -> (MatchId, Vec<Match>) {
     let body = TournamentOrganiserMatchResultPOST {
         internal_channel_id: channel_internal_id.into(),
         service: service.to_string(),
         player1: player1.into(),
-        result: reported_result.to_string(),
+        result: ReportedResult(reported_result).to_string(),
         player2: player2.into(),
     };
     let res = test_api
@@ -109,6 +120,7 @@ pub async fn tournament_organiser_reports_match_result(
         MatchId::parse_str(r.get("affected_match_id").string()).expect("affected match id");
     println!("{r:?}");
     let _message = r.get("message").string().to_string();
+    let new_matches_to_play = parse_matches(&r);
 
-    affected_match_id
+    (affected_match_id, new_matches_to_play)
 }

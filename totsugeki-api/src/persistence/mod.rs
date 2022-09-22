@@ -15,7 +15,7 @@ use totsugeki::{
         http_responses::POSTResult, raw::Raw, CreateRequest, Error as BracketError, Id as BracketId,
     },
     join::POSTResponse,
-    matches::{Id as MatchId, NextMatchGETResponseRaw, ReportResultPOST},
+    matches::{Id as MatchId, Match, NextMatchGETResponseRaw, ReportResultPOST},
     organiser::Organiser,
     player::{Participants, GET as PlayersGET},
 };
@@ -290,17 +290,19 @@ pub trait DBAccessor {
         players: Vec<String>,
     ) -> Result<BracketId, Error<'c>>;
 
-    /// Start bracket and allow participants to report result. Use discussion
-    /// channel to determine which bracket to start.
+    /// Start bracket and allow participants to report result. Returns bracket
+    /// id and matches to play.
+    ///
+    /// Uses discussion channel to determine which bracket to start
     ///
     /// # Errors
-    /// Returns an error if the database is unavailable
+    /// thrown if the database is unavailable
     fn start_bracket<'a, 'b, 'c>(
         &'a self,
         internal_channel_id: &'b str,
         service: &'b str,
         // TODO add optionnal player list from name|id to seed bracket
-    ) -> Result<BracketId, Error<'c>>;
+    ) -> Result<(BracketId, Vec<Match>), Error<'c>>;
 
     /// Let tournament organiser validate match result
     ///

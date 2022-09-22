@@ -52,9 +52,13 @@ pub async fn assert_next_opponent(
     res.assert_status(StatusCode::OK);
     let r = res.json().await;
     let next_match = parse_next_match_get_response(r);
+    let opponent = match next_match.opponent {
+        Opponent::Player(p) => p,
+        Opponent::Unknown => panic!("expected Player for opponent"),
+    };
     assert_eq!(
-        next_match.opponent,
-        Opponent::Player(*players.get(y - 1).expect("seeded player")),
+        opponent.get_id(),
+        *players.get(y - 1).expect("seeded player"),
         "seed {x} is not playing against seed {y}:\nCurrent seeding (1, 2...): {players:?}"
     );
 }

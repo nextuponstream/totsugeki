@@ -69,36 +69,40 @@ impl Bracket {
             ));
         }
 
-        let player = Opponent::Player(player_id);
-        let next_match = self.matches.iter().find(|m| {
-            (m.get_players()[0] == player || m.get_players()[1] == player)
-                && m.get_winner() == Opponent::Unknown
-        });
-        let relevant_match = match next_match {
-            Some(m) => m,
-            None => {
-                let last_match = self.matches.iter().last().expect("last match");
-                if let Opponent::Player(id) = last_match.get_winner() {
-                    if id == player_id {
-                        return Err(Error::NoNextMatch(player_id, self.bracket_id));
-                    }
+        let next_match = self
+            .matches
+            .iter()
+            .find(|m| m.contains(player_id) && m.get_winner() == Opponent::Unknown);
+        let relevant_match = if let Some(m) = next_match {
+            m
+        } else {
+            let last_match = self.matches.iter().last().expect("last match");
+            if let Opponent::Player(p) = last_match.get_winner() {
+                if p.get_id() == player_id {
+                    return Err(Error::NoNextMatch(player_id, self.bracket_id));
                 }
-                return Err(Error::EliminatedFromBracket(player_id, self.bracket_id));
             }
+            return Err(Error::EliminatedFromBracket(player_id, self.bracket_id));
         };
 
-        let opponent = if relevant_match.get_players()[0] == player {
-            relevant_match.get_players()[1]
-        } else {
-            relevant_match.get_players()[0]
-        };
-        let player_name = match opponent {
-            Opponent::Player(opponent_id) => self
+        let mut opponent = Opponent::Unknown;
+        if let Opponent::Player(p) = &relevant_match.get_players()[0] {
+            if p.get_id() == player_id {
+                opponent = relevant_match.get_players()[1].clone();
+            }
+        }
+        if let Opponent::Player(p) = &relevant_match.get_players()[1] {
+            if p.get_id() == player_id {
+                opponent = relevant_match.get_players()[0].clone();
+            }
+        }
+        let player_name = match opponent.clone() {
+            Opponent::Player(opponent) => self
                 .participants
                 .clone()
                 .get_players_list()
                 .iter()
-                .find(|p| p.id == opponent_id)
+                .find(|p| p.id == opponent.get_id())
                 .map_or_else(|| Opponent::Unknown.to_string(), Player::get_name),
             Opponent::Unknown => Opponent::Unknown.to_string(),
         };

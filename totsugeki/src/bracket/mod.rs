@@ -173,11 +173,10 @@ impl Bracket {
         if self.is_disqualified(player_id) {
             return Err(Error::PlayerDisqualified(self.bracket_id, player_id));
         }
-        let player = Opponent::Player(player_id);
-        let match_to_update = self.matches.iter().find(|m| {
-            (m.get_players()[0] == player || m.get_players()[1] == player)
-                && m.get_winner() == Opponent::Unknown
-        });
+        let match_to_update = self
+            .matches
+            .iter()
+            .find(|m| m.contains(player_id) && m.get_winner() == Opponent::Unknown);
         let bracket_id = self.get_id();
         match match_to_update {
             Some(m) => {
@@ -239,20 +238,30 @@ impl Bracket {
             None => return Err(Error::UnknownMatch(match_id)),
         };
 
-        let updated_match = m.update_reported_result(player_id, result)?;
+        let updated_match = m.clone().update_reported_result(player_id, result)?;
         let matches = self
             .matches
             .clone()
             .iter()
             .map(|m| {
                 if m.get_id() == updated_match.get_id() {
-                    updated_match
+                    updated_match.clone()
                 } else {
-                    *m
+                    m.clone()
                 }
             })
             .collect();
         Ok(Self { matches, ..self })
+    }
+
+    /// Returns all matches that can be played out
+    #[must_use]
+    pub fn matches_to_play(&self) -> Vec<Match> {
+        self.matches
+            .clone()
+            .into_iter()
+            .filter(Match::is_playable)
+            .collect()
     }
 }
 

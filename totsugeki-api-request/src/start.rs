@@ -2,7 +2,7 @@
 
 use crate::{RequestError, HTTP_PREFIX};
 use totsugeki::{
-    bracket::{http_responses::CommandPOST, Id as BracketId},
+    bracket::http_responses::{CommandPOST, StartPOSTResult},
     DiscussionChannel,
 };
 
@@ -15,7 +15,7 @@ pub async fn post<T: DiscussionChannel>(
     api_url: &str,
     authorization_header: &str,
     discussion_channel: T,
-) -> Result<BracketId, RequestError> {
+) -> Result<StartPOSTResult, RequestError> {
     let body = CommandPOST {
         channel_internal_id: discussion_channel.get_internal_id().to_string(),
         service_type_id: discussion_channel.get_service_type(),
@@ -29,11 +29,8 @@ pub async fn post<T: DiscussionChannel>(
     // use _ref so res is not consumed
     match res.error_for_status_ref() {
         Ok(_) => {
-            let mut response = res.text().await?;
-            response.pop();
-            response.remove(0);
-            let bracket_id = BracketId::parse_str(response.as_str())?;
-            Ok(bracket_id)
+            let response = res.json::<StartPOSTResult>().await?;
+            Ok(response)
         }
         Err(r) => {
             let txt = res.text().await?;

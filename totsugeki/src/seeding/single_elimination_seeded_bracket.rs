@@ -1,11 +1,6 @@
 //! Generate seeded matches for single elimination
 
-use crate::{
-    matches::Match,
-    opponent::Opponent,
-    player::{Id as PlayerId, Participants, Player},
-    seeding::Error,
-};
+use crate::{matches::Match, opponent::Opponent, player::Participants, seeding::Error};
 
 use super::seeding_initial_round;
 
@@ -56,32 +51,19 @@ pub fn get_balanced_round_matches_top_seed_favored(
                 seeding_initial_round(&mut available_players, players, &mut this_round);
             } else if second_round == i {
                 let top_seed = available_players.remove(0);
-                let top_seed_player = *players
-                    .clone()
-                    .get_players_list()
-                    .iter()
-                    .map(Player::get_id)
-                    .collect::<Vec<PlayerId>>()
-                    .get(top_seed - 1)
-                    .expect("player id");
+                let player_list = players.clone().get_players_list();
+                let top_seed_player = player_list.get(top_seed - 1).expect("player");
                 let bottom_seed = available_players.pop().expect("bottom seed");
-                let bottom_seed_player = *players
-                    .clone()
-                    .get_players_list()
-                    .iter()
-                    .map(Player::get_id)
-                    .collect::<Vec<PlayerId>>()
-                    .get(bottom_seed - 1)
-                    .expect("player id");
+                let bottom_seed_player = player_list.get(bottom_seed - 1).expect("player");
                 let player_1 = if remaining_byes > 0 && top_seed <= byes {
                     remaining_byes -= 1;
-                    Opponent::Player(top_seed_player)
+                    Opponent::Player(top_seed_player.clone())
                 } else {
                     Opponent::Unknown
                 };
                 let player_2 = if remaining_byes > 0 && bottom_seed <= byes {
                     remaining_byes -= 1;
-                    Opponent::Player(bottom_seed_player)
+                    Opponent::Player(bottom_seed_player.clone())
                 } else {
                     Opponent::Unknown
                 };
@@ -131,9 +113,9 @@ mod tests {
             players.push(Player::new(format!("player{i}")));
         });
         let players_copy = players.clone();
-        let diego = players.get(0).expect("diego").get_id();
-        let pink = players.get(1).expect("pink").get_id();
-        let cute_cat = players.get(2).expect("cute_cat").get_id();
+        let diego = players.get(0).expect("diego");
+        let pink = players.get(1).expect("pink");
+        let cute_cat = players.get(2).expect("cute_cat");
 
         let players = Participants::try_from(players_copy).expect("players");
         let matches =
@@ -146,19 +128,22 @@ mod tests {
         let expected_matches = vec![
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                [Opponent::Player(pink), Opponent::Player(cute_cat)],
+                &[
+                    Opponent::Player(pink.clone()),
+                    Opponent::Player(cute_cat.clone()),
+                ],
                 [2, 3],
-                Opponent::Unknown,
-                Opponent::Unknown,
+                &Opponent::Unknown,
+                &Opponent::Unknown,
                 [(0, 0), (0, 0)],
             ))
             .expect("match"),
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                [Opponent::Player(diego), Opponent::Unknown],
+                &[Opponent::Player(diego.clone()), Opponent::Unknown],
                 [1, 2],
-                Opponent::Unknown,
-                Opponent::Unknown,
+                &Opponent::Unknown,
+                &Opponent::Unknown,
                 [(0, 0), (0, 0)],
             ))
             .expect("match"),
@@ -175,10 +160,10 @@ mod tests {
             players.push(Player::new(format!("player{i}")));
         });
         let players_copy = players.clone();
-        let diego = players.get(0).expect("diego").get_id();
-        let pink = players.get(1).expect("pink").get_id();
-        let guy = players.get(2).expect("guy").get_id();
-        let cute_cat = players.get(3).expect("cute_cat").get_id();
+        let diego = players.get(0).expect("diego");
+        let pink = players.get(1).expect("pink");
+        let guy = players.get(2).expect("guy");
+        let cute_cat = players.get(3).expect("cute_cat");
 
         let players = Participants::try_from(players_copy).expect("players");
         let matches =
@@ -191,28 +176,34 @@ mod tests {
         let expected_matches = vec![
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                [Opponent::Player(diego), Opponent::Player(cute_cat)],
+                &[
+                    Opponent::Player(diego.clone()),
+                    Opponent::Player(cute_cat.clone()),
+                ],
                 [1, 4],
-                Opponent::Unknown,
-                Opponent::Unknown,
+                &Opponent::Unknown,
+                &Opponent::Unknown,
                 [(0, 0), (0, 0)],
             ))
             .expect("match"),
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                [Opponent::Player(pink), Opponent::Player(guy)],
+                &[
+                    Opponent::Player(pink.clone()),
+                    Opponent::Player(guy.clone()),
+                ],
                 [2, 3],
-                Opponent::Unknown,
-                Opponent::Unknown,
+                &Opponent::Unknown,
+                &Opponent::Unknown,
                 [(0, 0), (0, 0)],
             ))
             .expect("match"),
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                [Opponent::Unknown, Opponent::Unknown],
+                &[Opponent::Unknown, Opponent::Unknown],
                 [1, 2],
-                Opponent::Unknown,
-                Opponent::Unknown,
+                &Opponent::Unknown,
+                &Opponent::Unknown,
                 [(0, 0), (0, 0)],
             ))
             .expect("match"),
@@ -229,11 +220,11 @@ mod tests {
             players.push(Player::new(format!("player{i}")));
         });
         let players_copy = players.clone();
-        let diego = players.get(0).expect("diego").get_id();
-        let pink = players.get(1).expect("pink").get_id();
-        let average_player = players.get(2).expect("pink").get_id();
-        let guy = players.get(3).expect("guy").get_id();
-        let cute_cat = players.get(4).expect("cute_cat").get_id();
+        let diego = players.get(0).expect("diego");
+        let pink = players.get(1).expect("pink");
+        let average_player = players.get(2).expect("pink");
+        let guy = players.get(3).expect("guy");
+        let cute_cat = players.get(4).expect("cute_cat");
 
         let players = Participants::try_from(players_copy).expect("players");
         let matches =
@@ -246,37 +237,43 @@ mod tests {
         let expected_matches = vec![
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                [Opponent::Player(guy), Opponent::Player(cute_cat)],
+                &[
+                    Opponent::Player(guy.clone()),
+                    Opponent::Player(cute_cat.clone()),
+                ],
                 [4, 5],
-                Opponent::Unknown,
-                Opponent::Unknown,
+                &Opponent::Unknown,
+                &Opponent::Unknown,
                 [(0, 0), (0, 0)],
             ))
             .expect("match"),
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                [Opponent::Player(diego), Opponent::Unknown],
+                &[Opponent::Player(diego.clone()), Opponent::Unknown],
                 [1, 4],
-                Opponent::Unknown,
-                Opponent::Unknown,
+                &Opponent::Unknown,
+                &Opponent::Unknown,
                 [(0, 0), (0, 0)],
             ))
             .expect("match"),
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                [Opponent::Player(pink), Opponent::Player(average_player)],
+                &[
+                    Opponent::Player(pink.clone()),
+                    Opponent::Player(average_player.clone()),
+                ],
                 [2, 3],
-                Opponent::Unknown,
-                Opponent::Unknown,
+                &Opponent::Unknown,
+                &Opponent::Unknown,
                 [(0, 0), (0, 0)],
             ))
             .expect("match"),
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                [Opponent::Unknown, Opponent::Unknown],
+                &[Opponent::Unknown, Opponent::Unknown],
                 [1, 2],
-                Opponent::Unknown,
-                Opponent::Unknown,
+                &Opponent::Unknown,
+                &Opponent::Unknown,
                 [(0, 0), (0, 0)],
             ))
             .expect("match"),
@@ -293,12 +290,12 @@ mod tests {
             players.push(Player::new(format!("player{i}")));
         });
         let players_copy = players.clone();
-        let diego = players.get(0).expect("diego").get_id();
-        let pink = players.get(1).expect("pink").get_id();
-        let pink_nemesis = players.get(2).expect("pink_nemesis").get_id();
-        let average_player = players.get(3).expect("pink").get_id();
-        let guy = players.get(4).expect("guy").get_id();
-        let cute_cat = players.get(5).expect("cute_cat").get_id();
+        let diego = players.get(0).expect("diego");
+        let pink = players.get(1).expect("pink");
+        let pink_nemesis = players.get(2).expect("pink_nemesis");
+        let average_player = players.get(3).expect("pink");
+        let guy = players.get(4).expect("guy");
+        let cute_cat = players.get(5).expect("cute_cat");
 
         let players = Participants::try_from(players_copy).expect("players");
         let matches =
@@ -311,46 +308,52 @@ mod tests {
         let expected_matches = vec![
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                [Opponent::Player(pink_nemesis), Opponent::Player(cute_cat)],
+                &[
+                    Opponent::Player(pink_nemesis.clone()),
+                    Opponent::Player(cute_cat.clone()),
+                ],
                 [3, 6],
-                Opponent::Unknown,
-                Opponent::Unknown,
+                &Opponent::Unknown,
+                &Opponent::Unknown,
                 [(0, 0), (0, 0)],
             ))
             .expect("match"),
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                [Opponent::Player(average_player), Opponent::Player(guy)],
+                &[
+                    Opponent::Player(average_player.clone()),
+                    Opponent::Player(guy.clone()),
+                ],
                 [4, 5],
-                Opponent::Unknown,
-                Opponent::Unknown,
+                &Opponent::Unknown,
+                &Opponent::Unknown,
                 [(0, 0), (0, 0)],
             ))
             .expect("match"),
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                [Opponent::Player(diego), Opponent::Unknown],
+                &[Opponent::Player(diego.clone()), Opponent::Unknown],
                 [1, 4],
-                Opponent::Unknown,
-                Opponent::Unknown,
+                &Opponent::Unknown,
+                &Opponent::Unknown,
                 [(0, 0), (0, 0)],
             ))
             .expect("match"),
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                [Opponent::Player(pink), Opponent::Unknown],
+                &[Opponent::Player(pink.clone()), Opponent::Unknown],
                 [2, 3],
-                Opponent::Unknown,
-                Opponent::Unknown,
+                &Opponent::Unknown,
+                &Opponent::Unknown,
                 [(0, 0), (0, 0)],
             ))
             .expect("match"),
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                [Opponent::Unknown, Opponent::Unknown],
+                &[Opponent::Unknown, Opponent::Unknown],
                 [1, 2],
-                Opponent::Unknown,
-                Opponent::Unknown,
+                &Opponent::Unknown,
+                &Opponent::Unknown,
                 [(0, 0), (0, 0)],
             ))
             .expect("match"),
@@ -368,13 +371,13 @@ mod tests {
             players.push(Player::new(format!("player{i}")));
         });
         let players_copy = players.clone();
-        let diego = players.get(0).expect("diego").get_id();
-        let pink = players.get(1).expect("pink").get_id();
-        let pink_nemesis = players.get(2).expect("pink_nemesis").get_id();
-        let average_player = players.get(3).expect("pink").get_id();
-        let guy = players.get(4).expect("guy").get_id();
-        let fg_enjoyer = players.get(5).expect("fg_enjoyer").get_id();
-        let cute_cat = players.get(6).expect("cute_cat").get_id();
+        let diego = players.get(0).expect("diego");
+        let pink = players.get(1).expect("pink");
+        let pink_nemesis = players.get(2).expect("pink_nemesis");
+        let average_player = players.get(3).expect("pink");
+        let guy = players.get(4).expect("guy");
+        let fg_enjoyer = players.get(5).expect("fg_enjoyer");
+        let cute_cat = players.get(6).expect("cute_cat");
 
         let players = Participants::try_from(players_copy).expect("players");
         let matches =
@@ -387,55 +390,64 @@ mod tests {
         let expected_matches = vec![
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                [Opponent::Player(pink), Opponent::Player(cute_cat)],
+                &[
+                    Opponent::Player(pink.clone()),
+                    Opponent::Player(cute_cat.clone()),
+                ],
                 [2, 7],
-                Opponent::Unknown,
-                Opponent::Unknown,
+                &Opponent::Unknown,
+                &Opponent::Unknown,
                 [(0, 0), (0, 0)],
             ))
             .expect("match"),
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                [Opponent::Player(pink_nemesis), Opponent::Player(fg_enjoyer)],
+                &[
+                    Opponent::Player(pink_nemesis.clone()),
+                    Opponent::Player(fg_enjoyer.clone()),
+                ],
                 [3, 6],
-                Opponent::Unknown,
-                Opponent::Unknown,
+                &Opponent::Unknown,
+                &Opponent::Unknown,
                 [(0, 0), (0, 0)],
             ))
             .expect("match"),
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                [Opponent::Player(average_player), Opponent::Player(guy)],
+                &[
+                    Opponent::Player(average_player.clone()),
+                    Opponent::Player(guy.clone()),
+                ],
                 [4, 5],
-                Opponent::Unknown,
-                Opponent::Unknown,
+                &Opponent::Unknown,
+                &Opponent::Unknown,
                 [(0, 0), (0, 0)],
             ))
             .expect("match"),
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                [Opponent::Player(diego), Opponent::Unknown],
+                &[Opponent::Player(diego.clone()), Opponent::Unknown],
                 [1, 4],
-                Opponent::Unknown,
-                Opponent::Unknown,
+                &Opponent::Unknown,
+                &Opponent::Unknown,
                 [(0, 0), (0, 0)],
             ))
             .expect("match"),
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                [Opponent::Unknown, Opponent::Unknown],
+                &[Opponent::Unknown, Opponent::Unknown],
                 [2, 3],
-                Opponent::Unknown,
-                Opponent::Unknown,
+                &Opponent::Unknown,
+                &Opponent::Unknown,
                 [(0, 0), (0, 0)],
             ))
             .expect("match"),
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                [Opponent::Unknown, Opponent::Unknown],
+                &[Opponent::Unknown, Opponent::Unknown],
                 [1, 2],
-                Opponent::Unknown,
-                Opponent::Unknown,
+                &Opponent::Unknown,
+                &Opponent::Unknown,
                 [(0, 0), (0, 0)],
             ))
             .expect("match"),
@@ -453,14 +465,14 @@ mod tests {
             players.push(Player::new(format!("player{i}")));
         });
         let players_copy = players.clone();
-        let diego = players.get(0).expect("diego").get_id();
-        let pink = players.get(1).expect("pink").get_id();
-        let pink_nemesis = players.get(2).expect("pink_nemesis").get_id();
-        let big_body_enjoyer = players.get(3).expect("big_body_enjoyer").get_id();
-        let average_player = players.get(4).expect("pink").get_id();
-        let guy = players.get(5).expect("guy").get_id();
-        let fg_enjoyer = players.get(6).expect("fg_enjoyer").get_id();
-        let cute_cat = players.get(7).expect("cute_cat").get_id();
+        let diego = players.get(0).expect("diego");
+        let pink = players.get(1).expect("pink");
+        let pink_nemesis = players.get(2).expect("pink_nemesis");
+        let big_body_enjoyer = players.get(3).expect("big_body_enjoyer");
+        let average_player = players.get(4).expect("pink");
+        let guy = players.get(5).expect("guy");
+        let fg_enjoyer = players.get(6).expect("fg_enjoyer");
+        let cute_cat = players.get(7).expect("cute_cat");
 
         let players = Participants::try_from(players_copy).expect("players");
         let matches =
@@ -473,67 +485,76 @@ mod tests {
         let expected_matches = vec![
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                [Opponent::Player(diego), Opponent::Player(cute_cat)],
+                &[
+                    Opponent::Player(diego.clone()),
+                    Opponent::Player(cute_cat.clone()),
+                ],
                 [1, 8],
-                Opponent::Unknown,
-                Opponent::Unknown,
+                &Opponent::Unknown,
+                &Opponent::Unknown,
                 [(0, 0), (0, 0)],
             ))
             .expect("match"),
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                [Opponent::Player(pink), Opponent::Player(fg_enjoyer)],
+                &[
+                    Opponent::Player(pink.clone()),
+                    Opponent::Player(fg_enjoyer.clone()),
+                ],
                 [2, 7],
-                Opponent::Unknown,
-                Opponent::Unknown,
+                &Opponent::Unknown,
+                &Opponent::Unknown,
                 [(0, 0), (0, 0)],
             ))
             .expect("match"),
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                [Opponent::Player(pink_nemesis), Opponent::Player(guy)],
+                &[
+                    Opponent::Player(pink_nemesis.clone()),
+                    Opponent::Player(guy.clone()),
+                ],
                 [3, 6],
-                Opponent::Unknown,
-                Opponent::Unknown,
+                &Opponent::Unknown,
+                &Opponent::Unknown,
                 [(0, 0), (0, 0)],
             ))
             .expect("match"),
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                [
-                    Opponent::Player(big_body_enjoyer),
-                    Opponent::Player(average_player),
+                &[
+                    Opponent::Player(big_body_enjoyer.clone()),
+                    Opponent::Player(average_player.clone()),
                 ],
                 [4, 5],
-                Opponent::Unknown,
-                Opponent::Unknown,
+                &Opponent::Unknown,
+                &Opponent::Unknown,
                 [(0, 0), (0, 0)],
             ))
             .expect("match"),
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                [Opponent::Unknown, Opponent::Unknown],
+                &[Opponent::Unknown, Opponent::Unknown],
                 [1, 4],
-                Opponent::Unknown,
-                Opponent::Unknown,
+                &Opponent::Unknown,
+                &Opponent::Unknown,
                 [(0, 0), (0, 0)],
             ))
             .expect("match"),
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                [Opponent::Unknown, Opponent::Unknown],
+                &[Opponent::Unknown, Opponent::Unknown],
                 [2, 3],
-                Opponent::Unknown,
-                Opponent::Unknown,
+                &Opponent::Unknown,
+                &Opponent::Unknown,
                 [(0, 0), (0, 0)],
             ))
             .expect("match"),
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                [Opponent::Unknown, Opponent::Unknown],
+                &[Opponent::Unknown, Opponent::Unknown],
                 [1, 2],
-                Opponent::Unknown,
-                Opponent::Unknown,
+                &Opponent::Unknown,
+                &Opponent::Unknown,
                 [(0, 0), (0, 0)],
             ))
             .expect("match"),

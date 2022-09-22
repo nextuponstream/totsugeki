@@ -30,15 +30,15 @@ impl Bracket {
             .iter()
             .find(|m| m.contains(player_id) && m.get_winner() == Opponent::Unknown)
         {
-            let updated_match = m.set_looser(player_id)?;
+            let updated_match = m.clone().set_looser(player_id)?;
             let matches = self
                 .matches
                 .iter()
                 .map(|m| {
                     if m.get_id() == updated_match.get_id() {
-                        updated_match
+                        updated_match.clone()
                     } else {
-                        *m
+                        m.clone()
                     }
                 })
                 .collect::<Vec<Match>>();
@@ -97,8 +97,8 @@ mod tests {
                 .matches
                 .iter()
                 .any(|m| if m.contains(x) && m.contains(y) {
-                    if let Opponent::Player(id) = m.get_winner() {
-                        return id == x;
+                    if let Opponent::Player(p) = m.get_winner() {
+                        return p.get_id() == x;
                     }
                     false
                 } else {
@@ -227,8 +227,8 @@ mod tests {
         let bracket = bracket.start();
         assert!(
             !bracket.matches.iter().any(|m| if m.contains(p1_id) {
-                if let Opponent::Player(id) = m.get_looser() {
-                    return id == p1_id;
+                if let Opponent::Player(p) = m.get_looser() {
+                    return p.get_id() == p1_id;
                 }
                 false
             } else {
@@ -241,8 +241,8 @@ mod tests {
             .expect("bracket with player 1 disqualified");
         assert!(
             bracket.matches.iter().any(|m| if m.contains(p1_id) {
-                if let Opponent::Player(id) = m.get_looser() {
-                    return id == p1_id;
+                if let Opponent::Player(p) = m.get_looser() {
+                    return p.get_id() == p1_id;
                 }
                 false
             } else {
@@ -305,8 +305,8 @@ mod tests {
 
         assert!(
             !bracket.matches.iter().any(|m| if m.contains(p2_id) {
-                if let Opponent::Player(id) = m.get_looser() {
-                    return id == p2_id;
+                if let Opponent::Player(p) = m.get_looser() {
+                    return p.get_id() == p2_id;
                 }
                 false
             } else {
@@ -319,10 +319,10 @@ mod tests {
             .expect("p2 is disqualified");
         assert!(
             bracket.matches.iter().any(|m| if m.contains(p2_id) {
-                if let Opponent::Player(looser_id) = m.get_looser() {
-                    if looser_id == p2_id {
-                        if let Opponent::Player(winner_id) = m.get_winner() {
-                            return winner_id == p1_id;
+                if let Opponent::Player(loser) = m.get_looser() {
+                    if loser.get_id() == p2_id {
+                        if let Opponent::Player(winner) = m.get_winner() {
+                            return winner.get_id() == p1_id;
                         }
                     }
                 }
@@ -377,8 +377,8 @@ mod tests {
         let bracket = bracket.start();
         assert!(
             !bracket.matches.iter().any(|m| if m.contains(p2_id) {
-                if let Opponent::Player(id) = m.get_looser() {
-                    return id == p2_id;
+                if let Opponent::Player(p) = m.get_looser() {
+                    return p.get_id() == p2_id;
                 }
                 false
             } else {
@@ -391,8 +391,8 @@ mod tests {
             .expect("bracket with player 2 disqualified");
         assert!(
             bracket.matches.iter().any(|m| if m.contains(p2_id) {
-                if let Opponent::Player(id) = m.get_looser() {
-                    return id == p2_id;
+                if let Opponent::Player(p) = m.get_looser() {
+                    return p.get_id() == p2_id;
                 }
                 false
             } else {

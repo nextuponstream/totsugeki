@@ -20,7 +20,9 @@ use totsugeki::{
         Id as BracketId,
     },
     join::POSTResponse,
-    matches::{Error as MatchError, Id as MatchId, NextMatchGETResponseRaw, ReportResultPOST},
+    matches::{
+        Error as MatchError, Id as MatchId, Match, NextMatchGETResponseRaw, ReportResultPOST,
+    },
     organiser::Id as OrganiserId,
     organiser::Organiser,
     player::{Id as PlayerId, Participants, Player, GET as PlayersGET},
@@ -522,6 +524,7 @@ impl DBAccessor for InMemoryDBAccessor {
                     return Ok(ReportResultPOST {
                         affected_match_id,
                         message: "Result reported and match validated".into(),
+                        matches: vec![],
                     });
                 }
                 Err(e) => match e {
@@ -537,6 +540,7 @@ impl DBAccessor for InMemoryDBAccessor {
                         return Ok(ReportResultPOST {
                             affected_match_id,
                             message: "Result reported".into(),
+                            matches: vec![],
                         });
                     }
                     _ => {
@@ -550,6 +554,7 @@ impl DBAccessor for InMemoryDBAccessor {
         Ok(ReportResultPOST {
             affected_match_id,
             message: "Result reported".into(),
+            matches: vec![],
         })
     }
 
@@ -578,16 +583,16 @@ impl DBAccessor for InMemoryDBAccessor {
         &'a self,
         internal_channel_id: &'b str,
         service: &'b str,
-    ) -> Result<BracketId, Error<'c>> {
+    ) -> Result<(BracketId, Vec<Match>), Error<'c>> {
         let mut db = self.db.write().expect("database"); // FIXME bubble up error
         let (active_bracket_id, _, _) = find_active_bracket_id(&db, internal_channel_id, service)?;
         match db.brackets.get(&active_bracket_id) {
             Some(b) => {
-                let updated_bracket = b.clone().start();
-                db.brackets
-                    .insert(updated_bracket.get_id(), updated_bracket);
+                let bracket = b.clone().start();
+                let matches = bracket.matches_to_play();
+                db.brackets.insert(bracket.get_id(), bracket);
 
-                Ok(active_bracket_id)
+                Ok((active_bracket_id, matches))
             }
             None => {
                 return Err(CriticalError::Corrupted(format!(
@@ -614,6 +619,7 @@ impl DBAccessor for InMemoryDBAccessor {
         let active_bracket = db.brackets.get(&active_bracket_id);
         match active_bracket {
             Some(b) => {
+                let old_matches_to_play = b.matches_to_play();
                 let (bracket, affected_match_id) = b.clone().tournament_organiser_reports_result(
                     player1_id,
                     (result.0 .0, result.0 .1),
@@ -624,11 +630,22 @@ impl DBAccessor for InMemoryDBAccessor {
                 } else {
                     bracket
                 };
+                let matches = bracket
+                    .matches_to_play()
+                    .iter()
+                    .filter(|m| {
+                        !old_matches_to_play
+                            .iter()
+                            .any(|old_m| old_m.get_id() == m.get_id())
+                    })
+                    .map(|m| m.clone().into())
+                    .collect();
                 db.brackets.insert(active_bracket_id, bracket);
 
                 Ok(ReportResultPOST {
                     affected_match_id,
                     message: "".into(),
+                    matches,
                 })
             }
             None => {
@@ -740,21 +757,18 @@ fn add_bracket_to_organiser_active_brackets(
     bracket_id: BracketId,
     discussion_channel_id: DiscussionChannelId,
 ) -> Organiser {
-    match organiser_id {
-        Some(id) => match db.organisers.get(id) {
-            Some(o) => o
-                .clone()
-                .add_active_bracket(discussion_channel_id, bracket_id),
-            None => {
-                let mut active_bracket = ActiveBrackets::default();
-                active_bracket.insert(discussion_channel_id, bracket_id);
-                Organiser::new(organiser_name, Some(active_bracket))
-            }
-        },
-        None => {
+    if let Some(id) = organiser_id {
+        if let Some(o) = db.organisers.get(id) {
+            o.clone()
+                .add_active_bracket(discussion_channel_id, bracket_id)
+        } else {
             let mut active_bracket = ActiveBrackets::default();
             active_bracket.insert(discussion_channel_id, bracket_id);
             Organiser::new(organiser_name, Some(active_bracket))
         }
+    } else {
+        let mut active_bracket = ActiveBrackets::default();
+        active_bracket.insert(discussion_channel_id, bracket_id);
+        Organiser::new(organiser_name, Some(active_bracket))
     }
 }
