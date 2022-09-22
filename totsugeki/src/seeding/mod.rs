@@ -6,7 +6,7 @@ pub mod single_elimination_seeded_bracket;
 use crate::{
     matches::Match,
     opponent::Opponent,
-    player::{Error as PlayerError, Id as PlayerId, Participants, Player},
+    player::{Error as PlayerError, Participants},
 };
 #[cfg(feature = "poem-openapi")]
 use poem_openapi::Object;
@@ -127,29 +127,16 @@ fn seeding_initial_round(
     this_round: &mut Vec<Match>,
 ) {
     let top_seed = available_players.remove(0);
-    let top_seed_player = *players
-        .clone()
-        .get_players_list()
-        .iter()
-        .map(Player::get_id)
-        .collect::<Vec<PlayerId>>()
-        .get(top_seed - 1)
-        .expect("player id");
+    let player_list = players.get_players_list();
+    let top_seed_player = player_list.get(top_seed - 1).expect("player id");
     let bottom_seed = available_players.pop().expect("bottom seed");
-    let bottom_seed_player = *players
-        .clone()
-        .get_players_list()
-        .iter()
-        .map(Player::get_id)
-        .collect::<Vec<PlayerId>>()
-        .get(bottom_seed - 1)
-        .expect("player id");
+    let bottom_seed_player = player_list.get(bottom_seed - 1).expect("player id");
 
     this_round.push(
         Match::new(
             [
-                Opponent::Player(top_seed_player),
-                Opponent::Player(bottom_seed_player),
+                Opponent::Player(top_seed_player.clone()),
+                Opponent::Player(bottom_seed_player.clone()),
             ],
             [top_seed, bottom_seed],
         )

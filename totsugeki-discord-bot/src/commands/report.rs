@@ -7,6 +7,7 @@ use serenity::{
     framework::standard::{macros::command, Args, CommandError, CommandResult},
     model::channel::Message,
 };
+use totsugeki::opponent::Opponent;
 use totsugeki_api_request::{
     report::{player_reports_result, tournament_organiser_reports_result},
     RequestError,
@@ -82,11 +83,35 @@ async fn report(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
             }
         };
 
+        let mut new_matches_message = "".to_string();
+        for m in response.matches {
+            let player1 = m.players[0].parse::<Opponent>().expect("opponent");
+            let player1 = match player1 {
+                Opponent::Player(p) => p,
+                Opponent::Unknown => panic!("cannot parse opponent"),
+            };
+            let player2 = m.players[1].parse::<Opponent>().expect("opponent");
+            let player2 = match player2 {
+                Opponent::Player(p) => p,
+                Opponent::Unknown => panic!("cannot parse opponent"),
+            };
+            new_matches_message = format!(
+                "{}\n{} VS {}\n- {}: {}\n- {}: {}",
+                new_matches_message,
+                player1.get_name(),
+                player2.get_name(),
+                player1.get_name(),
+                player1.get_id(),
+                player2.get_name(),
+                player2.get_id(),
+            );
+        }
+
         msg.reply(
             ctx,
             format!(
-                "Match: {}. {}",
-                response.affected_match_id, response.message
+                "Match: {}. {}\nNew matches:{}",
+                response.affected_match_id, response.message, new_matches_message
             ),
         )
         .await?;
@@ -174,11 +199,35 @@ async fn tournament_organiser_reports(
             }
         };
 
+        let mut new_matches_message = "".to_string();
+        for m in response.matches {
+            let player1 = m.players[0].parse::<Opponent>().expect("opponent");
+            let player1 = match player1 {
+                Opponent::Player(p) => p,
+                Opponent::Unknown => panic!("cannot parse opponent"),
+            };
+            let player2 = m.players[1].parse::<Opponent>().expect("opponent");
+            let player2 = match player2 {
+                Opponent::Player(p) => p,
+                Opponent::Unknown => panic!("cannot parse opponent"),
+            };
+            new_matches_message = format!(
+                "{}\n{} VS {}\n- {}: {}\n- {}: {}",
+                new_matches_message,
+                player1.get_name(),
+                player2.get_name(),
+                player1.get_name(),
+                player1.get_id(),
+                player2.get_name(),
+                player2.get_id(),
+            );
+        }
+
         msg.reply(
             ctx,
             format!(
-                "Match: {}. {}",
-                response.affected_match_id, response.message
+                "Match: {}. {}\nNew matches:{}",
+                response.affected_match_id, response.message, new_matches_message
             ),
         )
         .await?;

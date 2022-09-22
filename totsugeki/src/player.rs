@@ -106,8 +106,8 @@ impl Participants {
 
     /// Return participants as a list of players
     #[must_use]
-    pub fn get_players_list(self) -> Vec<Player> {
-        self.participants
+    pub fn get_players_list(&self) -> Vec<Player> {
+        self.participants.clone()
     }
 
     /// Returns true if both group of participants have the same players,

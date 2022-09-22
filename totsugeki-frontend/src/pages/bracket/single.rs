@@ -80,10 +80,10 @@ impl Component for View {
                 });
                 let matches = bracket.matches.iter().map(|m| {
                     let player_1 =
-                        print_player_name(m.get_players()[0], &bracket.get_players_list())
+                        print_player_name(&m.get_players()[0], &bracket.get_players_list())
                             .unwrap_or_else(|| "ERROR".to_string());
                     let player_2 =
-                        print_player_name(m.get_players()[1], &bracket.get_players_list())
+                        print_player_name(&m.get_players()[1], &bracket.get_players_list())
                             .unwrap_or_else(|| "ERROR".to_string());
                     html! { <p>{ player_1 }<b>{ " VS " }</b>{ player_2 } </p> }
                 });

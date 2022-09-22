@@ -27,6 +27,7 @@ use totsugeki::{
     bracket::http_responses::GET,
     format::Format,
     matches::{PlayerMatchResultPOST, ReportedResult},
+    opponent::Opponent,
     player::Id as PlayerId,
     seeding::Method,
 };
@@ -200,7 +201,7 @@ async fn reporting_result_for_first_round_3_man() {
             .body_json(&body)
             .send()
             .await;
-        let player1 = bracket.players[0].get_id();
+        let player1 = Opponent::Player(bracket.players[0].clone());
         trace!("Top seed reporting a match should have no effect since he has not opponent yet");
         res.assert_status(StatusCode::FORBIDDEN);
         res.assert_text(format!("Action is forbidden:\n\tCannot report result in a match where opponent is missing. Current players: {player1} VS ?")).await;
@@ -359,12 +360,12 @@ async fn reporting_result_for_first_round_3_man_with_automatic_match_validation(
             .body_json(&body)
             .send()
             .await;
-        let player1 = bracket.players[0].get_id();
+        let player1 = Opponent::Player(bracket.players[0].clone());
         trace!("Top seed reporting a match should have no effect since he has not opponent yet");
         res.assert_status(StatusCode::FORBIDDEN);
         res.assert_text(format!("Action is forbidden:\n\tCannot report result in a match where opponent is missing. Current players: {player1} VS ?")).await;
 
-        let response = player_reports_match_result(
+        let (response, _) = player_reports_match_result(
             &test_api,
             "2",
             channel_internal_id,
@@ -373,7 +374,7 @@ async fn reporting_result_for_first_round_3_man_with_automatic_match_validation(
         )
         .await;
         assert_eq!(response.message, "Result reported".to_string());
-        let response = player_reports_match_result(
+        let (response, _) = player_reports_match_result(
             &test_api,
             "3",
             channel_internal_id,
@@ -441,7 +442,7 @@ async fn running_5_man_single_elimination_api() {
             .collect::<Vec<PlayerId>>();
 
         // player 5 wins against 4. Both players report their results
-        let match_id = both_player_report_match_result(
+        let (match_id, _) = both_player_report_match_result(
             &test_api,
             "5",
             "4",
@@ -463,7 +464,7 @@ async fn running_5_man_single_elimination_api() {
         .await;
 
         // player 1 wins against 5, 3 wins against 2
-        let match_id = both_player_report_match_result(
+        let (match_id, _) = both_player_report_match_result(
             &test_api,
             "1",
             "5",
@@ -483,7 +484,7 @@ async fn running_5_man_single_elimination_api() {
         )
         .await;
 
-        let match_id = both_player_report_match_result(
+        let (match_id, _) = both_player_report_match_result(
             &test_api,
             "3",
             "2",
@@ -505,7 +506,7 @@ async fn running_5_man_single_elimination_api() {
         .await;
 
         // player 3 wins against seed 1
-        let match_id = both_player_report_match_result(
+        let (match_id, _) = both_player_report_match_result(
             &test_api,
             "3",
             "1",
@@ -569,12 +570,12 @@ async fn tournament_organiser_runs_5_man_tournament() {
             .map(|p| p.id)
             .collect::<Vec<PlayerId>>();
 
-        let match_id = tournament_organiser_reports_match_result(
+        let (match_id, _) = tournament_organiser_reports_match_result(
             &test_api,
             channel_internal_id,
             service,
             players.get(4).expect("p5").to_string().as_str(),
-            ReportedResult((2, 0)),
+            (2, 0),
             players.get(3).expect("p4").to_string().as_str(),
         )
         .await;
@@ -591,12 +592,12 @@ async fn tournament_organiser_runs_5_man_tournament() {
         .await;
 
         // player 1 wins against 5, 3 wins against 2
-        let match_id = tournament_organiser_reports_match_result(
+        let (match_id, _) = tournament_organiser_reports_match_result(
             &test_api,
             channel_internal_id,
             service,
             players.get(0).expect("p1").to_string().as_str(),
-            ReportedResult((2, 0)),
+            (2, 0),
             players.get(4).expect("p5").to_string().as_str(),
         )
         .await;
@@ -611,12 +612,12 @@ async fn tournament_organiser_runs_5_man_tournament() {
         )
         .await;
 
-        let match_id = tournament_organiser_reports_match_result(
+        let (match_id, _) = tournament_organiser_reports_match_result(
             &test_api,
             channel_internal_id,
             service,
             players.get(2).expect("p3").to_string().as_str(),
-            ReportedResult((2, 0)),
+            (2, 0),
             players.get(1).expect("p2").to_string().as_str(),
         )
         .await;
@@ -633,12 +634,12 @@ async fn tournament_organiser_runs_5_man_tournament() {
         .await;
 
         // player 3 wins against seed 1
-        let match_id = tournament_organiser_reports_match_result(
+        let (match_id, _) = tournament_organiser_reports_match_result(
             &test_api,
             channel_internal_id,
             service,
             players.get(2).expect("p3").to_string().as_str(),
-            ReportedResult((2, 0)),
+            (2, 0),
             players.get(0).expect("p1").to_string().as_str(),
         )
         .await;
@@ -702,7 +703,7 @@ async fn tournament_organiser_runs_5_man_tournament_automatically() {
             channel_internal_id,
             service,
             players.get(4).expect("p5").to_string().as_str(),
-            ReportedResult((2, 0)),
+            (2, 0),
             players.get(3).expect("p4").to_string().as_str(),
         )
         .await;
@@ -723,7 +724,7 @@ async fn tournament_organiser_runs_5_man_tournament_automatically() {
             channel_internal_id,
             service,
             players.get(0).expect("p1").to_string().as_str(),
-            ReportedResult((2, 0)),
+            (2, 0),
             players.get(4).expect("p5").to_string().as_str(),
         )
         .await;
@@ -742,7 +743,7 @@ async fn tournament_organiser_runs_5_man_tournament_automatically() {
             channel_internal_id,
             service,
             players.get(2).expect("p3").to_string().as_str(),
-            ReportedResult((2, 0)),
+            (2, 0),
             players.get(1).expect("p2").to_string().as_str(),
         )
         .await;
@@ -763,7 +764,7 @@ async fn tournament_organiser_runs_5_man_tournament_automatically() {
             channel_internal_id,
             service,
             players.get(2).expect("p3").to_string().as_str(),
-            ReportedResult((2, 0)),
+            (2, 0),
             players.get(0).expect("p1").to_string().as_str(),
         )
         .await;
@@ -945,7 +946,7 @@ async fn running_8_man_single_elimination_bracket() {
             .map(|p| p.id)
             .collect::<Vec<PlayerId>>();
 
-        let match_id = both_player_report_match_result(
+        let (match_id, _) = both_player_report_match_result(
             &test_api,
             "1",
             "8",
@@ -965,7 +966,7 @@ async fn running_8_man_single_elimination_bracket() {
         )
         .await;
 
-        let match_id = both_player_report_match_result(
+        let (match_id, _) = both_player_report_match_result(
             &test_api,
             "2",
             "7",
@@ -985,7 +986,7 @@ async fn running_8_man_single_elimination_bracket() {
         )
         .await;
 
-        let match_id = both_player_report_match_result(
+        let (match_id, _) = both_player_report_match_result(
             &test_api,
             "5",
             "4",
@@ -1005,7 +1006,7 @@ async fn running_8_man_single_elimination_bracket() {
         )
         .await;
 
-        let match_id = both_player_report_match_result(
+        let (match_id, _) = both_player_report_match_result(
             &test_api,
             "5",
             "1",
@@ -1025,7 +1026,7 @@ async fn running_8_man_single_elimination_bracket() {
         )
         .await;
 
-        let match_id = both_player_report_match_result(
+        let (match_id, _) = both_player_report_match_result(
             &test_api,
             "6",
             "3",
@@ -1045,7 +1046,7 @@ async fn running_8_man_single_elimination_bracket() {
         )
         .await;
 
-        let match_id = both_player_report_match_result(
+        let (match_id, _) = both_player_report_match_result(
             &test_api,
             "6",
             "2",
@@ -1065,7 +1066,7 @@ async fn running_8_man_single_elimination_bracket() {
         )
         .await;
 
-        let match_id = both_player_report_match_result(
+        let (match_id, _) = both_player_report_match_result(
             &test_api,
             "5",
             "6",
@@ -1308,7 +1309,7 @@ async fn running_9_man_single_elimination_bracket() {
             .map(|p| p.id)
             .collect::<Vec<PlayerId>>();
 
-        let match_id = both_player_report_match_result(
+        let (match_id, _) = both_player_report_match_result(
             &test_api,
             "5",
             "4",
@@ -1328,7 +1329,7 @@ async fn running_9_man_single_elimination_bracket() {
         )
         .await;
 
-        let match_id = both_player_report_match_result(
+        let (match_id, _) = both_player_report_match_result(
             &test_api,
             "9",
             "8",
@@ -1348,7 +1349,7 @@ async fn running_9_man_single_elimination_bracket() {
         )
         .await;
 
-        let match_id = both_player_report_match_result(
+        let (match_id, _) = both_player_report_match_result(
             &test_api,
             "3",
             "6",
@@ -1368,7 +1369,7 @@ async fn running_9_man_single_elimination_bracket() {
         )
         .await;
 
-        let match_id = both_player_report_match_result(
+        let (match_id, _) = both_player_report_match_result(
             &test_api,
             "7",
             "2",
@@ -1388,7 +1389,7 @@ async fn running_9_man_single_elimination_bracket() {
         )
         .await;
 
-        let match_id = both_player_report_match_result(
+        let (match_id, _) = both_player_report_match_result(
             &test_api,
             "3",
             "7",
@@ -1408,7 +1409,7 @@ async fn running_9_man_single_elimination_bracket() {
         )
         .await;
 
-        let match_id = both_player_report_match_result(
+        let (match_id, _) = both_player_report_match_result(
             &test_api,
             "9",
             "1",
@@ -1428,7 +1429,7 @@ async fn running_9_man_single_elimination_bracket() {
         )
         .await;
 
-        let match_id = both_player_report_match_result(
+        let (match_id, _) = both_player_report_match_result(
             &test_api,
             "9",
             "5",
@@ -1448,7 +1449,7 @@ async fn running_9_man_single_elimination_bracket() {
         )
         .await;
 
-        let match_id = both_player_report_match_result(
+        let (match_id, _) = both_player_report_match_result(
             &test_api,
             "3",
             "9",

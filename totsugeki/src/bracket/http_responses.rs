@@ -107,3 +107,13 @@ pub struct CommandPOST {
     /// Service used to make call
     pub service_type_id: String,
 }
+
+/// POST response to /bracket/start endpoint
+#[derive(Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "poem-openapi", derive(Object))]
+pub struct StartPOSTResult {
+    /// id of created bracket
+    pub bracket_id: Id,
+    /// Matches to play
+    pub matches: Vec<MatchGET>,
+}

@@ -6,7 +6,7 @@ use crate::{
     format::Format::{DoubleElimination, SingleElimination},
     matches::{Id as MatchId, Match},
     opponent::Opponent,
-    player::Id as PlayerId,
+    player::Player,
 };
 
 impl Bracket {
@@ -29,14 +29,19 @@ impl Bracket {
             let accept_match_results = gf.get_winner() == gf.get_players()[1];
             if accept_match_results {
                 // update grand finals reset match
-                if let Opponent::Player(id) = gf.get_players()[0] {
-                    gf_reset = gf_reset.set_player(id, true);
+                if let Opponent::Player(p) = &gf.get_players()[0] {
+                    gf_reset = gf_reset.set_player(p.clone(), true);
                 }
-                if let Opponent::Player(id) = gf.get_players()[1] {
-                    gf_reset = gf_reset.set_player(id, false);
+                if let Opponent::Player(p) = &gf.get_players()[1] {
+                    gf_reset = gf_reset.set_player(p.clone(), false);
                 }
             }
-            let matches = Match::double_elimination(&winner_bracket, &loser_bracket, gf, gf_reset);
+            let matches = Match::double_elimination_matches_from_partition(
+                &winner_bracket,
+                &loser_bracket,
+                gf,
+                gf_reset,
+            );
             return Ok(Self {
                 matches,
                 accept_match_results,
@@ -66,24 +71,23 @@ impl Bracket {
     fn update(
         bracket: &[Match],
         match_id: MatchId,
-    ) -> Result<(Vec<Match>, PlayerId, usize, Option<PlayerId>), Error> {
+    ) -> Result<(Vec<Match>, Player, usize, Option<Player>), Error> {
         if !bracket.iter().any(|m| m.get_id() == match_id) {
             return Err(Error::NoMatchToUpdate(bracket.to_vec(), match_id));
         }
         // declare winner if there is one
-        let (updated_match, winner_id, loser_id) =
-            match bracket.iter().find(|m| m.get_id() == match_id) {
-                Some(m) => m.update_outcome()?,
-                None => return Err(Error::UnknownMatch(match_id)),
-            };
+        let (updated_match, winner, loser) = match bracket.iter().find(|m| m.get_id() == match_id) {
+            Some(m) => m.clone().update_outcome()?,
+            None => return Err(Error::UnknownMatch(match_id)),
+        };
         let seed_of_expected_winner = updated_match.get_seeds()[0];
         let matches: Vec<_> = bracket
             .iter()
             .map(|m| {
                 if m.get_id() == updated_match.get_id() {
-                    updated_match
+                    updated_match.clone()
                 } else {
-                    *m
+                    m.clone()
                 }
             })
             .collect();
@@ -91,8 +95,8 @@ impl Bracket {
         let last_match = matches.last().expect("last match");
         let expected_loser_seed = updated_match.get_seeds()[1];
         if last_match.get_id() == match_id {
-            if let Opponent::Player(id) = last_match.get_winner() {
-                return Ok((matches, loser_id, expected_loser_seed, Some(id)));
+            if let Opponent::Player(p) = last_match.get_winner() {
+                return Ok((matches, loser, expected_loser_seed, Some(p)));
             }
             panic!("No winner of bracket");
         }
@@ -106,14 +110,16 @@ impl Bracket {
         let m = iter
             .find(|m| m.get_seeds().contains(&seed_of_expected_winner))
             .expect("match where winner plays next");
-        let updated_match = m.set_player(winner_id, m.get_seeds()[0] == seed_of_expected_winner);
+        let updated_match = m
+            .clone()
+            .set_player(winner.clone(), m.get_seeds()[0] == seed_of_expected_winner);
         let mut matches: Vec<Match> = matches
             .iter()
             .map(|m| {
                 if m.get_id() == updated_match.get_id() {
-                    updated_match
+                    updated_match.clone()
                 } else {
-                    *m
+                    m.clone()
                 }
             })
             .collect();
@@ -121,34 +127,37 @@ impl Bracket {
         // looser drops to loser bracket in double elimination format
 
         // Set winner to all matches were a player is disqualified
+        // while loop is needed because there can be a scenario where a player
+        // is moved up several times because each next match contains a
+        // disqualified player
         while matches
             .iter()
-            .any(|m| m.get_looser() != Opponent::Unknown && m.is_playable())
+            .any(Match::needs_update_because_of_disqualified_participant)
         {
             let match_id = matches
                 .iter()
-                .find(|m| m.get_looser() != Opponent::Unknown && m.is_playable())
-                .expect("match to with disqualified player")
+                .find(|m| m.needs_update_because_of_disqualified_participant())
+                .expect("match with disqualified player")
                 .get_id();
             let (updated_match, _winner_id, _) =
                 match matches.iter().find(|m| m.get_id() == match_id) {
-                    Some(m) => m.update_outcome()?,
+                    Some(m) => m.clone().update_outcome()?,
                     None => return Err(Error::UnknownMatch(match_id)),
                 };
             matches = matches
                 .iter()
                 .map(|m| {
                     if m.get_id() == updated_match.get_id() {
-                        updated_match
+                        updated_match.clone()
                     } else {
-                        *m
+                        m.clone()
                     }
                 })
                 .collect();
 
             let last_match = matches.last().expect("last match");
             if last_match.get_id() == match_id {
-                return Ok((matches, loser_id, expected_loser_seed, None));
+                return Ok((matches, loser, expected_loser_seed, None));
             }
 
             // winner moves forward in bracket
@@ -161,28 +170,29 @@ impl Bracket {
             let m = iter
                 .find(|m| m.get_seeds().contains(&seed_of_expected_winner))
                 .expect("match where winner plays next");
-            let updated_match =
-                m.set_player(winner_id, m.get_seeds()[0] == seed_of_expected_winner);
+            let updated_match = m
+                .clone()
+                .set_player(winner.clone(), m.get_seeds()[0] == seed_of_expected_winner);
             matches = matches
                 .iter()
                 .map(|m| {
                     if m.get_id() == updated_match.get_id() {
-                        updated_match
+                        updated_match.clone()
                     } else {
-                        *m
+                        m.clone()
                     }
                 })
                 .collect();
         }
 
-        Ok((matches, loser_id, expected_loser_seed, None))
+        Ok((matches, loser, expected_loser_seed, None))
     }
 
     /// Place loser from winner's bracket into loser bracket using seed of
     /// `expected_loser_seed`. Returns updated loser bracket
     fn send_to_losers(
         loser_bracket: &[Match],
-        loser_id: PlayerId,
+        loser: Player,
         expected_loser_seed: usize,
     ) -> Vec<Match> {
         let loser_match = loser_bracket
@@ -190,14 +200,14 @@ impl Bracket {
             .find(|m| m.is_first_loser_match(expected_loser_seed))
             .expect("loser first match in losers");
         let is_player_1 = expected_loser_seed == loser_match.get_seeds()[0];
-        let loser_match = loser_match.set_player(loser_id, is_player_1);
+        let loser_match = loser_match.clone().set_player(loser, is_player_1);
         loser_bracket
             .iter()
             .map(|m| {
                 if m.get_id() == loser_match.get_id() {
-                    loser_match
+                    loser_match.clone()
                 } else {
-                    *m
+                    m.clone()
                 }
             })
             .collect()
@@ -251,7 +261,7 @@ impl Bracket {
                                     Some(w) => gf.set_opponent(w, false),
                                     None => gf,
                                 };
-                                let matches = Match::double_elimination(
+                                let matches = Match::double_elimination_matches_from_partition(
                                     &winner_bracket,
                                     &loser_bracket,
                                     gf,
@@ -269,7 +279,12 @@ impl Bracket {
                 if let Some(id) = winner_of_winner_bracket {
                     gf = gf.set_player(id, true);
                 }
-                Match::double_elimination(&winner_bracket, &loser_bracket, gf, gf_reset)
+                Match::double_elimination_matches_from_partition(
+                    &winner_bracket,
+                    &loser_bracket,
+                    gf,
+                    gf_reset,
+                )
             }
         };
 
@@ -312,14 +327,17 @@ mod tests {
 
         bracket = bracket.start();
         assert_eq!(bracket.get_matches().len(), 2);
+        assert_eq!(bracket.matches_to_play().len(), 1);
         let (bracket, m_2vs3) = bracket
             .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[3])
             .expect("bracket");
         let bracket = bracket.validate_match_result(m_2vs3).expect("bracket");
+        assert_eq!(bracket.matches_to_play().len(), 1);
         let (bracket, m_1vs2) = bracket
             .tournament_organiser_reports_result(player_ids[1], (0, 2), player_ids[2])
             .expect("bracket");
         let bracket = bracket.validate_match_result(m_1vs2).expect("bracket");
+        assert!(bracket.matches_to_play().is_empty());
         assert!(bracket.is_over());
     }
 
@@ -341,23 +359,28 @@ mod tests {
 
         bracket = bracket.start();
         assert_eq!(bracket.get_matches().len(), 4);
+        assert_eq!(bracket.matches_to_play().len(), 2);
         let (bracket, m_4vs5) = bracket
             .tournament_organiser_reports_result(player_ids[4], (2, 0), player_ids[5])
             .expect("bracket");
         let bracket = bracket.validate_match_result(m_4vs5).expect("bracket");
+        assert_eq!(bracket.matches_to_play().len(), 2);
         let (bracket, m_2vs3) = bracket
             .tournament_organiser_reports_result(player_ids[2], (0, 2), player_ids[3])
             .expect("bracket");
         let bracket = bracket.validate_match_result(m_2vs3).expect("bracket");
+        assert_eq!(bracket.matches_to_play().len(), 1);
         let (bracket, m_1vs4) = bracket
             .tournament_organiser_reports_result(player_ids[1], (2, 0), player_ids[4])
             .expect("bracket");
         let bracket = bracket.validate_match_result(m_1vs4).expect("bracket");
+        assert_eq!(bracket.matches_to_play().len(), 1);
         let (bracket, m_1vs3) = bracket
             .tournament_organiser_reports_result(player_ids[1], (2, 0), player_ids[3])
             .expect("bracket");
         let bracket = bracket.validate_match_result(m_1vs3).expect("bracket");
         assert!(bracket.is_over());
+        assert_eq!(bracket.matches_to_play().len(), 0);
     }
 
     #[test]

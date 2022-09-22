@@ -50,7 +50,7 @@ mod tests {
         format::Format,
         matches::{Id as MatchId, Match, MatchGET},
         opponent::Opponent,
-        player::Error as PlayerError,
+        player::{Error as PlayerError, Player},
         seeding::{
             single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored,
             Error as SeedingError, Method as SeedingMethod,
@@ -181,25 +181,18 @@ mod tests {
     }
     #[test]
     fn updating_seeding_changes_matches_of_3_man_bracket() {
-        let p1_id = PlayerId::new_v4();
-        let p2_id = PlayerId::new_v4();
-        let p3_id = PlayerId::new_v4();
-        let player_ids = vec![p1_id, p2_id, p3_id];
-        let player_names = vec!["p1".to_string(), "p2".to_string(), "p3".to_string()];
-        let players = Participants::from_raw_id(
-            player_ids
-                .iter()
-                .zip(player_names.iter())
-                .map(|p| (p.0.to_string(), p.1.clone()))
-                .collect(),
-        )
-        .expect("players");
-        let matches = get_balanced_round_matches_top_seed_favored(&players).expect("matches");
+        let mut players = vec![];
+        for i in 1..=3 {
+            let p = Player::new(format!("p{i}"));
+            players.push(p);
+        }
+        let participants = Participants::try_from(players.clone()).expect("participants");
+        let matches = get_balanced_round_matches_top_seed_favored(&participants).expect("matches");
         let bracket: Bracket = Raw {
             bracket_id: BracketId::new_v4(),
             bracket_name: "bracket".to_string(),
-            players: player_ids,
-            player_names,
+            players: players.clone().iter().map(Player::get_id).collect(),
+            player_names: players.iter().map(Player::get_name).collect(),
             matches,
             format: Format::SingleElimination,
             seeding_method: SeedingMethod::Strict,
@@ -210,8 +203,15 @@ mod tests {
         }
         .try_into()
         .expect("bracket");
+        players.reverse();
+        players.push(Player::new("don't use".into())); // for readability
+        players.reverse();
         let updated_bracket = bracket
-            .update_seeding(&[p3_id, p2_id, p1_id])
+            .update_seeding(&[
+                players[3].get_id(),
+                players[2].get_id(),
+                players[1].get_id(),
+            ])
             .expect("seeding update");
         let mut match_ids: Vec<MatchId> = updated_bracket
             .get_matches()
@@ -219,27 +219,27 @@ mod tests {
             .map(Match::get_id)
             .collect();
         match_ids.reverse();
-        let p1 = Opponent::Player(p1_id);
-        let p2 = Opponent::Player(p2_id);
-        let p3 = Opponent::Player(p3_id);
+        let p1 = Opponent::Player(players[1].clone());
+        let p2 = Opponent::Player(players[2].clone());
+        let p3 = Opponent::Player(players[3].clone());
         assert_eq!(
             updated_bracket.get_matches(),
             vec![
                 Match::try_from(MatchGET::new(
                     match_ids.pop().expect("match id"),
-                    [p2, p1],
+                    &[p2, p1],
                     [2, 3],
-                    Opponent::Unknown,
-                    Opponent::Unknown,
+                    &Opponent::Unknown,
+                    &Opponent::Unknown,
                     [(0, 0), (0, 0)]
                 ))
                 .expect("match"),
                 Match::try_from(MatchGET::new(
                     match_ids.pop().expect("match id"),
-                    [p3, Opponent::Unknown],
+                    &[p3, Opponent::Unknown],
                     [1, 2],
-                    Opponent::Unknown,
-                    Opponent::Unknown,
+                    &Opponent::Unknown,
+                    &Opponent::Unknown,
                     [(0, 0), (0, 0)]
                 ))
                 .expect("match")
@@ -249,33 +249,18 @@ mod tests {
 
     #[test]
     fn updating_seeding_changes_matches_of_5_man_bracket() {
-        let p1_id = PlayerId::new_v4();
-        let p2_id = PlayerId::new_v4();
-        let p3_id = PlayerId::new_v4();
-        let p4_id = PlayerId::new_v4();
-        let p5_id = PlayerId::new_v4();
-        let player_ids = vec![p1_id, p2_id, p3_id, p4_id, p5_id];
-        let player_names = vec![
-            "p1".to_string(),
-            "p2".to_string(),
-            "p3".to_string(),
-            "p4".to_string(),
-            "p5".to_string(),
-        ];
-        let players = Participants::from_raw_id(
-            player_ids
-                .iter()
-                .zip(player_names.iter())
-                .map(|p| (p.0.to_string(), p.1.clone()))
-                .collect(),
-        )
-        .expect("players");
-        let matches = get_balanced_round_matches_top_seed_favored(&players).expect("matches");
+        let mut players = vec![];
+        for i in 1..=5 {
+            let p = Player::new(format!("p{i}"));
+            players.push(p);
+        }
+        let participants = Participants::try_from(players.clone()).expect("participants");
+        let matches = get_balanced_round_matches_top_seed_favored(&participants).expect("matches");
         let bracket: Bracket = Raw {
             bracket_id: BracketId::new_v4(),
             bracket_name: "bracket".to_string(),
-            players: player_ids,
-            player_names,
+            players: players.iter().map(Player::get_id).collect(),
+            player_names: players.iter().map(Player::get_name).collect(),
             matches,
             format: Format::SingleElimination,
             seeding_method: SeedingMethod::Strict,
@@ -286,8 +271,17 @@ mod tests {
         }
         .try_into()
         .expect("bracket");
+        players.reverse();
+        players.push(Player::new("don't use".into())); // for readability
+        players.reverse();
         let updated_bracket = bracket
-            .update_seeding(&[p4_id, p5_id, p3_id, p2_id, p1_id])
+            .update_seeding(&[
+                players[4].get_id(),
+                players[5].get_id(),
+                players[3].get_id(),
+                players[2].get_id(),
+                players[1].get_id(),
+            ])
             .expect("seeding update");
         let mut match_ids: Vec<MatchId> = updated_bracket
             .get_matches()
@@ -295,47 +289,47 @@ mod tests {
             .map(Match::get_id)
             .collect();
         match_ids.reverse();
-        let p1 = Opponent::Player(p1_id);
-        let p2 = Opponent::Player(p2_id);
-        let p3 = Opponent::Player(p3_id);
-        let p4 = Opponent::Player(p4_id);
-        let p5 = Opponent::Player(p5_id);
+        let p1 = Opponent::Player(players[1].clone());
+        let p2 = Opponent::Player(players[2].clone());
+        let p3 = Opponent::Player(players[3].clone());
+        let p4 = Opponent::Player(players[4].clone());
+        let p5 = Opponent::Player(players[5].clone());
         assert_eq!(
             updated_bracket.get_matches(),
             vec![
                 Match::try_from(MatchGET::new(
                     match_ids.pop().expect("match id"),
-                    [p2, p1],
+                    &[p2, p1],
                     [4, 5],
-                    Opponent::Unknown,
-                    Opponent::Unknown,
+                    &Opponent::Unknown,
+                    &Opponent::Unknown,
                     [(0, 0), (0, 0)]
                 ))
                 .expect("match"),
                 Match::try_from(MatchGET::new(
                     match_ids.pop().expect("match id"),
-                    [p4, Opponent::Unknown],
+                    &[p4, Opponent::Unknown],
                     [1, 4],
-                    Opponent::Unknown,
-                    Opponent::Unknown,
+                    &Opponent::Unknown,
+                    &Opponent::Unknown,
                     [(0, 0), (0, 0)]
                 ))
                 .expect("match"),
                 Match::try_from(MatchGET::new(
                     match_ids.pop().expect("match id"),
-                    [p5, p3],
+                    &[p5, p3],
                     [2, 3],
-                    Opponent::Unknown,
-                    Opponent::Unknown,
+                    &Opponent::Unknown,
+                    &Opponent::Unknown,
                     [(0, 0), (0, 0)]
                 ))
                 .expect("match"),
                 Match::try_from(MatchGET::new(
                     match_ids.pop().expect("match id"),
-                    [Opponent::Unknown, Opponent::Unknown],
+                    &[Opponent::Unknown, Opponent::Unknown],
                     [1, 2],
-                    Opponent::Unknown,
-                    Opponent::Unknown,
+                    &Opponent::Unknown,
+                    &Opponent::Unknown,
                     [(0, 0), (0, 0)]
                 ))
                 .expect("match"),

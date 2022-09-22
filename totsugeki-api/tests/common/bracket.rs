@@ -72,7 +72,7 @@ pub fn parse_bracket_get_response(response: TestJson) -> GET {
         matches: matches
             .iter()
             .map(|m| {
-                let m: MatchGET = (*m).into();
+                let m: MatchGET = m.clone().into();
                 m
             })
             .collect(),
@@ -152,12 +152,20 @@ pub fn parse_matches(response: &TestJsonObject) -> Vec<Match> {
                 .collect::<Vec<usize>>()
                 .try_into()
                 .expect("seeds");
-            let winner = m.get("winner").string().parse().expect("winner");
-            let looser = m.get("looser").string().parse().expect("looser");
+            let winner = m
+                .get("winner")
+                .string()
+                .parse::<Opponent>()
+                .expect("winner");
+            let looser = m
+                .get("looser")
+                .string()
+                .parse::<Opponent>()
+                .expect("looser");
 
             let reported_results = m.get("reported_results").string_array();
             let rr_1 = reported_results
-                .get(0)
+                .first()
                 .expect("reported result")
                 .parse::<ReportedResult>()
                 .expect("parsed reported result");
@@ -170,10 +178,10 @@ pub fn parse_matches(response: &TestJsonObject) -> Vec<Match> {
 
             Match::try_from(MatchGET::new(
                 id,
-                players,
+                &players,
                 seeds,
-                winner,
-                looser,
+                &winner,
+                &looser,
                 reported_results,
             ))
             .expect("match")

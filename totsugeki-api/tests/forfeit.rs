@@ -53,14 +53,14 @@ async fn player_forfeits_when_he_realises_he_cannot_make_it() {
             .expect("matches");
         assert!(matches.iter().any(|m| {
             if m.contains(player_id) {
-                if let Opponent::Player(looser_id) = m.get_looser() {
-                    return looser_id == player_id;
+                if let Opponent::Player(looser) = m.get_looser() {
+                    return looser.get_id() == player_id;
                 }
             }
             false
         }));
 
-        let match_id_seed_4 = both_player_report_match_result(
+        let (match_id_seed_4, _) = both_player_report_match_result(
             &test_api,
             "4",
             "5",
@@ -70,7 +70,7 @@ async fn player_forfeits_when_he_realises_he_cannot_make_it() {
         )
         .await;
 
-        let match_id_seed_2 = both_player_report_match_result(
+        let (match_id_seed_2, _) = both_player_report_match_result(
             &test_api,
             "2",
             "3",
@@ -83,7 +83,7 @@ async fn player_forfeits_when_he_realises_he_cannot_make_it() {
         validate_match(&test_api, match_id_seed_4).await;
         validate_match(&test_api, match_id_seed_2).await;
 
-        let gf = both_player_report_match_result(
+        let (gf, _) = both_player_report_match_result(
             &test_api,
             "2",
             "4",
@@ -117,7 +117,7 @@ async fn player_has_to_go_mid_bracket() {
         )
         .await;
 
-        let match_id_seed_8 = both_player_report_match_result(
+        let (match_id_seed_8, _) = both_player_report_match_result(
             &test_api,
             "8",
             "9",
@@ -126,7 +126,7 @@ async fn player_has_to_go_mid_bracket() {
             ReportedResult((2, 0)),
         )
         .await;
-        let match_id_seed_4 = both_player_report_match_result(
+        let (match_id_seed_4, _) = both_player_report_match_result(
             &test_api,
             "5",
             "4",
@@ -135,7 +135,7 @@ async fn player_has_to_go_mid_bracket() {
             ReportedResult((2, 0)),
         )
         .await;
-        let match_id_seed_3 = both_player_report_match_result(
+        let (match_id_seed_3, _) = both_player_report_match_result(
             &test_api,
             "6",
             "3",
@@ -144,7 +144,7 @@ async fn player_has_to_go_mid_bracket() {
             ReportedResult((2, 0)),
         )
         .await;
-        let match_id_seed_2 = both_player_report_match_result(
+        let (match_id_seed_2, _) = both_player_report_match_result(
             &test_api,
             "2",
             "7",
@@ -157,7 +157,7 @@ async fn player_has_to_go_mid_bracket() {
         validate_match(&test_api, match_id_seed_4).await;
         validate_match(&test_api, match_id_seed_3).await;
         validate_match(&test_api, match_id_seed_2).await;
-        let match_id_seed_1 = both_player_report_match_result(
+        let (match_id_seed_1, _) = both_player_report_match_result(
             &test_api,
             "1",
             "8",
@@ -184,7 +184,7 @@ async fn player_has_to_go_mid_bracket() {
             bracket.bracket_id,
         )
         .await;
-        let gf = both_player_report_match_result(
+        let (gf, _) = both_player_report_match_result(
             &test_api,
             "5",
             "2",

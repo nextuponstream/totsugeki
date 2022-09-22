@@ -33,6 +33,7 @@ pub enum Route {
 /// Router function
 #[allow(clippy::trivially_copy_pass_by_ref)]
 // ignored because switch requires this signature
+#[allow(clippy::let_unit_value)]
 pub fn switch(routes: &Route) -> Html {
     let props = Props::default();
     match routes {

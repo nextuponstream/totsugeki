@@ -4,6 +4,7 @@ pub mod bracket;
 pub mod disqualify;
 pub mod forfeit;
 pub mod join;
+pub mod matches;
 pub mod next_match;
 pub mod players;
 pub mod report;

@@ -8,6 +8,8 @@ use poem::Result;
 use poem_openapi::param::Path;
 use poem_openapi::payload::Json;
 use poem_openapi::OpenApi;
+use totsugeki::bracket::http_responses::StartPOSTResult;
+use totsugeki::matches::Match;
 use totsugeki::matches::ReportResultPOST;
 use totsugeki::player::PlayersRaw;
 use totsugeki::{
@@ -209,7 +211,8 @@ impl Api {
         }
     }
 
-    /// Start bracket (accept results) and return id of bracket affected
+    /// Start bracket and accept results. Returns id of bracket affected and
+    /// matches to play
     #[oai(path = "/bracket/start", method = "post")]
     #[tracing::instrument(name = "Start bracket", skip(self, db, _auth))]
     async fn start_bracket<'a>(
@@ -217,9 +220,12 @@ impl Api {
         db: SharedDb<'a>,
         _auth: ApiKeyServiceAuthorization,
         r: Json<CommandPOST>,
-    ) -> Result<Json<BracketId>> {
+    ) -> Result<Json<StartPOSTResult>> {
         match start(&db, &r.0) {
-            Ok(bracket_id) => Ok(Json(bracket_id)),
+            Ok((bracket_id, matches)) => Ok(Json(StartPOSTResult {
+                bracket_id,
+                matches: matches.iter().map(|m| m.clone().into()).collect(),
+            })),
             Err(e) => {
                 log_error(&e);
                 Err(e.into())
@@ -462,7 +468,7 @@ where
 }
 
 /// Update bracket to start accepting match results
-fn start<'a, 'b>(db: &'a SharedDb, r: &CommandPOST) -> Result<BracketId, Error<'b>>
+fn start<'a, 'b>(db: &'a SharedDb, r: &CommandPOST) -> Result<(BracketId, Vec<Match>), Error<'b>>
 where
     'a: 'b,
 {

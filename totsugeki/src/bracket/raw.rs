@@ -48,14 +48,12 @@ impl From<Bracket> for Raw {
             bracket_name: b.bracket_name,
             players: b
                 .participants
-                .clone()
                 .get_players_list()
                 .iter()
                 .map(Player::get_id)
                 .collect(),
             player_names: b
                 .participants
-                .clone()
                 .get_players_list()
                 .iter()
                 .map(Player::get_name)
