@@ -12,7 +12,7 @@ discord bot.
 * [x] !quit bracket (for players)
 * [x] !start bracket (for tournament organisers)
 * [x] !dq player
-* [ ] double elimination format
+* [x] double elimination format
 * [ ] database queries
 
 ## Installation
