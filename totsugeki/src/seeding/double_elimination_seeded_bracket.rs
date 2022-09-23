@@ -156,7 +156,7 @@ mod tests {
     use crate::seeding::double_elimination_seeded_bracket::get_looser_bracket_matches_top_seed_favored;
 
     #[test]
-    fn double_elimination_bracket_all_matches_generation_3_man() {
+    fn matches_generation_3_man() {
         // test if grand finals, grand finals reset and winner bracket is
         // generated
         let mut players = vec![];
@@ -211,7 +211,7 @@ mod tests {
     }
 
     #[test]
-    fn double_elimination_match_generation_4_man() {
+    fn match_generation_4_man() {
         let mut participants = Participants::default();
         for _ in 0..4 {
             participants = participants
@@ -234,7 +234,7 @@ mod tests {
     }
 
     #[test]
-    fn double_elimination_match_generation_5_man() {
+    fn match_generation_5_man() {
         let mut participants = Participants::default();
         for _ in 0..5 {
             participants = participants
@@ -268,7 +268,7 @@ mod tests {
     }
 
     #[test]
-    fn double_elimination_match_generation_6_man() {
+    fn match_generation_6_man() {
         let mut participants = Participants::default();
         for _ in 0..6 {
             participants = participants
@@ -314,7 +314,7 @@ mod tests {
     }
 
     #[test]
-    fn double_elimination_match_generation_7_man() {
+    fn match_generation_7_man() {
         let mut participants = Participants::default();
         for _ in 0..7 {
             participants = participants
@@ -361,7 +361,7 @@ mod tests {
     }
 
     #[test]
-    fn double_elimination_match_generation_8_man() {
+    fn match_generation_8_man() {
         let mut participants = Participants::default();
         for _ in 0..8 {
             participants = participants
@@ -409,7 +409,7 @@ mod tests {
     }
 
     #[test]
-    fn double_elimination_match_generation_9_man() {
+    fn match_generation_9_man() {
         let mut participants = Participants::default();
         for _ in 0..9 {
             participants = participants
@@ -458,7 +458,7 @@ mod tests {
     }
 
     #[test]
-    fn double_elimination_match_generation_10_man() {
+    fn match_generation_10_man() {
         let mut participants = Participants::default();
         for _ in 0..10 {
             participants = participants

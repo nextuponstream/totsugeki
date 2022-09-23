@@ -8,12 +8,7 @@ use common::{
     forfeit::request as forfeit, report::both_player_report_match_result, test_api,
     validate::validate_match,
 };
-use totsugeki::{
-    format::Format,
-    matches::{Match, ReportedResult},
-    opponent::Opponent,
-    seeding::Method,
-};
+use totsugeki::{format::Format, matches::Match, opponent::Opponent, seeding::Method};
 use totsugeki_api::Service;
 
 #[tokio::test]
@@ -66,7 +61,7 @@ async fn player_forfeits_when_he_realises_he_cannot_make_it() {
             "5",
             internal_channel_id,
             service,
-            ReportedResult((2, 0)),
+            (2, 0),
         )
         .await;
 
@@ -76,7 +71,7 @@ async fn player_forfeits_when_he_realises_he_cannot_make_it() {
             "3",
             internal_channel_id,
             service,
-            ReportedResult((2, 0)),
+            (2, 0),
         )
         .await;
 
@@ -89,7 +84,7 @@ async fn player_forfeits_when_he_realises_he_cannot_make_it() {
             "4",
             internal_channel_id,
             service,
-            ReportedResult((2, 0)),
+            (2, 0),
         )
         .await;
         validate_match(&test_api, gf).await;
@@ -123,7 +118,7 @@ async fn player_has_to_go_mid_bracket() {
             "9",
             internal_channel_id,
             service,
-            ReportedResult((2, 0)),
+            (2, 0),
         )
         .await;
         let (match_id_seed_4, _) = both_player_report_match_result(
@@ -132,7 +127,7 @@ async fn player_has_to_go_mid_bracket() {
             "4",
             internal_channel_id,
             service,
-            ReportedResult((2, 0)),
+            (2, 0),
         )
         .await;
         let (match_id_seed_3, _) = both_player_report_match_result(
@@ -141,7 +136,7 @@ async fn player_has_to_go_mid_bracket() {
             "3",
             internal_channel_id,
             service,
-            ReportedResult((2, 0)),
+            (2, 0),
         )
         .await;
         let (match_id_seed_2, _) = both_player_report_match_result(
@@ -150,7 +145,7 @@ async fn player_has_to_go_mid_bracket() {
             "7",
             internal_channel_id,
             service,
-            ReportedResult((2, 0)),
+            (2, 0),
         )
         .await;
         validate_match(&test_api, match_id_seed_8).await;
@@ -163,7 +158,7 @@ async fn player_has_to_go_mid_bracket() {
             "8",
             internal_channel_id,
             service,
-            ReportedResult((2, 0)),
+            (2, 0),
         )
         .await;
         validate_match(&test_api, match_id_seed_1).await;
@@ -190,7 +185,7 @@ async fn player_has_to_go_mid_bracket() {
             "2",
             internal_channel_id,
             service,
-            ReportedResult((2, 0)),
+            (2, 0),
         )
         .await;
         validate_match(&test_api, gf).await;

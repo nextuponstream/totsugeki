@@ -20,7 +20,7 @@ use totsugeki_api::Service;
 use tracing::{debug, trace};
 
 #[test(tokio::test)]
-async fn tournament_organiser_disqualifying_that_could_not_make_it() {
+async fn tournament_organiser_disqualifies_player_that_could_not_make_it() {
     for db_type in db_types_to_test() {
         let test_api = test_api(db_type).await;
         let internal_channel_id = "1";
@@ -71,7 +71,7 @@ async fn tournament_organiser_disqualifying_that_could_not_make_it() {
             "5",
             internal_channel_id,
             service,
-            ReportedResult((2, 0)),
+            (2, 0),
         )
         .await;
 
@@ -81,7 +81,7 @@ async fn tournament_organiser_disqualifying_that_could_not_make_it() {
             "3",
             internal_channel_id,
             service,
-            ReportedResult((2, 0)),
+            (2, 0),
         )
         .await;
 
@@ -94,7 +94,7 @@ async fn tournament_organiser_disqualifying_that_could_not_make_it() {
             "4",
             internal_channel_id,
             service,
-            ReportedResult((2, 0)),
+            (2, 0),
         )
         .await;
         validate_match(&test_api, gf).await;
@@ -104,7 +104,7 @@ async fn tournament_organiser_disqualifying_that_could_not_make_it() {
 }
 
 #[tokio::test]
-async fn tournament_organiser_disqualifying_mid_bracket() {
+async fn tournament_organiser_disqualifies_mid_bracket() {
     for db_type in db_types_to_test() {
         let test_api = test_api(db_type).await;
         let internal_channel_id = "1";
@@ -128,7 +128,7 @@ async fn tournament_organiser_disqualifying_mid_bracket() {
             "9",
             internal_channel_id,
             service,
-            ReportedResult((2, 0)),
+            (2, 0),
         )
         .await;
         let (match_id_seed_4, _) = both_player_report_match_result(
@@ -137,7 +137,7 @@ async fn tournament_organiser_disqualifying_mid_bracket() {
             "4",
             internal_channel_id,
             service,
-            ReportedResult((2, 0)),
+            (2, 0),
         )
         .await;
         let (match_id_seed_3, _) = both_player_report_match_result(
@@ -146,7 +146,7 @@ async fn tournament_organiser_disqualifying_mid_bracket() {
             "3",
             internal_channel_id,
             service,
-            ReportedResult((2, 0)),
+            (2, 0),
         )
         .await;
         let (match_id_seed_2, _) = both_player_report_match_result(
@@ -155,7 +155,7 @@ async fn tournament_organiser_disqualifying_mid_bracket() {
             "7",
             internal_channel_id,
             service,
-            ReportedResult((2, 0)),
+            (2, 0),
         )
         .await;
         validate_match(&test_api, match_id_seed_8).await;
@@ -168,7 +168,7 @@ async fn tournament_organiser_disqualifying_mid_bracket() {
             "8",
             internal_channel_id,
             service,
-            ReportedResult((2, 0)),
+            (2, 0),
         )
         .await;
         validate_match(&test_api, match_id_seed_1).await;
@@ -197,7 +197,7 @@ async fn tournament_organiser_disqualifying_mid_bracket() {
             "2",
             internal_channel_id,
             service,
-            ReportedResult((2, 0)),
+            (2, 0),
         )
         .await;
         validate_match(&test_api, gf).await;

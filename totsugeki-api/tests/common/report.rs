@@ -60,8 +60,9 @@ pub async fn both_player_report_match_result(
     player_internal_id_2: &str,
     channel_internal_id: &str,
     service: Service,
-    reported_result: ReportedResult,
+    reported_result: (i8, i8),
 ) -> (MatchId, Vec<Match>) {
+    let reported_result = ReportedResult(reported_result);
     debug!("Reporting match for player {player_internal_id_1} and {player_internal_id_2}");
     let resp_1 = player_reports_match_result(
         test_api,

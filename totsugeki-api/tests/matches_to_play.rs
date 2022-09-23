@@ -15,7 +15,6 @@ use test_log::test;
 use totsugeki::{
     bracket::http_responses::CommandPOST,
     format::Format,
-    matches::ReportedResult,
     player::{Id as PlayerId, Player},
     seeding::Method,
 };
@@ -121,7 +120,7 @@ async fn run_8_man_double_elimination() {
             "4",
             channel_internal_id,
             service,
-            ReportedResult((2, 0)),
+            (2, 0),
         )
         .await;
         assert_eq!(new_matches_to_play.len(), 0);

@@ -21,6 +21,7 @@ use crate::{
     DiscussionChannelId,
 };
 use chrono::prelude::*;
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use thiserror::Error;
 use uuid::Uuid;
@@ -109,7 +110,7 @@ pub type FinalizedBrackets = HashSet<Id>;
 // any two players from the same local for the first round at least. What you
 // would really want is to put players from the same local as far away from
 // each of them as possible
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Bracket {
     /// Identifier of this bracket
     bracket_id: Id,

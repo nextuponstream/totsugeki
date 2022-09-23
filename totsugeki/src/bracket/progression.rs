@@ -300,372 +300,384 @@ impl Bracket {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        bracket::Bracket,
-        format::Format,
-        matches::Match,
-        player::{Id as PlayerId, Player},
-        seeding::Method,
-    };
-    use chrono::prelude::*;
+    mod single_elimination {
+        use crate::{
+            bracket::Bracket,
+            format::Format,
+            player::{Id as PlayerId, Player},
+            seeding::Method,
+        };
+        use chrono::prelude::*;
 
-    #[test]
-    fn progress_single_elimination_3_man_bracket() {
-        let mut bracket = Bracket::new(
-            "",
-            Format::SingleElimination,
-            Method::Strict,
-            Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
-            true,
-        );
-        let mut player_ids = vec![PlayerId::new_v4()]; // padding for readability
-        for i in 1..=3 {
-            let player = Player::new(format!("p{i}"));
-            player_ids.push(player.get_id());
-            bracket = bracket.add_new_player(player).expect("bracket");
+        #[test]
+        fn run_3_man_bracket() {
+            let mut bracket = Bracket::new(
+                "",
+                Format::SingleElimination,
+                Method::Strict,
+                Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
+                true,
+            );
+            let mut player_ids = vec![PlayerId::new_v4()]; // padding for readability
+            for i in 1..=3 {
+                let player = Player::new(format!("p{i}"));
+                player_ids.push(player.get_id());
+                bracket = bracket.add_new_player(player).expect("bracket");
+            }
+
+            bracket = bracket.start();
+            assert_eq!(bracket.get_matches().len(), 2);
+            assert_eq!(bracket.matches_to_play().len(), 1);
+            let (bracket, m_2vs3) = bracket
+                .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[3])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(m_2vs3).expect("bracket");
+            assert_eq!(bracket.matches_to_play().len(), 1);
+            let (bracket, m_1vs2) = bracket
+                .tournament_organiser_reports_result(player_ids[1], (0, 2), player_ids[2])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(m_1vs2).expect("bracket");
+            assert!(bracket.matches_to_play().is_empty());
+            assert!(bracket.is_over());
         }
 
-        bracket = bracket.start();
-        assert_eq!(bracket.get_matches().len(), 2);
-        assert_eq!(bracket.matches_to_play().len(), 1);
-        let (bracket, m_2vs3) = bracket
-            .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[3])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(m_2vs3).expect("bracket");
-        assert_eq!(bracket.matches_to_play().len(), 1);
-        let (bracket, m_1vs2) = bracket
-            .tournament_organiser_reports_result(player_ids[1], (0, 2), player_ids[2])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(m_1vs2).expect("bracket");
-        assert!(bracket.matches_to_play().is_empty());
-        assert!(bracket.is_over());
+        #[test]
+        fn run_5_man_bracket() {
+            let mut bracket = Bracket::new(
+                "",
+                Format::SingleElimination,
+                Method::Strict,
+                Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
+                true,
+            );
+            let mut player_ids = vec![PlayerId::new_v4()]; // padding for readability
+            for i in 1..=5 {
+                let player = Player::new(format!("p{i}"));
+                player_ids.push(player.get_id());
+                bracket = bracket.add_new_player(player).expect("bracket");
+            }
+
+            bracket = bracket.start();
+            assert_eq!(bracket.get_matches().len(), 4);
+            assert_eq!(bracket.matches_to_play().len(), 2);
+            let (bracket, m_4vs5) = bracket
+                .tournament_organiser_reports_result(player_ids[4], (2, 0), player_ids[5])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(m_4vs5).expect("bracket");
+            assert_eq!(bracket.matches_to_play().len(), 2);
+            let (bracket, m_2vs3) = bracket
+                .tournament_organiser_reports_result(player_ids[2], (0, 2), player_ids[3])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(m_2vs3).expect("bracket");
+            assert_eq!(bracket.matches_to_play().len(), 1);
+            let (bracket, m_1vs4) = bracket
+                .tournament_organiser_reports_result(player_ids[1], (2, 0), player_ids[4])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(m_1vs4).expect("bracket");
+            assert_eq!(bracket.matches_to_play().len(), 1);
+            let (bracket, m_1vs3) = bracket
+                .tournament_organiser_reports_result(player_ids[1], (2, 0), player_ids[3])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(m_1vs3).expect("bracket");
+            assert!(bracket.is_over());
+            assert_eq!(bracket.matches_to_play().len(), 0);
+        }
     }
 
-    #[test]
-    fn progress_single_elimination_5_man_bracket() {
-        let mut bracket = Bracket::new(
-            "",
-            Format::SingleElimination,
-            Method::Strict,
-            Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
-            true,
-        );
-        let mut player_ids = vec![PlayerId::new_v4()]; // padding for readability
-        for i in 1..=5 {
-            let player = Player::new(format!("p{i}"));
-            player_ids.push(player.get_id());
-            bracket = bracket.add_new_player(player).expect("bracket");
+    mod double_elimination {
+        use crate::{
+            bracket::Bracket,
+            format::Format,
+            matches::Match,
+            player::{Id as PlayerId, Player},
+            seeding::Method,
+        };
+        use chrono::prelude::*;
+
+        #[test]
+        fn run_3_man_bracket() {
+            let mut bracket = Bracket::new(
+                "",
+                Format::DoubleElimination,
+                Method::Strict,
+                Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
+                true,
+            );
+            let mut player_ids = vec![PlayerId::new_v4()]; // padding for readability
+            for i in 1..=3 {
+                let player = Player::new(format!("p{i}"));
+                player_ids.push(player.get_id());
+                bracket = bracket.add_new_player(player).expect("bracket");
+            }
+
+            bracket = bracket.start();
+            assert_eq!(bracket.get_matches().len(), 5);
+            let (bracket, winner_2vs3) = bracket
+                .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[3])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(winner_2vs3).expect("bracket");
+            let (bracket, winner_1vs2) = bracket
+                .tournament_organiser_reports_result(player_ids[1], (0, 2), player_ids[2])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(winner_1vs2).expect("bracket");
+            let (bracket, looser_1vs3) = bracket
+                .tournament_organiser_reports_result(player_ids[1], (0, 2), player_ids[3])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(looser_1vs3).expect("bracket");
+            println!("{:?}", bracket.matches);
+            let (bracket, grand_finals) = bracket
+                .tournament_organiser_reports_result(player_ids[2], (0, 2), player_ids[3])
+                .expect("bracket");
+            let bracket = bracket
+                .validate_match_result(grand_finals)
+                .expect("bracket");
+            let (bracket, grand_finals_reset) = bracket
+                .tournament_organiser_reports_result(player_ids[2], (0, 2), player_ids[3])
+                .expect("bracket");
+            let bracket = bracket
+                .validate_match_result(grand_finals_reset)
+                .expect("bracket");
+            assert!(bracket.is_over());
         }
 
-        bracket = bracket.start();
-        assert_eq!(bracket.get_matches().len(), 4);
-        assert_eq!(bracket.matches_to_play().len(), 2);
-        let (bracket, m_4vs5) = bracket
-            .tournament_organiser_reports_result(player_ids[4], (2, 0), player_ids[5])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(m_4vs5).expect("bracket");
-        assert_eq!(bracket.matches_to_play().len(), 2);
-        let (bracket, m_2vs3) = bracket
-            .tournament_organiser_reports_result(player_ids[2], (0, 2), player_ids[3])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(m_2vs3).expect("bracket");
-        assert_eq!(bracket.matches_to_play().len(), 1);
-        let (bracket, m_1vs4) = bracket
-            .tournament_organiser_reports_result(player_ids[1], (2, 0), player_ids[4])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(m_1vs4).expect("bracket");
-        assert_eq!(bracket.matches_to_play().len(), 1);
-        let (bracket, m_1vs3) = bracket
-            .tournament_organiser_reports_result(player_ids[1], (2, 0), player_ids[3])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(m_1vs3).expect("bracket");
-        assert!(bracket.is_over());
-        assert_eq!(bracket.matches_to_play().len(), 0);
-    }
+        #[test]
+        fn partition_matches_for_3_man_bracket() {
+            let mut bracket = Bracket::new(
+                "",
+                Format::DoubleElimination,
+                Method::Strict,
+                Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
+                true,
+            );
+            let mut player_ids = vec![PlayerId::new_v4()]; // padding for readability
+            for i in 1..=3 {
+                let player = Player::new(format!("p{i}"));
+                player_ids.push(player.get_id());
+                bracket = bracket.add_new_player(player).expect("bracket");
+            }
 
-    #[test]
-    fn partition_double_elimination_matches_3_man_bracket() {
-        let mut bracket = Bracket::new(
-            "",
-            Format::DoubleElimination,
-            Method::Strict,
-            Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
-            true,
-        );
-        let mut player_ids = vec![PlayerId::new_v4()]; // padding for readability
-        for i in 1..=3 {
-            let player = Player::new(format!("p{i}"));
-            player_ids.push(player.get_id());
-            bracket = bracket.add_new_player(player).expect("bracket");
+            let (winner_bracket, loser_bracket, _gf, _gfr) =
+                Match::partition_double_elimination_matches(
+                    &bracket.get_matches(),
+                    bracket.get_participants().len(),
+                )
+                .expect("partition");
+            assert_eq!(winner_bracket.len(), 2);
+            assert_eq!(loser_bracket.len(), 1);
+            assert_eq!(loser_bracket[0].get_seeds(), [2, 3]);
         }
 
-        let (winner_bracket, loser_bracket, _gf, _gfr) =
-            Match::partition_double_elimination_matches(
-                &bracket.get_matches(),
-                bracket.get_participants().len(),
-            )
-            .expect("partition");
-        assert_eq!(winner_bracket.len(), 2);
-        assert_eq!(loser_bracket.len(), 1);
-        assert_eq!(loser_bracket[0].get_seeds(), [2, 3]);
-    }
+        #[test]
+        fn run_5_man_bracket() {
+            let mut bracket = Bracket::new(
+                "",
+                Format::DoubleElimination,
+                Method::Strict,
+                Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
+                true,
+            );
+            let mut player_ids = vec![PlayerId::new_v4()]; // padding for readability
+            for i in 1..=5 {
+                let player = Player::new(format!("p{i}"));
+                player_ids.push(player.get_id());
+                bracket = bracket.add_new_player(player).expect("bracket");
+            }
 
-    #[test]
-    fn progress_double_elimination_3_man_bracket() {
-        let mut bracket = Bracket::new(
-            "",
-            Format::DoubleElimination,
-            Method::Strict,
-            Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
-            true,
-        );
-        let mut player_ids = vec![PlayerId::new_v4()]; // padding for readability
-        for i in 1..=3 {
-            let player = Player::new(format!("p{i}"));
-            player_ids.push(player.get_id());
-            bracket = bracket.add_new_player(player).expect("bracket");
+            bracket = bracket.start();
+            assert_eq!(bracket.get_matches().len(), 9);
+            let (bracket, winner_2vs3) = bracket
+                .tournament_organiser_reports_result(player_ids[2], (0, 2), player_ids[3])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(winner_2vs3).expect("bracket");
+            let (bracket, winner_4vs5) = bracket
+                .tournament_organiser_reports_result(player_ids[4], (0, 2), player_ids[5])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(winner_4vs5).expect("bracket");
+            let (bracket, winner_1vs5) = bracket
+                .tournament_organiser_reports_result(player_ids[1], (2, 0), player_ids[5])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(winner_1vs5).expect("bracket");
+            let (bracket, winner_1vs3) = bracket
+                .tournament_organiser_reports_result(player_ids[1], (0, 2), player_ids[3])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(winner_1vs3).expect("bracket");
+            let (bracket, looser_4vs5) = bracket
+                .tournament_organiser_reports_result(player_ids[5], (2, 0), player_ids[4])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(looser_4vs5).expect("bracket");
+            let (bracket, looser_2vs5) = bracket
+                .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[5])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(looser_2vs5).expect("bracket");
+            let (bracket, looser_1vs2) = bracket
+                .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[1])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(looser_1vs2).expect("bracket");
+            let (bracket, grand_finals) = bracket
+                .tournament_organiser_reports_result(player_ids[2], (0, 2), player_ids[3])
+                .expect("bracket");
+            let bracket = bracket
+                .validate_match_result(grand_finals)
+                .expect("bracket");
+            assert!(bracket.is_over());
         }
 
-        bracket = bracket.start();
-        assert_eq!(bracket.get_matches().len(), 5);
-        let (bracket, winner_2vs3) = bracket
-            .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[3])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(winner_2vs3).expect("bracket");
-        let (bracket, winner_1vs2) = bracket
-            .tournament_organiser_reports_result(player_ids[1], (0, 2), player_ids[2])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(winner_1vs2).expect("bracket");
-        let (bracket, looser_1vs3) = bracket
-            .tournament_organiser_reports_result(player_ids[1], (0, 2), player_ids[3])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(looser_1vs3).expect("bracket");
-        println!("{:?}", bracket.matches);
-        let (bracket, grand_finals) = bracket
-            .tournament_organiser_reports_result(player_ids[2], (0, 2), player_ids[3])
-            .expect("bracket");
-        let bracket = bracket
-            .validate_match_result(grand_finals)
-            .expect("bracket");
-        let (bracket, grand_finals_reset) = bracket
-            .tournament_organiser_reports_result(player_ids[2], (0, 2), player_ids[3])
-            .expect("bracket");
-        let bracket = bracket
-            .validate_match_result(grand_finals_reset)
-            .expect("bracket");
-        assert!(bracket.is_over());
-    }
+        #[test]
+        fn run_8_man_bracket_no_upsets() {
+            let mut bracket = Bracket::new(
+                "",
+                Format::DoubleElimination,
+                Method::Strict,
+                Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
+                true,
+            );
+            let mut player_ids = vec![PlayerId::new_v4()]; // padding for readability
+            for i in 1..=8 {
+                let player = Player::new(format!("p{i}"));
+                player_ids.push(player.get_id());
+                bracket = bracket.add_new_player(player).expect("bracket");
+            }
 
-    #[test]
-    fn progress_double_elimination_5_man_bracket() {
-        let mut bracket = Bracket::new(
-            "",
-            Format::DoubleElimination,
-            Method::Strict,
-            Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
-            true,
-        );
-        let mut player_ids = vec![PlayerId::new_v4()]; // padding for readability
-        for i in 1..=5 {
-            let player = Player::new(format!("p{i}"));
-            player_ids.push(player.get_id());
-            bracket = bracket.add_new_player(player).expect("bracket");
+            bracket = bracket.start();
+            assert_eq!(bracket.get_matches().len(), 15);
+            let (bracket, winner_1vs8) = bracket
+                .tournament_organiser_reports_result(player_ids[1], (2, 0), player_ids[8])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(winner_1vs8).expect("bracket");
+            let (bracket, winner_2vs7) = bracket
+                .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[7])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(winner_2vs7).expect("bracket");
+            let (bracket, winner_3vs6) = bracket
+                .tournament_organiser_reports_result(player_ids[3], (2, 0), player_ids[6])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(winner_3vs6).expect("bracket");
+            let (bracket, winner_4vs5) = bracket
+                .tournament_organiser_reports_result(player_ids[4], (2, 0), player_ids[5])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(winner_4vs5).expect("bracket");
+            let (bracket, loser_5vs8) = bracket
+                .tournament_organiser_reports_result(player_ids[5], (2, 0), player_ids[8])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(loser_5vs8).expect("bracket");
+            let (bracket, loser_6vs7) = bracket
+                .tournament_organiser_reports_result(player_ids[6], (2, 0), player_ids[7])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(loser_6vs7).expect("bracket");
+            let (bracket, winner_1vs4) = bracket
+                .tournament_organiser_reports_result(player_ids[1], (2, 0), player_ids[4])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(winner_1vs4).expect("bracket");
+            let (bracket, winner_2vs3) = bracket
+                .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[3])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(winner_2vs3).expect("bracket");
+            let (bracket, loser_3vs6) = bracket
+                .tournament_organiser_reports_result(player_ids[3], (2, 0), player_ids[6])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(loser_3vs6).expect("bracket");
+            let (bracket, loser_4vs5) = bracket
+                .tournament_organiser_reports_result(player_ids[4], (2, 0), player_ids[5])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(loser_4vs5).expect("bracket");
+            let (bracket, loser_3vs4) = bracket
+                .tournament_organiser_reports_result(player_ids[3], (2, 0), player_ids[4])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(loser_3vs4).expect("bracket");
+            let (bracket, winner_1vs2) = bracket
+                .tournament_organiser_reports_result(player_ids[1], (2, 0), player_ids[2])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(winner_1vs2).expect("bracket");
+            let (bracket, loser_2vs3) = bracket
+                .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[3])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(loser_2vs3).expect("bracket");
+            let (bracket, grand_finals) = bracket
+                .tournament_organiser_reports_result(player_ids[1], (2, 0), player_ids[2])
+                .expect("bracket");
+            let bracket = bracket
+                .validate_match_result(grand_finals)
+                .expect("bracket");
+            assert!(bracket.is_over());
         }
 
-        bracket = bracket.start();
-        assert_eq!(bracket.get_matches().len(), 9);
-        let (bracket, winner_2vs3) = bracket
-            .tournament_organiser_reports_result(player_ids[2], (0, 2), player_ids[3])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(winner_2vs3).expect("bracket");
-        let (bracket, winner_4vs5) = bracket
-            .tournament_organiser_reports_result(player_ids[4], (0, 2), player_ids[5])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(winner_4vs5).expect("bracket");
-        let (bracket, winner_1vs5) = bracket
-            .tournament_organiser_reports_result(player_ids[1], (2, 0), player_ids[5])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(winner_1vs5).expect("bracket");
-        let (bracket, winner_1vs3) = bracket
-            .tournament_organiser_reports_result(player_ids[1], (0, 2), player_ids[3])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(winner_1vs3).expect("bracket");
-        let (bracket, looser_4vs5) = bracket
-            .tournament_organiser_reports_result(player_ids[5], (2, 0), player_ids[4])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(looser_4vs5).expect("bracket");
-        let (bracket, looser_2vs5) = bracket
-            .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[5])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(looser_2vs5).expect("bracket");
-        let (bracket, looser_1vs2) = bracket
-            .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[1])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(looser_1vs2).expect("bracket");
-        let (bracket, grand_finals) = bracket
-            .tournament_organiser_reports_result(player_ids[2], (0, 2), player_ids[3])
-            .expect("bracket");
-        let bracket = bracket
-            .validate_match_result(grand_finals)
-            .expect("bracket");
-        assert!(bracket.is_over());
-    }
-
-    #[test]
-    fn progress_double_elimination_8_man_bracket_no_upsets() {
-        let mut bracket = Bracket::new(
-            "",
-            Format::DoubleElimination,
-            Method::Strict,
-            Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
-            true,
-        );
-        let mut player_ids = vec![PlayerId::new_v4()]; // padding for readability
-        for i in 1..=8 {
-            let player = Player::new(format!("p{i}"));
-            player_ids.push(player.get_id());
-            bracket = bracket.add_new_player(player).expect("bracket");
+        #[test]
+        fn run_8_man_bracket_with_frequent_upsets() {
+            // every 2 matches, there is an upset
+            let mut bracket = Bracket::new(
+                "",
+                Format::DoubleElimination,
+                Method::Strict,
+                Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
+                false,
+            );
+            let mut player_ids = vec![PlayerId::new_v4()]; // padding for readability
+            for i in 1..=8 {
+                let player = Player::new(format!("p{i}"));
+                player_ids.push(player.get_id());
+                bracket = bracket.add_new_player(player).expect("bracket");
+            }
+            bracket = bracket.start();
+            assert_eq!(bracket.get_matches().len(), 15);
+            let (bracket, winner_1vs8) = bracket
+                .tournament_organiser_reports_result(player_ids[1], (2, 0), player_ids[8])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(winner_1vs8).expect("bracket");
+            let (bracket, winner_2vs7) = bracket
+                .tournament_organiser_reports_result(player_ids[2], (0, 2), player_ids[7])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(winner_2vs7).expect("bracket");
+            let (bracket, winner_3vs6) = bracket
+                .tournament_organiser_reports_result(player_ids[3], (2, 0), player_ids[6])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(winner_3vs6).expect("bracket");
+            let (bracket, winner_4vs5) = bracket
+                .tournament_organiser_reports_result(player_ids[4], (0, 2), player_ids[5])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(winner_4vs5).expect("bracket");
+            let (bracket, loser_4vs8) = bracket
+                .tournament_organiser_reports_result(player_ids[4], (2, 0), player_ids[8])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(loser_4vs8).expect("bracket");
+            let (bracket, loser_2vs6) = bracket
+                .tournament_organiser_reports_result(player_ids[2], (0, 2), player_ids[6])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(loser_2vs6).expect("bracket");
+            let (bracket, winner_1vs5) = bracket
+                .tournament_organiser_reports_result(player_ids[1], (2, 0), player_ids[5])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(winner_1vs5).expect("bracket");
+            let (bracket, winner_3vs7) = bracket
+                .tournament_organiser_reports_result(player_ids[3], (0, 2), player_ids[7])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(winner_3vs7).expect("bracket");
+            let (bracket, loser_3vs6) = bracket
+                .tournament_organiser_reports_result(player_ids[3], (2, 0), player_ids[6])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(loser_3vs6).expect("bracket");
+            let (bracket, loser_4vs5) = bracket
+                .tournament_organiser_reports_result(player_ids[4], (0, 2), player_ids[5])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(loser_4vs5).expect("bracket");
+            let (bracket, loser_3vs5) = bracket
+                .tournament_organiser_reports_result(player_ids[3], (2, 0), player_ids[5])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(loser_3vs5).expect("bracket");
+            let (bracket, winner_1vs7) = bracket
+                .tournament_organiser_reports_result(player_ids[1], (0, 2), player_ids[7])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(winner_1vs7).expect("bracket");
+            let (bracket, loser_1vs3) = bracket
+                .tournament_organiser_reports_result(player_ids[1], (2, 0), player_ids[3])
+                .expect("bracket");
+            let bracket = bracket.validate_match_result(loser_1vs3).expect("bracket");
+            let (bracket, grand_finals) = bracket
+                .tournament_organiser_reports_result(player_ids[1], (0, 2), player_ids[7])
+                .expect("bracket");
+            let bracket = bracket
+                .validate_match_result(grand_finals)
+                .expect("bracket");
+            assert!(bracket.is_over(), "{bracket:?}");
         }
-
-        bracket = bracket.start();
-        assert_eq!(bracket.get_matches().len(), 15);
-        let (bracket, winner_1vs8) = bracket
-            .tournament_organiser_reports_result(player_ids[1], (2, 0), player_ids[8])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(winner_1vs8).expect("bracket");
-        let (bracket, winner_2vs7) = bracket
-            .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[7])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(winner_2vs7).expect("bracket");
-        let (bracket, winner_3vs6) = bracket
-            .tournament_organiser_reports_result(player_ids[3], (2, 0), player_ids[6])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(winner_3vs6).expect("bracket");
-        let (bracket, winner_4vs5) = bracket
-            .tournament_organiser_reports_result(player_ids[4], (2, 0), player_ids[5])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(winner_4vs5).expect("bracket");
-        let (bracket, loser_5vs8) = bracket
-            .tournament_organiser_reports_result(player_ids[5], (2, 0), player_ids[8])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(loser_5vs8).expect("bracket");
-        let (bracket, loser_6vs7) = bracket
-            .tournament_organiser_reports_result(player_ids[6], (2, 0), player_ids[7])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(loser_6vs7).expect("bracket");
-        let (bracket, winner_1vs4) = bracket
-            .tournament_organiser_reports_result(player_ids[1], (2, 0), player_ids[4])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(winner_1vs4).expect("bracket");
-        let (bracket, winner_2vs3) = bracket
-            .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[3])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(winner_2vs3).expect("bracket");
-        let (bracket, loser_3vs6) = bracket
-            .tournament_organiser_reports_result(player_ids[3], (2, 0), player_ids[6])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(loser_3vs6).expect("bracket");
-        let (bracket, loser_4vs5) = bracket
-            .tournament_organiser_reports_result(player_ids[4], (2, 0), player_ids[5])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(loser_4vs5).expect("bracket");
-        let (bracket, loser_3vs4) = bracket
-            .tournament_organiser_reports_result(player_ids[3], (2, 0), player_ids[4])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(loser_3vs4).expect("bracket");
-        let (bracket, winner_1vs2) = bracket
-            .tournament_organiser_reports_result(player_ids[1], (2, 0), player_ids[2])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(winner_1vs2).expect("bracket");
-        let (bracket, loser_2vs3) = bracket
-            .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[3])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(loser_2vs3).expect("bracket");
-        let (bracket, grand_finals) = bracket
-            .tournament_organiser_reports_result(player_ids[1], (2, 0), player_ids[2])
-            .expect("bracket");
-        let bracket = bracket
-            .validate_match_result(grand_finals)
-            .expect("bracket");
-        assert!(bracket.is_over());
-    }
-
-    #[test]
-    fn progress_double_elimination_8_man_bracket_with_frequent_upsets() {
-        // every 2 matches, there is an upset
-        let mut bracket = Bracket::new(
-            "",
-            Format::DoubleElimination,
-            Method::Strict,
-            Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
-            false,
-        );
-        let mut player_ids = vec![PlayerId::new_v4()]; // padding for readability
-        for i in 1..=8 {
-            let player = Player::new(format!("p{i}"));
-            player_ids.push(player.get_id());
-            bracket = bracket.add_new_player(player).expect("bracket");
-        }
-        bracket = bracket.start();
-        assert_eq!(bracket.get_matches().len(), 15);
-        let (bracket, winner_1vs8) = bracket
-            .tournament_organiser_reports_result(player_ids[1], (2, 0), player_ids[8])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(winner_1vs8).expect("bracket");
-        let (bracket, winner_2vs7) = bracket
-            .tournament_organiser_reports_result(player_ids[2], (0, 2), player_ids[7])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(winner_2vs7).expect("bracket");
-        let (bracket, winner_3vs6) = bracket
-            .tournament_organiser_reports_result(player_ids[3], (2, 0), player_ids[6])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(winner_3vs6).expect("bracket");
-        let (bracket, winner_4vs5) = bracket
-            .tournament_organiser_reports_result(player_ids[4], (0, 2), player_ids[5])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(winner_4vs5).expect("bracket");
-        let (bracket, loser_4vs8) = bracket
-            .tournament_organiser_reports_result(player_ids[4], (2, 0), player_ids[8])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(loser_4vs8).expect("bracket");
-        let (bracket, loser_2vs6) = bracket
-            .tournament_organiser_reports_result(player_ids[2], (0, 2), player_ids[6])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(loser_2vs6).expect("bracket");
-        let (bracket, winner_1vs5) = bracket
-            .tournament_organiser_reports_result(player_ids[1], (2, 0), player_ids[5])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(winner_1vs5).expect("bracket");
-        let (bracket, winner_3vs7) = bracket
-            .tournament_organiser_reports_result(player_ids[3], (0, 2), player_ids[7])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(winner_3vs7).expect("bracket");
-        let (bracket, loser_3vs6) = bracket
-            .tournament_organiser_reports_result(player_ids[3], (2, 0), player_ids[6])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(loser_3vs6).expect("bracket");
-        let (bracket, loser_4vs5) = bracket
-            .tournament_organiser_reports_result(player_ids[4], (0, 2), player_ids[5])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(loser_4vs5).expect("bracket");
-        let (bracket, loser_3vs5) = bracket
-            .tournament_organiser_reports_result(player_ids[3], (2, 0), player_ids[5])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(loser_3vs5).expect("bracket");
-        let (bracket, winner_1vs7) = bracket
-            .tournament_organiser_reports_result(player_ids[1], (0, 2), player_ids[7])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(winner_1vs7).expect("bracket");
-        let (bracket, loser_1vs3) = bracket
-            .tournament_organiser_reports_result(player_ids[1], (2, 0), player_ids[3])
-            .expect("bracket");
-        let bracket = bracket.validate_match_result(loser_1vs3).expect("bracket");
-        let (bracket, grand_finals) = bracket
-            .tournament_organiser_reports_result(player_ids[1], (0, 2), player_ids[7])
-            .expect("bracket");
-        let bracket = bracket
-            .validate_match_result(grand_finals)
-            .expect("bracket");
-        assert!(bracket.is_over(), "{bracket:?}");
     }
 }

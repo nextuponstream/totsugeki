@@ -46,7 +46,7 @@ pub type Id = Uuid;
 /// Participants of bracket
 ///
 /// Participants are ordered by seeding position from strongest to weakest
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct Participants {
     /// players from this group
     participants: Vec<Player>,

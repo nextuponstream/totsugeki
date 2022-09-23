@@ -106,7 +106,7 @@ mod tests {
     use rand::Rng;
 
     #[test]
-    fn single_elimination_favors_top_seed_3_man() {
+    fn favors_top_seed_3_man() {
         let n = 3;
         let mut players: Vec<Player> = vec![];
         (0..n).for_each(|i| {
@@ -153,7 +153,7 @@ mod tests {
     }
 
     #[test]
-    fn single_elimination_favors_top_seed_4_man() {
+    fn favors_top_seed_4_man() {
         let n = 4;
         let mut players: Vec<Player> = vec![];
         (0..n).for_each(|i| {
@@ -213,7 +213,7 @@ mod tests {
     }
 
     #[test]
-    fn single_elimination_favors_top_seed_5_man() {
+    fn favors_top_seed_5_man() {
         let n = 5;
         let mut players: Vec<Player> = vec![];
         (0..n).for_each(|i| {
@@ -283,7 +283,7 @@ mod tests {
     }
 
     #[test]
-    fn single_elimination_favors_top_seed_6_man() {
+    fn favors_top_seed_6_man() {
         let n = 6;
         let mut players: Vec<Player> = vec![];
         (0..n).for_each(|i| {
@@ -364,7 +364,7 @@ mod tests {
 
     #[test]
     #[allow(clippy::too_many_lines)]
-    fn single_elimination_favors_top_seed_7_man() {
+    fn favors_top_seed_7_man() {
         let n = 7;
         let mut players: Vec<Player> = vec![];
         (0..n).for_each(|i| {
@@ -458,7 +458,7 @@ mod tests {
 
     #[test]
     #[allow(clippy::too_many_lines)]
-    fn single_elimination_favors_top_seed_8_man() {
+    fn favors_top_seed_8_man() {
         let n = 8;
         let mut players: Vec<Player> = vec![];
         (0..n).for_each(|i| {
@@ -565,7 +565,7 @@ mod tests {
 
     #[test]
     #[ignore]
-    fn single_elimination_matches_generation_does_not_break_for_with_high_entrance_numbers() {
+    fn matches_generation_does_not_break_for_with_high_entrance_numbers() {
         (0..10).for_each(|_| {
             let mut rng = rand::thread_rng();
             let n = rng.gen_range(3..3000);
