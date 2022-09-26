@@ -2354,6 +2354,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "totsugeki-discord-agent"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "chrono-tz",
+ "dotenv",
+ "poem 1.3.33 (registry+https://github.com/rust-lang/crates.io-index)",
+ "reqwest",
+ "serde",
+ "serenity",
+ "tokio",
+ "totsugeki",
+ "totsugeki-api",
+ "totsugeki-api-request",
+ "tracing",
+ "tracing-bunyan-formatter",
+ "tracing-log",
+ "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
 name = "totsugeki-discord-bot"
 version = "0.1.0"
 dependencies = [
