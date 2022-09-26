@@ -356,10 +356,7 @@ async fn reporting_result_for_first_round_3_man_with_automatic_match_validation(
             ReportedResult((0, 2)),
         )
         .await;
-        assert_eq!(
-            response.message,
-            "Result reported and match validated".to_string()
-        );
+        assert_eq!(response.message, "Result reported".to_string());
 
         trace!("Player 1 and 2 should be playing");
         assert_next_matches(

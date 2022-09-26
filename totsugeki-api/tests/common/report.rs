@@ -36,7 +36,6 @@ pub async fn player_reports_match_result(
     let r = response.value().object();
     let affected_match_id =
         MatchId::parse_str(r.get("affected_match_id").string()).expect("affected match id");
-    println!("{r:?}");
     let message = r.get("message").string().to_string();
     let new_matches_to_play = parse_matches(&r);
     let matches = new_matches_to_play
@@ -81,6 +80,10 @@ pub async fn both_player_report_match_result(
     )
     .await;
 
+    assert!(
+        resp_1.0.matches.is_empty(),
+        "expected no matches generated from first report"
+    );
     assert_eq!(
         resp_1.0.affected_match_id, resp_2.0.affected_match_id,
         "players with seed {} and {} are not playing the same match",
@@ -119,7 +122,6 @@ pub async fn tournament_organiser_reports_match_result(
     let r = response.value().object();
     let affected_match_id =
         MatchId::parse_str(r.get("affected_match_id").string()).expect("affected match id");
-    println!("{r:?}");
     let _message = r.get("message").string().to_string();
     let new_matches_to_play = parse_matches(&r);
 

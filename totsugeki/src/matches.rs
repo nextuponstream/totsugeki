@@ -51,6 +51,12 @@ pub type MatchReportedResult = [(i8, i8); 2];
 #[derive(Debug, Clone, Copy)]
 pub struct ReportedResult(pub (i8, i8));
 
+impl std::cmp::PartialEq<ReportedResult> for ReportedResult {
+    fn eq(&self, other: &ReportedResult) -> bool {
+        self.0 .0 == other.0 .0 && self.0 .1 == other.0 .1
+    }
+}
+
 impl ReportedResult {
     /// Reverse score
     #[must_use]
@@ -118,6 +124,24 @@ impl std::fmt::Display for Match {
 }
 
 impl Match {
+    /// Clear result from match and returns updated match
+    #[must_use]
+    pub(crate) fn clear_reported_result(self, player_id: PlayerId) -> Self {
+        let mut m = self.clone();
+        if let Opponent::Player(p) = &self.players[0] {
+            if p.get_id() == player_id {
+                m.reported_results[0] = (0, 0);
+            }
+        }
+        if let Opponent::Player(p) = &self.players[1] {
+            if p.get_id() == player_id {
+                m.reported_results[1] = (0, 0);
+            }
+        }
+
+        m
+    }
+
     /// Returns true if one of the player has id `player_id`
     #[must_use]
     pub fn contains(&self, player_id: PlayerId) -> bool {
@@ -413,6 +437,14 @@ impl Match {
         }
 
         let [(s11, s12), (s21, s22)] = self.reported_results;
+        let result_1 = ReportedResult((s11, s12));
+        let result_2 = ReportedResult((s21, s22));
+        if result_1.reverse() != result_2 {
+            return Err(Error::PlayersReportedDifferentMatchOutcome([
+                ReportedResult((self.reported_results[0].0, self.reported_results[0].1)),
+                ReportedResult((self.reported_results[1].0, self.reported_results[1].1)),
+            ]));
+        }
         let (winner, loser) = if s11 > s12 && s21 < s22 {
             (self.players[0].clone(), self.players[1].clone())
         } else if s11 < s12 && s21 > s22 {
@@ -743,7 +775,7 @@ pub struct ValidateMatchPOST {
 #[derive(Serialize, Deserialize, Debug)]
 #[cfg_attr(feature = "poem-openapi", derive(Object))]
 pub struct ReportResultPOST {
-    /// Id of affected match
+    /// Id of match where result is reported
     pub affected_match_id: Id,
     /// Additionnal message which may contain a warning
     pub message: String,

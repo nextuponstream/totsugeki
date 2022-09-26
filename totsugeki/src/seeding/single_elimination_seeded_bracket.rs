@@ -1,8 +1,7 @@
 //! Generate seeded matches for single elimination
 
-use crate::{matches::Match, opponent::Opponent, player::Participants, seeding::Error};
-
 use super::seeding_initial_round;
+use crate::{matches::Match, opponent::Opponent, player::Participants, seeding::Error};
 
 /// Returns tournament matches for `n` players in a list. Used for generating
 /// single elimination bracket or winner bracket in double elimination format.
@@ -106,7 +105,7 @@ mod tests {
     use rand::Rng;
 
     #[test]
-    fn favors_top_seed_3_man() {
+    fn matches_generation_3_man_bracket() {
         let n = 3;
         let mut players: Vec<Player> = vec![];
         (0..n).for_each(|i| {
@@ -153,7 +152,7 @@ mod tests {
     }
 
     #[test]
-    fn favors_top_seed_4_man() {
+    fn matches_generation_4_man_bracket() {
         let n = 4;
         let mut players: Vec<Player> = vec![];
         (0..n).for_each(|i| {
@@ -213,7 +212,7 @@ mod tests {
     }
 
     #[test]
-    fn favors_top_seed_5_man() {
+    fn matches_generation_5_man_bracket() {
         let n = 5;
         let mut players: Vec<Player> = vec![];
         (0..n).for_each(|i| {
@@ -283,7 +282,7 @@ mod tests {
     }
 
     #[test]
-    fn favors_top_seed_6_man() {
+    fn matches_generation_6_man_bracket() {
         let n = 6;
         let mut players: Vec<Player> = vec![];
         (0..n).for_each(|i| {
@@ -364,7 +363,7 @@ mod tests {
 
     #[test]
     #[allow(clippy::too_many_lines)]
-    fn favors_top_seed_7_man() {
+    fn matches_generation_7_man_bracket() {
         let n = 7;
         let mut players: Vec<Player> = vec![];
         (0..n).for_each(|i| {
@@ -458,7 +457,7 @@ mod tests {
 
     #[test]
     #[allow(clippy::too_many_lines)]
-    fn favors_top_seed_8_man() {
+    fn matches_generation_bracket_8_man() {
         let n = 8;
         let mut players: Vec<Player> = vec![];
         (0..n).for_each(|i| {
