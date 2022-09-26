@@ -291,10 +291,10 @@ mod tests {
         .try_into()
         .expect("bracket");
         let bracket = bracket.start();
-        let (bracket, match_id_p2, new_matches) = bracket
+        let (bracket, match_id_p2, _new_matches) = bracket
             .report_result(p2_id, (2, 0))
             .expect("reported result by player 2");
-        let (bracket, match_id_p3, new_matches) = bracket
+        let (bracket, match_id_p3, _new_matches) = bracket
             .report_result(p3_id, (0, 2))
             .expect("reported result by player 3");
         assert_eq!(match_id_p2, match_id_p3);
