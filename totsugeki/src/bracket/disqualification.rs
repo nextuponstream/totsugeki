@@ -47,7 +47,7 @@ impl Bracket {
                 .clone()
                 .validate_match_result(updated_match.get_id())
             {
-                Ok(b) => Ok(b),
+                Ok((b, _)) => Ok(b),
                 Err(bracket_e) => {
                     if let Error::Match(ref e) = bracket_e {
                         match e {
@@ -80,7 +80,6 @@ mod tests {
     use crate::{
         bracket::{raw::Raw, Id as BracketId},
         format::Format,
-        matches::ReportedResult,
         opponent::Opponent,
         player::Participants,
         seeding::{
@@ -292,14 +291,14 @@ mod tests {
         .try_into()
         .expect("bracket");
         let bracket = bracket.start();
-        let (bracket, match_id_p2) = bracket
-            .report_result(p2_id, ReportedResult((2, 0)))
+        let (bracket, match_id_p2, new_matches) = bracket
+            .report_result(p2_id, (2, 0))
             .expect("reported result by player 2");
-        let (bracket, match_id_p3) = bracket
-            .report_result(p3_id, ReportedResult((0, 2)))
+        let (bracket, match_id_p3, new_matches) = bracket
+            .report_result(p3_id, (0, 2))
             .expect("reported result by player 3");
         assert_eq!(match_id_p2, match_id_p3);
-        let bracket = bracket
+        let (bracket, _) = bracket
             .validate_match_result(match_id_p2)
             .expect("validated match for p2 and p3");
 

@@ -20,9 +20,7 @@ use totsugeki::{
         Id as BracketId,
     },
     join::POSTResponse,
-    matches::{
-        Error as MatchError, Id as MatchId, Match, NextMatchGETResponseRaw, ReportResultPOST,
-    },
+    matches::{Id as MatchId, Match, NextMatchGETResponseRaw, ReportResultPOST},
     organiser::Id as OrganiserId,
     organiser::Organiser,
     player::{Id as PlayerId, Participants, Player, GET as PlayersGET},
@@ -351,16 +349,16 @@ impl DBAccessor for InMemoryDBAccessor {
                     organiser_id: *organiser_id,
                 };
 
-                let b = db.brackets.get(&bracket_id).ok_or_else(|| {
+                let bracket = db.brackets.get(&bracket_id).ok_or_else(|| {
                     CriticalError::Corrupted(format!("No bracket found for id: \"{bracket_id}\""))
                 })?;
-                let b = b.clone();
-                let id = b.get_id();
-                let updated_bracket = b.join(Player {
+                let bracket = bracket.clone();
+                let id = bracket.get_id();
+                let bracket = bracket.join(Player {
                     id: player_id,
                     name: player_name.to_string(),
                 })?;
-                db.brackets.insert(id, updated_bracket);
+                db.brackets.insert(id, bracket);
                 if is_new_player {
                     info!("New player {player_id} registered");
                 }
@@ -448,9 +446,8 @@ impl DBAccessor for InMemoryDBAccessor {
         };
         match db.brackets.get(&active_bracket_id) {
             Some(b) => {
-                let updated_bracket = b.clone().remove_participant(player_id)?;
-                db.brackets
-                    .insert(updated_bracket.get_id(), updated_bracket);
+                let bracket = b.clone().remove_participant(player_id)?;
+                db.brackets.insert(bracket.get_id(), bracket);
 
                 Ok(active_bracket_id)
             }
@@ -487,9 +484,8 @@ impl DBAccessor for InMemoryDBAccessor {
         let (active_bracket_id, _, _) = find_active_bracket_id(&db, internal_channel_id, service)?;
         match db.brackets.get(&active_bracket_id) {
             Some(b) => {
-                let updated_bracket = b.clone().remove_participant(parse_player(player_id)?)?;
-                db.brackets
-                    .insert(updated_bracket.get_id(), updated_bracket);
+                let bracket = b.clone().remove_participant(parse_player(player_id)?)?;
+                db.brackets.insert(bracket.get_id(), bracket);
 
                 Ok(active_bracket_id)
             }
@@ -515,46 +511,18 @@ impl DBAccessor for InMemoryDBAccessor {
         let (bracket, player_id) =
             get_bracket_info(&db, service, channel_internal_id, player_internal_id)?;
 
-        let (bracket, affected_match_id) = bracket.report_result(player_id, result)?;
-        let bracket_with_reported_result = bracket.clone();
-        if bracket.is_validating_matches_automatically() {
-            match bracket.validate_match_result(affected_match_id) {
-                Ok(b) => {
-                    db.brackets.insert(b.get_id(), b);
-                    return Ok(ReportResultPOST {
-                        affected_match_id,
-                        message: "Result reported and match validated".into(),
-                        matches: vec![],
-                    });
-                }
-                Err(e) => match e {
-                    totsugeki::bracket::Error::Match(
-                        MatchError::PlayersReportedDifferentMatchOutcome(_),
-                    ) => {
-                        // Even though match can't be validated, we still
-                        // update the bracket but add a warning
-                        db.brackets.insert(
-                            bracket_with_reported_result.get_id(),
-                            bracket_with_reported_result,
-                        );
-                        return Ok(ReportResultPOST {
-                            affected_match_id,
-                            message: "Result reported".into(),
-                            matches: vec![],
-                        });
-                    }
-                    _ => {
-                        return Err(e.into());
-                    }
-                },
-            }
-        }
+        let (bracket, affected_match_id, new_matches) =
+            bracket.report_result(player_id, result.0)?;
+
         db.brackets.insert(bracket.get_id(), bracket);
 
         Ok(ReportResultPOST {
             affected_match_id,
             message: "Result reported".into(),
-            matches: vec![],
+            matches: new_matches
+                .into_iter()
+                .map(std::convert::Into::into)
+                .collect(),
         })
     }
 
@@ -571,10 +539,9 @@ impl DBAccessor for InMemoryDBAccessor {
         let bracket = db.brackets.get(&active_bracket_id).ok_or_else(|| {
             CriticalError::Corrupted(format!("No bracket found for id: \"{active_bracket_id}\""))
         })?;
-        let updated_bracket = bracket.clone().update_seeding(&players)?;
+        let bracket = bracket.clone().update_seeding(&players)?;
 
-        db.brackets
-            .insert(updated_bracket.get_id(), updated_bracket);
+        db.brackets.insert(bracket.get_id(), bracket);
 
         Ok(active_bracket_id)
     }
@@ -618,29 +585,15 @@ impl DBAccessor for InMemoryDBAccessor {
         let (active_bracket_id, _, _) = find_active_bracket_id(&db, channel_internal_id, service)?;
         let active_bracket = db.brackets.get(&active_bracket_id);
         match active_bracket {
-            Some(b) => {
-                let old_matches_to_play = b.matches_to_play();
-                let (bracket, affected_match_id) = b.clone().tournament_organiser_reports_result(
-                    player1_id,
-                    (result.0 .0, result.0 .1),
-                    player2_id,
-                )?;
-                let bracket = if bracket.is_validating_matches_automatically() {
-                    bracket.validate_match_result(affected_match_id)?
-                } else {
-                    bracket
-                };
-                let matches = bracket
-                    .matches_to_play()
-                    .iter()
-                    .filter(|m| {
-                        !old_matches_to_play
-                            .iter()
-                            .any(|old_m| old_m.get_id() == m.get_id())
-                    })
-                    .map(|m| m.clone().into())
-                    .collect();
+            Some(bracket) => {
+                let (bracket, affected_match_id, matches) =
+                    bracket.clone().tournament_organiser_reports_result(
+                        player1_id,
+                        (result.0 .0, result.0 .1),
+                        player2_id,
+                    )?;
                 db.brackets.insert(active_bracket_id, bracket);
+                let matches = matches.into_iter().map(std::convert::Into::into).collect();
 
                 Ok(ReportResultPOST {
                     affected_match_id,
@@ -664,7 +617,7 @@ impl DBAccessor for InMemoryDBAccessor {
             .brackets
             .iter()
             .find(|b| (*b.1).get_matches().iter().any(|m| m.get_id() == match_id));
-        let bracket = match bracket {
+        let (bracket, _) = match bracket {
             Some(b) => b.1.clone().validate_match_result(match_id)?,
             None => return Err(ResourceError::UnknownResource(match_id).into()),
         };

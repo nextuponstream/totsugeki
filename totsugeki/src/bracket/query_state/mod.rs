@@ -1,5 +1,8 @@
 //! Query state of bracket
 
+mod double_elimination;
+mod single_elimination;
+
 use crate::{
     bracket::{Bracket, Error},
     format::Format::{DoubleElimination, SingleElimination},
@@ -48,14 +51,7 @@ impl Bracket {
     /// Thrown when matches have yet to be generated or player has won/been
     /// eliminated
     pub fn next_opponent(&self, player_id: PlayerId) -> Result<(Opponent, MatchId, String), Error> {
-        if !self
-            .participants
-            .clone()
-            .get_players_list()
-            .iter()
-            .map(Player::get_id)
-            .any(|id| id == player_id)
-        {
+        if !self.participants.contains(player_id) {
             return Err(Error::PlayerIsNotParticipant(player_id, self.bracket_id));
         }
         if self.matches.is_empty() {
@@ -108,5 +104,107 @@ impl Bracket {
         };
 
         Ok((opponent, relevant_match.get_id(), player_name))
+    }
+}
+
+#[cfg(test)]
+use crate::{format::Format, seeding::Method};
+#[cfg(test)]
+use chrono::prelude::*;
+#[cfg(test)]
+fn create_bracket_with_n_players_and_start(
+    n: usize,
+    format: Format,
+    seeding_method: Method,
+    automatic_match_validation: bool,
+) -> (Bracket, Vec<Player>) {
+    let mut players = vec![Player::new("don't use".into())];
+    let mut bracket = Bracket::new(
+        "",
+        format,
+        seeding_method,
+        Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
+        automatic_match_validation,
+    );
+    for i in 1..=n {
+        let player = Player::new(format!("p{i}"));
+        players.push(player.clone());
+        bracket = bracket.add_new_player(player).expect("bracket");
+    }
+    bracket = bracket.start();
+
+    (bracket, players)
+}
+
+#[cfg(test)]
+fn assert_elimination(bracket: &Bracket, players: &[Player], player_who_won: usize) {
+    let iter = players.iter().enumerate();
+    let iter = iter.skip(1);
+
+    for (i, p) in iter {
+        let e = bracket
+            .next_opponent(p.get_id())
+            .expect_err("EliminatedFromBracket/NoNextMatch");
+        if i == player_who_won {
+            if let Error::NoNextMatch(player_id, _) = e {
+                assert_eq!(player_id, p.get_id());
+            } else {
+                panic!("expected NoNextMatch error but got {e}");
+            }
+        } else if let Error::EliminatedFromBracket(player_id, _) = e {
+            assert_eq!(player_id, p.get_id());
+        } else {
+            panic!("expected EliminatedFromBracket error but got {e}");
+        }
+    }
+}
+
+#[cfg(test)]
+fn assert_next_matches(
+    bracket: &Bracket,
+    players_with_unknown_opponent: &[usize],
+    expected_matches: &[(usize, usize)],
+    players: &[Player],
+) {
+    for p in players_with_unknown_opponent {
+        let player = players[*p].clone();
+        let (next_opponent, _, _) = bracket
+            .next_opponent(player.get_id())
+            .expect("next opponent");
+        assert_eq!(
+            next_opponent,
+            Opponent::Unknown,
+            "expected unknown opponent for {p} but got {next_opponent}"
+        );
+    }
+
+    for (o1, o2) in expected_matches {
+        let opponent1 = players[*o1].clone();
+        let opponent2 = players[*o2].clone();
+
+        let (next_opponent, _, _) = bracket
+            .next_opponent(opponent1.get_id())
+            .expect("next opponent");
+        if let Opponent::Player(p) = next_opponent {
+            assert_eq!(
+                p.get_id(),
+                opponent2.get_id(),
+                "expected {opponent2} for {opponent1} but got {p}"
+            );
+        } else {
+            panic!("expected player for next opponent");
+        }
+        let (next_opponent, _, _) = bracket
+            .next_opponent(opponent2.get_id())
+            .expect("next opponent");
+        if let Opponent::Player(p) = next_opponent {
+            assert_eq!(
+                p.get_id(),
+                opponent1.get_id(),
+                "expected {opponent1} for {opponent2} but got {p}"
+            );
+        } else {
+            panic!("expected player for next opponent");
+        }
     }
 }

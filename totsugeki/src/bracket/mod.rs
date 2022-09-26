@@ -14,7 +14,7 @@ use crate::{
     format::{Format, ParsingError as FormatParsingError},
     matches::{Error as MatchError, Id as MatchId, Match, MatchParsingError, ReportedResult},
     opponent::Opponent,
-    player::{Error as PlayerError, Id as PlayerId, Participants},
+    player::{Error as PlayerError, Id as PlayerId, Participants, Player},
     seeding::{
         Error as SeedingError, Method as SeedingMethod, ParsingError as SeedingParsingError,
     },
@@ -54,7 +54,7 @@ pub enum Error {
     AcceptResults(PlayerId, BracketId),
     /// Player reported a result but there is no match for him to play
     #[error("There is no match to update in bracket \"{1}\"")]
-    NoMatchToPlay(PlayerId, BracketId),
+    NoMatchToPlay(Player, BracketId),
     /// No matches where generated for this bracket
     #[error("No matches were generated yet for bracket {0}")]
     NoGeneratedMatches(BracketId),
@@ -158,39 +158,103 @@ impl Bracket {
         }
     }
 
-    /// Report result for a match in this bracket. Returns updated bracket and
-    /// affected match id. This method does not affect other matches.
+    /// Report result for a match in this bracket. Returns updated bracket,
+    /// match id where result is reported and new generated matches if
+    /// automatic match validation is on.
     ///
     /// # Errors
     /// thrown when result cannot be parsed
     pub fn report_result(
         self,
         player_id: PlayerId,
-        result: ReportedResult,
-    ) -> Result<(Bracket, MatchId), Error> {
+        result: (i8, i8),
+    ) -> Result<(Bracket, MatchId, Vec<Match>), Error> {
+        let result = ReportedResult(result);
         if !self.accept_match_results {
             return Err(Error::AcceptResults(player_id, self.bracket_id));
         }
         if self.is_disqualified(player_id) {
             return Err(Error::PlayerDisqualified(self.bracket_id, player_id));
         }
+        let old_matches = self.matches_to_play();
         let match_to_update = self
             .matches
             .iter()
             .find(|m| m.contains(player_id) && m.get_winner() == Opponent::Unknown);
+        let participants = self.get_participants().get_players_list();
+        let player = participants
+            .iter()
+            .find(|p| p.get_id() == player_id)
+            .expect("player");
         let bracket_id = self.get_id();
         match match_to_update {
             Some(m) => {
                 let affected_match_id = m.get_id();
                 let bracket = self.update_match_result(affected_match_id, result, player_id)?;
-                Ok((bracket, affected_match_id))
+
+                let bracket = if bracket.automatic_match_validation {
+                    match bracket.clone().validate_match_result(affected_match_id) {
+                        Ok((b, _)) => b,
+                        Err(e) => match e {
+                            Error::Match(MatchError::PlayersReportedDifferentMatchOutcome(_)) => {
+                                bracket
+                            }
+                            _ => return Err(e),
+                        },
+                    }
+                } else {
+                    bracket
+                };
+
+                let matches = bracket
+                    .matches_to_play()
+                    .iter()
+                    .filter(|m| !old_matches.iter().any(|old_m| old_m.get_id() == m.get_id()))
+                    .map(std::clone::Clone::clone)
+                    .collect();
+                Ok((bracket, affected_match_id, matches))
             }
-            None => Err(Error::NoMatchToPlay(player_id, bracket_id)),
+            None => Err(Error::NoMatchToPlay(player.clone(), bracket_id)),
+        }
+    }
+
+    /// Clear reported result from player and return updated bracket.
+    ///
+    /// Used before tournament organisers report to prevent an unnecessary
+    /// update
+    fn clear_reported_result(self, player_id: PlayerId) -> Result<Self, Error> {
+        let match_to_update = self
+            .matches
+            .iter()
+            .find(|m| m.contains(player_id) && m.get_winner() == Opponent::Unknown);
+        let participants = self.get_participants().get_players_list();
+        let player = participants
+            .iter()
+            .find(|p| p.get_id() == player_id)
+            .expect("player");
+        match match_to_update {
+            Some(m_to_clear) => {
+                let m_to_clear = m_to_clear.clone().clear_reported_result(player_id);
+
+                let matches = self
+                    .matches
+                    .into_iter()
+                    .map(|m| {
+                        if m.get_id() == m_to_clear.get_id() {
+                            m_to_clear.clone()
+                        } else {
+                            m
+                        }
+                    })
+                    .collect();
+                Ok(Bracket { matches, ..self })
+            }
+            None => Err(Error::NoMatchToPlay(player.clone(), self.bracket_id)),
         }
     }
 
     /// Report results for player 1 and the reverse result for the other
-    /// player. Returns updated bracket and affected match id
+    /// player. Returns updated bracket, affected match id and new matches
     ///
     /// Assuming physically, both players comes up to the tournament organiser
     /// to report the result, then both player agree on the match outcome.
@@ -205,13 +269,16 @@ impl Bracket {
         player_1: PlayerId,
         result_player_1: (i8, i8),
         player_2: PlayerId,
-    ) -> Result<(Bracket, MatchId), Error> {
+    ) -> Result<(Bracket, MatchId, Vec<Match>), Error> {
         let result_player_1 = ReportedResult(result_player_1);
-        let (bracket, first_affected_match) = self.report_result(player_1, result_player_1)?;
-        let (bracket, second_affected_match) =
-            bracket.report_result(player_2, result_player_1.reverse())?;
+        let bracket = self.clear_reported_result(player_1)?;
+        let bracket = bracket.clear_reported_result(player_2)?;
+        let (bracket, first_affected_match, _new_matches) =
+            bracket.report_result(player_1, result_player_1.0)?;
+        let (bracket, second_affected_match, new_matches_2) =
+            bracket.report_result(player_2, result_player_1.reverse().0)?;
         assert_eq!(first_affected_match, second_affected_match);
-        Ok((bracket, first_affected_match))
+        Ok((bracket, first_affected_match, new_matches_2))
     }
 
     /// Start bracket: bar people from entering and accept match results
@@ -224,7 +291,8 @@ impl Bracket {
         }
     }
 
-    /// Report match result and returns updated bracket
+    /// Report match result and returns updated bracket. This does not update
+    /// other matches.
     ///
     /// # Errors
     /// Thrown when given match id does not correspond to any match in the bracket
