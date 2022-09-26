@@ -3,6 +3,7 @@ members = [
   "totsugeki",
   "totsugeki-api",
   "totsugeki-api-request",
+  "totsugeki-discord-agent",
   "totsugeki-discord-bot",
   "totsugeki-frontend",
 ]
