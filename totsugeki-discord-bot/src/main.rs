@@ -1,28 +1,26 @@
 use async_lock::RwLock;
 use serenity::async_trait;
+use serenity::client::{Client, EventHandler};
 use serenity::framework::standard::macros::group;
-use serenity::framework::standard::StandardFramework;
+use serenity::framework::StandardFramework;
 use serenity::prelude::*;
 use std::io::Write;
 use std::path::Path;
 use std::sync::Arc;
 use std::{collections::HashMap, env};
 use totsugeki::bracket::Bracket;
-use totsugeki_discord_bot::{create::*, join::*, ping::*, Config, Data};
+use totsugeki_discord_bot::{
+    create::*, help::*, join::*, ping::*, report::*, start::*, Config, Data,
+};
 use tracing::subscriber::set_global_default;
 use tracing_bunyan_formatter::BunyanFormattingLayer;
 use tracing_log::LogTracer;
 use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
 
-// static BRACKET: RwLock<Bracket> = RwLock::new(Bracket::default());
-
-// if you want to use Data, you need a dyn trait which implements boxed and
-// sync.
-// Or you can read from file everytime.
-
 #[group]
-#[commands(ping, create, join)]
+#[commands(ping, create, join, report, start, tournament_organiser_reports)]
 #[summary = "Main available commands"]
+#[description = "Manage bracket with this command"]
 pub struct General;
 struct Handler;
 
@@ -45,7 +43,7 @@ async fn main() {
 
     let framework = StandardFramework::new()
         .configure(|c| c.prefix("!")) // bot prefix
-        // .help(&HELP)
+        .help(&HELP)
         .group(&GENERAL_GROUP);
 
     let bracket_filename =

@@ -1,19 +1,17 @@
 //! Command to create a bracket
 
+use crate::Config;
 use chrono::{NaiveDateTime, Utc};
 use chrono_tz::Tz;
+use fs4::FileExt;
 use serenity::{
     client::Context,
     framework::standard::{macros::command, Args, CommandError, CommandResult},
     model::channel::Message,
 };
+use std::{io::prelude::*, path::Path};
 use totsugeki::{bracket::Bracket, format::Format, seeding::Method};
 use tracing::{info, span, warn, Level};
-// use async_fs::File;
-use crate::Config;
-use std::{io::prelude::*, path::Path};
-// use async_fs::File;
-use fs4::FileExt;
 
 #[command]
 #[description = "Create a new bracket. Respect double quotes."]
@@ -76,7 +74,7 @@ async fn create(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
             },
         };
         let start_time = start_time.with_timezone(&Utc);
-      
+
         let bracket = Bracket::new(&bracket_name, format, seeding_method, start_time, automatic_match_validation);
         let data = ctx.data.read().await;
         let filename = data.get::<Config>().expect("filename").clone();

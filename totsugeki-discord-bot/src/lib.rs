@@ -7,8 +7,11 @@ use std::{collections::HashMap, sync::Arc};
 use totsugeki::{bracket::Bracket, player::Player};
 
 pub mod create;
+pub mod help;
 pub mod join;
 pub mod ping;
+pub mod report;
+pub mod start;
 
 pub struct Config;
 

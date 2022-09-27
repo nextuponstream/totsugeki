@@ -1,13 +1,12 @@
 //! help command
 
-use std::collections::HashSet;
-
 use serenity::client::Context;
 use serenity::framework::standard::macros::help;
 use serenity::framework::standard::{
     help_commands, Args, CommandGroup, CommandResult, HelpOptions,
 };
 use serenity::model::prelude::{Message, UserId};
+use std::collections::HashSet;
 use tracing::{span, Level};
 
 #[help]
