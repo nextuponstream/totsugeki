@@ -77,7 +77,7 @@ impl std::str::FromStr for Format {
 
 impl Default for Format {
     fn default() -> Self {
-        Self::SingleElimination // TODO set to DoubleElimination when implemented
+        Self::DoubleElimination
     }
 }
 

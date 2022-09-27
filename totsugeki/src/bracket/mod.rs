@@ -395,3 +395,15 @@ impl TryFrom<CreateRequest<'_>> for Bracket {
         ))
     }
 }
+
+impl Default for Bracket {
+    fn default() -> Self {
+        Bracket::new(
+            "new bracket",
+            Format::default(),
+            SeedingMethod::default(),
+            Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
+            true,
+        )
+    }
+}
