@@ -426,7 +426,7 @@ mod tests {
         for i in 1..=3 {
             let player = Player::new(format!("p{i}"));
             player_ids.push(player.get_id());
-            bracket = bracket.add_new_player(player).expect("bracket");
+            bracket = bracket.join(player).expect("bracket");
         }
 
         let (bracket, _) = bracket.start().expect("start");
@@ -450,7 +450,7 @@ mod tests {
         for i in 1..=3 {
             let player = Player::new(format!("p{i}"));
             player_ids.push(player.get_id());
-            bracket = bracket.add_new_player(player).expect("bracket");
+            bracket = bracket.join(player).expect("bracket");
         }
 
         let (bracket, _) = bracket.start().expect("start");
@@ -485,7 +485,7 @@ mod tests {
             for i in 1..=3 {
                 let player = Player::new(format!("p{i}"));
                 player_ids.push(player.get_id());
-                bracket = bracket.add_new_player(player).expect("bracket");
+                bracket = bracket.join(player).expect("bracket");
             }
 
             let (bracket, _) = bracket.start().expect("start");
@@ -519,7 +519,7 @@ mod tests {
             for i in 1..=5 {
                 let player = Player::new(format!("p{i}"));
                 player_ids.push(player.get_id());
-                bracket = bracket.add_new_player(player).expect("bracket");
+                bracket = bracket.join(player).expect("bracket");
             }
 
             let (bracket, _) = bracket.start().expect("start");
@@ -568,7 +568,7 @@ mod tests {
             for i in 1..=3 {
                 let player = Player::new(format!("p{i}"));
                 player_ids.push(player.get_id());
-                bracket = bracket.add_new_player(player).expect("bracket");
+                bracket = bracket.join(player).expect("bracket");
             }
 
             let (bracket, _) = bracket.start().expect("start");
@@ -604,7 +604,7 @@ mod tests {
             for i in 1..=3 {
                 let player = Player::new(format!("p{i}"));
                 player_ids.push(player.get_id());
-                bracket = bracket.add_new_player(player).expect("bracket");
+                bracket = bracket.join(player).expect("bracket");
             }
 
             let (winner_bracket, loser_bracket, _gf, _gfr) =
@@ -631,7 +631,7 @@ mod tests {
             for i in 1..=5 {
                 let player = Player::new(format!("p{i}"));
                 player_ids.push(player.get_id());
-                bracket = bracket.add_new_player(player).expect("bracket");
+                bracket = bracket.join(player).expect("bracket");
             }
 
             let (bracket, _) = bracket.start().expect("start");
@@ -676,7 +676,7 @@ mod tests {
             for i in 1..=8 {
                 let player = Player::new(format!("p{i}"));
                 player_ids.push(player.get_id());
-                bracket = bracket.add_new_player(player).expect("bracket");
+                bracket = bracket.join(player).expect("bracket");
             }
 
             let (bracket, _) = bracket.start().expect("start");
@@ -740,7 +740,7 @@ mod tests {
             for i in 1..=8 {
                 let player = Player::new(format!("p{i}"));
                 player_ids.push(player.get_id());
-                bracket = bracket.add_new_player(player).expect("bracket");
+                bracket = bracket.join(player).expect("bracket");
             }
             let (bracket, _) = bracket.start().expect("start");
             assert_eq!(bracket.get_matches().len(), 15);

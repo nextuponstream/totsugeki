@@ -193,7 +193,8 @@ impl DBAccessor for InMemoryDBAccessor {
         let (active_bracket_id, _, _) = find_active_bracket_id(&db, internal_channel_id, service)?;
         match db.brackets.get(&active_bracket_id) {
             Some(b) => {
-                let updated_bracket = b.clone().disqualify_participant(parse_player(player_id)?)?;
+                let (updated_bracket, _) =
+                    b.clone().disqualify_participant(parse_player(player_id)?)?;
                 db.brackets
                     .insert(updated_bracket.get_id(), updated_bracket);
 
@@ -285,7 +286,7 @@ impl DBAccessor for InMemoryDBAccessor {
         };
         match db.brackets.get(&active_bracket_id) {
             Some(b) => {
-                let updated_bracket = b.clone().disqualify_participant(player_id)?;
+                let (updated_bracket, _) = b.clone().disqualify_participant(player_id)?;
                 db.brackets
                     .insert(updated_bracket.get_id(), updated_bracket);
 

@@ -7,6 +7,14 @@ use crate::{
     player::Id as PlayerId,
 };
 
+/// Returns new matches to play from one bracket state to the other
+fn get_new_matches(old: &[Match], new: &[Match]) -> Vec<Match> {
+    new.iter()
+        .filter(|new_m| !old.iter().any(|old_m| old_m.get_id() == new_m.get_id()))
+        .cloned()
+        .collect::<Vec<Match>>()
+}
+
 impl Bracket {
     /// Disqualify player from bracket, advance opponent in bracket and returns
     /// updated bracket
@@ -14,8 +22,10 @@ impl Bracket {
     /// # Errors
     /// thrown when referred player does not belong in current bracket, bracket
     /// has not started/is over or participant has already been disqualified
-    // FIXME add new matches to return
-    pub fn disqualify_participant(self, player_id: PlayerId) -> Result<Bracket, Error> {
+    pub fn disqualify_participant(
+        self,
+        player_id: PlayerId,
+    ) -> Result<(Bracket, Vec<Match>), Error> {
         if self.is_over() && !self.accept_match_results {
             return Err(Error::AllMatchesPlayed(self.bracket_id));
         }
@@ -25,6 +35,8 @@ impl Bracket {
                 ". Cannot disqualify at this time.".into(),
             ));
         }
+
+        let old_matches_to_play = self.matches_to_play();
 
         if let Some(m) = self
             .matches
@@ -67,17 +79,26 @@ impl Bracket {
                             })
                             .collect::<Vec<Match>>();
                         let b = Self { matches, ..b };
-                        return Ok(b);
+                        let new_matches =
+                            get_new_matches(&old_matches_to_play, &b.matches_to_play());
+                        return Ok((b, new_matches));
                     }
 
-                    Ok(b)
+                    let new_matches = get_new_matches(&old_matches_to_play, &b.matches_to_play());
+                    Ok((b, new_matches))
                 }
                 Err(bracket_e) => {
                     if let Error::Match(ref e) = bracket_e {
                         match e {
                             // if no winner can be declared because there is a
                             // missing player, then don't throw an error
-                            MatchError::MissingOpponent(_) => Ok(bracket),
+                            MatchError::MissingOpponent(_) => {
+                                let new_matches = get_new_matches(
+                                    &old_matches_to_play,
+                                    &bracket.matches_to_play(),
+                                );
+                                Ok((bracket, new_matches))
+                            }
                             _ => Err(bracket_e),
                         }
                     } else {
@@ -164,7 +185,7 @@ mod tests {
         .try_into()
         .expect("bracket");
         match bracket.disqualify_participant(p1_id) {
-            Ok(b) => panic!("Expected error, bracket: {b}"),
+            Ok((b, _)) => panic!("Expected error, bracket: {b}"),
             Err(e) => match e {
                 Error::NotStarted(id, _) => assert_eq!(id, bracket_id),
                 _ => panic!("Expected Started error, got {e}"),
@@ -207,7 +228,7 @@ mod tests {
         .expect("bracket");
         let (bracket, _) = bracket.start().expect("start");
         match bracket.disqualify_participant(unknown_player) {
-            Ok(b) => panic!("Expected error, bracket: {b}"),
+            Ok((b, _)) => panic!("Expected error, bracket: {b}"),
             Err(e) => match e {
                 Error::UnknownPlayer(id, _, _) => assert_eq!(id, unknown_player),
                 _ => panic!("Expected UnknownPlayer error, got {e}"),
@@ -259,7 +280,7 @@ mod tests {
             }),
             "expected player 1 not to be declared looser in any match"
         );
-        let bracket = bracket
+        let (bracket, _) = bracket
             .disqualify_participant(p1_id)
             .expect("bracket with player 1 disqualified");
         assert!(
@@ -337,7 +358,7 @@ mod tests {
             }),
             "expected player 2 not to be declared looser in any match"
         );
-        let bracket = bracket
+        let (bracket, _) = bracket
             .disqualify_participant(p2_id)
             .expect("p2 is disqualified");
         assert!(
@@ -409,7 +430,7 @@ mod tests {
             }),
             "expected player 2 not to be declared looser in any match"
         );
-        let bracket = bracket
+        let (bracket, _) = bracket
             .disqualify_participant(p2_id)
             .expect("bracket with player 2 disqualified");
         assert!(
@@ -480,31 +501,31 @@ mod tests {
         .try_into()
         .expect("bracket");
         let (bracket, _) = bracket.start().expect("start");
-        let bracket = bracket
+        let (bracket, _) = bracket
             .disqualify_participant(p2_id)
             .expect("bracket with player 2 disqualified");
         assert_outcome(&bracket, p7_id, p2_id, "p7", "p2");
-        let bracket = bracket
+        let (bracket, _) = bracket
             .disqualify_participant(p3_id)
             .expect("bracket with player 3 disqualified");
         assert_outcome(&bracket, p6_id, p3_id, "p6", "p3");
-        let bracket = bracket
+        let (bracket, _) = bracket
             .disqualify_participant(p4_id)
             .expect("bracket with player 4 disqualified");
         assert_outcome(&bracket, p5_id, p4_id, "p5", "p4");
-        let bracket = bracket
+        let (bracket, _) = bracket
             .disqualify_participant(p5_id)
             .expect("bracket with player 5 disqualified");
         // player 5 opponent is unknown
-        let bracket = bracket
+        let (bracket, _) = bracket
             .disqualify_participant(p6_id)
             .expect("bracket with player 6 disqualified");
         assert_outcome(&bracket, p7_id, p6_id, "p7", "p6");
-        let bracket = bracket
+        let (bracket, _) = bracket
             .disqualify_participant(p7_id)
             .expect("bracket with player 7 disqualified");
         // player 7 is in GF
-        let bracket = bracket
+        let (bracket, _) = bracket
             .disqualify_participant(p8_id)
             .expect("bracket with player 8 disqualified");
         assert_outcome(&bracket, p1_id, p8_id, "p1", "p8");
@@ -533,30 +554,77 @@ mod tests {
         for i in 1..=3 {
             let player = Player::new(format!("p{i}"));
             players.push(player.clone());
-            bracket = bracket.add_new_player(player).expect("new player");
+            bracket = bracket.join(player).expect("new player");
         }
         let (bracket, _) = bracket.start().expect("start");
-        let bracket = bracket
+        let (bracket, _) = bracket
             .disqualify_participant(players[3].get_id())
             .expect("dq");
         let new_matches = bracket.matches_to_play();
         assert_eq!(new_matches.len(), 1);
+        let (_bracket, _, new_matches) = bracket
+            .tournament_organiser_reports_result(players[1].get_id(), (2, 0), players[2].get_id())
+            .expect("to report");
+        assert_eq!(new_matches.len(), 1, "expected 1 new match");
+
+        assert!(
+            new_matches[0].contains(players[1].get_id()),
+            "expected player 1 in GF"
+        );
+        assert!(
+            new_matches[0].contains(players[2].get_id()),
+            "expected player 2 in GF"
+        );
+    }
+
+    #[test]
+    fn disqualify_in_double_elimination_bracket_from_loser() {
+        let mut players = vec![Player::new("don't use".into())];
+        let mut bracket = Bracket::new(
+            "",
+            Format::DoubleElimination,
+            SeedingMethod::Strict,
+            Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
+            true,
+        );
+        for i in 1..=3 {
+            let player = Player::new(format!("p{i}"));
+            players.push(player.clone());
+            bracket = bracket.join(player).expect("new player");
+        }
+        let (bracket, _) = bracket.start().expect("start");
+        let (bracket, _, new_matches) = bracket
+            .tournament_organiser_reports_result(players[2].get_id(), (2, 0), players[3].get_id())
+            .expect("to report");
+        assert_eq!(new_matches.len(), 1, "expected 1 new match");
         let (bracket, _, new_matches) = bracket
             .tournament_organiser_reports_result(players[1].get_id(), (2, 0), players[2].get_id())
             .expect("to report");
         assert_eq!(new_matches.len(), 1, "expected 1 new match");
 
-        if !new_matches[0].contains(players[1].get_id()) {
-            for m in &bracket.matches {
-                println!("{m}");
-            }
-            panic!("expected player 1 in GF");
-        }
-        if !new_matches[0].contains(players[2].get_id()) {
-            for m in &bracket.matches {
-                println!("{m}");
-            }
-            panic!("expected player 2 in GF");
-        }
+        let (bracket, new_matches) = bracket
+            .disqualify_participant(players[3].get_id())
+            .expect("dq");
+        assert_eq!(new_matches.len(), 1);
+        assert!(
+            new_matches[0].contains(players[1].get_id()),
+            "expected player 1 in GF"
+        );
+        assert!(
+            new_matches[0].contains(players[2].get_id()),
+            "expected player 2 in GF"
+        );
+
+        let new_matches = bracket.matches_to_play();
+        assert_eq!(new_matches.len(), 1);
+
+        assert!(
+            new_matches[0].contains(players[1].get_id()),
+            "expected player 1 in GF"
+        );
+        assert!(
+            new_matches[0].contains(players[2].get_id()),
+            "expected player 2 in GF"
+        );
     }
 }

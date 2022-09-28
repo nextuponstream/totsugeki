@@ -25,15 +25,6 @@ impl Bracket {
         })
     }
 
-    /// Adds new player in participants and returns updated bracket
-    ///
-    /// # Errors
-    /// thrown when the same player is added
-    pub fn add_new_player(self, player: Player) -> Result<Bracket, Error> {
-        let updated_participants = self.participants.clone().add_participant(player)?;
-        self.regenerate_matches(updated_participants)
-    }
-
     /// Let `player` join participants and returns an updated version of the bracket
     ///
     /// # Errors
@@ -42,8 +33,11 @@ impl Bracket {
         if self.is_closed {
             return Err(Error::BarredFromEntering(player.get_id(), self.get_id()));
         }
-        let updated_bracket = self.add_new_player(player)?;
-        Ok(updated_bracket)
+        let bracket = Self {
+            participants: self.participants.clone().add_participant(player)?,
+            ..self
+        };
+        bracket.clone().regenerate_matches(bracket.participants)
     }
 
     /// Remove participant, regenerate matches and return updated bracket

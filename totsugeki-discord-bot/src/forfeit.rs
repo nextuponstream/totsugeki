@@ -8,6 +8,7 @@ use serenity::{
     model::channel::Message,
 };
 use std::{io::prelude::*, path::Path};
+use totsugeki::opponent::Opponent;
 use tracing::{info, span, warn, Level};
 
 #[command]
@@ -31,9 +32,30 @@ async fn forfeit(ctx: &Context, msg: &Message) -> CommandResult {
             return Ok::<CommandResult, CommandError>(Ok(()));
         };
 
+        let mut new_matches_message = "".to_string();
         match bracket.clone().disqualify_participant(player.get_id()) {
-            Ok(b) => {
+            Ok((b, new_matches)) => {
                 bracket = b;
+                for m in new_matches {
+                    let player1 = match m.get_players()[0].clone() {
+                        Opponent::Player(p) => p,
+                        Opponent::Unknown => panic!("cannot parse opponent"),
+                    };
+                    let player2 = match m.get_players()[1].clone() {
+                        Opponent::Player(p) => p,
+                        Opponent::Unknown => panic!("cannot parse opponent"),
+                    };
+                    new_matches_message = format!(
+                        "{}\n{} VS {}\n- {}: {}\n- {}: {}",
+                        new_matches_message,
+                        player1.get_name(),
+                        player2.get_name(),
+                        player1.get_name(),
+                        player1.get_id(),
+                        player2.get_name(),
+                        player2.get_id(),
+                    );
+                }
             }
             Err(e) => {
                 warn!("{e}");
@@ -59,8 +81,11 @@ async fn forfeit(ctx: &Context, msg: &Message) -> CommandResult {
         f.write_all(j.as_bytes())?;
 
         info!("{player} forfeited");
-        msg.reply(ctx, format!("You have declared forfeit as {player}"))
-            .await?;
+        msg.reply(
+            ctx,
+            format!("You have declared forfeit as {player}.{new_matches_message}"),
+        )
+        .await?;
         Ok::<CommandResult, CommandError>(Ok(()))
     })
     .await?

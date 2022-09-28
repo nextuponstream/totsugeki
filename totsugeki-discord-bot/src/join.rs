@@ -31,7 +31,7 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
         };
         users.insert(user_id, player.clone());
 
-        match bracket.clone().add_new_player(player.clone()) {
+        match bracket.clone().join(player.clone()) {
             Ok(b) => {
                 bracket = b;
             }

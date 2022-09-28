@@ -8,7 +8,7 @@ use serenity::{
     model::channel::Message,
 };
 use std::{io::prelude::*, path::Path};
-use totsugeki::player::Id as PlayerId;
+use totsugeki::{opponent::Opponent, player::Id as PlayerId};
 use tracing::{info, span, warn, Level};
 
 #[command]
@@ -25,9 +25,30 @@ async fn disqualify(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
         let mut bracket_data = bracket_data.write().await;
         let (mut bracket, users) = bracket_data.clone();
 
+        let mut new_matches_message = "".into();
         match bracket.clone().disqualify_participant(player_id) {
-            Ok(b) => {
+            Ok((b, new_matches)) => {
                 bracket = b;
+                for m in new_matches {
+                    let player1 = match m.get_players()[0].clone() {
+                        Opponent::Player(p) => p,
+                        Opponent::Unknown => panic!("cannot parse opponent"),
+                    };
+                    let player2 = match m.get_players()[1].clone() {
+                        Opponent::Player(p) => p,
+                        Opponent::Unknown => panic!("cannot parse opponent"),
+                    };
+                    new_matches_message = format!(
+                        "{}\n{} VS {}\n- {}: {}\n- {}: {}",
+                        new_matches_message,
+                        player1.get_name(),
+                        player2.get_name(),
+                        player1.get_name(),
+                        player1.get_id(),
+                        player2.get_name(),
+                        player2.get_id(),
+                    );
+                }
             }
             Err(e) => {
                 warn!("{e}");
@@ -52,8 +73,11 @@ async fn disqualify(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
         f.write_all(j.as_bytes())?;
 
         info!("{player_id} disqualified");
-        msg.reply(ctx, format!("{player_id} was disqualified"))
-            .await?;
+        msg.reply(
+            ctx,
+            format!("{player_id} was disqualified.{new_matches_message}"),
+        )
+        .await?;
         Ok::<CommandResult, CommandError>(Ok(()))
     })
     .await?
