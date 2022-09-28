@@ -212,6 +212,10 @@ impl Bracket {
                     .filter(|m| !old_matches.iter().any(|old_m| old_m.get_id() == m.get_id()))
                     .map(std::clone::Clone::clone)
                     .collect();
+                println!("HHHHHHHHHHHHHHHHHHHHHHHHh"); // FIXME remove
+                for m in &bracket.matches {
+                    println!("{m:?}");
+                }
                 Ok((bracket, affected_match_id, matches))
             }
             None => Err(Error::NoMatchToPlay(player.clone(), bracket_id)),

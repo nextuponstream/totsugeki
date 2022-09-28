@@ -222,6 +222,7 @@ impl Bracket {
     ///
     /// # Errors
     /// Thrown when given match id is unknown or when reported results differ
+    #[allow(clippy::too_many_lines)]
     pub fn validate_match_result(self, match_id: MatchId) -> Result<(Self, Vec<Match>), Error> {
         let old_matches = self.matches_to_play();
         let matches = match self.format {
@@ -297,15 +298,36 @@ impl Bracket {
                             _ => return Err(e),
                         },
                     };
-                let loser_bracket =
-                    if let Some((loser, expected_loser_seed)) = loser_bracket_elements {
-                        Bracket::send_to_losers(&loser_bracket, loser, expected_loser_seed)
+                let loser_bracket = if let Some((loser, expected_loser_seed)) =
+                    loser_bracket_elements
+                {
+                    let loser_bracket =
+                        Bracket::send_to_losers(&loser_bracket, loser.clone(), expected_loser_seed);
+                    let loser_match = loser_bracket
+                        .iter()
+                        .find(|m| m.contains(loser.get_id()))
+                        .expect("loser match");
+                    if loser_match.get_looser() != Opponent::Unknown
+                        && loser_match.get_players()[0] != Opponent::Unknown
+                        && loser_match.get_players()[1] != Opponent::Unknown
+                        && loser_match.get_winner() == Opponent::Unknown
+                    {
+                        let (loser_bracket, _) =
+                            Bracket::update(&loser_bracket, loser_match.get_id())?;
+                        loser_bracket
                     } else {
                         loser_bracket
-                    };
+                    }
+                } else {
+                    loser_bracket
+                };
                 let winner_of_winner_bracket = winner_of_bracket(&winner_bracket);
                 if let Some(id) = winner_of_winner_bracket {
                     gf = gf.set_player(id, true);
+                }
+                let winner_of_loser_bracket = winner_of_bracket(&loser_bracket);
+                if let Some(id) = winner_of_loser_bracket {
+                    gf = gf.set_player(id, false);
                 }
                 Match::double_elimination_matches_from_partition(
                     &winner_bracket,
