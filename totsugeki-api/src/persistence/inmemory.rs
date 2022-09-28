@@ -555,8 +555,7 @@ impl DBAccessor for InMemoryDBAccessor {
         let (active_bracket_id, _, _) = find_active_bracket_id(&db, internal_channel_id, service)?;
         match db.brackets.get(&active_bracket_id) {
             Some(b) => {
-                let bracket = b.clone().start();
-                let matches = bracket.matches_to_play();
+                let (bracket, matches) = b.clone().start()?;
                 db.brackets.insert(bracket.get_id(), bracket);
 
                 Ok((active_bracket_id, matches))

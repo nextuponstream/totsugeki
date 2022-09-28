@@ -73,10 +73,25 @@ impl Bracket {
         let relevant_match = if let Some(m) = next_match {
             m
         } else {
-            // FIXME correct winner of double elimination
-            // if self.format() == Format::DoubleElimination {
-            //     if bracket.
-            // }
+            if self.is_over() && self.format == DoubleElimination {
+                let (_, _, gf, gfr) = Match::partition_double_elimination_matches(
+                    &self.matches,
+                    self.participants.len(),
+                )
+                .expect("partition");
+                if !gfr.is_over() {
+                    if let Opponent::Player(p) = gf.get_winner() {
+                        if p.get_id() == player_id {
+                            return Err(Error::NoNextMatch(player_id, self.bracket_id));
+                        }
+                    }
+                } else if let Opponent::Player(p) = gfr.get_winner() {
+                    if p.get_id() == player_id {
+                        return Err(Error::NoNextMatch(player_id, self.bracket_id));
+                    }
+                }
+                return Err(Error::EliminatedFromBracket(player_id, self.bracket_id));
+            }
             let last_match = self.matches.iter().last().expect("last match");
             if let Opponent::Player(p) = last_match.get_winner() {
                 if p.get_id() == player_id {
@@ -136,7 +151,7 @@ fn create_bracket_with_n_players_and_start(
         players.push(player.clone());
         bracket = bracket.add_new_player(player).expect("bracket");
     }
-    bracket = bracket.start();
+    let (bracket, _) = bracket.start().expect("start");
 
     (bracket, players)
 }

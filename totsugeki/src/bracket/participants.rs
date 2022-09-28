@@ -171,7 +171,7 @@ mod tests {
         }
         .try_into()
         .expect("bracket");
-        let updated_bracket = bracket.start();
+        let (updated_bracket, _) = bracket.start().expect("start");
         let bracket_id = updated_bracket.get_id();
 
         let player = Player::new("New player".to_string());

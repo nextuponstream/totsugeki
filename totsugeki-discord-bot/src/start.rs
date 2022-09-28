@@ -8,7 +8,8 @@ use serenity::{
     model::channel::Message,
 };
 use std::{io::prelude::*, path::Path};
-use tracing::{info, span, Level};
+use totsugeki::opponent::Opponent;
+use tracing::{info, span, warn, Level};
 
 #[command]
 #[description = "Start bracket"]
@@ -20,9 +21,37 @@ async fn start(ctx: &Context, msg: &Message) -> CommandResult {
         let config = data.get::<Config>().expect("filename").clone();
         let bracket_data = data.get::<Data>().expect("data").clone();
         let mut bracket_data = bracket_data.write().await;
-        let (mut bracket, users) = bracket_data.clone();
+        let (bracket, users) = bracket_data.clone();
 
-        bracket = bracket.clone().start();
+        let (bracket, matches) = match bracket.clone().start() {
+            Ok(b) => b,
+            Err(e) => {
+                warn!("{e}");
+                msg.reply(ctx, format!("{e}")).await?;
+                return Ok::<CommandResult, CommandError>(Ok(()));
+            }
+        };
+        let mut new_matches_message = "".to_string();
+        for m in matches {
+            let player1 = match m.get_players()[0].clone() {
+                Opponent::Player(p) => p,
+                Opponent::Unknown => panic!("cannot parse opponent"),
+            };
+            let player2 = match m.get_players()[1].clone() {
+                Opponent::Player(p) => p,
+                Opponent::Unknown => panic!("cannot parse opponent"),
+            };
+            new_matches_message = format!(
+                "{}\n{} VS {}\n- {}: {}\n- {}: {}",
+                new_matches_message,
+                player1.get_name(),
+                player2.get_name(),
+                player1.get_name(),
+                player1.get_id(),
+                player2.get_name(),
+                player2.get_id(),
+            );
+        }
         *bracket_data = (bracket.clone(), users.clone());
 
         let d = Data {
@@ -41,7 +70,8 @@ async fn start(ctx: &Context, msg: &Message) -> CommandResult {
         f.write_all(j.as_bytes())?;
 
         info!("{bracket} started");
-        msg.reply(ctx, format!("{bracket} started")).await?;
+        msg.reply(ctx, format!("{bracket} started.{new_matches_message}"))
+            .await?;
         Ok::<CommandResult, CommandError>(Ok(()))
     })
     .await?

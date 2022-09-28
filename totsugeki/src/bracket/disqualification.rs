@@ -181,7 +181,7 @@ mod tests {
         }
         .try_into()
         .expect("bracket");
-        let bracket = bracket.start();
+        let (bracket, _) = bracket.start().expect("start");
         match bracket.disqualify_participant(unknown_player) {
             Ok(b) => panic!("Expected error, bracket: {b}"),
             Err(e) => match e {
@@ -223,7 +223,7 @@ mod tests {
         }
         .try_into()
         .expect("bracket");
-        let bracket = bracket.start();
+        let (bracket, _) = bracket.start().expect("start");
         assert!(
             !bracket.matches.iter().any(|m| if m.contains(p1_id) {
                 if let Opponent::Player(p) = m.get_looser() {
@@ -290,7 +290,7 @@ mod tests {
         }
         .try_into()
         .expect("bracket");
-        let bracket = bracket.start();
+        let (bracket, _) = bracket.start().expect("start");
         let (bracket, match_id_p2, _new_matches) = bracket
             .report_result(p2_id, (2, 0))
             .expect("reported result by player 2");
@@ -373,7 +373,7 @@ mod tests {
         }
         .try_into()
         .expect("bracket");
-        let bracket = bracket.start();
+        let (bracket, _) = bracket.start().expect("start");
         assert!(
             !bracket.matches.iter().any(|m| if m.contains(p2_id) {
                 if let Opponent::Player(p) = m.get_looser() {
@@ -455,7 +455,7 @@ mod tests {
         }
         .try_into()
         .expect("bracket");
-        let bracket = bracket.start();
+        let (bracket, _) = bracket.start().expect("start");
         let bracket = bracket
             .disqualify_participant(p2_id)
             .expect("bracket with player 2 disqualified");

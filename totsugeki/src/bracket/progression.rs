@@ -407,7 +407,7 @@ mod tests {
             bracket = bracket.add_new_player(player).expect("bracket");
         }
 
-        bracket = bracket.start();
+        let (bracket, _) = bracket.start().expect("start");
         assert_players_play_each_other(2, 3, &player_ids, &bracket);
         let (bracket, _, _) = bracket
             .report_result(player_ids[2], (2, 0))
@@ -431,7 +431,7 @@ mod tests {
             bracket = bracket.add_new_player(player).expect("bracket");
         }
 
-        bracket = bracket.start();
+        let (bracket, _) = bracket.start().expect("start");
         assert_players_play_each_other(2, 3, &player_ids, &bracket);
         let (bracket, _, _) = bracket
             .report_result(player_ids[3], (0, 2))
@@ -466,7 +466,7 @@ mod tests {
                 bracket = bracket.add_new_player(player).expect("bracket");
             }
 
-            bracket = bracket.start();
+            let (bracket, _) = bracket.start().expect("start");
             assert_eq!(bracket.get_matches().len(), 2);
             assert_eq!(bracket.matches_to_play().len(), 1);
             assert_players_play_each_other(2, 3, &player_ids, &bracket);
@@ -500,7 +500,7 @@ mod tests {
                 bracket = bracket.add_new_player(player).expect("bracket");
             }
 
-            bracket = bracket.start();
+            let (bracket, _) = bracket.start().expect("start");
             assert_eq!(bracket.get_matches().len(), 4);
             assert_eq!(bracket.matches_to_play().len(), 2);
             let (bracket, _, _new_matches) = bracket
@@ -549,7 +549,7 @@ mod tests {
                 bracket = bracket.add_new_player(player).expect("bracket");
             }
 
-            bracket = bracket.start();
+            let (bracket, _) = bracket.start().expect("start");
             assert_eq!(bracket.get_matches().len(), 5);
             let (bracket, _, _new_matches) = bracket
                 .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[3])
@@ -612,7 +612,7 @@ mod tests {
                 bracket = bracket.add_new_player(player).expect("bracket");
             }
 
-            bracket = bracket.start();
+            let (bracket, _) = bracket.start().expect("start");
             assert_eq!(bracket.get_matches().len(), 9);
             let (bracket, _, _new_matches) = bracket
                 .tournament_organiser_reports_result(player_ids[2], (0, 2), player_ids[3])
@@ -657,7 +657,7 @@ mod tests {
                 bracket = bracket.add_new_player(player).expect("bracket");
             }
 
-            bracket = bracket.start();
+            let (bracket, _) = bracket.start().expect("start");
             assert_eq!(bracket.get_matches().len(), 15);
             let (bracket, _, _new_matches) = bracket
                 .tournament_organiser_reports_result(player_ids[1], (2, 0), player_ids[8])
@@ -720,7 +720,7 @@ mod tests {
                 player_ids.push(player.get_id());
                 bracket = bracket.add_new_player(player).expect("bracket");
             }
-            bracket = bracket.start();
+            let (bracket, _) = bracket.start().expect("start");
             assert_eq!(bracket.get_matches().len(), 15);
             let (bracket, winner_1vs8, _new_matches) = bracket
                 .tournament_organiser_reports_result(player_ids[1], (2, 0), player_ids[8])
