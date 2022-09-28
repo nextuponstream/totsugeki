@@ -281,14 +281,24 @@ impl Bracket {
         Ok((bracket, first_affected_match, new_matches_2))
     }
 
-    /// Start bracket: bar people from entering and accept match results
-    #[must_use]
-    pub fn start(self) -> Self {
-        Self {
-            is_closed: true,
-            accept_match_results: true,
-            ..self
+    /// Start bracket: bar people from entering and accept match results.
+    /// Returns updated bracket and matches to play
+    ///
+    /// # Errors
+    /// thrown if there is not enough participants
+    pub fn start(self) -> Result<(Self, Vec<Match>), Error> {
+        if self.matches.is_empty() {
+            return Err(Error::NoGeneratedMatches(self.bracket_id));
         }
+        let matches = self.matches_to_play();
+        Ok((
+            Self {
+                is_closed: true,
+                accept_match_results: true,
+                ..self
+            },
+            matches,
+        ))
     }
 
     /// Report match result and returns updated bracket. This does not update

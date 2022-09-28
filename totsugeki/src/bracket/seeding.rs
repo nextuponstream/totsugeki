@@ -90,7 +90,7 @@ mod tests {
         }
         .try_into()
         .expect("bracket");
-        let updated_bracket = bracket.start();
+        let (updated_bracket, _) = bracket.start().expect("start");
         let seeding = vec![p3_id, p2_id, p1_id];
         match updated_bracket.update_seeding(&seeding) {
             Ok(b) => panic!("Expected error, bracket: {b}"),
