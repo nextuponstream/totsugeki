@@ -50,6 +50,7 @@ impl Bracket {
     /// # Errors
     /// Thrown when matches have yet to be generated or player has won/been
     /// eliminated
+    // FIXME don't return player name
     pub fn next_opponent(&self, player_id: PlayerId) -> Result<(Opponent, MatchId, String), Error> {
         if !self.participants.contains(player_id) {
             return Err(Error::PlayerIsNotParticipant(player_id, self.bracket_id));
@@ -72,6 +73,10 @@ impl Bracket {
         let relevant_match = if let Some(m) = next_match {
             m
         } else {
+            // FIXME correct winner of double elimination
+            // if self.format() == Format::DoubleElimination {
+            //     if bracket.
+            // }
             let last_match = self.matches.iter().last().expect("last match");
             if let Opponent::Player(p) = last_match.get_winner() {
                 if p.get_id() == player_id {
