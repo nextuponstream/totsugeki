@@ -149,7 +149,7 @@ fn create_bracket_with_n_players_and_start(
     for i in 1..=n {
         let player = Player::new(format!("p{i}"));
         players.push(player.clone());
-        bracket = bracket.add_new_player(player).expect("bracket");
+        bracket = bracket.join(player).expect("bracket");
     }
     let (bracket, _) = bracket.start().expect("start");
 
