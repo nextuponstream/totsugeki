@@ -8,7 +8,7 @@ use serenity::{
     model::channel::Message,
 };
 use std::{io::prelude::*, path::Path};
-use totsugeki::{matches::ReportedResult, opponent::Opponent};
+use totsugeki::{matches::ReportedResult, opponent::Opponent, player::Id as PlayerId};
 use tracing::{info, span, warn, Level};
 
 #[command]
@@ -27,17 +27,12 @@ async fn report(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         let bracket_data = data.get::<Data>().expect("data").clone();
         let mut bracket_data = bracket_data.write().await;
         let (bracket, users) = bracket_data.clone();
-        let mut f = std::fs::OpenOptions::new()
-            .write(true)
-            .open(Path::new(config.as_ref()))?;
-        f.lock_exclusive().expect("lock"); // prevent concurrent access
 
-        let player = match users.get(&user_id) {
-            Some(p) => p.clone(),
-            None => {
-                warn!("user wants to report but they are not registered");
-                return Ok::<CommandResult, CommandError>(Ok(()));
-            }
+        let player = if let Some(p) = users.get(&user_id) {
+            p
+        } else {
+            warn!("user wants to report but they are not registered");
+            return Ok::<CommandResult, CommandError>(Ok(()));
         };
 
         let (bracket, _match_id, new_matches) = match bracket
@@ -73,15 +68,27 @@ async fn report(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
             );
         }
 
-        *bracket_data = (bracket, users);
-        let j = serde_json::to_string(&bracket_data.clone()).expect("bracket");
+        *bracket_data = (bracket.clone(), users.clone());
+        let d = Data {
+            bracket: bracket.clone(),
+            users: users.clone(),
+        };
+        let j = serde_json::to_string(&d).expect("bracket");
+
+        let mut f = std::fs::OpenOptions::new()
+            .write(true)
+            .open(Path::new(config.as_ref()))?;
+        f.lock_exclusive().expect("lock"); // prevent concurrent access
+        let l: u64 = u64::try_from(j.len())?;
+        f.set_len(l)?; // very important: if output has less chars than previous, output is padded
         f.write_all(j.as_bytes())?;
+
+        info!("{player} reported result");
         msg.reply(
             ctx,
             format!("You have reported {reported_result}.{new_matches_message}"),
         )
         .await?;
-        info!("{player} reported result");
 
         // workaround: https://rust-lang.github.io/async-book/07_workarounds/02_err_in_async_blocks.html
         Ok::<CommandResult, CommandError>(Ok(()))
@@ -92,6 +99,7 @@ async fn report(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 #[command]
 #[description = "Report result of match between two players. Available in the same discussion channel of the active bracket."]
 #[usage = "<Player 1 ID> <RESULT (2-0, 0-2, 1-2...)> <Player 2 ID>"]
+#[aliases("to_r")]
 #[allowed_roles("TO")]
 async fn tournament_organiser_reports(
     ctx: &Context,
@@ -102,8 +110,9 @@ async fn tournament_organiser_reports(
     // NOTE: workaround since instrument macro conflict with discords
     let span = span!(Level::INFO, "Report bracket command");
     span.in_scope(|| async {
+        let player1 = args.single::<PlayerId>()?;
         let reported_result = args.single::<ReportedResult>()?;
-        let user_id = msg.author.id;
+        let player2 = args.single::<PlayerId>()?;
 
         let data = ctx.data.read().await;
         let config = data.get::<Config>().expect("filename").clone();
@@ -115,17 +124,9 @@ async fn tournament_organiser_reports(
             .open(Path::new(config.as_ref()))?;
         f.lock_exclusive().expect("lock"); // prevent concurrent access
 
-        let player = match users.get(&user_id) {
-            Some(p) => p.clone(),
-            None => {
-                warn!("user wants to report but they are not registered");
-                return Ok::<CommandResult, CommandError>(Ok(()));
-            }
-        };
-
         let (bracket, _match_id, new_matches) = match bracket
             .clone()
-            .report_result(player.get_id(), reported_result.0)
+            .tournament_organiser_reports_result(player1, reported_result.0, player2)
         {
             Ok(r) => r,
             Err(e) => {
@@ -156,15 +157,19 @@ async fn tournament_organiser_reports(
             );
         }
 
-        *bracket_data = (bracket, users);
-        let j = serde_json::to_string(&bracket_data.clone()).expect("bracket");
+        *bracket_data = (bracket.clone(), users.clone());
+        let d = Data {
+            bracket: bracket.clone(),
+            users: users.clone(),
+        };
+        let j = serde_json::to_string(&d).expect("bracket");
         f.write_all(j.as_bytes())?;
         msg.reply(
             ctx,
             format!("You have reported {reported_result}.{new_matches_message}"),
         )
         .await?;
-        info!("{player} reported result");
+        info!("Reported result");
 
         // workaround: https://rust-lang.github.io/async-book/07_workarounds/02_err_in_async_blocks.html
         Ok::<CommandResult, CommandError>(Ok(()))

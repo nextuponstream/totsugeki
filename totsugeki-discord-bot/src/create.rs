@@ -1,6 +1,6 @@
 //! Command to create a bracket
 
-use crate::Config;
+use crate::{Config, Data};
 use chrono::{NaiveDateTime, Utc};
 use chrono_tz::Tz;
 use fs4::FileExt;
@@ -75,18 +75,28 @@ async fn create(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         };
         let start_time = start_time.with_timezone(&Utc);
 
-        let bracket = Bracket::new(&bracket_name, format, seeding_method, start_time, automatic_match_validation);
         let data = ctx.data.read().await;
-        let filename = data.get::<Config>().expect("filename").clone();
+        let bracket_data = data.get::<Data>().expect("data").clone();
+        let mut bracket_data = bracket_data.write().await;
+        let (_bracket, users) = bracket_data.clone();
+        let config = data.get::<Config>().expect("filename").clone();
+        let bracket = Bracket::new(&bracket_name, format, seeding_method, start_time, automatic_match_validation);
+        *bracket_data = (bracket.clone(), users.clone());
+        let d = Data {
+            bracket: bracket.clone(),
+            users: users.clone(),
+        };
+        let j = serde_json::to_string(&d).expect("bracket");
+
         let mut f = std::fs::OpenOptions::new()
-            .create(true)
             .write(true)
-            .open(Path::new(filename.as_ref()))?;
+            .open(Path::new(config.as_ref()))?;
         f.lock_exclusive().expect("lock"); // prevent concurrent access
-        let j = serde_json::to_string(&bracket).expect("bracket");
+        let l: u64 = u64::try_from(j.len())?;
+        f.set_len(l)?; // very important: if output has less chars than previous, output is padded
         f.write_all(j.as_bytes())?;
 
-        info!("Bracket created");
+        info!("{bracket} created");
         msg.reply(ctx, bracket.to_string()).await?;
 
         // workaround: https://rust-lang.github.io/async-book/07_workarounds/02_err_in_async_blocks.html

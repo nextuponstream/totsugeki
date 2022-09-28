@@ -10,15 +10,33 @@ use std::sync::Arc;
 use std::{collections::HashMap, env};
 use totsugeki::bracket::Bracket;
 use totsugeki_discord_bot::{
-    create::*, help::*, join::*, ping::*, report::*, start::*, Config, Data,
+    close::*, create::*, disqualify::*, forfeit::*, help::*, join::*, next_match::*, ping::*,
+    players::*, quit::*, remove::*, report::*, seed::*, start::*, validate::*, Config, Data,
 };
 use tracing::subscriber::set_global_default;
+use tracing::warn;
 use tracing_bunyan_formatter::BunyanFormattingLayer;
 use tracing_log::LogTracer;
 use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
 
 #[group]
-#[commands(ping, create, join, report, start, tournament_organiser_reports)]
+#[commands(
+    ping,
+    create,
+    join,
+    next_match,
+    report,
+    start,
+    tournament_organiser_reports,
+    validate,
+    quit,
+    players,
+    seed,
+    remove,
+    disqualify,
+    forfeit,
+    close
+)]
 #[summary = "Main available commands"]
 #[description = "Manage bracket with this command"]
 pub struct General;
@@ -63,25 +81,34 @@ async fn main() {
         let mut data = client.data.write().await;
         data.insert::<Config>(Arc::new(bracket_filename.clone()));
         let p = Path::new(&bracket_filename);
-        let mut f = std::fs::OpenOptions::new()
-            .create(true)
-            .write(true)
-            .open(p)
-            .expect("");
-        let bracket_data = std::fs::read(p).expect("file");
+        let bracket_data = match std::fs::read(p) {
+            Ok(r) => r,
+            Err(e) => {
+                warn!("could not parse read file: {e}");
+                vec![]
+            }
+        };
         let bracket_data = match serde_json::from_slice::<Data>(&bracket_data) {
             Ok(d) => d,
-            Err(_) => Data {
-                bracket: Bracket::default(),
-                users: HashMap::new(),
-            },
+            Err(e) => {
+                warn!("could not parse file: {e}");
+                Data {
+                    bracket: Bracket::default(),
+                    users: HashMap::new(),
+                }
+            }
         };
         data.insert::<Data>(Arc::new(RwLock::new((
             bracket_data.bracket.clone(),
             bracket_data.users.clone(),
         ))));
-        let j = serde_json::to_string(&bracket_data).expect("bracket");
-        f.write_all(j.as_bytes()).expect("write");
+        let j = serde_json::to_vec(&bracket_data).expect("bracket");
+        let mut f = std::fs::OpenOptions::new()
+            .create(true)
+            .write(true)
+            .open(p)
+            .expect("");
+        f.write_all(&j).expect("write");
     }
 
     // start listening for events by starting a single shard
