@@ -99,7 +99,7 @@ async fn report(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 #[command]
 #[description = "Report result of match between two players. Available in the same discussion channel of the active bracket."]
 #[usage = "<Player 1 ID> <RESULT (2-0, 0-2, 1-2...)> <Player 2 ID>"]
-#[aliases("to_r")]
+#[aliases("tor")]
 #[allowed_roles("TO")]
 async fn tournament_organiser_reports(
     ctx: &Context,

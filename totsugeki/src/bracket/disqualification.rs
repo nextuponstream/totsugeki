@@ -14,6 +14,7 @@ impl Bracket {
     /// # Errors
     /// thrown when referred player does not belong in current bracket, bracket
     /// has not started/is over or participant has already been disqualified
+    // FIXME add new matches to return
     pub fn disqualify_participant(self, player_id: PlayerId) -> Result<Bracket, Error> {
         if self.is_over() && !self.accept_match_results {
             return Err(Error::AllMatchesPlayed(self.bracket_id));
@@ -47,7 +48,30 @@ impl Bracket {
                 .clone()
                 .validate_match_result(updated_match.get_id())
             {
-                Ok((b, _)) => Ok(b),
+                Ok((b, _)) => {
+                    if let Some(m) = b
+                        .matches
+                        .iter()
+                        .find(|m| m.contains(player_id) && m.get_winner() == Opponent::Unknown)
+                    {
+                        let updated_match = m.clone().set_looser(player_id)?;
+                        let matches = b
+                            .matches
+                            .iter()
+                            .map(|m| {
+                                if m.get_id() == updated_match.get_id() {
+                                    updated_match.clone()
+                                } else {
+                                    m.clone()
+                                }
+                            })
+                            .collect::<Vec<Match>>();
+                        let b = Self { matches, ..b };
+                        return Ok(b);
+                    }
+
+                    Ok(b)
+                }
                 Err(bracket_e) => {
                     if let Error::Match(ref e) = bracket_e {
                         match e {
@@ -81,7 +105,7 @@ mod tests {
         bracket::{raw::Raw, Id as BracketId},
         format::Format,
         opponent::Opponent,
-        player::Participants,
+        player::{Participants, Player},
         seeding::{
             single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored,
             Method as SeedingMethod,
@@ -494,5 +518,45 @@ mod tests {
                 _ => panic!("Expected AcceptResults error but got {e}"),
             },
         };
+    }
+
+    #[test]
+    fn disqualify_in_double_elimination_bracket_from_winner() {
+        let mut players = vec![Player::new("don't use".into())];
+        let mut bracket = Bracket::new(
+            "",
+            Format::DoubleElimination,
+            SeedingMethod::Strict,
+            Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
+            true,
+        );
+        for i in 1..=3 {
+            let player = Player::new(format!("p{i}"));
+            players.push(player.clone());
+            bracket = bracket.add_new_player(player).expect("new player");
+        }
+        let (bracket, _) = bracket.start().expect("start");
+        let bracket = bracket
+            .disqualify_participant(players[3].get_id())
+            .expect("dq");
+        let new_matches = bracket.matches_to_play();
+        assert_eq!(new_matches.len(), 1);
+        let (bracket, _, new_matches) = bracket
+            .tournament_organiser_reports_result(players[1].get_id(), (2, 0), players[2].get_id())
+            .expect("to report");
+        assert_eq!(new_matches.len(), 1, "expected 1 new match");
+
+        if !new_matches[0].contains(players[1].get_id()) {
+            for m in &bracket.matches {
+                println!("{m}");
+            }
+            panic!("expected player 1 in GF");
+        }
+        if !new_matches[0].contains(players[2].get_id()) {
+            for m in &bracket.matches {
+                println!("{m}");
+            }
+            panic!("expected player 2 in GF");
+        }
     }
 }
