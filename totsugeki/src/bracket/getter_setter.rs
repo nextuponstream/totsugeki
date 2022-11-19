@@ -55,6 +55,6 @@ impl Bracket {
     /// Returns true if match are validated automatically whenever possible
     #[must_use]
     pub fn is_validating_matches_automatically(&self) -> bool {
-        self.automatic_match_validation
+        self.automatic_match_progression
     }
 }

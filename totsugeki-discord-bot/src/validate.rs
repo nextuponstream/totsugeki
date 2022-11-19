@@ -35,7 +35,7 @@ async fn validate(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
             }
         };
 
-        let mut new_matches_message = "".to_string();
+        let mut new_matches_message = String::new();
         for m in new_matches {
             let player1 = match m.get_players()[0].clone() {
                 Opponent::Player(p) => p,

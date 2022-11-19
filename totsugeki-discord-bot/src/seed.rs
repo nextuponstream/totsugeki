@@ -38,7 +38,7 @@ async fn seed(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
             }
         };
         let players = bracket.get_participants().get_players_list();
-        let mut new_seeding_message = "".to_string();
+        let mut new_seeding_message = String::new();
         for p in players {
             new_seeding_message = format!("{new_seeding_message}\n- {p}");
         }

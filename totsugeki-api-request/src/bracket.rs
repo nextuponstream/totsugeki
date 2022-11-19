@@ -43,12 +43,12 @@ pub async fn fetch(
     let filter = match bracket_name_filter {
         Some(name) => {
             if name.is_empty() {
-                "".to_string()
+                String::new()
             } else {
                 format!("/{name}")
             }
         }
-        None => "".to_string(),
+        None => String::new(),
     };
     let res = client
         .get(format!("{HTTP_PREFIX}{api_url}/brackets{filter}/{offset}"))

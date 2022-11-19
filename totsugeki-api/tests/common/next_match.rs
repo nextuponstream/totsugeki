@@ -7,7 +7,7 @@ use totsugeki::{
     bracket::Id as BracketId,
     matches::{Id as MatchId, NextMatchGET, NextMatchGETRequest},
     opponent::Opponent,
-    player::Id as PlayerId,
+    player::{Id as PlayerId, Player},
 };
 use totsugeki_api::Service;
 use tracing::trace;
@@ -146,14 +146,15 @@ pub async fn assert_next_matches(
 /// Assert player with `seed` is eliminated
 pub async fn assert_player_is_eliminated_from_bracket(
     test_api: &TotsugekiApiTestClient,
-    player: usize,
+    player_internal_id: usize,
     channel_internal_id: &str,
     service_type_id: Service,
     bracket_id: BracketId,
+    player: Player,
 ) {
     trace!("Asserting player is eliminated");
     let body = NextMatchGETRequest {
-        player_internal_id: player.to_string(),
+        player_internal_id: player_internal_id.to_string(),
         channel_internal_id: channel_internal_id.to_string(),
         service_type_id: service_type_id.to_string(),
     };
@@ -166,7 +167,7 @@ pub async fn assert_player_is_eliminated_from_bracket(
         .await;
     res.assert_status(StatusCode::NOT_FOUND);
     res.assert_text(
-        format!("Unable to answer query:\n\tThere is no match for you to play because you were eliminated from bracket {bracket_id}"),
+        format!("Unable to answer query:\n\t{player} has been eliminated from the tournament and has no matches left to play\nBracket: {bracket_id}"),
     )
     .await;
 }
@@ -174,14 +175,15 @@ pub async fn assert_player_is_eliminated_from_bracket(
 /// Assert player with `seed` has no next match (not enough players or winner)
 pub async fn assert_player_has_no_next_match(
     test_api: &TotsugekiApiTestClient,
-    player: usize,
+    player_internal_id: usize,
     channel_internal_id: &str,
     service_type_id: Service,
     bracket_id: BracketId,
+    player: Player,
 ) {
     trace!("Asserting player has no next match");
     let body = NextMatchGETRequest {
-        player_internal_id: player.to_string(),
+        player_internal_id: player_internal_id.to_string(),
         channel_internal_id: channel_internal_id.to_string(),
         service_type_id: service_type_id.to_string(),
     };
@@ -194,7 +196,7 @@ pub async fn assert_player_has_no_next_match(
         .await;
     res.assert_status(StatusCode::NOT_FOUND);
     res.assert_text(format!(
-        "Unable to answer query:\n\tThere is no match for you to play because you won the bracket {bracket_id}",
+        "Unable to answer query:\n\t{player} won the tournament and has no matches left to play\nBracket: {bracket_id}",
     ))
     .await;
 }

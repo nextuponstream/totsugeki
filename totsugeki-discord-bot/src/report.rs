@@ -46,7 +46,7 @@ async fn report(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                 return Ok::<CommandResult, CommandError>(Ok(()));
             }
         };
-        let mut new_matches_message = "".to_string();
+        let mut new_matches_message = String::new();
         for m in new_matches {
             let player1 = match m.get_players()[0].clone() {
                 Opponent::Player(p) => p,
@@ -135,7 +135,7 @@ async fn tournament_organiser_reports(
                 return Ok::<CommandResult, CommandError>(Ok(()));
             }
         };
-        let mut new_matches_message = "".to_string();
+        let mut new_matches_message = String::new();
         for m in new_matches {
             let player1 = match m.get_players()[0].clone() {
                 Opponent::Player(p) => p,

@@ -43,7 +43,7 @@ async fn create(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 
         let organiser_id = msg.guild_id.expect("guild id");
         let organiser_id = organiser_id.to_string();
-        let organiser_name = msg.guild(&ctx).expect("guild").name;
+        let organiser_name = msg.guild(ctx).expect("guild").name;
         let discussion_channel_id = msg.channel_id;
         let start_time = match NaiveDateTime::parse_from_str(start_time.as_str(), "%Y-%m-%d:%H:%M")
         {

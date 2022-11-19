@@ -25,7 +25,7 @@ async fn disqualify(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
         let mut bracket_data = bracket_data.write().await;
         let (mut bracket, users) = bracket_data.clone();
 
-        let mut new_matches_message = "".into();
+        let mut new_matches_message = String::new();
         match bracket.clone().disqualify_participant(player_id) {
             Ok((b, new_matches)) => {
                 bracket = b;

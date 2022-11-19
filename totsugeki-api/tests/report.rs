@@ -74,7 +74,7 @@ async fn participants_cannot_report_result_until_bracket_starts() {
             .await;
         res.assert_status(StatusCode::FORBIDDEN);
         res.assert_text(format!(
-            "Action is forbidden:\n\tBracket \"{}\" does not accept reported results at the moment",
+            "Action is forbidden:\n\tBracket {} has not started. Match results are not yet accepted",
             bracket.bracket_id
         ))
         .await;
@@ -140,7 +140,7 @@ async fn match_results_cannot_be_reported_once_bracket_has_ended() {
             .await;
         res.assert_status(StatusCode::FORBIDDEN);
         res.assert_text(format!(
-            "Action is forbidden:\n\tBracket \"{}\" does not accept reported results at the moment",
+            "Action is forbidden:\n\tBracket {} has not started. Match results are not yet accepted",
             bracket.bracket_id
         ))
         .await;
@@ -222,6 +222,7 @@ async fn players_disagreeing_on_a_result_allows_correction_from_both_side() {
             channel_internal_id,
             service,
             bracket.bracket_id,
+            bracket.players.clone()[2 - 1].clone(),
         )
         .await;
     }
@@ -265,7 +266,7 @@ async fn reporting_result_for_first_round_3_man() {
         let player1 = Opponent::Player(bracket.players[0].clone());
         trace!("Top seed reporting a match should have no effect since he has not opponent yet");
         res.assert_status(StatusCode::FORBIDDEN);
-        res.assert_text(format!("Action is forbidden:\n\tCannot report result in a match where opponent is missing. Current players: {player1} VS ?")).await;
+        res.assert_text(format!("Action is forbidden:\n\tCannot report result in a match where opponent is missing. Current players: {player1} VS ?\nBracket: {}", bracket.bracket_id)).await;
 
         both_player_report_match_result(&test_api, "2", "3", channel_internal_id, service, (2, 0))
             .await;
@@ -294,6 +295,7 @@ async fn reporting_result_for_first_round_3_man() {
             channel_internal_id,
             service,
             bracket.bracket_id,
+            bracket.players[3 - 1].clone(),
         )
         .await;
     }
@@ -337,7 +339,7 @@ async fn reporting_result_for_first_round_3_man_with_automatic_match_validation(
         let player1 = Opponent::Player(bracket.players[0].clone());
         trace!("Top seed reporting a match should have no effect since he has not opponent yet");
         res.assert_status(StatusCode::FORBIDDEN);
-        res.assert_text(format!("Action is forbidden:\n\tCannot report result in a match where opponent is missing. Current players: {player1} VS ?")).await;
+        res.assert_text(format!("Action is forbidden:\n\tCannot report result in a match where opponent is missing. Current players: {player1} VS ?\nBracket: {}", bracket.bracket_id)).await;
 
         let (response, _) = player_reports_match_result(
             &test_api,
@@ -379,6 +381,7 @@ async fn reporting_result_for_first_round_3_man_with_automatic_match_validation(
             channel_internal_id,
             service,
             bracket.bracket_id,
+            bracket.players[3 - 1].clone(),
         )
         .await;
     }

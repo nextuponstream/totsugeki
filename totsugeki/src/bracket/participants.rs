@@ -16,7 +16,7 @@ impl Bracket {
         let matches = if updated_participants.len() < 3 {
             vec![]
         } else {
-            self.format.get_matches(&updated_participants)?
+            self.format.generate_matches(&updated_participants)?
         };
         Ok(Self {
             participants: updated_participants,

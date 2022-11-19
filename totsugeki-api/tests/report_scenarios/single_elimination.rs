@@ -129,6 +129,7 @@ async fn run_5_man_bracket() {
                     channel_internal_id,
                     service,
                     bracket.bracket_id,
+                    bracket.players[s - 1].clone(),
                 )
                 .await;
             } else {
@@ -138,6 +139,7 @@ async fn run_5_man_bracket() {
                     channel_internal_id,
                     service,
                     bracket.bracket_id,
+                    bracket.players[s - 1].clone(),
                 )
                 .await;
             }
@@ -252,6 +254,7 @@ async fn run_5_man_bracket_with_automatic_match_validation() {
                     channel_internal_id,
                     service,
                     bracket.bracket_id,
+                    bracket.players[s - 1].clone(),
                 )
                 .await;
             } else {
@@ -261,6 +264,7 @@ async fn run_5_man_bracket_with_automatic_match_validation() {
                     channel_internal_id,
                     service,
                     bracket.bracket_id,
+                    bracket.players[s - 1].clone(),
                 )
                 .await;
             }
@@ -437,6 +441,7 @@ async fn run_8_man_bracket() {
                     channel_internal_id,
                     service,
                     bracket.bracket_id,
+                    bracket.players[s - 1].clone(),
                 )
                 .await;
             } else {
@@ -446,6 +451,7 @@ async fn run_8_man_bracket() {
                     channel_internal_id,
                     service,
                     bracket.bracket_id,
+                    bracket.players[s - 1].clone(),
                 )
                 .await;
             }
@@ -615,6 +621,7 @@ async fn run_8_man_bracket_with_automatic_match_validation() {
                     channel_internal_id,
                     service,
                     bracket.bracket_id,
+                    bracket.players[s - 1].clone(),
                 )
                 .await;
             } else {
@@ -624,6 +631,7 @@ async fn run_8_man_bracket_with_automatic_match_validation() {
                     channel_internal_id,
                     service,
                     bracket.bracket_id,
+                    bracket.players[s - 1].clone(),
                 )
                 .await;
             }
@@ -820,6 +828,7 @@ async fn run_9_man_bracket() {
                     channel_internal_id,
                     service,
                     bracket.bracket_id,
+                    bracket.players[s - 1].clone(),
                 )
                 .await;
             } else {
@@ -829,6 +838,7 @@ async fn run_9_man_bracket() {
                     channel_internal_id,
                     service,
                     bracket.bracket_id,
+                    bracket.players[s - 1].clone(),
                 )
                 .await;
             }
@@ -1017,6 +1027,7 @@ async fn run_9_man_bracket_with_automatic_match_validation() {
                     channel_internal_id,
                     service,
                     bracket.bracket_id,
+                    bracket.players[s - 1].clone(),
                 )
                 .await;
             } else {
@@ -1026,6 +1037,7 @@ async fn run_9_man_bracket_with_automatic_match_validation() {
                     channel_internal_id,
                     service,
                     bracket.bracket_id,
+                    bracket.players[s - 1].clone(),
                 )
                 .await;
             }

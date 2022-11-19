@@ -83,7 +83,7 @@ async fn report(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
             }
         };
 
-        let mut new_matches_message = "".to_string();
+        let mut new_matches_message = String::new();
         for m in response.matches {
             let player1 = m.players[0].parse::<Opponent>().expect("opponent");
             let player1 = match player1 {
@@ -199,7 +199,7 @@ async fn tournament_organiser_reports(
             }
         };
 
-        let mut new_matches_message = "".to_string();
+        let mut new_matches_message = String::new();
         for m in response.matches {
             let player1 = m.players[0].parse::<Opponent>().expect("opponent");
             let player1 = match player1 {

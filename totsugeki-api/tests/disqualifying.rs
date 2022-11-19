@@ -56,7 +56,7 @@ async fn tournament_organiser_disqualifies_player_that_could_not_make_it() {
             .expect("matches");
         assert!(matches.iter().any(|m| {
             if m.contains(player_id) {
-                if let Opponent::Player(looser) = m.get_looser() {
+                if let Opponent::Player(looser) = m.get_automatic_loser() {
                     return looser.get_id() == player_id;
                 }
             }
@@ -250,7 +250,8 @@ async fn there_is_no_next_match_for_disqualified_players() {
             .await;
         res.assert_status(StatusCode::NOT_FOUND);
         res.assert_text(format!(
-            "Unable to answer query:\n\tYou are disqualified (DQ'ed) from bracket {bracket_id}"
+            "Unable to answer query:\n\t({}) player_1 has been disqualified\nBracket: {bracket_id}",
+            player_id
         ))
         .await;
         test_api.clean_db().await;
@@ -303,7 +304,7 @@ async fn disqualified_player_cannot_report_result() {
         let player = bracket.players.get(0).expect("player").get_id();
         res.assert_status(StatusCode::FORBIDDEN);
         res.assert_text(format!(
-            "Action is forbidden:\n\tPlayer {} is disqualified from bracket {}",
+            "Action is forbidden:\n\t({}) player_1 is disqualified\nBracket: {}",
             player, bracket.bracket_id
         ))
         .await;
