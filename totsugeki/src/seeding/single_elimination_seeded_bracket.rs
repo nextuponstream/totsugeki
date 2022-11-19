@@ -362,7 +362,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::too_many_lines)]
     fn matches_generation_7_man_bracket() {
         let n = 7;
         let mut players: Vec<Player> = vec![];

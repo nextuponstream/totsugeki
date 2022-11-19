@@ -22,7 +22,7 @@ use crate::{matches::Match, player::Participants, seeding::Error};
 ///
 /// # Errors
 /// thrown when math overflow happens
-pub fn get_looser_bracket_matches_top_seed_favored(
+pub fn get_loser_bracket_matches_top_seed_favored(
     participants: &Participants,
 ) -> Result<Vec<Match>, Error> {
     let mut remaining_loosers = participants.clone().get_players_list();
@@ -153,7 +153,7 @@ mod tests {
     use crate::matches::{Id as MatchId, Match, MatchGET};
     use crate::opponent::Opponent;
     use crate::player::{Participants, Player};
-    use crate::seeding::double_elimination_seeded_bracket::get_looser_bracket_matches_top_seed_favored;
+    use crate::seeding::double_elimination_seeded_bracket::get_loser_bracket_matches_top_seed_favored;
 
     #[test]
     fn matches_generation_3_man() {
@@ -170,7 +170,7 @@ mod tests {
         players.reverse();
 
         let matches = Format::DoubleElimination
-            .get_matches(&participants)
+            .generate_matches(&participants)
             .expect("matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
@@ -215,11 +215,11 @@ mod tests {
         let mut participants = Participants::default();
         for _ in 0..4 {
             participants = participants
-                .add_participant(Player::new("".into()))
+                .add_participant(Player::new(String::new()))
                 .expect("participant");
         }
 
-        let matches = get_looser_bracket_matches_top_seed_favored(&participants).expect("matches");
+        let matches = get_loser_bracket_matches_top_seed_favored(&participants).expect("matches");
         let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(matches.len(), 2, "expected 2 matches, got: {matches:?}");
         assert_eq!(
@@ -238,11 +238,11 @@ mod tests {
         let mut participants = Participants::default();
         for _ in 0..5 {
             participants = participants
-                .add_participant(Player::new("".into()))
+                .add_participant(Player::new(String::new()))
                 .expect("participant");
         }
 
-        let matches = get_looser_bracket_matches_top_seed_favored(&participants).expect("matches");
+        let matches = get_loser_bracket_matches_top_seed_favored(&participants).expect("matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
             .map(crate::matches::Match::get_id)
@@ -272,11 +272,11 @@ mod tests {
         let mut participants = Participants::default();
         for _ in 0..6 {
             participants = participants
-                .add_participant(Player::new("".into()))
+                .add_participant(Player::new(String::new()))
                 .expect("participant");
         }
 
-        let matches = get_looser_bracket_matches_top_seed_favored(&participants).expect("matches");
+        let matches = get_loser_bracket_matches_top_seed_favored(&participants).expect("matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
             .map(crate::matches::Match::get_id)
@@ -318,11 +318,11 @@ mod tests {
         let mut participants = Participants::default();
         for _ in 0..7 {
             participants = participants
-                .add_participant(Player::new("".into()))
+                .add_participant(Player::new(String::new()))
                 .expect("participant");
         }
 
-        let matches = get_looser_bracket_matches_top_seed_favored(&participants).expect("matches");
+        let matches = get_loser_bracket_matches_top_seed_favored(&participants).expect("matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
             .map(crate::matches::Match::get_id)
@@ -365,11 +365,11 @@ mod tests {
         let mut participants = Participants::default();
         for _ in 0..8 {
             participants = participants
-                .add_participant(Player::new("".into()))
+                .add_participant(Player::new(String::new()))
                 .expect("participant");
         }
 
-        let matches = get_looser_bracket_matches_top_seed_favored(&participants).expect("matches");
+        let matches = get_loser_bracket_matches_top_seed_favored(&participants).expect("matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
             .map(crate::matches::Match::get_id)
@@ -413,11 +413,11 @@ mod tests {
         let mut participants = Participants::default();
         for _ in 0..9 {
             participants = participants
-                .add_participant(Player::new("".into()))
+                .add_participant(Player::new(String::new()))
                 .expect("participant");
         }
 
-        let matches = get_looser_bracket_matches_top_seed_favored(&participants).expect("matches");
+        let matches = get_loser_bracket_matches_top_seed_favored(&participants).expect("matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
             .map(crate::matches::Match::get_id)
@@ -462,11 +462,11 @@ mod tests {
         let mut participants = Participants::default();
         for _ in 0..10 {
             participants = participants
-                .add_participant(Player::new("".into()))
+                .add_participant(Player::new(String::new()))
                 .expect("participant");
         }
 
-        let matches = get_looser_bracket_matches_top_seed_favored(&participants).expect("matches");
+        let matches = get_loser_bracket_matches_top_seed_favored(&participants).expect("matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
             .map(crate::matches::Match::get_id)
@@ -512,11 +512,11 @@ mod tests {
         let mut participants = Participants::default();
         for _ in 0..11 {
             participants = participants
-                .add_participant(Player::new("".into()))
+                .add_participant(Player::new(String::new()))
                 .expect("participant");
         }
 
-        let matches = get_looser_bracket_matches_top_seed_favored(&participants).expect("matches");
+        let matches = get_loser_bracket_matches_top_seed_favored(&participants).expect("matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
             .map(crate::matches::Match::get_id)
@@ -563,11 +563,11 @@ mod tests {
         let mut participants = Participants::default();
         for _ in 0..12 {
             participants = participants
-                .add_participant(Player::new("".into()))
+                .add_participant(Player::new(String::new()))
                 .expect("participant");
         }
 
-        let matches = get_looser_bracket_matches_top_seed_favored(&participants).expect("matches");
+        let matches = get_loser_bracket_matches_top_seed_favored(&participants).expect("matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
             .map(crate::matches::Match::get_id)
@@ -615,11 +615,11 @@ mod tests {
         let mut participants = Participants::default();
         for _ in 0..16 {
             participants = participants
-                .add_participant(Player::new("".into()))
+                .add_participant(Player::new(String::new()))
                 .expect("participant");
         }
 
-        let matches = get_looser_bracket_matches_top_seed_favored(&participants).expect("matches");
+        let matches = get_loser_bracket_matches_top_seed_favored(&participants).expect("matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
             .map(crate::matches::Match::get_id)

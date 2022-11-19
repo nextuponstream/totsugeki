@@ -2,7 +2,10 @@
 
 use crate::Service;
 use thiserror::Error;
-use totsugeki::{bracket::Error as BracketError, DiscussionChannelId};
+use totsugeki::{
+    bracket::{matches::Error as ProgressionError, Error as BracketError},
+    DiscussionChannelId,
+};
 
 /// Ressource is unknown or desired update is forbidden
 #[derive(Error, Debug)]
@@ -36,25 +39,22 @@ pub enum Error {
 impl From<BracketError> for Error {
     fn from(e: BracketError) -> Self {
         match e {
-            BracketError::Match(_)
-            | BracketError::PlayerUpdate(_)
+            BracketError::UnknownPlayer(_, _, _)
+            | BracketError::Progression(
+                _,
+                ProgressionError::Disqualified(_)
+                | ProgressionError::NoGeneratedMatches
+                | ProgressionError::Eliminated(_)
+                | ProgressionError::NoNextMatch(_)
+                | ProgressionError::NoMatchToPlay(_),
+            ) => Self::UnknownBracket(e),
+
+            BracketError::PlayerUpdate(_)
             | BracketError::BarredFromEntering(_, _)
-            | BracketError::AcceptResults(_, _)
             | BracketError::Started(_, _)
             | BracketError::NotStarted(_, _)
-            | BracketError::AllMatchesPlayed(_)
-            | BracketError::PlayerDisqualified(_, _)
+            | BracketError::Progression(_, _)
             | BracketError::Seeding(_) => Self::ForbiddenBracketUpdate(e),
-
-            BracketError::PlayerIsNotParticipant(_, _)
-            | BracketError::EliminatedFromBracket(_, _)
-            | BracketError::NoNextMatch(_, _)
-            | BracketError::NoGeneratedMatches(_)
-            | BracketError::NoMatchToPlay(_, _)
-            | BracketError::UnknownPlayer(_, _, _)
-            | BracketError::DisqualifiedPlayerHasNoNextOpponent(_, _)
-            | BracketError::NoMatchToUpdate(_, _)
-            | BracketError::UnknownMatch(_) => Self::UnknownBracket(e),
         }
     }
 }

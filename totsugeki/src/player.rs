@@ -166,6 +166,15 @@ impl Participants {
             .any(|p| p.get_id() == participant_id)
     }
 
+    /// Returns player if present
+    #[must_use]
+    pub fn get(&self, participant_id: PlayerId) -> Option<Player> {
+        self.participants
+            .iter()
+            .cloned()
+            .find(|p| p.get_id() == participant_id)
+    }
+
     /// Return seed of player
     ///
     /// # Errors

@@ -267,7 +267,7 @@ async fn bracket_initial_next_opponent_are_correct() {
                         .await;
                     res.assert_status(StatusCode::NOT_FOUND);
                     res.assert_text(format!(
-                        "Unable to answer query:\n\tNo matches were generated yet for bracket {}",
+                        "Unable to answer query:\n\tNo matches were generated yet\nBracket: {}",
                         bracket.bracket_id
                     ))
                     .await;

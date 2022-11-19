@@ -4,11 +4,15 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::{
+    bracket::matches::{
+        double_elimination_format::Step as DE_Step, single_elimination_format::Step as SE_Step,
+        Progression,
+    },
     matches::Match,
     opponent::Opponent,
     player::Participants,
     seeding::{
-        double_elimination_seeded_bracket::get_looser_bracket_matches_top_seed_favored,
+        double_elimination_seeded_bracket::get_loser_bracket_matches_top_seed_favored,
         single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored,
         Error as SeedingError,
     },
@@ -21,15 +25,14 @@ pub enum Format {
     SingleElimination,
     /// Players are eliminated after their second loss
     DoubleElimination,
-    // TODO add other style of tournament
 }
 
 impl Format {
-    /// Return matches for this bracket format
+    /// Generate matches according to the current format
     ///
     /// # Errors
     /// thrown when math overflow happens
-    pub fn get_matches(self, participants: &Participants) -> Result<Vec<Match>, SeedingError> {
+    pub fn generate_matches(self, participants: &Participants) -> Result<Vec<Match>, SeedingError> {
         Ok(match self {
             Format::SingleElimination => get_balanced_round_matches_top_seed_favored(participants)?,
             Format::DoubleElimination => {
@@ -38,7 +41,7 @@ impl Format {
                     get_balanced_round_matches_top_seed_favored(participants)?;
                 matches.append(&mut winner_bracket_matches);
                 let mut looser_bracket_matches =
-                    get_looser_bracket_matches_top_seed_favored(participants)?;
+                    get_loser_bracket_matches_top_seed_favored(participants)?;
                 matches.append(&mut looser_bracket_matches);
                 let grand_finals: Match =
                     Match::new([Opponent::Unknown, Opponent::Unknown], [1, 2])
@@ -51,6 +54,24 @@ impl Format {
                 matches
             }
         })
+    }
+
+    /// Returns progression implementation for this bracket format
+    #[must_use]
+    pub fn get_progression(
+        &self,
+        matches: Vec<Match>,
+        seeding: Participants,
+        automatic_progression: bool,
+    ) -> Box<dyn Progression> {
+        match self {
+            Format::SingleElimination => {
+                Box::new(SE_Step::new(Some(matches), seeding, automatic_progression).expect(""))
+            }
+            Format::DoubleElimination => {
+                Box::new(DE_Step::new(Some(matches), seeding, automatic_progression).expect(""))
+            }
+        }
     }
 }
 

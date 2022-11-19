@@ -597,7 +597,7 @@ impl DBAccessor for InMemoryDBAccessor {
 
                 Ok(ReportResultPOST {
                     affected_match_id,
-                    message: "".into(),
+                    message: String::new(),
                     matches,
                 })
             }

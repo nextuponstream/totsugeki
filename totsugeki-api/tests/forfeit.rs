@@ -48,7 +48,7 @@ async fn player_forfeits_when_he_realises_he_cannot_make_it() {
             .expect("matches");
         assert!(matches.iter().any(|m| {
             if m.contains(player_id) {
-                if let Opponent::Player(looser) = m.get_looser() {
+                if let Opponent::Player(looser) = m.get_automatic_loser() {
                     return looser.get_id() == player_id;
                 }
             }

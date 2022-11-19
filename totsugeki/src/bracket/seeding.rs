@@ -14,26 +14,23 @@ impl Bracket {
     /// thrown when provided players do not match current players in bracket
     pub fn update_seeding(self, players: &[PlayerId]) -> Result<Self, Error> {
         if self.accept_match_results {
-            return Err(Error::Started(self.bracket_id, "".into()));
+            return Err(Error::Started(self.bracket_id, String::new()));
         }
 
         let mut player_group = Participants::default();
         for sorted_player in players {
             let players = self.get_participants().get_players_list();
-            let player = match players.iter().find(|p| p.get_id() == *sorted_player) {
-                Some(p) => p,
-                None => {
-                    return Err(Error::UnknownPlayer(
-                        *sorted_player,
-                        self.participants.clone(),
-                        self.bracket_id,
-                    ))
-                }
+            let Some(player) = players.iter().find(|p| p.get_id() == *sorted_player) else {
+                return Err(Error::UnknownPlayer(
+                    *sorted_player,
+                    self.participants.clone(),
+                    self.bracket_id,
+                ));
             };
             player_group = player_group.add_participant(player.clone())?;
         }
         let participants = seed(&self.seeding_method, player_group, self.participants)?;
-        let matches = self.format.get_matches(&participants)?;
+        let matches = self.format.generate_matches(&participants)?;
         Ok(Self {
             participants,
             matches,
@@ -139,46 +136,37 @@ mod tests {
         let seeding = vec![p3_id, p2_id, unknown_player];
         let expected_participants = bracket.get_participants();
         let expected_bracket_id = bracket_id;
-        match bracket.clone().update_seeding(&seeding) {
+        let (id, p, bracket_id) = match bracket.clone().update_seeding(&seeding) {
+            Err(Error::UnknownPlayer(id, p, bracket_id)) => (id, p, bracket_id),
+            Err(e) => panic!("Expected Players error, got {e}"),
             Ok(b) => panic!("Expected error, bracket: {b}"),
-            Err(e) => match e {
-                Error::UnknownPlayer(id, p, bracket_id) => {
-                    assert_eq!(id, unknown_player);
-                    assert!(p.have_same_participants(&expected_participants));
-                    assert_eq!(bracket_id, expected_bracket_id);
-                }
-                _ => panic!("Expected Players error, got {e}"),
-            },
         };
+        assert_eq!(id, unknown_player);
+        assert!(p.have_same_participants(&expected_participants));
+        assert_eq!(bracket_id, expected_bracket_id);
 
         // no players
         let seeding = vec![];
-        match bracket.clone().update_seeding(&seeding) {
-            Ok(b) => panic!("Expected error, bracket: {b}"),
-            Err(e) => match e {
-                Error::Seeding(e) => match e {
-                    SeedingError::DifferentParticipants(wrong_p, _actual_p) => {
-                        assert!(wrong_p.is_empty());
-                    }
-                    _ => panic!("Expected DifferentParticipants error, got {e}"),
-                },
-                _ => panic!("Expected Seeding error, got {e}"),
-            },
+        let wrong_p = match bracket.clone().update_seeding(&seeding) {
+            Err(Error::Seeding(SeedingError::DifferentParticipants(wrong_p, _actual_p))) => wrong_p,
+            Err(e) => panic!(
+                "Expected Error::Seeding(SeedingError::DifferentParticipants) error but got {e}"
+            ),
+            _ => panic!("Expected error but got none, bracket: {bracket}"),
         };
+        assert!(wrong_p.is_empty());
 
         // duplicate player
         let seeding = vec![p1_id, p1_id, p1_id];
-        match bracket.update_seeding(&seeding) {
-            Ok(b) => panic!("Expected error, bracket: {b}"),
-            Err(e) => match e {
-                Error::PlayerUpdate(e) => match e {
-                    PlayerError::AlreadyPresent => {}
-                    _ => panic!("Expected AlreadyPresent error, got {e}"),
-                },
-                _ => panic!("Expected Seeding error, got {e}"),
-            },
+        match bracket.clone().update_seeding(&seeding) {
+            Err(Error::PlayerUpdate(PlayerError::AlreadyPresent)) => {}
+            Err(e) => panic!(
+                "Expected Error::PlayerUpdate(PlayerError::AlreadyPresent) error but got {e}"
+            ),
+            _ => panic!("Expected error but got none, bracket: {bracket}"),
         };
     }
+
     #[test]
     fn updating_seeding_changes_matches_of_3_man_bracket() {
         let mut players = vec![];

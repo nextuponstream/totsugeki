@@ -63,7 +63,7 @@ impl From<Bracket> for Raw {
             seeding_method: b.seeding_method,
             start_time: b.start_time,
             accept_match_results: b.accept_match_results,
-            automatic_match_validation: b.automatic_match_validation,
+            automatic_match_validation: b.automatic_match_progression,
             barred_from_entering: b.is_closed,
         }
     }
@@ -86,7 +86,7 @@ impl TryFrom<Raw> for Bracket {
             seeding_method: br.seeding_method,
             start_time: br.start_time,
             accept_match_results: br.accept_match_results,
-            automatic_match_validation: br.automatic_match_validation,
+            automatic_match_progression: br.automatic_match_validation,
             is_closed: br.barred_from_entering,
         })
     }

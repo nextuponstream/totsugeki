@@ -21,6 +21,17 @@ use totsugeki::{
 };
 
 /// Error while persisting data
+///
+/// Implementation details:
+/// (TLDR) dealing with many players most likely results in big enum variants
+/// that can hardly be contained under 128 bytes
+///
+/// Boxing both variant with Resource error results in
+/// `std::mem::size_of::<Error>()` = 136 -> 40 at the time of writting. Boxing
+/// only one of the variant results in ~8 less bytes. Apparently, one should
+/// worry about the Err variant size of a result according to this [lint](https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err)
+///
+/// This is a performance lint so it's not exactly a premature optimisation
 #[derive(Error, Debug)]
 pub enum Error<'a> {
     /// 400: user input could not be parsed
@@ -28,10 +39,10 @@ pub enum Error<'a> {
     ParseUserInput(#[from] UserInputError),
     /// 403: user action is illegal
     #[error("Action is forbidden:\n\t{0}")]
-    Forbidden(ResourceError),
+    Forbidden(Box<ResourceError>),
     /// 404: user requested unknown ressource
     #[error("Unable to answer query:\n\t{0}")]
-    NotFound(ResourceError),
+    NotFound(Box<ResourceError>),
     /// 500: critical error
     // NOTE: using #[from] macro does not work. Lifetime does not play well
     #[error("Critical error")]
@@ -51,9 +62,9 @@ impl<'a> From<ResourceError> for Error<'a> {
             | ResourceError::UnknownPlayer
             | ResourceError::UnknownActiveBracketForDiscussionChannel(_)
             | ResourceError::UnknownBracket(_)
-            | ResourceError::UnknownResource(_) => Self::NotFound(e),
+            | ResourceError::UnknownResource(_) => Self::NotFound(Box::new(e)),
 
-            ResourceError::ForbiddenBracketUpdate(_) => Self::Forbidden(e),
+            ResourceError::ForbiddenBracketUpdate(_) => Self::Forbidden(Box::new(e)),
         }
     }
 }

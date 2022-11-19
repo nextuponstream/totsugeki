@@ -2,27 +2,27 @@
 
 use crate::{
     bracket::Id as BracketId,
+    matches::Id as MatchId,
     opponent::{Opponent, ParsingOpponentError},
     player::{Id as PlayerId, Player},
 };
 #[cfg(feature = "poem-openapi")]
 use poem_openapi::Object;
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
+use std::{num::ParseIntError, str::FromStr};
 use thiserror::Error;
 
 /// Error while interacting with match
 #[derive(Error, Debug, Clone)]
 pub enum Error {
     /// Players reported different match outcome
-    #[error("Players reported different match outcomes: {} and {} were reported", .0[0], .0[1])]
-    PlayersReportedDifferentMatchOutcome([ReportedResult; 2]),
+    #[error("Players reported different match outcomes: {} and {} were reported", .1[0], .1[1])]
+    PlayersReportedDifferentMatchOutcome(MatchId, [ReportedResult; 2]),
     /// Mathematical overflow happened, cannot proceed
     #[error("Error. Unable to proceed further.")]
     MathOverflow,
     /// Cannot update match because player is Unknown
     #[error("Player with id \"{0}\" is unknown. Players in this match are: {} VS {}", .1[0], .1[1])]
-    // FIXME change to player
     UnknownPlayer(PlayerId, MatchPlayers),
     /// Cannot update match result because an opponent is missing
     #[error("Cannot report result in a match where opponent is missing. Current players: {} VS {}", .0[0], .0[1])]
@@ -39,6 +39,9 @@ pub enum Error {
     /// Cannot set opponent without a player id
     #[error("Need a player id for opponent")]
     OpponentIsNotAPlayer,
+    /// No opponent to player was found
+    #[error("Incomplete match")]
+    NoOpponent(MatchPlayers),
 }
 
 /// Seeds of players
@@ -75,23 +78,25 @@ impl std::fmt::Display for ReportedResult {
 #[derive(Error, Debug)]
 pub enum MatchResultParsingError {
     /// Could not parse
-    #[error("Match could not be parsed")]
-    CouldNotParseResult,
+    #[error("{0} does not respect result format. Please report result as 'X-Y'")]
+    MissingResultDelimiter(String),
+    /// Could not parse integer
+    #[error("Could not parse integer")]
+    Result(#[from] ParseIntError),
 }
 
 impl FromStr for ReportedResult {
     type Err = MatchResultParsingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // TODO use string split with '-' and parse both side
-        Ok(match s {
-            "2-0" => Self((2, 0)),
-            "2-1" => Self((2, 1)),
-            "1-2" => Self((1, 2)),
-            "0-2" => Self((0, 2)),
-            "0-0" => Self((0, 0)),
-            _ => return Err(MatchResultParsingError::CouldNotParseResult),
-        })
+        match s.split_once('-') {
+            Some((l, r)) => {
+                let l_score: i8 = l.parse::<i8>()?;
+                let r_score: i8 = r.parse::<i8>()?;
+                Ok(Self((l_score, r_score)))
+            }
+            None => Err(MatchResultParsingError::MissingResultDelimiter(s.into())),
+        }
     }
 }
 
@@ -121,6 +126,89 @@ impl std::fmt::Display for Match {
         writeln!(f, "\t{} vs {}", self.players[0], self.players[1])?;
         writeln!(f, "winner: {}", self.winner)
     }
+}
+
+impl Match {
+    #[cfg(test)]
+    /// Alternative shorter debug string
+    #[must_use]
+    pub fn get_debug_summary(&self) -> String {
+        let p1 = if let Opponent::Player(p) = &self.players[0] {
+            p.get_name()
+        } else {
+            self.players[0].to_string()
+        };
+        let p2 = if let Opponent::Player(p) = &self.players[1] {
+            p.get_name()
+        } else {
+            self.players[1].to_string()
+        };
+        let mut p1_status = "-";
+        let mut p2_status = "-";
+        if let Opponent::Player(w) = &self.winner {
+            if let Opponent::Player(p1) = &self.players[0] {
+                if p1 == w {
+                    p1_status = "W";
+                }
+            }
+            if let Opponent::Player(p2) = &self.players[1] {
+                if p2 == w {
+                    p2_status = "W";
+                }
+            }
+        }
+        if let Opponent::Player(l) = &self.automatic_looser {
+            if let Opponent::Player(p1) = &self.players[0] {
+                if p1 == l {
+                    p1_status = "L";
+                }
+            }
+            if let Opponent::Player(p2) = &self.players[1] {
+                if p2 == l {
+                    p2_status = "L";
+                }
+            }
+        }
+        format!(
+            "{:?} {}{:02} VS {}{:02} | match id: {}",
+            self.seeds, p1_status, p1, p2_status, p2, self.id
+        )
+    }
+}
+
+/// Partitions double elimination bracket matches in winner bracket, looser
+/// bracket, grand finals and grand finals reset
+pub(crate) fn partition_double_elimination_matches(
+    matches: &[Match],
+    n: usize,
+) -> Result<(Vec<Match>, Vec<Match>, Match, Match), Error> {
+    if matches.len() != 2 * n - 1 {
+        return Err(Error::WrongNumberOfMatches(matches.len()));
+    }
+    let total_winner_bracket_matches = n - 1;
+    let (winner_bracket, other) = matches.split_at(total_winner_bracket_matches);
+    let (grand_finals_reset, other) = other.split_last().expect("grand finals reset");
+    let (grand_finals, loser_bracket) = other.split_last().expect("grand finals");
+    Ok((
+        winner_bracket.to_vec(),
+        loser_bracket.to_vec(),
+        grand_finals.clone(),
+        grand_finals_reset.clone(),
+    ))
+}
+
+/// Compose double elimination matches from partition
+pub(crate) fn double_elimination_matches_from_partition(
+    winners: &[Match],
+    losers: &[Match],
+    grand_finals: Match,
+    reset: Match,
+) -> Vec<Match> {
+    let mut matches: Vec<Match> = winners.into();
+    matches.append(&mut losers.into());
+    matches.push(grand_finals);
+    matches.push(reset);
+    matches
 }
 
 impl Match {
@@ -159,29 +247,15 @@ impl Match {
         false
     }
 
-    /// Compose double elimination matches from partition
-    pub(crate) fn double_elimination_matches_from_partition(
-        winners: &[Match],
-        losers: &[Match],
-        grand_finals: Match,
-        reset: Match,
-    ) -> Vec<Match> {
-        let mut matches: Vec<Match> = winners.into();
-        matches.append(&mut losers.into());
-        matches.push(grand_finals);
-        matches.push(reset);
-        matches
-    }
-
     /// Get id of match
     #[must_use]
     pub fn get_id(&self) -> Id {
         self.id
     }
 
-    /// Get looser of match. Loosers are always players
+    /// Get automatic looser of match. Loosers are always players
     #[must_use]
-    pub fn get_looser(&self) -> Opponent {
+    pub fn get_automatic_loser(&self) -> Opponent {
         self.automatic_looser.clone()
     }
 
@@ -206,7 +280,7 @@ impl Match {
     /// Returns true if player the automatic looser of this match is given
     /// player
     #[must_use]
-    pub(crate) fn is_automatic_looser_by_disqualification(&self, player_id: PlayerId) -> bool {
+    pub(crate) fn is_automatic_loser_by_disqualification(&self, player_id: PlayerId) -> bool {
         if let Opponent::Player(loser) = &self.automatic_looser {
             return loser.get_id() == player_id;
         }
@@ -216,8 +290,7 @@ impl Match {
     #[must_use]
     /// Returns true if this match is where loser arrives
     pub(crate) fn is_first_loser_match(&self, expected_seed: usize) -> bool {
-        (Opponent::Unknown == self.players[0] && self.seeds[0] == expected_seed)
-            || (Opponent::Unknown == self.players[1] && self.seeds[1] == expected_seed)
+        self.seeds[0] == expected_seed || self.seeds[1] == expected_seed
     }
 
     /// Returns true if match is over
@@ -299,32 +372,11 @@ impl Match {
         }
     }
 
-    /// Partitions double elimination bracket matches in winner bracket, looser
-    /// bracket, grand finals and grand finals reset
-    pub(crate) fn partition_double_elimination_matches(
-        matches: &[Match],
-        n: usize,
-    ) -> Result<(Vec<Match>, Vec<Match>, Match, Match), Error> {
-        if matches.len() != 2 * n - 1 {
-            return Err(Error::WrongNumberOfMatches(matches.len()));
-        }
-        let total_winner_bracket_matches = n - 1;
-        let (winner_bracket, other) = matches.split_at(total_winner_bracket_matches);
-        let (grand_finals_reset, other) = other.split_last().expect("grand finals reset");
-        let (grand_finals, loser_bracket) = other.split_last().expect("grand finals");
-        Ok((
-            winner_bracket.to_vec(),
-            loser_bracket.to_vec(),
-            grand_finals.clone(),
-            grand_finals_reset.clone(),
-        ))
-    }
-
     /// Set looser of this match (when disqualified)
     ///
     /// # Errors
     /// thrown when looser is not a participant of the match
-    pub fn set_looser(self, player_id: PlayerId) -> Result<Self, Error> {
+    pub fn set_automatic_loser(self, player_id: PlayerId) -> Result<Self, Error> {
         if !self.contains(player_id) {
             return Err(Error::UnknownPlayer(player_id, self.players));
         }
@@ -368,6 +420,9 @@ impl Match {
 
     #[must_use]
     /// Set player of match and return updated match
+    ///
+    /// # Panics
+    /// if same player is set as both opponents
     pub fn set_player(self, player: Player, is_player_1: bool) -> Match {
         let player = Opponent::Player(player);
         let players = if is_player_1 {
@@ -375,6 +430,7 @@ impl Match {
         } else {
             [self.players[0].clone(), player]
         };
+        assert_ne!(players[0], players[1]);
         Match { players, ..self }
     }
 
@@ -440,20 +496,26 @@ impl Match {
         let result_1 = ReportedResult((s11, s12));
         let result_2 = ReportedResult((s21, s22));
         if result_1.reverse() != result_2 {
-            return Err(Error::PlayersReportedDifferentMatchOutcome([
-                ReportedResult((self.reported_results[0].0, self.reported_results[0].1)),
-                ReportedResult((self.reported_results[1].0, self.reported_results[1].1)),
-            ]));
+            return Err(Error::PlayersReportedDifferentMatchOutcome(
+                self.id,
+                [
+                    ReportedResult((self.reported_results[0].0, self.reported_results[0].1)),
+                    ReportedResult((self.reported_results[1].0, self.reported_results[1].1)),
+                ],
+            ));
         }
         let (winner, loser) = if s11 > s12 && s21 < s22 {
             (self.players[0].clone(), self.players[1].clone())
         } else if s11 < s12 && s21 > s22 {
             (self.players[1].clone(), self.players[0].clone())
         } else {
-            return Err(Error::PlayersReportedDifferentMatchOutcome([
-                ReportedResult((self.reported_results[0].0, self.reported_results[0].1)),
-                ReportedResult((self.reported_results[1].0, self.reported_results[1].1)),
-            ]));
+            return Err(Error::PlayersReportedDifferentMatchOutcome(
+                self.id,
+                [
+                    ReportedResult((self.reported_results[0].0, self.reported_results[0].1)),
+                    ReportedResult((self.reported_results[1].0, self.reported_results[1].1)),
+                ],
+            ));
         };
 
         let winner = match winner {
@@ -521,6 +583,28 @@ impl Match {
         } else {
             Err(Error::UnknownPlayer(player_id, self.players))
         }
+    }
+
+    /// Returns other player of this match
+    ///
+    /// # Errors
+    /// thrown when there is no other player or player is not in the match
+    pub fn get_other_player(&self, player_id: PlayerId) -> Result<Player, Error> {
+        if let Opponent::Player(p) = &self.players[0] {
+            if p.get_id() == player_id {
+                if let Opponent::Player(other) = &self.players[1] {
+                    return Ok(other.clone());
+                }
+            }
+        }
+        if let Opponent::Player(p) = &self.players[1] {
+            if p.get_id() == player_id {
+                if let Opponent::Player(other) = &self.players[0] {
+                    return Ok(other.clone());
+                }
+            }
+        }
+        Err(Error::NoOpponent(self.players.clone()))
     }
 }
 
@@ -933,5 +1017,41 @@ mod tests {
         assert!(!m.is_playable());
         let m = Match::new([Opponent::Unknown, Opponent::Unknown], [1, 2]).expect("match");
         assert!(!m.is_playable());
+    }
+
+    #[test]
+    fn parse_results() {
+        let to_test = vec![
+            ("0-0", (0, 0)),
+            ("4-0", (4, 0)),
+            ("5-0", (5, 0)),
+            ("0-4", (0, 4)),
+            ("0-5", (0, 5)),
+            // all intermediate score for FT2
+            ("1-0", (1, 0)),
+            ("2-0", (2, 0)),
+            ("0-1", (0, 1)),
+            ("0-2", (0, 2)),
+            ("1-2", (1, 2)),
+            ("2-1", (2, 1)),
+            // all intermediate score for FT3
+            ("3-0", (3, 0)),
+            ("3-1", (3, 1)),
+            ("3-2", (3, 2)),
+            ("0-3", (0, 3)),
+            ("1-3", (1, 3)),
+            ("2-3", (2, 3)),
+        ];
+        for (s, (l_expected, r_expected)) in to_test {
+            let ReportedResult((l, r)) = s.parse::<ReportedResult>().expect("result");
+            assert_eq!(
+                l, l_expected,
+                "could not parse {s} into ({l_expected}, {r_expected})"
+            );
+            assert_eq!(
+                r, r_expected,
+                "could not parse {s} into ({l_expected}, {r_expected})"
+            );
+        }
     }
 }

@@ -32,7 +32,7 @@ async fn forfeit(ctx: &Context, msg: &Message) -> CommandResult {
             return Ok::<CommandResult, CommandError>(Ok(()));
         };
 
-        let mut new_matches_message = "".to_string();
+        let mut new_matches_message = String::new();
         match bracket.clone().disqualify_participant(player.get_id()) {
             Ok((b, new_matches)) => {
                 bracket = b;
