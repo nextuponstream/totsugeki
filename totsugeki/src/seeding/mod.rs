@@ -6,7 +6,7 @@ pub mod single_elimination_seeded_bracket;
 use crate::{
     matches::Match,
     opponent::Opponent,
-    player::{Error as PlayerError, Participants},
+    player::{Error as PlayerError, Id as PlayerId, Participants},
 };
 #[cfg(feature = "poem-openapi")]
 use poem_openapi::Object;
@@ -14,6 +14,20 @@ use rand::prelude::*;
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+
+/// Seeding of players, which can be done only knowing their ID's
+#[derive(Clone, Debug)]
+pub(crate) struct Seeding {
+    /// Ordered list of player ids, from strongest to weakest
+    player_ids: Vec<PlayerId>,
+}
+
+impl Seeding {
+    /// Create new seeding from ordered list of players ids
+    pub fn new(player_ids: Vec<PlayerId>) -> Seeding {
+        Seeding { player_ids }
+    }
+}
 
 /// Seeding method
 #[derive(Copy, Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
@@ -75,6 +89,7 @@ pub enum Error {
     /// Mathematical overflow
     #[error("A mathematical overflow happened")]
     MathOverflow,
+    // FIXME use Seeding instead of Participants
     /// Seeding needs to use the same participants
     #[error("Participants used for seeding differ from current participants:\nused: {0}\nactual participants: {1}")]
     DifferentParticipants(Participants, Participants),

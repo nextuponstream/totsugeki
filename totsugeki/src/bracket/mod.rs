@@ -13,8 +13,8 @@ mod seeding;
 use crate::{
     bracket::{matches::Error as ProgressError, Id as BracketId},
     format::{Format, ParsingError as FormatParsingError},
-    matches::{Id as MatchId, Match, MatchParsingError},
-    player::{Error as PlayerError, Id as PlayerId, Participants},
+    matches::{Error as MatchError, Id as MatchId, Match, MatchParsingError},
+    player::{Error as PlayerError, Id as PlayerId, Participants, Player},
     seeding::{
         Error as SeedingError, Method as SeedingMethod, ParsingError as SeedingParsingError,
     },
@@ -27,11 +27,6 @@ use thiserror::Error;
 use uuid::Uuid;
 
 /// Updating bracket cannot be performed or searched information does not exist
-// FIXME try reducing this error size under 136 bytes
-// FIXME find current error size
-// Fix conceptual error for delegating error:
-// bracket cannot update if it has not started, then this error is handled at
-// the bracket let, not in a ProgressionError
 #[derive(Error, Debug)]
 pub enum Error {
     /// Error while seeding a bracket
@@ -52,9 +47,45 @@ pub enum Error {
     /// Bracket has not started. Inform user with suggested action.
     #[error("Bracket {0} has not started{1}")]
     NotStarted(BracketId, String),
-    /// Error progressing the bracket
+    /// Player has been disqualified
+    #[error("{1} is disqualified\nBracket: {0}")]
+    Disqualified(BracketId, Player),
+    // TODO add other enum variant from ProgressionError that involve player
+    // and map them to this enum so that player Id are mapped to the
+    // corresponding player name
+    /// Player has won the tournament and has no match left to play
+    #[error("{1} won the tournament and has no matches left to play\nBracket: {0}")]
+    NoNextMatch(BracketId, Player),
+    /// Player has been eliminated from the tournament
+    #[error(
+        "{1} has been eliminated from the tournament and has no matches left to play\nBracket: {0}"
+    )]
+    Eliminated(BracketId, Player),
+    /// Player has been eliminated from the tournament
+    #[error("{1} is not a participant\nBracket: {0}")]
+    PlayerIsNotParticipant(BracketId, Player),
+    /// Forbidden action: player has been disqualified
+    #[error("{1} is disqualified\nBracket: {0}")]
+    ForbiddenDisqualified(BracketId, Player),
+    /// No match to play for player
+    #[error("There is no matches for you to play\nBracket: {0}")]
+    NoMatchToPlay(BracketId, Player),
+    /// There is no generated matches at this time
+    #[error("No matches were generated yet\nBracket: {0}")]
+    NoGeneratedMatches(BracketId),
+    /// Tournament is over
+    #[error("Tournament is over\nBracket: {0}")]
+    TournamentIsOver(BracketId),
+    /// Cannot update match
     #[error("{1}\nBracket: {0}")]
-    Progression(BracketId, ProgressError),
+    MatchUpdate(BracketId, MatchError),
+    /// Referred match is unknown
+    #[error("Match {1} is unknown\nBracket: {0}")]
+    UnknownMatch(BracketId, MatchId),
+    // FIXME use player id in Match
+    /// Update to match could not happen
+    #[error("There is no match to update\nBracket: {0}")]
+    NoMatchToUpdate(BracketId, Vec<Match>, MatchId),
 }
 
 /// Bracket identifier
@@ -144,7 +175,7 @@ impl Bracket {
         );
         let (matches, affected_match_id, new_matches) = match p.report_result(player_id, result) {
             Ok(el) => el,
-            Err(e) => return Err(Error::Progression(self.bracket_id, e)),
+            Err(e) => return Err(self.get_from_progression_error(e)),
         };
         Ok((Self { matches, ..self }, affected_match_id, new_matches))
     }
@@ -171,7 +202,7 @@ impl Bracket {
         let (matches, affected_match_id, new_matches) =
             match p.tournament_organiser_reports_result(player1, result_player1, player2) {
                 Ok(el) => el,
-                Err(e) => return Err(Error::Progression(self.bracket_id, e)),
+                Err(e) => return Err(self.get_from_progression_error(e)),
             };
         Ok((Self { matches, ..self }, affected_match_id, new_matches))
     }
@@ -209,6 +240,61 @@ impl Bracket {
                 self.automatic_match_progression,
             )
             .matches_to_play()
+    }
+
+    /// Add bracket id to error message and maps player name from player id
+    // NOTE: I hope there will be a better way to add additionnal info to an
+    // error because this does not scale over time
+    pub(crate) fn get_from_progression_error(&self, pe: ProgressError) -> Error {
+        match pe {
+            ProgressError::Disqualified(player_id) => Error::Disqualified(
+                self.bracket_id,
+                self.participants
+                    .get(player_id)
+                    .expect("disqualified player id"),
+            ),
+            ProgressError::NoNextMatch(player_id) => Error::NoNextMatch(
+                self.bracket_id,
+                self.participants
+                    .get(player_id)
+                    .expect("player id with no next match"),
+            ),
+            ProgressError::Eliminated(player_id) => Error::Eliminated(
+                self.bracket_id,
+                self.participants
+                    .get(player_id)
+                    .expect("eliminated player id"),
+            ),
+            ProgressError::PlayerIsNotParticipant(player_id) => Error::PlayerIsNotParticipant(
+                self.bracket_id,
+                self.participants
+                    .get(player_id)
+                    .expect("player id of non-participant"),
+            ),
+            ProgressError::ForbiddenDisqualified(player_id) => Error::ForbiddenDisqualified(
+                self.bracket_id,
+                self.participants
+                    .get(player_id)
+                    .expect("disqualified player id for which bracket update cannot be performed"),
+            ),
+            ProgressError::Seeding(e) => Error::Seeding(e),
+            ProgressError::NoGeneratedMatches => Error::NoGeneratedMatches(self.bracket_id),
+            ProgressError::TournamentIsOver => Error::TournamentIsOver(self.bracket_id),
+            ProgressError::MatchUpdate(me) => Error::MatchUpdate(self.bracket_id, me),
+            ProgressError::UnknownPlayer(player_id, participants) => {
+                Error::UnknownPlayer(player_id, participants, self.bracket_id)
+            }
+            ProgressError::NoMatchToPlay(player_id) => Error::NoMatchToPlay(
+                self.bracket_id,
+                self.participants
+                    .get(player_id)
+                    .expect("disqualified player id for which bracket update cannot be performed"),
+            ),
+            ProgressError::UnknownMatch(match_id) => Error::UnknownMatch(self.bracket_id, match_id),
+            ProgressError::NoMatchToUpdate(matches, m) => {
+                Error::NoMatchToUpdate(self.bracket_id, matches, m)
+            }
+        }
     }
 }
 

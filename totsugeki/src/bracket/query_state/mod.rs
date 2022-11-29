@@ -36,7 +36,7 @@ impl Bracket {
             .next_opponent(player_id)
         {
             Ok(el) => Ok(el),
-            Err(e) => Err(Error::Progression(self.bracket_id, e)),
+            Err(e) => Err(self.get_from_progression_error(e)),
         }
     }
 }

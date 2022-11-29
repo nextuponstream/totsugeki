@@ -40,20 +40,22 @@ impl From<BracketError> for Error {
     fn from(e: BracketError) -> Self {
         match e {
             BracketError::UnknownPlayer(_, _, _)
-            | BracketError::Progression(
-                _,
-                ProgressionError::Disqualified(_)
-                | ProgressionError::NoGeneratedMatches
-                | ProgressionError::Eliminated(_)
-                | ProgressionError::NoNextMatch(_)
-                | ProgressionError::NoMatchToPlay(_),
-            ) => Self::UnknownBracket(e),
+            | BracketError::NoNextMatch(_, _)
+            | BracketError::Disqualified(_, _)
+            | BracketError::Eliminated(_, _)
+            | BracketError::PlayerIsNotParticipant(_, _)
+            | BracketError::NoGeneratedMatches(_)
+            | BracketError::NoMatchToPlay(_, _) => Self::UnknownBracket(e),
 
             BracketError::PlayerUpdate(_)
             | BracketError::BarredFromEntering(_, _)
             | BracketError::Started(_, _)
             | BracketError::NotStarted(_, _)
-            | BracketError::Progression(_, _)
+            | BracketError::ForbiddenDisqualified(_, _)
+            | BracketError::TournamentIsOver(_)
+            | BracketError::MatchUpdate(_, _)
+            | BracketError::UnknownMatch(_, _)
+            | BracketError::NoMatchToUpdate(_, _, _)
             | BracketError::Seeding(_) => Self::ForbiddenBracketUpdate(e),
         }
     }

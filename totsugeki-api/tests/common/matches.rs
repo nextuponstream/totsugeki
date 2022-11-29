@@ -15,7 +15,7 @@ pub fn assert_seeding(expected_seedings: &[[usize; 2]], matches: &[Match]) {
 /// Assert if match between two participants exists in collection
 pub fn assert_if_match_exists(
     expected_seeding: [usize; 2],
-    participants: [Player; 2],
+    participants: &[&Player; 2],
     matches: &[Match],
 ) {
     assert!(
@@ -30,8 +30,8 @@ pub fn assert_if_match_exists(
 }
 
 /// Assert if matches exist in collection
-pub fn assert_if_matches_exist(expected_matches: &[([usize; 2], [Player; 2])], matches: &[Match]) {
+pub fn assert_if_matches_exist(expected_matches: &[([usize; 2], [&Player; 2])], matches: &[Match]) {
     for (expected_seeds, expected_participants) in expected_matches {
-        assert_if_match_exists(*expected_seeds, expected_participants.clone(), matches);
+        assert_if_match_exists(*expected_seeds, expected_participants, matches);
     }
 }

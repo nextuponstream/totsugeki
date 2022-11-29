@@ -58,10 +58,9 @@ impl Api {
     /// Get connection string for tournament server
     #[must_use]
     pub fn get_connection_string(&self) -> String {
-        if let Some(p) = self.port.clone() {
-            format!("{}:{p}", self.addr)
-        } else {
-            self.addr.clone()
+        match &self.port {
+            Some(p) => format!("{}:{p}", self.addr),
+            None => self.addr.clone(),
         }
     }
 

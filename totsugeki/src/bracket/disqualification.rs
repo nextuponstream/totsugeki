@@ -50,7 +50,7 @@ impl Bracket {
                 },
                 el.1,
             )),
-            Err(e) => Err(Error::Progression(self.bracket_id, e)),
+            Err(e) => Err(self.get_from_progression_error(e)),
         }
     }
 }
@@ -61,7 +61,7 @@ mod tests {
     use crate::{
         bracket::{raw::Raw, Id as BracketId},
         format::Format,
-        player::Participants,
+        player::{Participants, Player},
         seeding::{
             single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored,
             Method as SeedingMethod,
@@ -84,7 +84,15 @@ mod tests {
                 .collect(),
         )
         .expect("players");
-        let matches = get_balanced_round_matches_top_seed_favored(&players).expect("matches");
+        let matches = get_balanced_round_matches_top_seed_favored(
+            &players,
+            &players
+                .get_players_list()
+                .iter()
+                .map(Player::get_id)
+                .collect::<Vec<_>>(),
+        )
+        .expect("matches");
         let bracket_id = BracketId::new_v4();
         let bracket: Bracket = Raw {
             bracket_id,

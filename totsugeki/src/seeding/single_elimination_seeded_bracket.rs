@@ -1,7 +1,12 @@
 //! Generate seeded matches for single elimination
 
 use super::seeding_initial_round;
-use crate::{matches::Match, opponent::Opponent, player::Participants, seeding::Error};
+use crate::{
+    matches::Match,
+    opponent::Opponent,
+    player::{Id as PlayerId, Participants},
+    seeding::Error,
+};
 
 /// Returns tournament matches for `n` players in a list. Used for generating
 /// single elimination bracket or winner bracket in double elimination format.
@@ -12,8 +17,10 @@ use crate::{matches::Match, opponent::Opponent, player::Participants, seeding::E
 ///
 /// # Errors
 /// Throws error when math overflow happens
+// FIXME remove players after refactoring PlayerId instead of Player in Match
 pub fn get_balanced_round_matches_top_seed_favored(
     players: &Participants,
+    seeding: &[PlayerId],
 ) -> Result<Vec<Match>, Error> {
     // Matches are built bottom-up:
     // * for n
@@ -23,7 +30,7 @@ pub fn get_balanced_round_matches_top_seed_favored(
     // * for round 1, find top+low seed, assign them a match and repeat until no players are left
     // * for round 2, select next 4 matches
     // * ...
-    let n = players.len();
+    let n = seeding.len();
     let byes = match n.checked_next_power_of_two() {
         Some(b) => b - n,
         None => return Err(Error::MathOverflow),
@@ -117,8 +124,15 @@ mod tests {
         let cute_cat = players.get(2).expect("cute_cat");
 
         let players = Participants::try_from(players_copy).expect("players");
-        let matches =
-            get_balanced_round_matches_top_seed_favored(&players).expect("balanced matches");
+        let matches = get_balanced_round_matches_top_seed_favored(
+            &players,
+            &players
+                .get_players_list()
+                .iter()
+                .map(Player::get_id)
+                .collect::<Vec<_>>(),
+        )
+        .expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
             .map(crate::matches::Match::get_id)
@@ -165,8 +179,15 @@ mod tests {
         let cute_cat = players.get(3).expect("cute_cat");
 
         let players = Participants::try_from(players_copy).expect("players");
-        let matches =
-            get_balanced_round_matches_top_seed_favored(&players).expect("balanced matches");
+        let matches = get_balanced_round_matches_top_seed_favored(
+            &players,
+            &players
+                .get_players_list()
+                .iter()
+                .map(Player::get_id)
+                .collect::<Vec<_>>(),
+        )
+        .expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
             .map(crate::matches::Match::get_id)
@@ -226,8 +247,15 @@ mod tests {
         let cute_cat = players.get(4).expect("cute_cat");
 
         let players = Participants::try_from(players_copy).expect("players");
-        let matches =
-            get_balanced_round_matches_top_seed_favored(&players).expect("balanced matches");
+        let matches = get_balanced_round_matches_top_seed_favored(
+            &players,
+            &players
+                .get_players_list()
+                .iter()
+                .map(Player::get_id)
+                .collect::<Vec<_>>(),
+        )
+        .expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
             .map(crate::matches::Match::get_id)
@@ -297,8 +325,15 @@ mod tests {
         let cute_cat = players.get(5).expect("cute_cat");
 
         let players = Participants::try_from(players_copy).expect("players");
-        let matches =
-            get_balanced_round_matches_top_seed_favored(&players).expect("balanced matches");
+        let matches = get_balanced_round_matches_top_seed_favored(
+            &players,
+            &players
+                .get_players_list()
+                .iter()
+                .map(Player::get_id)
+                .collect::<Vec<_>>(),
+        )
+        .expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
             .map(crate::matches::Match::get_id)
@@ -378,8 +413,15 @@ mod tests {
         let cute_cat = players.get(6).expect("cute_cat");
 
         let players = Participants::try_from(players_copy).expect("players");
-        let matches =
-            get_balanced_round_matches_top_seed_favored(&players).expect("balanced matches");
+        let matches = get_balanced_round_matches_top_seed_favored(
+            &players,
+            &players
+                .get_players_list()
+                .iter()
+                .map(Player::get_id)
+                .collect::<Vec<_>>(),
+        )
+        .expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
             .map(crate::matches::Match::get_id)
@@ -473,8 +515,15 @@ mod tests {
         let cute_cat = players.get(7).expect("cute_cat");
 
         let players = Participants::try_from(players_copy).expect("players");
-        let matches =
-            get_balanced_round_matches_top_seed_favored(&players).expect("balanced matches");
+        let matches = get_balanced_round_matches_top_seed_favored(
+            &players,
+            &players
+                .get_players_list()
+                .iter()
+                .map(Player::get_id)
+                .collect::<Vec<_>>(),
+        )
+        .expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
             .map(crate::matches::Match::get_id)
@@ -573,7 +622,14 @@ mod tests {
             });
             let players = Participants::try_from(players).expect("players");
             let players = seed(&Method::Strict, players.clone(), players).expect("seeded players");
-            let _matches = get_balanced_round_matches_top_seed_favored(&players);
+            let _matches = get_balanced_round_matches_top_seed_favored(
+                &players,
+                &players
+                    .get_players_list()
+                    .iter()
+                    .map(Player::get_id)
+                    .collect::<Vec<_>>(),
+            );
         });
     }
 }

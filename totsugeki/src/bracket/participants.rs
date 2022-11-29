@@ -101,7 +101,8 @@ mod tests {
                 .collect(),
         )
         .expect("players");
-        let matches = get_balanced_round_matches_top_seed_favored(&players).expect("matches");
+        let matches =
+            get_balanced_round_matches_top_seed_favored(&players, &player_ids).expect("matches");
         let bracket: Bracket = Raw {
             bracket_id: BracketId::new_v4(),
             bracket_name: "bracket".to_string(),
@@ -149,7 +150,8 @@ mod tests {
                 .collect(),
         )
         .expect("players");
-        let matches = get_balanced_round_matches_top_seed_favored(&players).expect("matches");
+        let matches =
+            get_balanced_round_matches_top_seed_favored(&players, &player_ids).expect("matches");
         let bracket: Bracket = Raw {
             bracket_id: BracketId::new_v4(),
             bracket_name: "bracket".to_string(),

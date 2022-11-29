@@ -25,35 +25,37 @@ pub enum Error {
     #[error("No matches were generated yet")]
     NoGeneratedMatches,
     /// Player has been disqualified
-    #[error("{0} has been disqualified")]
-    Disqualified(Player),
+    #[error("{0} is disqualified")]
+    Disqualified(PlayerId),
     /// Player has won the tournament and has no match left to play
     #[error("{0} won the tournament and has no matches left to play")]
-    NoNextMatch(Player),
+    NoNextMatch(PlayerId),
     /// Player is eliminated from tournament and has no matches left to play
     #[error("{0} has been eliminated from the tournament and has no matches left to play")]
-    Eliminated(Player),
+    Eliminated(PlayerId),
     /// Tournament is over
     #[error("Tournament is over")]
     TournamentIsOver,
     /// Cannot update match
     #[error("{0}")]
     MatchUpdate(#[from] MatchError),
-    /// Player is disqualified
-    #[error("{0} is disqualified")]
-    PlayerDisqualified(Player),
+    // FIXME use Seeding instead of Participants
     /// Player is unknown in this bracket
     #[error("{0} is unknown. Use one of the following: {1}")]
     UnknownPlayer(PlayerId, Participants),
     /// No match to play for player
     #[error("There is no matches for you to play")]
-    NoMatchToPlay(Player),
+    NoMatchToPlay(PlayerId),
     /// Referred match is unknown
     #[error("Match {0} is unknown")]
     UnknownMatch(MatchId),
+    // FIXME use player id in Match
     /// Update to match could not happen
     #[error("There is no match to update")]
     NoMatchToUpdate(Vec<Match>, MatchId),
+    /// Fordidden action because player has been disqualified
+    #[error("{0} is disqualified")]
+    ForbiddenDisqualified(PlayerId),
 }
 
 /// Returns true if bracket is over
@@ -268,14 +270,14 @@ fn assert_elimination(s: &dyn Progression, players: &[Player], player_who_won: u
             .expect_err("Eliminated or NoNextMatch");
         if i == player_who_won {
             if let Error::NoNextMatch(eliminated_player) = e {
-                assert_eq!(eliminated_player.get_id(), player.get_id());
+                assert_eq!(eliminated_player, player.get_id());
             } else {
                 panic!(
                     "expected Error::Progression(ProgressionError::NoNextMatch error but got {e}"
                 );
             }
         } else if let Error::Eliminated(eliminated_player) = e {
-            assert_eq!(eliminated_player.get_id(), player.get_id());
+            assert_eq!(eliminated_player, player.get_id());
         } else {
             panic!("expected Error::Progression(ProgressionError::Eliminated error but got {e:?}");
         }

@@ -7,6 +7,7 @@ use thiserror::Error;
 /// Opponent in a match
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Default)]
 pub enum Opponent {
+    // FIXME use PlayerId instead
     /// A player
     Player(Player),
     /// Opponent has not been decided yet

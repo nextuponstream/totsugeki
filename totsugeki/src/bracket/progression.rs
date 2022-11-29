@@ -23,7 +23,7 @@ impl Bracket {
         );
         let (matches, new_matches) = match p.validate_match_result(match_id) {
             Ok(el) => el,
-            Err(e) => return Err(Error::Progression(self.bracket_id, e)),
+            Err(e) => return Err(self.get_from_progression_error(e)),
         };
 
         let bracket = Self { matches, ..self };

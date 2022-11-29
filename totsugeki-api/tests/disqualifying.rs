@@ -250,7 +250,7 @@ async fn there_is_no_next_match_for_disqualified_players() {
             .await;
         res.assert_status(StatusCode::NOT_FOUND);
         res.assert_text(format!(
-            "Unable to answer query:\n\t({}) player_1 has been disqualified\nBracket: {bracket_id}",
+            "Unable to answer query:\n\t({}) player_1 is disqualified\nBracket: {bracket_id}",
             player_id
         ))
         .await;

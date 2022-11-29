@@ -41,12 +41,10 @@ async fn next_match(ctx: &Context, msg: &Message) -> CommandResult {
             Err(e) => {
                 if let RequestError::Request(e, m) = e {
                     // Someone may have thought they still had a match to play
-                    if let Some(s) = e.status() {
-                        if s == StatusCode::NOT_FOUND {
-                            warn!("{e}:{m}");
-                            msg.reply(ctx, m).await?;
-                            return Ok::<CommandResult, CommandError>(Ok(()));
-                        }
+                    if let Some(StatusCode::NOT_FOUND) = e.status() {
+                        warn!("{e}:{m}");
+                        msg.reply(ctx, m).await?;
+                        return Ok::<CommandResult, CommandError>(Ok(()));
                     }
 
                     error!("{e:?}:{m}"); // otherwise, it is error worthy

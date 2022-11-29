@@ -150,7 +150,7 @@ pub async fn assert_player_is_eliminated_from_bracket(
     channel_internal_id: &str,
     service_type_id: Service,
     bracket_id: BracketId,
-    player: Player,
+    player: &Player,
 ) {
     trace!("Asserting player is eliminated");
     let body = NextMatchGETRequest {
@@ -179,7 +179,7 @@ pub async fn assert_player_has_no_next_match(
     channel_internal_id: &str,
     service_type_id: Service,
     bracket_id: BracketId,
-    player: Player,
+    player: &Player,
 ) {
     trace!("Asserting player has no next match");
     let body = NextMatchGETRequest {

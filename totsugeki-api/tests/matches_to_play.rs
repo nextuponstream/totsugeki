@@ -78,10 +78,10 @@ async fn run_8_man_double_elimination() {
         assert_seeding(&[[1, 8], [2, 7], [3, 6], [4, 5]], &matches_to_play);
         assert_if_matches_exist(
             &[
-                ([1, 8], [players[1].clone(), players[8].clone()]),
-                ([2, 7], [players[2].clone(), players[7].clone()]),
-                ([3, 6], [players[3].clone(), players[6].clone()]),
-                ([4, 5], [players[4].clone(), players[5].clone()]),
+                ([1, 8], [&players[1], &players[8]]),
+                ([2, 7], [&players[2], &players[7]]),
+                ([3, 6], [&players[3], &players[6]]),
+                ([4, 5], [&players[4], &players[5]]),
             ],
             &matches_to_play,
         );
@@ -109,8 +109,8 @@ async fn run_8_man_double_elimination() {
         assert_eq!(new_matches_to_play.len(), 2);
         assert_if_matches_exist(
             &[
-                ([1, 4], [players[1].clone(), players[4].clone()]),
-                ([5, 8], [players[5].clone(), players[8].clone()]),
+                ([1, 4], [&players[1], &players[4]]),
+                ([5, 8], [&players[5], &players[8]]),
             ],
             &new_matches_to_play,
         );
@@ -137,7 +137,7 @@ async fn run_8_man_double_elimination() {
         .await;
         assert_eq!(new_matches_to_play.len(), 1);
         assert_if_matches_exist(
-            &[([4, 5], [players[4].clone(), players[5].clone()])],
+            &[([4, 5], [&players[4], &players[5]])],
             &new_matches_to_play,
         );
 
@@ -177,8 +177,8 @@ async fn run_8_man_double_elimination() {
         assert_eq!(new_matches_to_play.len(), 2);
         assert_if_matches_exist(
             &[
-                ([2, 3], [players[2].clone(), players[3].clone()]),
-                ([6, 7], [players[6].clone(), players[7].clone()]),
+                ([2, 3], [&players[2], &players[3]]),
+                ([6, 7], [&players[6], &players[7]]),
             ],
             &new_matches_to_play,
         );
@@ -207,8 +207,8 @@ async fn run_8_man_double_elimination() {
         assert_eq!(new_matches_to_play.len(), 2);
         assert_if_matches_exist(
             &[
-                ([1, 2], [players[1].clone(), players[2].clone()]),
-                ([3, 6], [players[3].clone(), players[6].clone()]),
+                ([1, 2], [&players[1], &players[2]]),
+                ([3, 6], [&players[3], &players[6]]),
             ],
             &new_matches_to_play,
         );
@@ -224,7 +224,7 @@ async fn run_8_man_double_elimination() {
         .await;
         assert_eq!(new_matches_to_play.len(), 1);
         assert_if_matches_exist(
-            &[([3, 4], [players[3].clone(), players[4].clone()])],
+            &[([3, 4], [&players[3], &players[4]])],
             &new_matches_to_play,
         );
 
@@ -251,7 +251,7 @@ async fn run_8_man_double_elimination() {
         .await;
         assert_eq!(new_matches_to_play.len(), 1);
         assert_if_matches_exist(
-            &[([2, 3], [players[2].clone(), players[3].clone()])],
+            &[([2, 3], [&players[2], &players[3]])],
             &new_matches_to_play,
         );
 
@@ -266,7 +266,7 @@ async fn run_8_man_double_elimination() {
         .await;
         assert_eq!(new_matches_to_play.len(), 1);
         assert_if_matches_exist(
-            &[([1, 2], [players[1].clone(), players[2].clone()])],
+            &[([1, 2], [&players[1], &players[2]])],
             &new_matches_to_play,
         );
 
@@ -282,7 +282,7 @@ async fn run_8_man_double_elimination() {
         .await;
         assert_eq!(new_matches_to_play.len(), 1);
         assert_if_matches_exist(
-            &[([1, 2], [players[1].clone(), players[2].clone()])],
+            &[([1, 2], [&players[1], &players[2]])],
             &new_matches_to_play,
         );
 

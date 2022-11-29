@@ -222,7 +222,7 @@ async fn players_disagreeing_on_a_result_allows_correction_from_both_side() {
             channel_internal_id,
             service,
             bracket.bracket_id,
-            bracket.players.clone()[2 - 1].clone(),
+            &bracket.players.clone()[2 - 1],
         )
         .await;
     }
@@ -295,7 +295,7 @@ async fn reporting_result_for_first_round_3_man() {
             channel_internal_id,
             service,
             bracket.bracket_id,
-            bracket.players[3 - 1].clone(),
+            &bracket.players[3 - 1],
         )
         .await;
     }
@@ -381,7 +381,7 @@ async fn reporting_result_for_first_round_3_man_with_automatic_match_validation(
             channel_internal_id,
             service,
             bracket.bracket_id,
-            bracket.players[3 - 1].clone(),
+            &bracket.players[3 - 1],
         )
         .await;
     }
