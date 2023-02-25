@@ -163,10 +163,11 @@ impl Raw {
         self.players
             .iter()
             .zip(self.player_names.iter())
-            .map(|p| Player {
-                id: *p.0,
-                name: p.1.to_string(),
-            })
+            .map(
+                |p| (*p.0, p.1.clone()).into(), // Player {
+                                                // id: *p.0,
+                                                // name: p.1.to_string(),
+            )
             .collect()
     }
 }

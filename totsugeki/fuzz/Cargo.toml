@@ -1,0 +1,56 @@
+[package]
+name = "totsugeki-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+arbitrary = { version = "1", features = ["derive"] }
+chrono = { version = "0.4.21" }
+itertools = "0.10.5"
+num-bigint = { version = "0.4.3", features = ["arbitrary", "serde"] }
+
+[dependencies.totsugeki]
+# path = "/home/takecare/Public/totsugeki/totsugeki"
+path = ".."
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "bracket"
+path = "fuzz_targets/bracket.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "randomly_ordered_events"
+path = "fuzz_targets/randomly_ordered_events.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "big_brackets"
+path = "fuzz_targets/big_brackets.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "big_brackets_de"
+path = "fuzz_targets/big_brackets_de.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "very_big_brackets_de"
+path = "fuzz_targets/very_big_brackets_de.rs"
+test = false
+doc = false

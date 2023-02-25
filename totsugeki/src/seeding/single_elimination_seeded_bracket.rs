@@ -1,7 +1,7 @@
 //! Generate seeded matches for single elimination
 
 use super::seeding_initial_round;
-use crate::{matches::Match, opponent::Opponent, player::Participants, seeding::Error};
+use crate::{matches::Match, opponent::Opponent, player::Id as PlayerId, seeding::Error};
 
 /// Returns tournament matches for `n` players in a list. Used for generating
 /// single elimination bracket or winner bracket in double elimination format.
@@ -13,7 +13,7 @@ use crate::{matches::Match, opponent::Opponent, player::Participants, seeding::E
 /// # Errors
 /// Throws error when math overflow happens
 pub fn get_balanced_round_matches_top_seed_favored(
-    players: &Participants,
+    seeding: &[PlayerId],
 ) -> Result<Vec<Match>, Error> {
     // Matches are built bottom-up:
     // * for n
@@ -23,7 +23,7 @@ pub fn get_balanced_round_matches_top_seed_favored(
     // * for round 1, find top+low seed, assign them a match and repeat until no players are left
     // * for round 2, select next 4 matches
     // * ...
-    let n = players.len();
+    let n = seeding.len();
     let byes = match n.checked_next_power_of_two() {
         Some(b) => b - n,
         None => return Err(Error::MathOverflow),
@@ -38,31 +38,30 @@ pub fn get_balanced_round_matches_top_seed_favored(
         let _top_seed = available_players.remove(0);
     });
 
-    let first_round = match n.checked_next_power_of_two() {
-        Some(i) => i,
-        None => return Err(Error::MathOverflow),
+    let Some(first_round) = n.checked_next_power_of_two() else {
+        return Err(Error::MathOverflow);
     };
     let second_round = first_round / 2;
     let mut i = first_round;
     while i > 1 {
         while !available_players.is_empty() {
             if first_round == i {
-                seeding_initial_round(&mut available_players, players, &mut this_round);
+                seeding_initial_round(&mut available_players, seeding, &mut this_round);
             } else if second_round == i {
                 let top_seed = available_players.remove(0);
-                let player_list = players.clone().get_players_list();
+                let player_list = seeding;
                 let top_seed_player = player_list.get(top_seed - 1).expect("player");
                 let bottom_seed = available_players.pop().expect("bottom seed");
                 let bottom_seed_player = player_list.get(bottom_seed - 1).expect("player");
                 let player_1 = if remaining_byes > 0 && top_seed <= byes {
                     remaining_byes -= 1;
-                    Opponent::Player(top_seed_player.clone())
+                    Opponent::Player(*top_seed_player)
                 } else {
                     Opponent::Unknown
                 };
                 let player_2 = if remaining_byes > 0 && bottom_seed <= byes {
                     remaining_byes -= 1;
-                    Opponent::Player(bottom_seed_player.clone())
+                    Opponent::Player(*bottom_seed_player)
                 } else {
                     Opponent::Unknown
                 };
@@ -117,8 +116,14 @@ mod tests {
         let cute_cat = players.get(2).expect("cute_cat");
 
         let players = Participants::try_from(players_copy).expect("players");
-        let matches =
-            get_balanced_round_matches_top_seed_favored(&players).expect("balanced matches");
+        let matches = get_balanced_round_matches_top_seed_favored(
+            &players
+                .get_players_list()
+                .iter()
+                .map(Player::get_id)
+                .collect::<Vec<_>>(),
+        )
+        .expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
             .map(crate::matches::Match::get_id)
@@ -128,8 +133,8 @@ mod tests {
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
                 &[
-                    Opponent::Player(pink.clone()),
-                    Opponent::Player(cute_cat.clone()),
+                    Opponent::Player(pink.get_id()),
+                    Opponent::Player(cute_cat.get_id()),
                 ],
                 [2, 3],
                 &Opponent::Unknown,
@@ -139,7 +144,7 @@ mod tests {
             .expect("match"),
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                &[Opponent::Player(diego.clone()), Opponent::Unknown],
+                &[Opponent::Player(diego.get_id()), Opponent::Unknown],
                 [1, 2],
                 &Opponent::Unknown,
                 &Opponent::Unknown,
@@ -165,8 +170,14 @@ mod tests {
         let cute_cat = players.get(3).expect("cute_cat");
 
         let players = Participants::try_from(players_copy).expect("players");
-        let matches =
-            get_balanced_round_matches_top_seed_favored(&players).expect("balanced matches");
+        let matches = get_balanced_round_matches_top_seed_favored(
+            &players
+                .get_players_list()
+                .iter()
+                .map(Player::get_id)
+                .collect::<Vec<_>>(),
+        )
+        .expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
             .map(crate::matches::Match::get_id)
@@ -176,8 +187,8 @@ mod tests {
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
                 &[
-                    Opponent::Player(diego.clone()),
-                    Opponent::Player(cute_cat.clone()),
+                    Opponent::Player(diego.get_id()),
+                    Opponent::Player(cute_cat.get_id()),
                 ],
                 [1, 4],
                 &Opponent::Unknown,
@@ -188,8 +199,8 @@ mod tests {
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
                 &[
-                    Opponent::Player(pink.clone()),
-                    Opponent::Player(guy.clone()),
+                    Opponent::Player(pink.get_id()),
+                    Opponent::Player(guy.get_id()),
                 ],
                 [2, 3],
                 &Opponent::Unknown,
@@ -226,8 +237,14 @@ mod tests {
         let cute_cat = players.get(4).expect("cute_cat");
 
         let players = Participants::try_from(players_copy).expect("players");
-        let matches =
-            get_balanced_round_matches_top_seed_favored(&players).expect("balanced matches");
+        let matches = get_balanced_round_matches_top_seed_favored(
+            &players
+                .get_players_list()
+                .iter()
+                .map(Player::get_id)
+                .collect::<Vec<_>>(),
+        )
+        .expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
             .map(crate::matches::Match::get_id)
@@ -237,8 +254,8 @@ mod tests {
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
                 &[
-                    Opponent::Player(guy.clone()),
-                    Opponent::Player(cute_cat.clone()),
+                    Opponent::Player(guy.get_id()),
+                    Opponent::Player(cute_cat.get_id()),
                 ],
                 [4, 5],
                 &Opponent::Unknown,
@@ -248,7 +265,7 @@ mod tests {
             .expect("match"),
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                &[Opponent::Player(diego.clone()), Opponent::Unknown],
+                &[Opponent::Player(diego.get_id()), Opponent::Unknown],
                 [1, 4],
                 &Opponent::Unknown,
                 &Opponent::Unknown,
@@ -258,8 +275,8 @@ mod tests {
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
                 &[
-                    Opponent::Player(pink.clone()),
-                    Opponent::Player(average_player.clone()),
+                    Opponent::Player(pink.get_id()),
+                    Opponent::Player(average_player.get_id()),
                 ],
                 [2, 3],
                 &Opponent::Unknown,
@@ -297,8 +314,14 @@ mod tests {
         let cute_cat = players.get(5).expect("cute_cat");
 
         let players = Participants::try_from(players_copy).expect("players");
-        let matches =
-            get_balanced_round_matches_top_seed_favored(&players).expect("balanced matches");
+        let matches = get_balanced_round_matches_top_seed_favored(
+            &players
+                .get_players_list()
+                .iter()
+                .map(Player::get_id)
+                .collect::<Vec<_>>(),
+        )
+        .expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
             .map(crate::matches::Match::get_id)
@@ -308,8 +331,8 @@ mod tests {
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
                 &[
-                    Opponent::Player(pink_nemesis.clone()),
-                    Opponent::Player(cute_cat.clone()),
+                    Opponent::Player(pink_nemesis.get_id()),
+                    Opponent::Player(cute_cat.get_id()),
                 ],
                 [3, 6],
                 &Opponent::Unknown,
@@ -320,8 +343,8 @@ mod tests {
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
                 &[
-                    Opponent::Player(average_player.clone()),
-                    Opponent::Player(guy.clone()),
+                    Opponent::Player(average_player.get_id()),
+                    Opponent::Player(guy.get_id()),
                 ],
                 [4, 5],
                 &Opponent::Unknown,
@@ -331,7 +354,7 @@ mod tests {
             .expect("match"),
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                &[Opponent::Player(diego.clone()), Opponent::Unknown],
+                &[Opponent::Player(diego.get_id()), Opponent::Unknown],
                 [1, 4],
                 &Opponent::Unknown,
                 &Opponent::Unknown,
@@ -340,7 +363,7 @@ mod tests {
             .expect("match"),
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                &[Opponent::Player(pink.clone()), Opponent::Unknown],
+                &[Opponent::Player(pink.get_id()), Opponent::Unknown],
                 [2, 3],
                 &Opponent::Unknown,
                 &Opponent::Unknown,
@@ -378,8 +401,14 @@ mod tests {
         let cute_cat = players.get(6).expect("cute_cat");
 
         let players = Participants::try_from(players_copy).expect("players");
-        let matches =
-            get_balanced_round_matches_top_seed_favored(&players).expect("balanced matches");
+        let matches = get_balanced_round_matches_top_seed_favored(
+            &players
+                .get_players_list()
+                .iter()
+                .map(Player::get_id)
+                .collect::<Vec<_>>(),
+        )
+        .expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
             .map(crate::matches::Match::get_id)
@@ -389,8 +418,8 @@ mod tests {
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
                 &[
-                    Opponent::Player(pink.clone()),
-                    Opponent::Player(cute_cat.clone()),
+                    Opponent::Player(pink.get_id()),
+                    Opponent::Player(cute_cat.get_id()),
                 ],
                 [2, 7],
                 &Opponent::Unknown,
@@ -401,8 +430,8 @@ mod tests {
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
                 &[
-                    Opponent::Player(pink_nemesis.clone()),
-                    Opponent::Player(fg_enjoyer.clone()),
+                    Opponent::Player(pink_nemesis.get_id()),
+                    Opponent::Player(fg_enjoyer.get_id()),
                 ],
                 [3, 6],
                 &Opponent::Unknown,
@@ -413,8 +442,8 @@ mod tests {
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
                 &[
-                    Opponent::Player(average_player.clone()),
-                    Opponent::Player(guy.clone()),
+                    Opponent::Player(average_player.get_id()),
+                    Opponent::Player(guy.get_id()),
                 ],
                 [4, 5],
                 &Opponent::Unknown,
@@ -424,7 +453,7 @@ mod tests {
             .expect("match"),
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
-                &[Opponent::Player(diego.clone()), Opponent::Unknown],
+                &[Opponent::Player(diego.get_id()), Opponent::Unknown],
                 [1, 4],
                 &Opponent::Unknown,
                 &Opponent::Unknown,
@@ -473,8 +502,14 @@ mod tests {
         let cute_cat = players.get(7).expect("cute_cat");
 
         let players = Participants::try_from(players_copy).expect("players");
-        let matches =
-            get_balanced_round_matches_top_seed_favored(&players).expect("balanced matches");
+        let matches = get_balanced_round_matches_top_seed_favored(
+            &players
+                .get_players_list()
+                .iter()
+                .map(Player::get_id)
+                .collect::<Vec<_>>(),
+        )
+        .expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
             .map(crate::matches::Match::get_id)
@@ -484,8 +519,8 @@ mod tests {
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
                 &[
-                    Opponent::Player(diego.clone()),
-                    Opponent::Player(cute_cat.clone()),
+                    Opponent::Player(diego.get_id()),
+                    Opponent::Player(cute_cat.get_id()),
                 ],
                 [1, 8],
                 &Opponent::Unknown,
@@ -496,8 +531,8 @@ mod tests {
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
                 &[
-                    Opponent::Player(pink.clone()),
-                    Opponent::Player(fg_enjoyer.clone()),
+                    Opponent::Player(pink.get_id()),
+                    Opponent::Player(fg_enjoyer.get_id()),
                 ],
                 [2, 7],
                 &Opponent::Unknown,
@@ -508,8 +543,8 @@ mod tests {
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
                 &[
-                    Opponent::Player(pink_nemesis.clone()),
-                    Opponent::Player(guy.clone()),
+                    Opponent::Player(pink_nemesis.get_id()),
+                    Opponent::Player(guy.get_id()),
                 ],
                 [3, 6],
                 &Opponent::Unknown,
@@ -520,8 +555,8 @@ mod tests {
             Match::try_from(MatchGET::new(
                 match_ids.pop().expect("match id"),
                 &[
-                    Opponent::Player(big_body_enjoyer.clone()),
-                    Opponent::Player(average_player.clone()),
+                    Opponent::Player(big_body_enjoyer.get_id()),
+                    Opponent::Player(average_player.get_id()),
                 ],
                 [4, 5],
                 &Opponent::Unknown,
@@ -573,7 +608,13 @@ mod tests {
             });
             let players = Participants::try_from(players).expect("players");
             let players = seed(&Method::Strict, players.clone(), players).expect("seeded players");
-            let _matches = get_balanced_round_matches_top_seed_favored(&players);
+            let _matches = get_balanced_round_matches_top_seed_favored(
+                &players
+                    .get_players_list()
+                    .iter()
+                    .map(Player::get_id)
+                    .collect::<Vec<_>>(),
+            );
         });
     }
 }

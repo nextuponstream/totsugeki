@@ -6,7 +6,7 @@ pub mod single_elimination_seeded_bracket;
 use crate::{
     matches::Match,
     opponent::Opponent,
-    player::{Error as PlayerError, Participants},
+    player::{Error as PlayerError, Id as PlayerId, Participants},
 };
 #[cfg(feature = "poem-openapi")]
 use poem_openapi::Object;
@@ -122,21 +122,20 @@ pub fn seed(
 /// present (example: 8 man bracket) or they are not (3 man bracket), then the
 /// number of available players is a multiple of two.
 fn seeding_initial_round(
-    available_players: &mut Vec<usize>,
-    players: &Participants,
+    available_players_by_seeds: &mut Vec<usize>,
+    seeding: &[PlayerId],
     this_round: &mut Vec<Match>,
 ) {
-    let top_seed = available_players.remove(0);
-    let player_list = players.get_players_list();
-    let top_seed_player = player_list.get(top_seed - 1).expect("player id");
-    let bottom_seed = available_players.pop().expect("bottom seed");
-    let bottom_seed_player = player_list.get(bottom_seed - 1).expect("player id");
+    let top_seed = available_players_by_seeds.remove(0);
+    let top_seed_player_id = seeding[top_seed - 1];
+    let bottom_seed = available_players_by_seeds.pop().expect("bottom seed");
+    let bottom_seed_player_id = seeding[bottom_seed - 1];
 
     this_round.push(
         Match::new(
             [
-                Opponent::Player(top_seed_player.clone()),
-                Opponent::Player(bottom_seed_player.clone()),
+                Opponent::Player(top_seed_player_id),
+                Opponent::Player(bottom_seed_player_id),
             ],
             [top_seed, bottom_seed],
         )
@@ -166,11 +165,10 @@ mod tests {
         players: Participants,
         current_participants: Participants,
     ) {
-        let e = seed(&Method::Random, players, current_participants);
-        assert!(e.is_err());
-        if let Error::NotEnoughPlayers = e.expect_err("error") {
-        } else {
-            panic!("should return NotEnoughPlayers");
+        match seed(&Method::Random, players, current_participants) {
+            Err(Error::NotEnoughPlayers) => {}
+            Err(e) => panic!("expected error but got {e}"),
+            Ok(_) => panic!("expected error but got none"),
         }
     }
 

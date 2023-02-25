@@ -5,7 +5,7 @@ use super::{Bracket, Error};
 use crate::{
     matches::{Id as MatchId, Match},
     opponent::Opponent,
-    player::Player,
+    player::Id as PlayerId,
 };
 
 impl Bracket {
@@ -18,12 +18,12 @@ impl Bracket {
     pub fn validate_match_result(self, match_id: MatchId) -> Result<(Self, Vec<Match>), Error> {
         let p = self.format.get_progression(
             self.matches.clone(),
-            self.get_participants(),
+            &self.get_participants(),
             self.automatic_match_progression,
         );
         let (matches, new_matches) = match p.validate_match_result(match_id) {
             Ok(el) => el,
-            Err(e) => return Err(Error::Progression(self.bracket_id, e)),
+            Err(e) => return Err(self.get_from_progression_error(e)),
         };
 
         let bracket = Self { matches, ..self };
@@ -46,7 +46,7 @@ pub(crate) fn new_matches(old_matches: &[Match], new_matches: &[Match]) -> Vec<M
 }
 
 /// Returns winner of bracket
-pub(crate) fn winner_of_bracket(bracket: &[Match]) -> Option<Player> {
+pub(crate) fn winner_of_bracket(bracket: &[Match]) -> Option<PlayerId> {
     match bracket.last() {
         Some(m) => match m.get_winner() {
             Opponent::Player(p) => Some(p),
@@ -78,19 +78,18 @@ mod tests {
         let (next_opponent, match_id_1, _msg) = bracket
             .next_opponent(player_ids[player_1])
             .expect("next opponent");
-        if let Opponent::Player(next_opponent) = next_opponent {
-            assert_eq!(next_opponent.get_id(), player_ids[player_2]);
-        } else {
+        let Opponent::Player(next_opponent) = next_opponent else {
             panic!("expected player")
-        }
+        };
+        assert_eq!(next_opponent, player_ids[player_2]);
+
         let (next_opponent, match_id_2, _msg) = bracket
             .next_opponent(player_ids[player_2])
             .expect("next opponent");
-        if let Opponent::Player(next_opponent) = next_opponent {
-            assert_eq!(next_opponent.get_id(), player_ids[player_1]);
-        } else {
+        let Opponent::Player(next_opponent) = next_opponent else {
             panic!("expected player")
-        }
+        };
+        assert_eq!(next_opponent, player_ids[player_1]);
 
         assert_eq!(
             match_id_1, match_id_2,
@@ -168,8 +167,7 @@ mod tests {
         let (winner_bracket, loser_bracket, _gf, _gfr) = partition_double_elimination_matches(
             &bracket.get_matches(),
             bracket.get_participants().len(),
-        )
-        .expect("partition");
+        );
         assert_eq!(winner_bracket.len(), 2);
         assert_eq!(loser_bracket.len(), 1);
         assert_eq!(loser_bracket[0].get_seeds(), [2, 3]);

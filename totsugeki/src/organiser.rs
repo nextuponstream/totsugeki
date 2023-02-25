@@ -4,7 +4,7 @@ use crate::{bracket::Id as BracketId, ActiveBrackets, DiscussionChannelId};
 #[cfg(feature = "poem-openapi")]
 use poem_openapi::Object;
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use uuid::Uuid;
 
 /// Organiser identifier
@@ -22,6 +22,7 @@ pub struct Organiser {
     finalized_brackets: FinalizedBrackets,
     /// Identifier of organiser
     organiser_id: Id,
+    // FIXME remove to make Organiser derive Copy
     /// Name of the organiser
     organiser_name: String,
     // TODO location type
@@ -34,11 +35,7 @@ impl Organiser {
         Self {
             organiser_id: Id::new_v4(),
             organiser_name,
-            active_brackets: if let Some(a) = active_brackets {
-                a
-            } else {
-                HashMap::new()
-            },
+            active_brackets: active_brackets.unwrap_or_default(),
             finalized_brackets: HashSet::new(),
         }
     }

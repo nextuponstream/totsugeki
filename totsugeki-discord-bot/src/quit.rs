@@ -24,18 +24,14 @@ async fn quit(ctx: &Context, msg: &Message) -> CommandResult {
         let mut bracket_data = bracket_data.write().await;
         let (mut bracket, users) = bracket_data.clone();
 
-        let player = if let Some(p) = users.get(&user_id) {
-            p
-        } else {
+        let Some(player) = users.get(&user_id) else {
             warn!("Unregistered user");
             msg.reply(ctx, "You are not registered").await?;
             return Ok::<CommandResult, CommandError>(Ok(()));
         };
 
-        match bracket.clone().remove_participant(player.get_id()) {
-            Ok(b) => {
-                bracket = b;
-            }
+        bracket = match bracket.clone().remove_participant(player.get_id()) {
+            Ok(b) => b,
             Err(e) => {
                 warn!("{e}");
                 msg.reply(ctx, format!("{e}")).await?;

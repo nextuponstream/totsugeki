@@ -2,7 +2,8 @@
 
 Tools to create and manage brackets with `totsugeki` library.
 
-Current focus is on creating a discord bot that runs a bracket.
+Current focus is on creating a discord bot that runs a bracket and creating
+tests for the `totsugeki` library.
 
 ## Roadmap MVP
 
@@ -15,6 +16,9 @@ Current focus is on creating a discord bot that runs a bracket.
 * [x] !dq player
 * [x] double elimination format
 * [ ] partial seeding (seed top X players, others have randomized seeding)
-* [ ] single binary to manage
-* [ ] can resist computer crash
-* [ ] run one tournament in one dedicated discussion channel
+* [x] single binary to manage
+* [ ] root out sources of crashes through tests
+  * [x] example tests
+  * [ ] fuzzing tests
+  * [ ] property tests
+* [ ] make examples for `totsugeki`

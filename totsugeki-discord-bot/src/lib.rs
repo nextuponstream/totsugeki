@@ -6,6 +6,8 @@
 #![deny(rustdoc::broken_intra_doc_links)]
 #![warn(clippy::pedantic)]
 #![allow(clippy::unused_async)]
+// reason, refactoring out of formatting string currently does not work
+#![allow(clippy::uninlined_format_args)]
 #![warn(clippy::unwrap_used)]
 #![doc = include_str!("../README.md")]
 
