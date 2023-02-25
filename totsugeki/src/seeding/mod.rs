@@ -15,20 +15,6 @@ use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-/// Seeding of players, which can be done only knowing their ID's
-#[derive(Clone, Debug)]
-pub(crate) struct Seeding {
-    /// Ordered list of player ids, from strongest to weakest
-    player_ids: Vec<PlayerId>,
-}
-
-impl Seeding {
-    /// Create new seeding from ordered list of players ids
-    pub fn new(player_ids: Vec<PlayerId>) -> Seeding {
-        Seeding { player_ids }
-    }
-}
-
 /// Seeding method
 #[derive(Copy, Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub enum Method {
@@ -89,7 +75,6 @@ pub enum Error {
     /// Mathematical overflow
     #[error("A mathematical overflow happened")]
     MathOverflow,
-    // FIXME use Seeding instead of Participants
     /// Seeding needs to use the same participants
     #[error("Participants used for seeding differ from current participants:\nused: {0}\nactual participants: {1}")]
     DifferentParticipants(Participants, Participants),
@@ -137,21 +122,20 @@ pub fn seed(
 /// present (example: 8 man bracket) or they are not (3 man bracket), then the
 /// number of available players is a multiple of two.
 fn seeding_initial_round(
-    available_players: &mut Vec<usize>,
-    players: &Participants,
+    available_players_by_seeds: &mut Vec<usize>,
+    seeding: &[PlayerId],
     this_round: &mut Vec<Match>,
 ) {
-    let top_seed = available_players.remove(0);
-    let player_list = players.get_players_list();
-    let top_seed_player = player_list.get(top_seed - 1).expect("player id");
-    let bottom_seed = available_players.pop().expect("bottom seed");
-    let bottom_seed_player = player_list.get(bottom_seed - 1).expect("player id");
+    let top_seed = available_players_by_seeds.remove(0);
+    let top_seed_player_id = seeding[top_seed - 1];
+    let bottom_seed = available_players_by_seeds.pop().expect("bottom seed");
+    let bottom_seed_player_id = seeding[bottom_seed - 1];
 
     this_round.push(
         Match::new(
             [
-                Opponent::Player(top_seed_player.clone()),
-                Opponent::Player(bottom_seed_player.clone()),
+                Opponent::Player(top_seed_player_id),
+                Opponent::Player(bottom_seed_player_id),
             ],
             [top_seed, bottom_seed],
         )
@@ -181,11 +165,10 @@ mod tests {
         players: Participants,
         current_participants: Participants,
     ) {
-        let e = seed(&Method::Random, players, current_participants);
-        assert!(e.is_err());
-        if let Error::NotEnoughPlayers = e.expect_err("error") {
-        } else {
-            panic!("should return NotEnoughPlayers");
+        match seed(&Method::Random, players, current_participants) {
+            Err(Error::NotEnoughPlayers) => {}
+            Err(e) => panic!("expected error but got {e}"),
+            Ok(_) => panic!("expected error but got none"),
         }
     }
 

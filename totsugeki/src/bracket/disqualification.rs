@@ -6,6 +6,8 @@ use crate::{
     player::Id as PlayerId,
 };
 
+use super::matches::is_disqualified;
+
 /// Returns new matches when comparing old bracket and new bracket
 pub(crate) fn get_new_matches(old_bracket: &[Match], new_bracket: &[Match]) -> Vec<Match> {
     new_bracket
@@ -15,7 +17,7 @@ pub(crate) fn get_new_matches(old_bracket: &[Match], new_bracket: &[Match]) -> V
                 .iter()
                 .any(|old_m| old_m.get_id() == new_m.get_id())
         })
-        .cloned()
+        .copied()
         .collect::<Vec<Match>>()
 }
 
@@ -39,19 +41,22 @@ impl Bracket {
 
         let p = self.format.get_progression(
             self.get_matches(),
-            self.get_participants(),
+            &self.get_participants(),
             self.automatic_match_progression,
         );
-        match p.disqualify_participant(player_id) {
-            Ok(el) => Ok((
-                Self {
-                    matches: el.0,
-                    ..self
-                },
-                el.1,
-            )),
-            Err(e) => Err(self.get_from_progression_error(e)),
-        }
+        let (matches, matches_to_play) = match p.disqualify_participant(player_id) {
+            Ok(v) => v,
+            Err(e) => return Err(self.get_from_progression_error(e)),
+        };
+        let bracket = Self { matches, ..self };
+        bracket.check_all_assertions();
+        Ok((bracket, matches_to_play))
+    }
+
+    /// Returns true if player is disqualified
+    #[must_use]
+    pub fn is_disqualified(&self, player_id: PlayerId) -> bool {
+        is_disqualified(player_id, &self.matches)
     }
 }
 
@@ -85,7 +90,6 @@ mod tests {
         )
         .expect("players");
         let matches = get_balanced_round_matches_top_seed_favored(
-            &players,
             &players
                 .get_players_list()
                 .iter()
@@ -110,11 +114,9 @@ mod tests {
         .try_into()
         .expect("bracket");
         match bracket.disqualify_participant(p1_id) {
+            Err(Error::NotStarted(id, _)) => assert_eq!(id, bracket_id),
+            Err(e) => panic!("Expected Started error, got {e}"),
             Ok((b, _)) => panic!("Expected error, bracket: {b}"),
-            Err(e) => match e {
-                Error::NotStarted(id, _) => assert_eq!(id, bracket_id),
-                _ => panic!("Expected Started error, got {e}"),
-            },
         }
     }
 }

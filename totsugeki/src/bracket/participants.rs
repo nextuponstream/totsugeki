@@ -16,7 +16,13 @@ impl Bracket {
         let matches = if updated_participants.len() < 3 {
             vec![]
         } else {
-            self.format.generate_matches(&updated_participants)?
+            self.format.generate_matches(
+                &updated_participants
+                    .get_players_list()
+                    .iter()
+                    .map(Player::get_id)
+                    .collect::<Vec<_>>(),
+            )?
         };
         Ok(Self {
             participants: updated_participants,
@@ -62,7 +68,6 @@ mod tests {
     use super::*;
     use crate::{
         bracket::{raw::Raw, Format, Id as BracketId},
-        player::Participants,
         seeding::{
             single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored,
             Method as SeedingMethod,
@@ -93,16 +98,7 @@ mod tests {
         let p3_id = PlayerId::new_v4();
         let player_ids = vec![p1_id, p2_id, p3_id];
         let player_names = vec!["p1".to_string(), "p2".to_string(), "p3".to_string()];
-        let players = Participants::from_raw_id(
-            player_ids
-                .iter()
-                .zip(player_names.iter())
-                .map(|p| (p.0.to_string(), p.1.clone()))
-                .collect(),
-        )
-        .expect("players");
-        let matches =
-            get_balanced_round_matches_top_seed_favored(&players, &player_ids).expect("matches");
+        let matches = get_balanced_round_matches_top_seed_favored(&player_ids).expect("matches");
         let bracket: Bracket = Raw {
             bracket_id: BracketId::new_v4(),
             bracket_name: "bracket".to_string(),
@@ -123,16 +119,14 @@ mod tests {
 
         let player = Player::new("New player".to_string());
         let player_id = player.get_id();
-        let err = updated_bracket
-            .join(player)
-            .expect_err("Joining a bracket after closing it did not return an error");
-        match err {
-            Error::BarredFromEntering(id, b_id) => {
-                assert_eq!(id, player_id);
-                assert_eq!(b_id, bracket_id);
-            }
-            _ => panic!("expected BarredFromEntering error, got: {}", err),
+        let (id, b_id) = match updated_bracket.join(player) {
+            Err(Error::BarredFromEntering(id, b_id)) => (id, b_id),
+            Err(e) => panic!("expected BarredFromEntering error, got: {e}"),
+            Ok(_) => panic!("expected error but got none"),
         };
+
+        assert_eq!(id, player_id);
+        assert_eq!(b_id, bracket_id);
     }
 
     #[test]
@@ -142,16 +136,7 @@ mod tests {
         let p3_id = PlayerId::new_v4();
         let player_ids = vec![p1_id, p2_id, p3_id];
         let player_names = vec!["p1".to_string(), "p2".to_string(), "p3".to_string()];
-        let players = Participants::from_raw_id(
-            player_ids
-                .iter()
-                .zip(player_names.iter())
-                .map(|p| (p.0.to_string(), p.1.clone()))
-                .collect(),
-        )
-        .expect("players");
-        let matches =
-            get_balanced_round_matches_top_seed_favored(&players, &player_ids).expect("matches");
+        let matches = get_balanced_round_matches_top_seed_favored(&player_ids).expect("matches");
         let bracket: Bracket = Raw {
             bracket_id: BracketId::new_v4(),
             bracket_name: "bracket".to_string(),
@@ -172,15 +157,12 @@ mod tests {
 
         let player = Player::new("New player".to_string());
         let player_id = player.get_id();
-        let err = updated_bracket
-            .join(player)
-            .expect_err("Joining a bracket after closing it did not return an error");
-        match err {
-            Error::BarredFromEntering(id, b_id) => {
-                assert_eq!(id, player_id);
-                assert_eq!(b_id, bracket_id);
-            }
-            _ => panic!("expected BarredFromEntering error, got: {}", err),
+        let (id, b_id) = match updated_bracket.join(player) {
+            Err(Error::BarredFromEntering(id, b_id)) => (id, b_id),
+            Err(e) => panic!("expected BarredFromEntering error, got: {e}"),
+            Ok(_) => panic!("expected error but got none"),
         };
+        assert_eq!(id, player_id);
+        assert_eq!(b_id, bracket_id);
     }
 }

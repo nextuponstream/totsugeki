@@ -1,5 +1,6 @@
 //! Bracket domain
 
+mod assertions;
 mod disqualification;
 mod getter_setter;
 pub mod http_responses;
@@ -50,9 +51,6 @@ pub enum Error {
     /// Player has been disqualified
     #[error("{1} is disqualified\nBracket: {0}")]
     Disqualified(BracketId, Player),
-    // TODO add other enum variant from ProgressionError that involve player
-    // and map them to this enum so that player Id are mapped to the
-    // corresponding player name
     /// Player has won the tournament and has no match left to play
     #[error("{1} won the tournament and has no matches left to play\nBracket: {0}")]
     NoNextMatch(BracketId, Player),
@@ -82,7 +80,6 @@ pub enum Error {
     /// Referred match is unknown
     #[error("Match {1} is unknown\nBracket: {0}")]
     UnknownMatch(BracketId, MatchId),
-    // FIXME use player id in Match
     /// Update to match could not happen
     #[error("There is no match to update\nBracket: {0}")]
     NoMatchToUpdate(BracketId, Vec<Match>, MatchId),
@@ -170,14 +167,16 @@ impl Bracket {
         }
         let p = self.format.get_progression(
             self.matches.clone(),
-            self.participants.clone(),
+            &self.participants,
             self.automatic_match_progression,
         );
         let (matches, affected_match_id, new_matches) = match p.report_result(player_id, result) {
             Ok(el) => el,
             Err(e) => return Err(self.get_from_progression_error(e)),
         };
-        Ok((Self { matches, ..self }, affected_match_id, new_matches))
+        let bracket = Self { matches, ..self };
+        bracket.check_all_assertions();
+        Ok((bracket, affected_match_id, new_matches))
     }
 
     /// Report results for player 1 and the reverse result for the other
@@ -196,7 +195,7 @@ impl Bracket {
     ) -> Result<(Bracket, MatchId, Vec<Match>), Error> {
         let p = self.format.get_progression(
             self.get_matches(),
-            self.get_participants(),
+            &self.get_participants(),
             self.automatic_match_progression,
         );
         let (matches, affected_match_id, new_matches) =
@@ -204,7 +203,9 @@ impl Bracket {
                 Ok(el) => el,
                 Err(e) => return Err(self.get_from_progression_error(e)),
             };
-        Ok((Self { matches, ..self }, affected_match_id, new_matches))
+        let bracket = Self { matches, ..self };
+        bracket.check_all_assertions();
+        Ok((bracket, affected_match_id, new_matches))
     }
 
     /// Start bracket: bar people from entering and accept match results.
@@ -220,14 +221,13 @@ impl Bracket {
             ));
         }
         let matches = self.matches_to_play();
-        Ok((
-            Self {
-                is_closed: true,
-                accept_match_results: true,
-                ..self
-            },
-            matches,
-        ))
+        let bracket = Self {
+            is_closed: true,
+            accept_match_results: true,
+            ..self
+        };
+        bracket.check_all_assertions();
+        Ok((bracket, matches))
     }
 
     /// Returns all matches that can be played out
@@ -236,10 +236,23 @@ impl Bracket {
         self.format
             .get_progression(
                 self.get_matches(),
-                self.get_participants(),
+                &self.get_participants(),
                 self.automatic_match_progression,
             )
             .matches_to_play()
+    }
+
+    /// Summarise bracket state
+    #[must_use]
+    pub fn summary(&self) -> String {
+        let mut r = self.bracket_name.to_string();
+        for p in self.participants.get_players_list() {
+            r = format!("{r}\n\t* {}", p.get_name());
+        }
+        for m in self.get_matches() {
+            r = format!("{r}\n\t* {}", m.summary_with_name(&self.get_participants()));
+        }
+        r
     }
 
     /// Add bracket id to error message and maps player name from player id
@@ -281,8 +294,8 @@ impl Bracket {
             ProgressError::NoGeneratedMatches => Error::NoGeneratedMatches(self.bracket_id),
             ProgressError::TournamentIsOver => Error::TournamentIsOver(self.bracket_id),
             ProgressError::MatchUpdate(me) => Error::MatchUpdate(self.bracket_id, me),
-            ProgressError::UnknownPlayer(player_id, participants) => {
-                Error::UnknownPlayer(player_id, participants, self.bracket_id)
+            ProgressError::UnknownPlayer(player_id, _players) => {
+                Error::UnknownPlayer(player_id, self.participants.clone(), self.bracket_id)
             }
             ProgressError::NoMatchToPlay(player_id) => Error::NoMatchToPlay(
                 self.bracket_id,

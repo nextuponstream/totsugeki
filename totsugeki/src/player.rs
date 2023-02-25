@@ -12,9 +12,35 @@ use uuid::Uuid;
 #[cfg_attr(feature = "poem-openapi", derive(Object))]
 pub struct Player {
     /// Player identifier
-    pub id: Id,
+    id: Id,
     /// Player name
-    pub name: String,
+    name: String,
+}
+
+impl TryFrom<(&str, &str)> for Player {
+    type Error = Error;
+
+    fn try_from((id, name): (&str, &str)) -> Result<Self, Self::Error> {
+        Ok(Player {
+            id: id.parse::<Id>()?,
+            name: name.into(),
+        })
+    }
+}
+
+impl From<(Id, String)> for Player {
+    fn from((id, name): (Id, String)) -> Self {
+        Player { id, name }
+    }
+}
+
+impl From<(Id, &str)> for Player {
+    fn from((id, name): (Id, &str)) -> Self {
+        Player {
+            id,
+            name: name.to_string(),
+        }
+    }
 }
 
 impl Player {
@@ -158,14 +184,6 @@ impl Participants {
         }
     }
 
-    /// Returns true if player is one of the participants
-    #[must_use]
-    pub fn contains(&self, participant_id: PlayerId) -> bool {
-        self.participants
-            .iter()
-            .any(|p| p.get_id() == participant_id)
-    }
-
     /// Returns player if present
     #[must_use]
     pub fn get(&self, participant_id: PlayerId) -> Option<Player> {
@@ -175,17 +193,13 @@ impl Participants {
             .find(|p| p.get_id() == participant_id)
     }
 
-    /// Return seed of player
-    ///
-    /// # Errors
-    /// thrown when player does not exist
-    pub fn get_seed(&self, player: &Player) -> Result<usize, Error> {
-        for (i, p) in self.participants.iter().enumerate() {
-            if p.get_id() == player.get_id() {
-                return Ok(i + 1);
-            }
-        }
-        Err(Error::Unknown(player.get_id()))
+    /// Returns seeding, which is the players listed by ID
+    #[must_use]
+    pub fn get_seeding(&self) -> Vec<PlayerId> {
+        self.participants
+            .iter()
+            .map(Player::get_id)
+            .collect::<Vec<_>>()
     }
 }
 
@@ -263,15 +277,14 @@ mod tests {
     #[test]
     fn adding_two_same_players_returns_error() {
         let same_player = Player::new("same_player".to_string());
-        let mut players = Participants::default();
-        players = players
+        let players = Participants::default();
+        let players = players
             .add_participant(same_player.clone())
             .expect("players");
-        let e = players.add_participant(same_player);
-        assert!(e.is_err(), "adding the same player did not return an error");
-        match e.as_ref().expect_err("error") {
-            Error::AlreadyPresent => {}
-            _ => panic!("expected AlreadyPresent but got {e:?}"),
+        match players.add_participant(same_player) {
+            Err(Error::AlreadyPresent) => {}
+            Err(e) => panic!("expected AlreadyPresent but got {e:?}"),
+            Ok(_) => panic!("expected error but got none"),
         }
     }
 }

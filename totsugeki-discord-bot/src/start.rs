@@ -33,24 +33,10 @@ async fn start(ctx: &Context, msg: &Message) -> CommandResult {
         };
         let mut new_matches_message = String::new();
         for m in matches {
-            let player1 = match m.get_players()[0].clone() {
-                Opponent::Player(p) => p,
-                Opponent::Unknown => panic!("cannot parse opponent"),
+            let [Opponent::Player(player1), Opponent::Player(player2)] = m.get_players() else {
+                panic!("could not parse player in match");
             };
-            let player2 = match m.get_players()[1].clone() {
-                Opponent::Player(p) => p,
-                Opponent::Unknown => panic!("cannot parse opponent"),
-            };
-            new_matches_message = format!(
-                "{}\n{} VS {}\n- {}: {}\n- {}: {}",
-                new_matches_message,
-                player1.get_name(),
-                player2.get_name(),
-                player1.get_name(),
-                player1.get_id(),
-                player2.get_name(),
-                player2.get_id(),
-            );
+            new_matches_message = format!("{}\n{} VS {}", new_matches_message, player1, player2);
         }
         *bracket_data = (bracket.clone(), users.clone());
 

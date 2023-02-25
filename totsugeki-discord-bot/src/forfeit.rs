@@ -24,9 +24,7 @@ async fn forfeit(ctx: &Context, msg: &Message) -> CommandResult {
         let mut bracket_data = bracket_data.write().await;
         let (mut bracket, users) = bracket_data.clone();
 
-        let player = if let Some(p) = users.get(&user_id) {
-            p.clone()
-        } else {
+        let Some(player) = users.get(&user_id) else {
             warn!("Unregistered user");
             msg.reply(ctx, "You are not registered").await?;
             return Ok::<CommandResult, CommandError>(Ok(()));
@@ -37,24 +35,16 @@ async fn forfeit(ctx: &Context, msg: &Message) -> CommandResult {
             Ok((b, new_matches)) => {
                 bracket = b;
                 for m in new_matches {
-                    let player1 = match m.get_players()[0].clone() {
+                    let player1 = match m.get_players()[0] {
                         Opponent::Player(p) => p,
                         Opponent::Unknown => panic!("cannot parse opponent"),
                     };
-                    let player2 = match m.get_players()[1].clone() {
+                    let player2 = match m.get_players()[1] {
                         Opponent::Player(p) => p,
                         Opponent::Unknown => panic!("cannot parse opponent"),
                     };
-                    new_matches_message = format!(
-                        "{}\n{} VS {}\n- {}: {}\n- {}: {}",
-                        new_matches_message,
-                        player1.get_name(),
-                        player2.get_name(),
-                        player1.get_name(),
-                        player1.get_id(),
-                        player2.get_name(),
-                        player2.get_id(),
-                    );
+                    new_matches_message =
+                        format!("{}\n{} VS {}", new_matches_message, player1, player2);
                 }
             }
             Err(e) => {

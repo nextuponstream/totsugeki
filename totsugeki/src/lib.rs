@@ -7,9 +7,10 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::unused_async)]
 #![warn(clippy::unwrap_used)]
+#![forbid(unsafe_code)]
 
 use bracket::ActiveBrackets;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::str::FromStr;
 use std::sync::{LockResult, RwLock, RwLockReadGuard};
 use uuid::Uuid;
@@ -27,21 +28,6 @@ pub mod seeding;
 
 /// Discussion channel identifier
 pub type DiscussionChannelId = Uuid;
-
-#[derive(Serialize, Deserialize)]
-/// Body of organiser POST request
-pub struct OrganiserPOST {
-    /// name of the organiser
-    pub organiser_name: String,
-}
-
-impl OrganiserPOST {
-    /// Create new Organiser POST request
-    #[must_use]
-    pub fn new(organiser_name: String) -> Self {
-        OrganiserPOST { organiser_name }
-    }
-}
 
 /// Read-only lock wrapper
 pub struct ReadLock<T> {

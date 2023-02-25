@@ -2,7 +2,7 @@
 
 use crate::{
     bracket::{Bracket, Error},
-    player::{Id as PlayerId, Participants},
+    player::{Id as PlayerId, Participants, Player},
     seeding::seed,
 };
 
@@ -30,7 +30,13 @@ impl Bracket {
             player_group = player_group.add_participant(player.clone())?;
         }
         let participants = seed(&self.seeding_method, player_group, self.participants)?;
-        let matches = self.format.generate_matches(&participants)?;
+        let matches = self.format.generate_matches(
+            &participants
+                .get_players_list()
+                .iter()
+                .map(Player::get_id)
+                .collect::<Vec<_>>(),
+        )?;
         Ok(Self {
             participants,
             matches,
@@ -62,16 +68,7 @@ mod tests {
         let p3_id = PlayerId::new_v4();
         let player_ids = vec![p1_id, p2_id, p3_id];
         let player_names = vec!["p1".to_string(), "p2".to_string(), "p3".to_string()];
-        let players = Participants::from_raw_id(
-            player_ids
-                .iter()
-                .zip(player_names.iter())
-                .map(|p| (p.0.to_string(), p.1.clone()))
-                .collect(),
-        )
-        .expect("players");
-        let matches =
-            get_balanced_round_matches_top_seed_favored(&players, &player_ids).expect("matches");
+        let matches = get_balanced_round_matches_top_seed_favored(&player_ids).expect("matches");
         let bracket_id = BracketId::new_v4();
         let bracket: Bracket = Raw {
             bracket_id,
@@ -91,11 +88,9 @@ mod tests {
         let (updated_bracket, _) = bracket.start().expect("start");
         let seeding = vec![p3_id, p2_id, p1_id];
         match updated_bracket.update_seeding(&seeding) {
+            Err(Error::Started(id, _)) => assert_eq!(id, bracket_id),
+            Err(e) => panic!("Expected Started error, got {e}"),
             Ok(b) => panic!("Expected error, bracket: {b}"),
-            Err(e) => match e {
-                Error::Started(id, _) => assert_eq!(id, bracket_id),
-                _ => panic!("Expected Started error, got {e}"),
-            },
         }
     }
 
@@ -107,16 +102,7 @@ mod tests {
         let unknown_player = PlayerId::new_v4();
         let player_ids = vec![p1_id, p2_id, p3_id];
         let player_names = vec!["p1".to_string(), "p2".to_string(), "p3".to_string()];
-        let players = Participants::from_raw_id(
-            player_ids
-                .iter()
-                .zip(player_names.iter())
-                .map(|p| (p.0.to_string(), p.1.clone()))
-                .collect(),
-        )
-        .expect("players");
-        let matches =
-            get_balanced_round_matches_top_seed_favored(&players, &player_ids).expect("matches");
+        let matches = get_balanced_round_matches_top_seed_favored(&player_ids).expect("matches");
         let bracket_id = BracketId::new_v4();
         let bracket: Bracket = Raw {
             bracket_id,
@@ -176,9 +162,7 @@ mod tests {
             let p = Player::new(format!("p{i}"));
             players.push(p);
         }
-        let participants = Participants::try_from(players.clone()).expect("participants");
         let matches = get_balanced_round_matches_top_seed_favored(
-            &participants,
             &players.iter().map(Player::get_id).collect::<Vec<_>>(),
         )
         .expect("matches");
@@ -213,9 +197,9 @@ mod tests {
             .map(Match::get_id)
             .collect();
         match_ids.reverse();
-        let p1 = Opponent::Player(players[1].clone());
-        let p2 = Opponent::Player(players[2].clone());
-        let p3 = Opponent::Player(players[3].clone());
+        let p1 = Opponent::Player(players[1].get_id());
+        let p2 = Opponent::Player(players[2].get_id());
+        let p3 = Opponent::Player(players[3].get_id());
         assert_eq!(
             updated_bracket.get_matches(),
             vec![
@@ -248,9 +232,7 @@ mod tests {
             let p = Player::new(format!("p{i}"));
             players.push(p);
         }
-        let participants = Participants::try_from(players.clone()).expect("participants");
         let matches = get_balanced_round_matches_top_seed_favored(
-            &participants,
             &players.iter().map(Player::get_id).collect::<Vec<_>>(),
         )
         .expect("matches");
@@ -287,11 +269,11 @@ mod tests {
             .map(Match::get_id)
             .collect();
         match_ids.reverse();
-        let p1 = Opponent::Player(players[1].clone());
-        let p2 = Opponent::Player(players[2].clone());
-        let p3 = Opponent::Player(players[3].clone());
-        let p4 = Opponent::Player(players[4].clone());
-        let p5 = Opponent::Player(players[5].clone());
+        let p1 = Opponent::Player(players[1].get_id());
+        let p2 = Opponent::Player(players[2].get_id());
+        let p3 = Opponent::Player(players[3].get_id());
+        let p4 = Opponent::Player(players[4].get_id());
+        let p5 = Opponent::Player(players[5].get_id());
         assert_eq!(
             updated_bracket.get_matches(),
             vec![

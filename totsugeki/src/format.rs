@@ -10,7 +10,7 @@ use crate::{
     },
     matches::Match,
     opponent::Opponent,
-    player::{Participants, Player},
+    player::{Id as PlayerId, Participants, Player},
     seeding::{
         double_elimination_seeded_bracket::get_loser_bracket_matches_top_seed_favored,
         single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored,
@@ -32,29 +32,16 @@ impl Format {
     ///
     /// # Errors
     /// thrown when math overflow happens
-    pub fn generate_matches(self, participants: &Participants) -> Result<Vec<Match>, SeedingError> {
+    pub fn generate_matches(self, seeding: &[PlayerId]) -> Result<Vec<Match>, SeedingError> {
         Ok(match self {
-            Format::SingleElimination => get_balanced_round_matches_top_seed_favored(
-                participants,
-                &participants
-                    .get_players_list()
-                    .iter()
-                    .map(Player::get_id)
-                    .collect::<Vec<_>>(),
-            )?,
+            Format::SingleElimination => get_balanced_round_matches_top_seed_favored(seeding)?,
             Format::DoubleElimination => {
                 let mut matches = vec![];
-                let mut winner_bracket_matches = get_balanced_round_matches_top_seed_favored(
-                    participants,
-                    &participants
-                        .get_players_list()
-                        .iter()
-                        .map(Player::get_id)
-                        .collect::<Vec<_>>(),
-                )?;
+                let mut winner_bracket_matches =
+                    get_balanced_round_matches_top_seed_favored(seeding)?;
                 matches.append(&mut winner_bracket_matches);
                 let mut looser_bracket_matches =
-                    get_loser_bracket_matches_top_seed_favored(participants)?;
+                    get_loser_bracket_matches_top_seed_favored(seeding)?;
                 matches.append(&mut looser_bracket_matches);
                 let grand_finals: Match =
                     Match::new([Opponent::Unknown, Opponent::Unknown], [1, 2])
@@ -74,27 +61,17 @@ impl Format {
     pub fn get_progression(
         &self,
         matches: Vec<Match>,
-        seeding: Participants,
+        seeding: &Participants,
         automatic_progression: bool,
     ) -> Box<dyn Progression> {
         match self {
             Format::SingleElimination => Box::new(
-                SE_Step::new(
-                    Some(matches),
-                    seeding.clone(),
-                    seeding
-                        .get_players_list()
-                        .iter()
-                        .map(Player::get_id)
-                        .collect(),
-                    automatic_progression,
-                )
-                .expect(""),
+                SE_Step::new(Some(matches), &seeding.get_seeding(), automatic_progression)
+                    .expect(""),
             ),
             Format::DoubleElimination => Box::new(
                 DE_Step::new(
                     Some(matches),
-                    seeding.clone(),
                     seeding
                         .get_players_list()
                         .iter()

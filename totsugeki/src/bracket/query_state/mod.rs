@@ -10,11 +10,11 @@ use crate::{
 impl Bracket {
     /// Returns true if bracket is over (all matches are played)
     #[must_use]
-    pub(super) fn is_over(&self) -> bool {
+    pub fn is_over(&self) -> bool {
         self.format
             .get_progression(
                 self.get_matches(),
-                self.get_participants(),
+                &self.get_participants(),
                 self.automatic_match_progression,
             )
             .is_over()
@@ -30,12 +30,19 @@ impl Bracket {
             .format
             .get_progression(
                 self.get_matches(),
-                self.get_participants(),
+                &self.get_participants(),
                 self.automatic_match_progression,
             )
             .next_opponent(player_id)
         {
-            Ok(el) => Ok(el),
+            Ok((opponent, match_id)) => Ok((
+                opponent,
+                match_id,
+                self.participants
+                    .get(player_id)
+                    .expect("player")
+                    .to_string(),
+            )),
             Err(e) => Err(self.get_from_progression_error(e)),
         }
     }
