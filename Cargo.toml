@@ -2,4 +2,5 @@
 members = [
   "totsugeki",
   "totsugeki-discord-bot",
+  "totsugeki-native-app",
 ]
