@@ -3842,8 +3842,10 @@ dependencies = [
 name = "totsugeki-native-app"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "dioxus",
  "dioxus-desktop",
+ "totsugeki",
 ]
 
 [[package]]

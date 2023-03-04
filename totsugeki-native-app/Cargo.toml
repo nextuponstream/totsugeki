@@ -6,5 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+totsugeki = { path = "../totsugeki" }
 dioxus = { git = "https://github.com/DioxusLabs/dioxus", rev = "5b61cbb9a0f37c5582c81fbaaa09b0385c996940", features = ["hot-reload"]}
 dioxus-desktop = { git = "https://github.com/DioxusLabs/dioxus", rev = "5b61cbb9a0f37c5582c81fbaaa09b0385c996940", features = ["hot-reload"]}
+# fluent-bundle = "0.15.2"
+chrono = { version = "0.4.21", features = ["serde"] }
