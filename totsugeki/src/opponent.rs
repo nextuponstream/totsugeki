@@ -1,6 +1,6 @@
 //! Opponent
 
-use crate::player::Id as PlayerId;
+use crate::player::{Id as PlayerId, Participants, Player};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -12,6 +12,22 @@ pub enum Opponent {
     /// Opponent has not been decided yet
     #[default]
     Unknown,
+}
+
+impl Opponent {
+    /// Get name of player if available
+    #[must_use]
+    pub fn get_name(&self, players: &[(PlayerId, String)]) -> String {
+        match self {
+            Opponent::Player(id) if players.iter().any(|p| p.0 == *id) => {
+                let Some(p) = players.iter().find(|p| p.0 == *id) else {
+                    unreachable!("player is missing");
+                };
+                p.1.clone()
+            }
+            _ => Opponent::Unknown.to_string(),
+        }
+    }
 }
 
 impl std::fmt::Display for Opponent {
