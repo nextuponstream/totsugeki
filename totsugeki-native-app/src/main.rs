@@ -1,10 +1,11 @@
 #![allow(non_snake_case)]
 // import the prelude to get access to the `rsx!` macro and the `Scope` and `Element` types
+use chrono::prelude::*;
 use dioxus::prelude::*;
 use dioxus_desktop::Config;
 use totsugeki::bracket::Bracket;
 use totsugeki_native_app::components::{
-    bracket::visualizer::{GeneralDetails, UpdateBracketDetails},
+    bracket::visualizer::{AddPlayerForm, GeneralDetails, UpdateBracketDetails, View},
     navigation::Navigation,
 };
 
@@ -18,7 +19,14 @@ fn main() {
 }
 
 fn App(cx: Scope) -> Element {
-    use_shared_state_provider(cx, Bracket::default);
+    let b = Bracket::new(
+        "test",
+        totsugeki::format::Format::SingleElimination,
+        totsugeki::seeding::Method::Strict,
+        Utc.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap(),
+        true,
+    );
+    use_shared_state_provider(cx, || b); // TODO revert to Bracket::default
 
     cx.render(rsx! {
         style { include_str!("../resources/tailwind.css") }
@@ -28,7 +36,9 @@ fn App(cx: Scope) -> Element {
 
             Navigation {}
             UpdateBracketDetails {}
+            AddPlayerForm {}
             GeneralDetails {}
+            View {}
         }
 
     })

@@ -148,6 +148,25 @@ impl Bracket {
         }
     }
 
+    /// Add participant to bracket
+    ///
+    /// # Errors
+    /// when bracket has started
+    pub fn add_participant(&self, name: &str) -> Result<Bracket, Error> {
+        if self.accept_match_results {
+            return Err(Error::Started(
+                self.bracket_id,
+                "Bracket has started. You may not enter at this time.".into(),
+            ));
+        }
+        let participants = self
+            .participants
+            .clone()
+            .add_participant(Player::new(name.into()))?;
+        let bracket = self.clone().regenerate_matches(participants)?;
+        Ok(bracket)
+    }
+
     /// Report result for a match in this bracket. Returns updated bracket,
     /// match id where result is reported and new generated matches if
     /// automatic match validation is on.
@@ -379,7 +398,7 @@ impl Default for Bracket {
             "new bracket",
             Format::default(),
             SeedingMethod::default(),
-            Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
+            Utc.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap(),
             true,
         )
     }
