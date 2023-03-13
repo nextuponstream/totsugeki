@@ -172,6 +172,8 @@ pub fn View(cx: Scope) -> Element {
     ))
 }
 
+// TODO update match result when clicking on match
+
 fn SingleEliminationBracketView(cx: Scope, bracket: Bracket) -> Element {
         // Any trace events in this closure or code called by it will occur within
         // the span.
@@ -213,32 +215,34 @@ fn SingleEliminationBracketView(cx: Scope, bracket: Bracket) -> Element {
         div {
             // TODO columns is "correct" but alignement is not
             // TODO parameterize rows-X
-            class: "grid grid-rows-1 grid-cols-{columns} box-border border-4",
-            // div {"1"} div {"2"}
+            class: "grid grid-rows-1 grid-cols-{columns}",
             rounds.iter().map(move |round| rsx!( 
                 div {
                     class: "grid grid-cols-1 grid-rows-{round.len()}",
             
                     round.iter().map(|m| rsx!(
                         div {
-                            class: "col-span-1",
+                            // TODO first round positionning (don't auto center)
+                            class: "col-span-1 flex flex-col my-auto box-border border-2",
                             div {
-                                class: "container columns-2 box-border border-2",
+                                class: "grow flex flex-row",
                                 div {
+                                    class: "box-border border",
                                     m.player1()
                                 }
                                 div {
-                                    class: "max-width: 15px; box-border border-1",
+                                    class: "max-width: 15px; box-border border",
                                     "0"
                                 }
                             }
                             div {
-                                class: "container columns-2 box-border border-2",
+                                class: "grow flex flex-row",
                                 div {
+                                    class: "box-border border",
                                     m.player2()
                                 }
                                 div {
-                                    class: "max-width: 15px; box-border border-1",
+                                    class: "max-width: 15px; box-border border",
                                     "0"
                                 }
                             }
