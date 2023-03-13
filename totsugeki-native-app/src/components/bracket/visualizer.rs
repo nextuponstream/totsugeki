@@ -1,5 +1,6 @@
 #![allow(non_snake_case)]
 
+use std::cmp::min;
 use chrono::{TimeZone, Utc};
 use dioxus::prelude::*;
 use totsugeki::{
@@ -172,6 +173,8 @@ pub fn View(cx: Scope) -> Element {
 }
 
 fn SingleEliminationBracketView(cx: Scope, bracket: Bracket) -> Element {
+        // Any trace events in this closure or code called by it will occur within
+        // the span.
     // TODO partition matches according to powers of two
     let matches = bracket.get_matches();
     let participants = bracket.get_participants();
@@ -198,54 +201,52 @@ fn SingleEliminationBracketView(cx: Scope, bracket: Bracket) -> Element {
         //         p { p2.to_string() }
         //     }
         // }
-    cx.render(rsx!( 
+    
+    // TODO check display when 12 rounds are in play
+    let columns = min(rounds.len(), 12);
+    
+    
+    return cx.render(rsx!( 
 
-        // ""
-        
-        rounds.iter().map(move |round| rsx!( 
-            round.iter().map(|m| rsx!(
+       
+        div { "rounds: {columns}" }
+        div {
+            // TODO columns is "correct" but alignement is not
+            // TODO parameterize rows-X
+            class: "grid grid-rows-1 grid-cols-{columns} box-border border-4",
+            // div {"1"} div {"2"}
+            rounds.iter().map(move |round| rsx!( 
                 div {
-                    div {
-                        m.player1()
-                    }
-                    // TODO same row
-                    div {
-                        "0"
-                    }
-                }
-                div {
-                    div {
-                        m.player2()
-                    }
-                    // TODO same row
-                    div {
-                        "0"
-                    }
+                    class: "grid grid-cols-1 grid-rows-{round.len()}",
+            
+                    round.iter().map(|m| rsx!(
+                        div {
+                            class: "col-span-1",
+                            div {
+                                class: "container columns-2 box-border border-2",
+                                div {
+                                    m.player1()
+                                }
+                                div {
+                                    class: "max-width: 15px; box-border border-1",
+                                    "0"
+                                }
+                            }
+                            div {
+                                class: "container columns-2 box-border border-2",
+                                div {
+                                    m.player2()
+                                }
+                                div {
+                                    class: "max-width: 15px; box-border border-1",
+                                    "0"
+                                }
+                            }
+                        }
+                    ))
                 }
             ))
-
-
-                     // for m in round {
-         //     div {
-         //          p { 
-         //             div {
-         //                 "{m.get_players()[0]}"
-         //             }
-         //             div {
-         //                 "SCORE"
-         //             }
-         //         }
-         //         p { 
-         //             div {
-         //               "{m.get_players()[1]}"  
-         //             } 
-         //             div {
-         //                 "SCORE"
-         //             }
-         //         }
-         //     }
-         // }
-        ))
+        }
     ))
 }
 
@@ -262,7 +263,7 @@ fn DoubleEliminationBracketView(cx: Scope, bracket: Bracket) -> Element {
     ))
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 struct DisplayableMatch {
     id: MatchId,
     players: [[u8; 256]; 2]
@@ -270,7 +271,7 @@ struct DisplayableMatch {
 
 impl DisplayableMatch {
     fn player(&self, is_player1: bool) -> &str {
-        let id = if is_player1{0}else{1};
+        let id = if is_player1 {0} else {1};
         std::str::from_utf8(&self.players[id]).unwrap()    
     }
     
