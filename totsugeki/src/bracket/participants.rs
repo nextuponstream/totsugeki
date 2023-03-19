@@ -81,7 +81,7 @@ mod tests {
             "name",
             Format::default(),
             SeedingMethod::default(),
-            Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
+            Utc.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap(),
             false,
         );
         for i in 0..10 {
@@ -107,7 +107,7 @@ mod tests {
             matches,
             format: Format::SingleElimination,
             seeding_method: SeedingMethod::Strict,
-            start_time: Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
+            start_time: Utc.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap(),
             accept_match_results: false,
             automatic_match_validation: false,
             barred_from_entering: true,
@@ -145,7 +145,7 @@ mod tests {
             matches,
             format: Format::SingleElimination,
             seeding_method: SeedingMethod::Strict,
-            start_time: Utc.ymd(2000, 1, 1).and_hms(0, 0, 0),
+            start_time: Utc.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap(),
             accept_match_results: false,
             automatic_match_validation: false,
             barred_from_entering: true,

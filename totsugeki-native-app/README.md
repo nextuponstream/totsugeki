@@ -13,6 +13,7 @@ npm i -g tailwindcss
 Generate css: 
 
 ```bash
+cargo run --bin css_row.rs # edit tailwind.config.js
 tailwindcss -o ./resources/tailwind.css
 ```
 

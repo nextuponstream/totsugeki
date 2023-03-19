@@ -1,6 +1,6 @@
 //! Opponent
 
-use crate::player::{Id as PlayerId, Participants, Player};
+use crate::player::Id as PlayerId;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 

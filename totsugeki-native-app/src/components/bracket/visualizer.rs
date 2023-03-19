@@ -1,14 +1,12 @@
 #![allow(non_snake_case)]
 
-use std::cmp::min;
 use chrono::{TimeZone, Utc};
 use dioxus::prelude::*;
 use totsugeki::{
     bracket::Bracket, 
-    format::Format, 
-    matches::{Match, Id as MatchId}, 
-    player::{Participants, Id as PlayerId}
+    format::Format
 };
+use crate::{single_elimination::ordering::{partition_winner_bracket, reorder_first_round}, DisplayableMatch};
 
 pub fn GeneralDetails(cx: Scope) -> Element {
     let bracket = use_shared_state::<Bracket>(cx).expect("bracket");
@@ -172,84 +170,88 @@ pub fn View(cx: Scope) -> Element {
     ))
 }
 
+fn display_match(cx: Scope, m: DisplayableMatch) -> Element {
+    // TODO auto generate row-start maximum value for tailwind config
+    let start = match m.row_hint {
+        Some(h) => format!("row-start-{}", h + 1),
+        None => "".into(),
+    };
+    cx.render(rsx!(
+        div {
+            id: "{m.id}",
+            class: "col-span-1 flex flex-col my-auto box-border border-2 {start}",
+
+            // TODO format seed display ### so it takes the same space for all
+            div {
+                class: "grow flex flex-row",
+                div { format!("({})", m.seeds[0]) }
+                div {
+                    class: "box-border border grow",
+                    m.player1()
+                }
+                div {
+                    class: "max-width: 15px; box-border border",
+                    m.score[0].to_string()
+                }
+            }
+            div {
+                class: "grow flex flex-row",
+                div { format!("({})", m.seeds[1]) }
+                div {
+                    class: "box-border border grow",
+                    m.player2()
+                }
+                div {
+                    class: "max-width: 15px; box-border border",
+                    m.score[1].to_string()
+                }
+            }
+        }
+    ))
+}
+
 // TODO update match result when clicking on match
 
 fn SingleEliminationBracketView(cx: Scope, bracket: Bracket) -> Element {
-        // Any trace events in this closure or code called by it will occur within
-        // the span.
-    // TODO partition matches according to powers of two
     let matches = bracket.get_matches();
     let participants = bracket.get_participants();
-    // let players: Vec<(PlayerId, &str)> = participants.get_players_list().iter().map(|p| (p.get_id(), p.get_name().as_str())).collect();
     
-    // participants.get(id).unwrap().get_name()
-    
-    let rounds = partition_winner_bracket(matches, &participants);
+    let mut rounds = partition_winner_bracket(matches, &participants);
+    if rounds.len() >= 2 {
+        reorder_first_round(&mut rounds);
+    }
     
     // NOTE: given a number of players, the number of the matches is know
     // Then I can deal with an array of fixed size for the matches. It's not
     // like switching from Vec to array would hurt me, now would it?
     
     // TODO finish this code before next job maybe
-    
-    // TODO display player names
-    // option 1, provide name in method
-    // tried that and got HURT
-    // option 2, rewrite opponent to include player name (byte vector?)
-        // for round in rounds {
-        //     for m in round {
-        //         let (p1, p2) = m.get_players();
-        //         p { p1.to_string() }
-        //         p { p2.to_string() }
-        //     }
-        // }
-    
+   
     // TODO check display when 12 rounds are in play
-    let columns = min(rounds.len(), 12);
-    
+    let columns = rounds.len();
     
     return cx.render(rsx!( 
-
-       
-        div { "rounds: {columns}" }
         div {
-            // TODO columns is "correct" but alignement is not
-            // TODO parameterize rows-X
+            // 128 = 2^7
+            // 4096 = 2^12
             class: "grid grid-rows-1 grid-cols-{columns}",
-            rounds.iter().map(move |round| rsx!( 
-                div {
-                    class: "grid grid-cols-1 grid-rows-{round.len()}",
             
-                    round.iter().map(|m| rsx!(
+            for (i, round) in rounds.iter().enumerate() {
+                match i {
+                    i if i == 0 => rsx!(
                         div {
-                            // TODO first round positionning (don't auto center)
-                            class: "col-span-1 flex flex-col my-auto box-border border-2",
-                            div {
-                                class: "grow flex flex-row",
-                                div {
-                                    class: "box-border border",
-                                    m.player1()
-                                }
-                                div {
-                                    class: "max-width: 15px; box-border border",
-                                    "0"
-                                }
-                            }
-                            div {
-                                class: "grow flex flex-row",
-                                div {
-                                    class: "box-border border",
-                                    m.player2()
-                                }
-                                div {
-                                    class: "max-width: 15px; box-border border",
-                                    "0"
-                                }
-                            }
+                            class: "grid grid-cols-1 grow grid-flow-row",
+                            round.iter().map(|m| display_match(cx, *m))
                         }
-                    ))
+                    ),
+                    _ => rsx!(
+                        div {
+                            class: "grid grid-cols-1",
+                            round.iter().map(|m| display_match(cx, *m))
+                        }
+                    ),
                 }
-            ))
+            }
         }
     ))
 }
@@ -267,216 +269,3 @@ fn DoubleEliminationBracketView(cx: Scope, bracket: Bracket) -> Element {
     ))
 }
 
-#[derive(Clone, Copy, Debug)]
-struct DisplayableMatch {
-    id: MatchId,
-    players: [[u8; 256]; 2]
-}
-
-impl DisplayableMatch {
-    fn player(&self, is_player1: bool) -> &str {
-        let id = if is_player1 {0} else {1};
-        std::str::from_utf8(&self.players[id]).unwrap()    
-    }
-    
-    fn player1(&self) -> &str {
-        self.player(true)
-    }
-    
-    fn player2(&self) -> &str {        
-        self.player(false)
-    }
-}
-
-// TODO remove, not actually using this
-impl std::fmt::Display for DisplayableMatch {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} VS {}", self.player1(), self.player2())
-    }
-}
-
-fn convert(m: &Match, participants: &Participants) -> DisplayableMatch {
-    let list = participants.get_players_list();
-    let players: Vec<(PlayerId, String)> = list.iter().map(|p| (p.get_id(), p.get_name())).collect();
-    let player_name_size = 256;
-    let mut player1_name = 
-        m.get_players()[0].get_name(&players).into_bytes().into_iter().take(256).collect::<Vec<u8>>();
-    player1_name.resize(player_name_size, 0); // '\0' null byte
-    let player1 = player1_name.try_into().unwrap();
-    let mut player2_name = 
-        m.get_players()[1].get_name(&players).into_bytes().into_iter().take(256).collect::<Vec<u8>>();
-    player2_name.resize(player_name_size, 0); // '\0' null byte
-    let player2 = player2_name.try_into().unwrap();
-    DisplayableMatch { id: m.get_id(), players: [player1, player2] }
-}
-
-fn partition_winner_bracket(matches: Vec<Match>, participants: &Participants) -> Vec<Vec<DisplayableMatch>> {
-    // TODO split matches in descending powers of two groups
-    let n = participants.len();
-    let Some(mut npo2) =  n.checked_next_power_of_two() else {
-        panic!("MATH");
-    };
-    let matches: Vec<DisplayableMatch> = matches.iter().map(|m| convert(m, participants)).collect();
-    let byes = npo2 - n;
-    let mut remaining_matches = matches;
-    let mut partition = vec![];
-    let mut is_first_round = true;
-    while !remaining_matches.is_empty() {
-        if is_first_round {
-            is_first_round = false;
-            // 5 players, 2^npo2 >= 5 -> npo2 = 3
-            // byes = npo2 - 5 = 3
-            // 2³ = 8
-            // 3 players dont play
-            // 2 players have to play
-            // 1 match
-            // next round
-            // 4 players => 2 matches
-            // 2 players => 1 match
-            
-            // 4 players, 2^npo2 >= 4 -> npo2 = 2
-            // byes = npo2 - 4 = 0
-            // 2² = 4
-            // 2 players don't play
-            // no
-            // 4 players, 2^byes == #participants -> byes = 0
-            // 4 players, 2 matches
-            // 2 players, 1 match
-            
-            // 3 players, 2^byes > #participants (3) -> npo2 = 2
-            // byes = 4 - 3 = 1
-            // 1 players does not play
-            // 2 players play
-            // 1 match
-            // 2 players play
-            // 1 match
-            
-            let remaining_players = participants.len() - byes;
-            let split = remaining_players / 2;
-            // TODO use drain
-            let tmp = remaining_matches.clone();
-            let (first_round_matches, matches) = tmp.split_at(split);
-            remaining_matches = matches.to_vec();
-            partition.push(first_round_matches.to_vec());
-            continue;
-        } else {
-            npo2 /= 2;
-            let split = npo2 / 2;
-            let (round, matches) = if remaining_matches.len() == 1 {
-                // NOTE: I really don't like the unwrap but assigning
-                // `remaining_matches` to an empty vec produces a warning
-                // TODO remove unwrap
-                let tmp = remaining_matches.drain(0..1).next().unwrap();
-                (vec![tmp], vec![])
-            } else {
-                let (a, b) = remaining_matches.split_at(split);
-                (a.to_vec(), b.to_vec())
-            };
-            partition.push(round.to_vec());
-            remaining_matches = matches.to_vec();
-            continue;
-        }
-    }
-    
-    partition
-}
-
-#[cfg(test)]
-mod tests {
-    use totsugeki::{matches::Match, player::{Participants, Player}};
-
-    use super::partition_winner_bracket;
-    
-    fn get_matches_and_participant(n: usize) -> (Vec<Match>, Participants) {
-        let mut matches = vec![];
-        let mut players = vec![];
-        for _ in 0..n {
-            matches.push(Match::default());
-        }
-        for i in 1..=n {
-            players.push(Player::new(format!("p{i}")));
-        }
-        let participants = Participants::try_from(players).expect("participants");
-        (matches, participants)
-    }
-    
-    #[test]
-    fn split_winner_bracket_3_participants() {
-        let (matches, participants) = get_matches_and_participant(3);
-        let partition = partition_winner_bracket(matches, &participants);
-        
-        assert_eq!(partition[0].len(), 1, "first round");
-        assert_eq!(partition[1].len(), 1, "second round");
-    }
-
-    #[test]
-    fn split_winner_bracket_4_participants() {
-        let (matches, participants) = get_matches_and_participant(4);
-        let partition = partition_winner_bracket(matches, &participants);
-        
-        assert_eq!(partition[0].len(), 2, "first round, 1-4 + 2-3");
-        assert_eq!(partition[1].len(), 1, "second round, 1-2");
-    }
-
-    #[test]
-    fn split_winner_bracket_5_participants() {
-        let (matches, participants) = get_matches_and_participant(5);
-        let partition = partition_winner_bracket(matches, &participants);
-        
-        assert_eq!(partition[0].len(), 1, "first round, 4-5");
-        assert_eq!(partition[1].len(), 2, "second round, 1-4 + 2-3");
-        assert_eq!(partition[2].len(), 1, "third round, 1-2");
-    }
-
-    #[test]
-    fn split_winner_bracket_6_participants() {
-        let (matches, participants) = get_matches_and_participant(6);
-        let partition = partition_winner_bracket(matches, &participants);
-        
-        assert_eq!(partition[0].len(), 2, "first round, 3-6 + 4-5");
-        assert_eq!(partition[1].len(), 2, "second round, 1-4 + 2-3");
-        assert_eq!(partition[2].len(), 1, "third round, 1-2");
-    }
-
-    #[test]
-    fn split_winner_bracket_7_participants() {
-        let (matches, participants) = get_matches_and_participant(7);
-        let partition = partition_winner_bracket(matches, &participants);
-        
-        assert_eq!(partition[0].len(), 3, "first round, 2-7 + 3-6 + 4-5");
-        assert_eq!(partition[1].len(), 2, "second round, 1-4 + 2-3");
-        assert_eq!(partition[2].len(), 1, "third round, 1-2");
-    }
-
-    #[test]
-    fn split_winner_bracket_8_participants() {
-        let (matches, participants) = get_matches_and_participant(8);
-        let partition = partition_winner_bracket(matches, &participants);
-        
-        assert_eq!(partition[0].len(), 4, "first round, 1-8 + 2-7 + 3-6 + 4-5");
-        assert_eq!(partition[1].len(), 2, "second round, 1-4 + 2-3");
-        assert_eq!(partition[2].len(), 1, "third round, 1-2");
-    }
-
-    #[test]
-    fn split_winner_bracket_9_participants() {
-        let (matches, participants) = get_matches_and_participant(9);
-        let partition = partition_winner_bracket(matches, &participants);
-        
-        assert_eq!(partition[0].len(), 1, "first round, 8-9");
-        assert_eq!(partition[1].len(), 4, "first round, 1-8 + 2-7 + 3-6 + 4-5");
-        assert_eq!(partition[2].len(), 2, "second round, 1-4 + 2-3");
-        assert_eq!(partition[3].len(), 1, "third round, 1-2");
-    }
-
-    #[test]
-    fn split_winner_bracket_10_participants() {
-        let (matches, participants) = get_matches_and_participant(10);
-        let partition = partition_winner_bracket(matches, &participants);
-        
-        assert_eq!(partition[0].len(), 2, "first round, 7-10 + 8-9");
-        assert_eq!(partition[1].len(), 4, "first round, 1-8 + 2-7 + 3-6 + 4-5");
-        assert_eq!(partition[2].len(), 2, "second round, 1-4 + 2-3");
-        assert_eq!(partition[3].len(), 1, "third round, 1-2");
-    }
-}
