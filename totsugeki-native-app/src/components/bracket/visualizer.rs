@@ -6,7 +6,11 @@ use totsugeki::{
     bracket::Bracket, 
     format::Format
 };
-use crate::{single_elimination::ordering::{partition_winner_bracket, reorder_first_round}, DisplayableMatch};
+use crate::{
+    single_elimination::ordering::reorder_rounds, 
+    single_elimination::partition::winner_bracket, 
+    DisplayableMatch
+};
 
 pub fn GeneralDetails(cx: Scope) -> Element {
     let bracket = use_shared_state::<Bracket>(cx).expect("bracket");
@@ -216,10 +220,8 @@ fn SingleEliminationBracketView(cx: Scope, bracket: Bracket) -> Element {
     let matches = bracket.get_matches();
     let participants = bracket.get_participants();
     
-    let mut rounds = partition_winner_bracket(matches, &participants);
-    if rounds.len() >= 2 {
-        reorder_first_round(&mut rounds);
-    }
+    let mut rounds = winner_bracket(matches, &participants);
+    reorder_rounds(&mut rounds);
     
     // NOTE: given a number of players, the number of the matches is know
     // Then I can deal with an array of fixed size for the matches. It's not
