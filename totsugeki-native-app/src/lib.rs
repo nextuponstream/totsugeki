@@ -6,7 +6,8 @@ use totsugeki::{
     player::{Id as PlayerId, Participants},
 };
 
-#[derive(Clone, Copy, Debug)]
+// #[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct DisplayableMatch {
     id: MatchId,
     players: [[u8; 256]; 2],
@@ -29,7 +30,21 @@ impl Default for DisplayableMatch {
     }
 }
 
+impl std::fmt::Debug for DisplayableMatch {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?} {:?}", self.seeds, self.row_hint)
+    }
+}
+
 impl DisplayableMatch {
+    #[cfg(test)]
+    fn new(seeds: [usize; 2]) -> Self {
+        Self {
+            seeds,
+            ..Self::default()
+        }
+    }
+
     fn player(&self, is_player1: bool) -> &str {
         let id = if is_player1 { 0 } else { 1 };
         std::str::from_utf8(&self.players[id]).unwrap()
