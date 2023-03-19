@@ -37,8 +37,8 @@ fn App(cx: Scope) -> Element {
             Navigation {}
             UpdateBracketDetails {}
             AddPlayerForm {}
-            GeneralDetails {}
             View {}
+            GeneralDetails {}
         }
 
     })

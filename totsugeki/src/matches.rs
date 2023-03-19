@@ -591,6 +591,12 @@ impl Match {
             _ => Err(Error::NoOpponent(self.players)),
         }
     }
+
+    /// Get score of match. Defaults to 0-0 if winner is not declared
+    #[must_use]
+    pub fn get_score(&self) -> (u8, u8) {
+        (0, 0)
+    }
 }
 
 /// Match representation as received through the network
@@ -1086,5 +1092,10 @@ mod tests {
         let m = m.insert_player(p2, false).expect("no error");
         let m = m.insert_player(p2, false).expect("no error");
         let _m = m.insert_player(p2, false).expect("no error");
+    }
+
+    #[test]
+    fn match_score_is_0_and_0_when_there_is_no_winner() {
+        panic!("unimplemented")
     }
 }
