@@ -4,7 +4,8 @@ use chrono::{TimeZone, Utc};
 use dioxus::prelude::*;
 use totsugeki::{
     bracket::Bracket, 
-    format::Format
+    matches::Id as MatchId,
+    format::Format, opponent::Opponent
 };
 use crate::{
     single_elimination::ordering::reorder_rounds, 
@@ -44,7 +45,11 @@ pub fn UpdateBracketDetails(cx: Scope) -> Element {
     let bracket = use_shared_state::<Bracket>(cx).expect("bracket");
 
     cx.render(rsx!(
-
+        
+        h2 { 
+            class: "text-lg",
+            "Update bracket"
+        }
         form {
             onsubmit: move |event| { update_bracket(bracket, event ) },
 
@@ -52,7 +57,7 @@ pub fn UpdateBracketDetails(cx: Scope) -> Element {
                 class: "pb-2",
                 label { "Name" }
                 input {
-                    class: "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500",
+                    class: "border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5",
                     name: "name",
                 }
             }
@@ -78,6 +83,8 @@ pub fn UpdateBracketDetails(cx: Scope) -> Element {
             }
 
         }
+        
+        MatchEdit {}
     ))
 }
 
@@ -103,8 +110,81 @@ fn update_bracket(bracket: &UseSharedState<Bracket>, e: Event<FormData>) {
     );
 }
 
-pub fn AddPlayerForm(cx: Scope) -> Element {
+fn update_result(cx: Scope, bracket: &UseSharedState<Bracket>, e: Event<FormData>) {
+    let Some(m_id) = *use_shared_state::<Option<MatchId>>(cx).expect("match id").read() else {
+        return;
+    };
     
+    let b = bracket.write().clone();
+    let matches = b.get_matches();
+    
+    let Some(m) = matches.iter().find(|m| m.get_id() == m_id) else {
+        return;
+    };
+    
+    let (p1, p2) = match m.get_players() {
+        [Opponent::Player(p1), Opponent::Player(p2)] => (p1, p2),
+        _ => return,
+    };
+    let r1 = e.values.get("result_1").expect("result for p1");
+    let r1 = r1.parse::<i8>().unwrap();
+    let r2 = e.values.get("result_2").expect("result for p2");
+    let r2 = r2.parse::<i8>().unwrap();
+    let result = (r1,r2);
+    
+    *bracket.write() = b.tournament_organiser_reports_result(p1, result, p2).expect("new bracket").0;
+}
+
+pub fn MatchEdit(cx: Scope) -> Element {
+    let bracket = use_shared_state::<Bracket>(cx).expect("bracket");
+    let m_id = match use_shared_state::<Option<MatchId>>(cx) {
+        Some(r) => match *r.read(){
+            Some(id) => id.to_string(),
+            None => "".to_string(),
+        }, 
+        _ => "".to_string(),
+    };
+
+    cx.render(rsx!(div {
+        h2 {
+            class: "text-lg",
+            "Update match result"
+        }
+        form {
+            onsubmit: move |event| { update_result(cx, bracket, event) },
+
+            div { "Match ID: {m_id}" }
+            div {
+                class: "pb-2",
+                label { "Result for player 1" }
+                input {
+                    class: "border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5",
+                    name: "result_1",
+                }
+            }
+           
+            div {
+                class: "pb-2",
+                label { "Result for player 2" }
+                input {
+                    class: "border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5",
+                    name: "result_2",
+                }
+            }
+           
+            // TODO refactor submission button in reusable component submit button
+            div {
+                input {
+                    class: "text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800",
+                    r#type: "submit",
+                },
+            }
+
+        }
+    }))
+}
+
+pub fn AddPlayerForm(cx: Scope) -> Element {
     let bracket = use_shared_state::<Bracket>(cx).expect("bracket");
 
     cx.render(rsx!(
@@ -120,7 +200,7 @@ pub fn AddPlayerForm(cx: Scope) -> Element {
                 class: "pb-2",
                 label { "Player name" }
                 input {
-                    class: "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500",
+                    class: "border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5",
                     name: "name",
                 }
             }
@@ -154,35 +234,45 @@ fn add_player(bracket: &UseSharedState<Bracket>, e: Event<FormData>) {
 }
 
 pub fn View(cx: Scope) -> Element {
-    
-    let bracket = use_shared_state::<Bracket>(cx).expect("bracket");
-    
-    let b = bracket.read();
-    
-    let view = match b.get_format() {
-        Format::SingleElimination => SingleEliminationBracketView(cx, b.clone()),
-        Format::DoubleElimination => DoubleEliminationBracketView(cx, b.clone()),
+    let format = match use_shared_state::<Bracket>(cx) {
+        Some(bracket_ref) => bracket_ref.read().get_format(),
+        None => Bracket::default().get_format(),
     };
-
+    let view = match format {
+        Format::SingleElimination => SingleEliminationBracketView(cx),
+        Format::DoubleElimination => DoubleEliminationBracketView(cx),
+    };
+    
     cx.render(rsx!(
         h2 {
             class: "text-lg",
             "Bracket view"
         }
-        view.unwrap()
+        view
 
     ))
 }
 
+#[derive(PartialEq, Clone)]
+struct SomeProps {
+    id: &'static MatchId,
+}
+
 fn display_match(cx: Scope, m: DisplayableMatch) -> Element {
-    // TODO auto generate row-start maximum value for tailwind config
+    let m_id = use_shared_state::<Option<MatchId>>(cx).expect("match id");
+
     let start = match m.row_hint {
         Some(h) => format!("row-start-{}", h + 1),
         None => "".into(),
     };
+    
     cx.render(rsx!(
         div {
             id: "{m.id}",
+            onclick: move |_| {
+                *m_id.write() = Some(m.id);
+            },
+
             class: "col-span-1 flex flex-col my-auto box-border border-2 {start}",
 
             // TODO format seed display ### so it takes the same space for all
@@ -195,7 +285,7 @@ fn display_match(cx: Scope, m: DisplayableMatch) -> Element {
                 }
                 div {
                     class: "max-width: 15px; box-border border",
-                    m.score[0].to_string()
+                    m.score1()
                 }
             }
             div {
@@ -207,16 +297,20 @@ fn display_match(cx: Scope, m: DisplayableMatch) -> Element {
                 }
                 div {
                     class: "max-width: 15px; box-border border",
-                    m.score[1].to_string()
+                    m.score2()
                 }
             }
         }
     ))
 }
 
-// TODO update match result when clicking on match
-
-fn SingleEliminationBracketView(cx: Scope, bracket: Bracket) -> Element {
+fn SingleEliminationBracketView(cx: Scope) -> Element {
+    // let mut bracket = use_state(cx, || bracket);
+    let bracket = match use_shared_state::<Bracket>(cx) {
+        Some(bracket_ref) => bracket_ref.read().clone(),
+        None => Bracket::default(),
+    };
+    
     let matches = bracket.get_matches();
     let participants = bracket.get_participants();
     
@@ -228,8 +322,6 @@ fn SingleEliminationBracketView(cx: Scope, bracket: Bracket) -> Element {
     // like switching from Vec to array would hurt me, now would it?
     
     // TODO finish this code before next job maybe
-   
-    // TODO check display when 12 rounds are in play
     let columns = rounds.len();
     
     return cx.render(rsx!( 
@@ -258,16 +350,16 @@ fn SingleEliminationBracketView(cx: Scope, bracket: Bracket) -> Element {
     ))
 }
 
-fn DoubleEliminationBracketView(cx: Scope, bracket: Bracket) -> Element {
-    let n = bracket.get_participants().len();
+fn DoubleEliminationBracketView(cx: Scope) -> Element {
+    // let n = bracket.get_participants().len();
     // TODO partition matches according to powers of two
-    let matches = bracket.get_matches();
+    // let matches = bracket.get_matches();
     
-    cx.render(rsx!(
-        p { n.to_string() }
-        for m in matches.iter() {
-            p { m.to_string() }
-        }
+    cx.render(rsx!( ""
+        // p { n.to_string() }
+        // for m in matches.iter() {
+            // p { m.to_string() }
+        // }
     ))
 }
 

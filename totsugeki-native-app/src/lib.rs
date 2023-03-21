@@ -6,12 +6,12 @@ use totsugeki::{
     player::{Id as PlayerId, Participants},
 };
 
-// #[derive(Debug, Clone, Copy)]
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
+// #[derive(Clone, Copy)]
 pub struct DisplayableMatch {
     id: MatchId,
     players: [[u8; 256]; 2],
-    score: [usize; 2],
+    score: (i8, i8),
     seeds: [usize; 2],
     row_hint: Option<usize>,
 }
@@ -23,18 +23,18 @@ impl Default for DisplayableMatch {
         DisplayableMatch {
             id: MatchId::new_v4(),
             players: [v.clone().try_into().unwrap(), v.try_into().unwrap()],
-            score: [0, 0],
+            score: (0, 0),
             seeds: [0, 0],
             row_hint: None,
         }
     }
 }
 
-impl std::fmt::Debug for DisplayableMatch {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?} {:?}", self.seeds, self.row_hint)
-    }
-}
+// impl std::fmt::Debug for DisplayableMatch {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         write!(f, "{:?} {:?}", self.seeds, self.row_hint)
+//     }
+// }
 
 impl DisplayableMatch {
     #[cfg(test)]
@@ -56,6 +56,14 @@ impl DisplayableMatch {
 
     fn player2(&self) -> &str {
         self.player(false)
+    }
+
+    fn score1(&self) -> String {
+        self.score.0.to_string()
+    }
+
+    fn score2(&self) -> String {
+        self.score.1.to_string()
     }
 }
 
@@ -83,7 +91,7 @@ fn convert(m: &Match, participants: &Participants) -> DisplayableMatch {
     DisplayableMatch {
         id: m.get_id(),
         players: [player1, player2],
-        score: [0, 0],
+        score: m.get_score(),
         seeds: m.get_seeds(),
         row_hint: None,
     }

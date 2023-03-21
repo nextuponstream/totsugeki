@@ -4,6 +4,7 @@ use chrono::prelude::*;
 use dioxus::prelude::*;
 use dioxus_desktop::Config;
 use totsugeki::bracket::Bracket;
+use totsugeki::matches::Id as MatchId;
 use totsugeki_native_app::components::{
     bracket::visualizer::{AddPlayerForm, GeneralDetails, UpdateBracketDetails, View},
     navigation::Navigation,
@@ -27,6 +28,7 @@ fn App(cx: Scope) -> Element {
         true,
     );
     use_shared_state_provider(cx, || b); // TODO revert to Bracket::default
+    use_shared_state_provider::<Option<MatchId>>(cx, || None);
 
     cx.render(rsx! {
         style { include_str!("../resources/tailwind.css") }
