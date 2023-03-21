@@ -594,8 +594,11 @@ impl Match {
 
     /// Get score of match. Defaults to 0-0 if winner is not declared
     #[must_use]
-    pub fn get_score(&self) -> (u8, u8) {
-        (0, 0)
+    pub fn get_score(&self) -> (i8, i8) {
+        match self.reported_results {
+            [r1, r2] if r1.0 == r2.1 && r1.1 == r2.0 => r1,
+            _ => (0, 0),
+        }
     }
 }
 
