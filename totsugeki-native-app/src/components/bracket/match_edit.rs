@@ -6,15 +6,17 @@ use totsugeki::{
 };
 use dioxus::prelude::*;
 
-pub fn MatchEdit(cx: Scope) -> Element {
+use crate::{Modal, ShortName};
+
+#[derive(PartialEq, Props)]
+pub(crate) struct FormProps {
+    pub match_id: MatchId,
+    pub player1: String,
+    pub player2: String,
+}
+
+pub(crate) fn MatchEdit(cx: Scope<FormProps>) -> Element {
     let bracket = use_shared_state::<Bracket>(cx).expect("bracket");
-    let m_id = match use_shared_state::<Option<MatchId>>(cx) {
-        Some(r) => match *r.read(){
-            Some(id) => id.to_string(),
-            None => "".to_string(),
-        }, 
-        _ => "".to_string(),
-    };
 
     cx.render(rsx!(div {
         h2 {
@@ -24,21 +26,27 @@ pub fn MatchEdit(cx: Scope) -> Element {
         form {
             onsubmit: move |event| { update_result(cx, bracket, event) },
 
-            div { "Match ID: {m_id}" }
+            div { "Match ID: {cx.props.match_id}" }
             div {
                 class: "pb-2",
-                label { "Result for player 1" }
+                label { "Result for {cx.props.player1}" }
                 input {
-                    class: "border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5",
+                    class: "border border-gray-300 text-sm rounded-lg \
+                            focus:ring-blue-500 focus:border-blue-500 block \
+                            p-2.5",
+                    r#type: "number",
                     name: "result_1",
                 }
             }
            
             div {
                 class: "pb-2",
-                label { "Result for player 2" }
+                label { "Result for {cx.props.player2}" }
                 input {
-                    class: "border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5",
+                    class: "border border-gray-300 text-sm rounded-lg \
+                            focus:ring-blue-500 focus:border-blue-500 block \
+                            p-2.5",
+                    r#type: "number",
                     name: "result_2",
                 }
             }
@@ -55,15 +63,12 @@ pub fn MatchEdit(cx: Scope) -> Element {
     }))
 }
 
-fn update_result(cx: Scope, bracket: &UseSharedState<Bracket>, e: Event<FormData>) {
-    let Some(m_id) = *use_shared_state::<Option<MatchId>>(cx).expect("match id").read() else {
-        return;
-    };
-    
+fn update_result(cx: Scope<FormProps>, bracket: &UseSharedState<Bracket>, e: Event<FormData>) {
+    let modal = use_shared_state::<Option<Modal>>(cx).expect("modal to show");
     let b = bracket.write().clone();
     let matches = b.get_matches();
     
-    let Some(m) = matches.iter().find(|m| m.get_id() == m_id) else {
+    let Some(m) = matches.iter().find(|m| m.get_id() == cx.props.match_id) else {
         return;
     };
     
@@ -85,4 +90,59 @@ fn update_result(cx: Scope, bracket: &UseSharedState<Bracket>, e: Event<FormData
         }       
     };
     *bracket.write() = b;
+    *modal.write() = None;
+}
+
+// FIXME when modal is open, cannot tab into the first field right away
+pub(crate) fn MatchEditModal(cx: Scope<Props>) -> Element {
+    // inspired from: https://www.kindacode.com/article/how-to-create-a-modal-dialog-with-tailwind-css/
+    let modal = use_shared_state::<Option<Modal>>(cx).expect("active modal");
+    let (match_id, isHidden, player1, player2) = match *modal.read() {
+        Some(Modal::EnterMatchResult(m_id, player1, player2)) => (m_id, "", ShortName { value: player1 }, ShortName { value: player2 }),
+        _ => (MatchId::new_v4(), "hidden", ShortName::default(), ShortName::default()),
+    };
+
+    cx.render(rsx!(
+        div {
+            id:"overlay",
+            class: "fixed {isHidden} z-40 w-screen h-screen inset-0 bg-gray-900 bg-opacity-60",
+        }
+        div {
+            id: "match_edit_modal",
+            class: "{isHidden} fixed z-50 top-1/2 left-1/2 -translate-x-1/2 \
+                   -translate-y-1/2 w-96 bg-white rounded-md px-8 py-6 \
+                   space-y-5 drop-shadow-lg",
+            h1 {
+                class: "text-2xl font-semibold",
+                "Match results"
+            }
+            div {
+                class: "py-5 border-t border-b border-gray-300",
+                rsx! {
+                    MatchEdit {
+                        match_id: match_id,
+                        player1: player1.get(),
+                        player2: player2.get(),
+                    }
+                }
+            }
+            div {
+                class: "flex justify-end",
+                button {
+                    id: "close",
+                    onclick: |_| {
+                        *modal.write() = None;
+                    },
+                    class: "px-5 py-2 bg-blue-500 hover:bg-blue-700 \
+                            cursor-pointer rounded-md",
+                    "close"
+                }
+            }
+        }
+    ))
+}
+
+#[derive(PartialEq, Props)]
+pub(crate) struct Props {
+    pub isHidden: bool,
 }

@@ -6,11 +6,14 @@ use totsugeki::{
     player::{Id as PlayerId, Participants},
 };
 
+/// Name that can be copied over
+type Name = [u8; 256];
+
 #[derive(Debug, Clone, Copy)]
 // #[derive(Clone, Copy)]
 pub struct DisplayableMatch {
     id: MatchId,
-    players: [[u8; 256]; 2],
+    pub(crate) players: [Name; 2],
     score: (i8, i8),
     seeds: [usize; 2],
     row_hint: Option<usize>,
@@ -67,6 +70,29 @@ impl DisplayableMatch {
     }
 }
 
+/// A struct that holds a string variable that contains maximum 256 caracters
+struct ShortName {
+    pub(crate) value: [u8; 256],
+}
+
+impl ShortName {
+    pub(crate) fn get(&self) -> String {
+        String::from_utf8(self.value.into()).expect("string")
+    }
+}
+
+impl std::default::Default for ShortName {
+    fn default() -> Self {
+        let mut value = String::default()
+            .into_bytes()
+            .into_iter()
+            .collect::<Vec<u8>>();
+        value.resize(256, 0);
+        let value = value.try_into().unwrap();
+        Self { value }
+    }
+}
+
 fn convert(m: &Match, participants: &Participants) -> DisplayableMatch {
     let list = participants.get_players_list();
     let players: Vec<(PlayerId, String)> =
@@ -94,5 +120,31 @@ fn convert(m: &Match, participants: &Participants) -> DisplayableMatch {
         score: m.get_score(),
         seeds: m.get_seeds(),
         row_hint: None,
+    }
+}
+
+pub(crate) fn convert_name(name: String) -> Name {
+    let mut name = name.into_bytes().into_iter().take(256).collect::<Vec<u8>>();
+    name.resize(256, 0); // '\0' null byte
+    name.try_into().unwrap()
+}
+
+/// What modal should be shown
+pub enum Modal {
+    /// Add player to bracket
+    AddPlayer,
+    /// Enter result for given match for player 1 and player 2
+    EnterMatchResult(MatchId, Name, Name),
+    /// Disqualify player from bracket
+    Disqualify,
+}
+
+#[cfg(test)]
+mod test {
+    use crate::ShortName;
+
+    #[test]
+    fn get_default_short_name() {
+        ShortName::default();
     }
 }

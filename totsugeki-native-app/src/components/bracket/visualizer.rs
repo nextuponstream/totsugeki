@@ -1,8 +1,10 @@
 #![allow(non_snake_case)]
 
 use crate::{
-    components::bracket::{displayable_match::display_match, match_edit::MatchEdit},
+    components::bracket::displayable_match::display_match,
+    components::bracket::match_edit::MatchEditModal,
     single_elimination::{ordering::reorder_rounds, partition::winner_bracket},
+    Modal,
 };
 use chrono::{TimeZone, Utc};
 use dioxus::prelude::*;
@@ -50,7 +52,7 @@ pub fn UpdateBracketDetails(cx: Scope) -> Element {
 
             div {
                 class: "pb-2",
-                label { "Name" }
+               label { "Name" }
                 input {
                     class: "border border-gray-300 text-gray-900 text-sm \
                             rounded-lg focus:ring-blue-500 block p-2.5 \
@@ -84,8 +86,6 @@ pub fn UpdateBracketDetails(cx: Scope) -> Element {
             }
 
         }
-
-        MatchEdit {}
     ))
 }
 
@@ -109,64 +109,6 @@ fn update_bracket(bracket: &UseSharedState<Bracket>, e: Event<FormData>) {
         Utc.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap(),
         true,
     );
-}
-
-pub fn AddPlayerForm(cx: Scope) -> Element {
-    let bracket = use_shared_state::<Bracket>(cx).expect("bracket");
-
-    cx.render(rsx!(
-        h2 {
-            class: "text-lg",
-            "Add new player"
-        }
-
-        form {
-            onsubmit: move |event| { add_player(bracket, event ) },
-
-            div {
-                class: "pb-2",
-                label { "Player name" }
-                input {
-                    class: "border border-gray-300 text-gray-900 text-sm \
-                            rounded-lg focus:ring-blue-500 block p-2.5 \
-                            focus:border-blue-500",
-                    name: "name",
-                }
-            }
-
-            // TODO refactor submission button in reusable component submit button
-            div {
-                input {
-                    class: "text-white bg-blue-700 hover:bg-blue-800 \
-                            focus:ring-4 focus:ring-blue-300 font-medium \
-                            rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 \
-                            dark:bg-blue-600 dark:hover:bg-blue-700 \
-                            focus:outline-none dark:focus:ring-blue-800",
-                    r#type: "submit",
-                },
-            }
-
-        }
-    ))
-}
-
-fn add_player(bracket: &UseSharedState<Bracket>, e: Event<FormData>) {
-    let name = e.values.get("name").expect("name");
-    let name = if name.is_empty() {
-        let i = bracket.read().get_participants().len() + 1;
-        format!("player {}", i)
-    } else {
-        name.to_string()
-    };
-    let b = match bracket.write().clone().add_participant(&name) {
-        Ok(b) => b,
-        Err(e) => {
-            println!("{e}"); // TODO use a logging library
-            return;
-        }
-    };
-
-    *bracket.write() = b;
 }
 
 pub fn View(cx: Scope) -> Element {
@@ -195,7 +137,8 @@ struct SomeProps {
 }
 
 fn SingleEliminationBracketView(cx: Scope) -> Element {
-    // let mut bracket = use_state(cx, || bracket);
+    let modal = use_shared_state::<Option<Modal>>(cx).expect("modal to show");
+    let isMatchEditModalHidden = !matches!(*modal.read(), Some(Modal::EnterMatchResult(_, _, _)));
     let bracket = match use_shared_state::<Bracket>(cx) {
         Some(bracket_ref) => bracket_ref.read().clone(),
         None => Bracket::default(),
@@ -215,7 +158,9 @@ fn SingleEliminationBracketView(cx: Scope) -> Element {
     let columns = rounds.len();
 
     return cx.render(rsx!(
-        MatchEditModal {}
+        MatchEditModal {
+            isHidden: isMatchEditModalHidden,
+        }
         div {
             // 128 = 2^7
             // 4096 = 2^12
@@ -251,49 +196,5 @@ fn DoubleEliminationBracketView(cx: Scope) -> Element {
            // for m in matches.iter() {
            // p { m.to_string() }
            // }
-    ))
-}
-
-fn MatchEditModal(cx: Scope) -> Element {
-    // inspired from: https://www.kindacode.com/article/how-to-create-a-modal-dialog-with-tailwind-css/
-    let isHidden = use_state(cx, || "hidden");
-
-    cx.render(rsx!(
-        button {
-            onclick: |_| {
-                isHidden.modify(|v| if v.is_empty() { "hidden" } else { "" });
-            },
-            "Toggle me"
-        }
-        div {
-            id:"overlay",
-            class: "fixed {isHidden} z-40 w-screen h-screen inset-0 bg-gray-900 bg-opacity-60",
-        }
-        div {
-            id: "match_edit_modal",
-            class: "{isHidden} fixed z-50 top-1/2 left-1/2 -translate-x-1/2 \
-                   -translate-y-1/2 w-96 bg-white rounded-md px-8 py-6 \
-                   space-y-5 drop-shadow-lg",
-            h1 {
-                class: "text-2xl font-semibold",
-                "Dialog Title"
-            }
-            div {
-                class: "py-5 border-t border-b border-gray-300",
-                "YOOOO"
-            }
-            div {
-                class: "flex justify-end",
-                button {
-                    id: "close",
-                    onclick: |_| {
-                        isHidden.modify(|v| if v.is_empty() { "hidden" } else { "" });
-                    },
-                    class: "px-5 py-2 bg-blue-500 hover:bg-blue-700 \
-                            cursor-pointer rounded-md",
-                    "close"
-                }
-            }
-        }
     ))
 }

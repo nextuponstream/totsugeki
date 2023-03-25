@@ -13,6 +13,7 @@ module.exports = {
   ],
   theme: {
     colors: {
+      transparent: 'transparent',
       'gray': {
         100: '#d1d5db',
         200: '#d1d5db',
