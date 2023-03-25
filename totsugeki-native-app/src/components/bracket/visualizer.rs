@@ -1,17 +1,12 @@
 #![allow(non_snake_case)]
 
+use crate::{
+    components::bracket::{displayable_match::display_match, match_edit::MatchEdit},
+    single_elimination::{ordering::reorder_rounds, partition::winner_bracket},
+};
 use chrono::{TimeZone, Utc};
 use dioxus::prelude::*;
-use totsugeki::{
-    bracket::Bracket, 
-    matches::Id as MatchId,
-    format::Format, opponent::Opponent
-};
-use crate::{
-    single_elimination::ordering::reorder_rounds, 
-    single_elimination::partition::winner_bracket, 
-    DisplayableMatch
-};
+use totsugeki::{bracket::Bracket, format::Format, matches::Id as MatchId};
 
 pub fn GeneralDetails(cx: Scope) -> Element {
     let bracket = use_shared_state::<Bracket>(cx).expect("bracket");
@@ -27,11 +22,11 @@ pub fn GeneralDetails(cx: Scope) -> Element {
             "General details"
         }
         p { details }
-        p { 
+        p {
             label { class: "pr-2", "Format:" }
             format
         }
-        p { 
+        p {
             label { class: "pr-2", "Players:" }
             n.to_string()
         }
@@ -45,8 +40,8 @@ pub fn UpdateBracketDetails(cx: Scope) -> Element {
     let bracket = use_shared_state::<Bracket>(cx).expect("bracket");
 
     cx.render(rsx!(
-        
-        h2 { 
+
+        h2 {
             class: "text-lg",
             "Update bracket"
         }
@@ -57,14 +52,16 @@ pub fn UpdateBracketDetails(cx: Scope) -> Element {
                 class: "pb-2",
                 label { "Name" }
                 input {
-                    class: "border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5",
+                    class: "border border-gray-300 text-gray-900 text-sm \
+                            rounded-lg focus:ring-blue-500 block p-2.5 \
+                            focus:border-blue-500",
                     name: "name",
                 }
             }
-            
+
             div {
                 class: "pb-2",
-                label { 
+                label {
                     class: "pr-2",
                     "Format"
                 }
@@ -77,13 +74,17 @@ pub fn UpdateBracketDetails(cx: Scope) -> Element {
 
             div {
                 input {
-                    class: "text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800",
+                    class: "text-white bg-blue-700 hover:bg-blue-800 \
+                            focus:ring-4 focus:ring-blue-300 font-medium \
+                            rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 \
+                            dark:bg-blue-600 dark:hover:bg-blue-700 \
+                            focus:outline-none dark:focus:ring-blue-800",
                     r#type: "submit",
                 },
             }
 
         }
-        
+
         MatchEdit {}
     ))
 }
@@ -110,80 +111,6 @@ fn update_bracket(bracket: &UseSharedState<Bracket>, e: Event<FormData>) {
     );
 }
 
-fn update_result(cx: Scope, bracket: &UseSharedState<Bracket>, e: Event<FormData>) {
-    let Some(m_id) = *use_shared_state::<Option<MatchId>>(cx).expect("match id").read() else {
-        return;
-    };
-    
-    let b = bracket.write().clone();
-    let matches = b.get_matches();
-    
-    let Some(m) = matches.iter().find(|m| m.get_id() == m_id) else {
-        return;
-    };
-    
-    let (p1, p2) = match m.get_players() {
-        [Opponent::Player(p1), Opponent::Player(p2)] => (p1, p2),
-        _ => return,
-    };
-    let r1 = e.values.get("result_1").expect("result for p1");
-    let r1 = r1.parse::<i8>().unwrap();
-    let r2 = e.values.get("result_2").expect("result for p2");
-    let r2 = r2.parse::<i8>().unwrap();
-    let result = (r1,r2);
-    
-    *bracket.write() = b.tournament_organiser_reports_result(p1, result, p2).expect("new bracket").0;
-}
-
-pub fn MatchEdit(cx: Scope) -> Element {
-    let bracket = use_shared_state::<Bracket>(cx).expect("bracket");
-    let m_id = match use_shared_state::<Option<MatchId>>(cx) {
-        Some(r) => match *r.read(){
-            Some(id) => id.to_string(),
-            None => "".to_string(),
-        }, 
-        _ => "".to_string(),
-    };
-
-    cx.render(rsx!(div {
-        h2 {
-            class: "text-lg",
-            "Update match result"
-        }
-        form {
-            onsubmit: move |event| { update_result(cx, bracket, event) },
-
-            div { "Match ID: {m_id}" }
-            div {
-                class: "pb-2",
-                label { "Result for player 1" }
-                input {
-                    class: "border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5",
-                    name: "result_1",
-                }
-            }
-           
-            div {
-                class: "pb-2",
-                label { "Result for player 2" }
-                input {
-                    class: "border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5",
-                    name: "result_2",
-                }
-            }
-           
-            // TODO refactor submission button in reusable component submit button
-            div {
-                input {
-                    class: "text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800",
-                    r#type: "submit",
-                },
-            }
-
-        }
-    }))
-}
-
 pub fn AddPlayerForm(cx: Scope) -> Element {
     let bracket = use_shared_state::<Bracket>(cx).expect("bracket");
 
@@ -200,15 +127,21 @@ pub fn AddPlayerForm(cx: Scope) -> Element {
                 class: "pb-2",
                 label { "Player name" }
                 input {
-                    class: "border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5",
+                    class: "border border-gray-300 text-gray-900 text-sm \
+                            rounded-lg focus:ring-blue-500 block p-2.5 \
+                            focus:border-blue-500",
                     name: "name",
                 }
             }
-           
+
             // TODO refactor submission button in reusable component submit button
             div {
                 input {
-                    class: "text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800",
+                    class: "text-white bg-blue-700 hover:bg-blue-800 \
+                            focus:ring-4 focus:ring-blue-300 font-medium \
+                            rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 \
+                            dark:bg-blue-600 dark:hover:bg-blue-700 \
+                            focus:outline-none dark:focus:ring-blue-800",
                     r#type: "submit",
                 },
             }
@@ -225,11 +158,14 @@ fn add_player(bracket: &UseSharedState<Bracket>, e: Event<FormData>) {
     } else {
         name.to_string()
     };
-    let b = match bracket.write().clone().add_participant(&name){ 
+    let b = match bracket.write().clone().add_participant(&name) {
         Ok(b) => b,
-        Err(_e) => panic!("oh no"),
+        Err(e) => {
+            println!("{e}"); // TODO use a logging library
+            return;
+        }
     };
-   
+
     *bracket.write() = b;
 }
 
@@ -242,7 +178,7 @@ pub fn View(cx: Scope) -> Element {
         Format::SingleElimination => SingleEliminationBracketView(cx),
         Format::DoubleElimination => DoubleEliminationBracketView(cx),
     };
-    
+
     cx.render(rsx!(
         h2 {
             class: "text-lg",
@@ -258,78 +194,33 @@ struct SomeProps {
     id: &'static MatchId,
 }
 
-fn display_match(cx: Scope, m: DisplayableMatch) -> Element {
-    let m_id = use_shared_state::<Option<MatchId>>(cx).expect("match id");
-
-    let start = match m.row_hint {
-        Some(h) => format!("row-start-{}", h + 1),
-        None => "".into(),
-    };
-    
-    cx.render(rsx!(
-        div {
-            id: "{m.id}",
-            onclick: move |_| {
-                *m_id.write() = Some(m.id);
-            },
-
-            class: "col-span-1 flex flex-col my-auto box-border border-2 {start}",
-
-            // TODO format seed display ### so it takes the same space for all
-            div {
-                class: "grow flex flex-row",
-                div { format!("({})", m.seeds[0]) }
-                div {
-                    class: "box-border border grow",
-                    m.player1()
-                }
-                div {
-                    class: "max-width: 15px; box-border border",
-                    m.score1()
-                }
-            }
-            div {
-                class: "grow flex flex-row",
-                div { format!("({})", m.seeds[1]) }
-                div {
-                    class: "box-border border grow",
-                    m.player2()
-                }
-                div {
-                    class: "max-width: 15px; box-border border",
-                    m.score2()
-                }
-            }
-        }
-    ))
-}
-
 fn SingleEliminationBracketView(cx: Scope) -> Element {
     // let mut bracket = use_state(cx, || bracket);
     let bracket = match use_shared_state::<Bracket>(cx) {
         Some(bracket_ref) => bracket_ref.read().clone(),
         None => Bracket::default(),
     };
-    
+
     let matches = bracket.get_matches();
     let participants = bracket.get_participants();
-    
+
     let mut rounds = winner_bracket(matches, &participants);
     reorder_rounds(&mut rounds);
-    
+
     // NOTE: given a number of players, the number of the matches is know
     // Then I can deal with an array of fixed size for the matches. It's not
     // like switching from Vec to array would hurt me, now would it?
-    
+
     // TODO finish this code before next job maybe
     let columns = rounds.len();
-    
-    return cx.render(rsx!( 
+
+    return cx.render(rsx!(
+        MatchEditModal {}
         div {
             // 128 = 2^7
             // 4096 = 2^12
             class: "grid grid-rows-1 grid-cols-{columns}",
-            
+
             for (i, round) in rounds.iter().enumerate() {
                 match i {
                     i if i == 0 => rsx!(
@@ -347,19 +238,62 @@ fn SingleEliminationBracketView(cx: Scope) -> Element {
                 }
             }
         }
-    ))
+    ));
 }
 
 fn DoubleEliminationBracketView(cx: Scope) -> Element {
     // let n = bracket.get_participants().len();
     // TODO partition matches according to powers of two
     // let matches = bracket.get_matches();
-    
-    cx.render(rsx!( ""
-        // p { n.to_string() }
-        // for m in matches.iter() {
-            // p { m.to_string() }
-        // }
+
+    cx.render(rsx!(
+        "" // p { n.to_string() }
+           // for m in matches.iter() {
+           // p { m.to_string() }
+           // }
     ))
 }
 
+fn MatchEditModal(cx: Scope) -> Element {
+    // inspired from: https://www.kindacode.com/article/how-to-create-a-modal-dialog-with-tailwind-css/
+    let isHidden = use_state(cx, || "hidden");
+
+    cx.render(rsx!(
+        button {
+            onclick: |_| {
+                isHidden.modify(|v| if v.is_empty() { "hidden" } else { "" });
+            },
+            "Toggle me"
+        }
+        div {
+            id:"overlay",
+            class: "fixed {isHidden} z-40 w-screen h-screen inset-0 bg-gray-900 bg-opacity-60",
+        }
+        div {
+            id: "match_edit_modal",
+            class: "{isHidden} fixed z-50 top-1/2 left-1/2 -translate-x-1/2 \
+                   -translate-y-1/2 w-96 bg-white rounded-md px-8 py-6 \
+                   space-y-5 drop-shadow-lg",
+            h1 {
+                class: "text-2xl font-semibold",
+                "Dialog Title"
+            }
+            div {
+                class: "py-5 border-t border-b border-gray-300",
+                "YOOOO"
+            }
+            div {
+                class: "flex justify-end",
+                button {
+                    id: "close",
+                    onclick: |_| {
+                        isHidden.modify(|v| if v.is_empty() { "hidden" } else { "" });
+                    },
+                    class: "px-5 py-2 bg-blue-500 hover:bg-blue-700 \
+                            cursor-pointer rounded-md",
+                    "close"
+                }
+            }
+        }
+    ))
+}
