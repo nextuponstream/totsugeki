@@ -1,8 +1,9 @@
 #![allow(non_snake_case)]
 
 use crate::{
-    components::bracket::displayable_match::display_match,
+    components::bracket::displayable_round::Round,
     components::bracket::match_edit::MatchEditModal,
+    components::Submit,
     single_elimination::{ordering::reorder_rounds, partition::winner_bracket},
     Modal,
 };
@@ -74,17 +75,7 @@ pub fn UpdateBracketDetails(cx: Scope) -> Element {
                 }
             }
 
-            div {
-                input {
-                    class: "text-white bg-blue-700 hover:bg-blue-800 \
-                            focus:ring-4 focus:ring-blue-300 font-medium \
-                            rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 \
-                            dark:bg-blue-600 dark:hover:bg-blue-700 \
-                            focus:outline-none dark:focus:ring-blue-800",
-                    r#type: "submit",
-                },
-            }
-
+            Submit {}
         }
     ))
 }
@@ -150,37 +141,31 @@ fn SingleEliminationBracketView(cx: Scope) -> Element {
     let mut rounds = winner_bracket(matches, &participants);
     reorder_rounds(&mut rounds);
 
+    let rounds = rounds.iter().map(|round| Round(cx, round.clone()));
+
+    // TODO insert between each round two columns where for one line, one box
+    // of the left column has border-b and many boxes of the right column has
+    // one border-b and many border-l
+    // this draws a line from one match to another
+
+    // TODO zip(lines) and not rounds
+    let to_display = rounds.clone().zip(rounds.clone());
+
     // NOTE: given a number of players, the number of the matches is know
     // Then I can deal with an array of fixed size for the matches. It's not
     // like switching from Vec to array would hurt me, now would it?
 
     // TODO finish this code before next job maybe
-    let columns = rounds.len();
+    let columns = rounds.len() * 2;
 
     return cx.render(rsx!(
-        MatchEditModal {
-            isHidden: isMatchEditModalHidden,
-        }
+        MatchEditModal { isHidden: isMatchEditModalHidden }
         div {
-            // 128 = 2^7
-            // 4096 = 2^12
             class: "grid grid-rows-1 grid-cols-{columns}",
+            for (round, lines) in to_display {
 
-            for (i, round) in rounds.iter().enumerate() {
-                match i {
-                    i if i == 0 => rsx!(
-                        div {
-                            class: "grid grid-cols-1 grow grid-flow-row",
-                            round.iter().map(|m| display_match(cx, *m))
-                        }
-                    ),
-                    _ => rsx!(
-                        div {
-                            class: "grid grid-cols-1",
-                            round.iter().map(|m| display_match(cx, *m))
-                        }
-                    ),
-                }
+                rsx! { round }
+                rsx! { lines }
             }
         }
     ));
