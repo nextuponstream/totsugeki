@@ -38,9 +38,12 @@ fn App(cx: Scope) -> Element {
             class: "pl-2",
 
             Navigation {}
+            div {
+                class: "pt-2 flex flex-row justify-around",
+                UpdateBracketDetails {}
+                AddPlayerForm {}
+            }
             View {}
-            UpdateBracketDetails {}
-            AddPlayerForm {}
             GeneralDetails {}
         }
 

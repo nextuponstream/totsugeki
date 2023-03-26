@@ -16,7 +16,7 @@ const EMPTY: [u8; 256] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 ];
 
-pub(crate) fn display_match(cx: Scope, m: DisplayableMatch) -> Element {
+pub(crate) fn DisplayMatch(cx: Scope, m: DisplayableMatch) -> Element {
     let modal = use_shared_state::<Option<Modal>>(cx).expect("modal to show");
 
     let start = match m.row_hint {
@@ -32,9 +32,10 @@ pub(crate) fn display_match(cx: Scope, m: DisplayableMatch) -> Element {
     let outerStyle = if is_padding_match {
         ""
     } else {
-        "border-2 hover:bg-gray-300"
+        "divide-x divide-y border-1 border-box border hover:bg-gray-300 \
+         rounded-md"
     };
-    let innerStyle = if is_padding_match { "" } else { "border" };
+    let innerStyle = if is_padding_match { "" } else { "divide-x" };
     // NOTE: removing the invisible caracter does not draw the padding match,
     // which messes up first round bracket display
     let seed1_content = if is_padding_match {
@@ -69,7 +70,6 @@ pub(crate) fn display_match(cx: Scope, m: DisplayableMatch) -> Element {
             id: "{m.id}",
             onclick: move |_| {
                 if is_padding_match {
-                    println!("SKIPPED");
                     return;
                 }
                 let player1 = convert_name(m.player1().into());
@@ -78,6 +78,7 @@ pub(crate) fn display_match(cx: Scope, m: DisplayableMatch) -> Element {
             },
 
             class: "col-span-1 flex flex-col my-auto {start} {outerStyle}",
+            style: "max-width: 130px;",
 
             rsx! { row1 }
             rsx! { row2 }
@@ -100,8 +101,8 @@ fn MatchRow(
     };
     cx.render(rsx!(
             div {
-                class: "grow flex flex-row {innerStyle}",
-                // TODO format seed display ### so it takes the same space for all
+                class: "max-width: 30px; flex flex-row {innerStyle}",
+                // TODO format seed display ### so it takes the same space
                 // TODO find a way to display padding match without using
                 // dangerous_inner_html with the invisible character
                 div {
@@ -110,11 +111,11 @@ fn MatchRow(
                     dangerous_inner_html: "{seed_content}"
                 }
                 div {
-                    class: "box-border {innerStyle} grow",
+                    class: "{innerStyle} grow pl-1",
                     if is_padding_match {""} else {player}
                 }
                 div {
-                    class: "max-width: 15px; box-border {innerStyle}",
+                    class: "{innerStyle}",
                     if is_padding_match {"".into()} else {score}
                 }
             }

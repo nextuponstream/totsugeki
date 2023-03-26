@@ -1,12 +1,8 @@
 #![allow(non_snake_case)]
 
-use totsugeki::{
-    bracket::Bracket, 
-    matches::Id as MatchId, opponent::Opponent
-};
+use crate::{components::Submit, Modal, ShortName};
 use dioxus::prelude::*;
-
-use crate::{Modal, ShortName};
+use totsugeki::{bracket::Bracket, matches::Id as MatchId, opponent::Opponent};
 
 #[derive(PartialEq, Props)]
 pub(crate) struct FormProps {
@@ -19,47 +15,38 @@ pub(crate) fn MatchEdit(cx: Scope<FormProps>) -> Element {
     let bracket = use_shared_state::<Bracket>(cx).expect("bracket");
 
     cx.render(rsx!(div {
-        h2 {
-            class: "text-lg",
-            "Update match result"
-        }
         form {
             onsubmit: move |event| { update_result(cx, bracket, event) },
 
-            div { "Match ID: {cx.props.match_id}" }
+            div { "Match ID:" }
+            div { "{cx.props.match_id}" }
             div {
-                class: "pb-2",
-                label { "Result for {cx.props.player1}" }
-                input {
-                    class: "border border-gray-300 text-sm rounded-lg \
-                            focus:ring-blue-500 focus:border-blue-500 block \
-                            p-2.5",
-                    r#type: "number",
-                    name: "result_1",
-                }
-            }
-           
-            div {
-                class: "pb-2",
-                label { "Result for {cx.props.player2}" }
-                input {
-                    class: "border border-gray-300 text-sm rounded-lg \
-                            focus:ring-blue-500 focus:border-blue-500 block \
-                            p-2.5",
-                    r#type: "number",
-                    name: "result_2",
-                }
-            }
-           
-            // TODO refactor submission button in reusable component submit button
-            div {
-                input {
-                    class: "text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800",
-                    r#type: "submit",
-                },
+                class: "py-3 flex flex-row justify-between items-center",
+
+                div { "{cx.props.player1}" }
+                ResultInput { name: "result_1" }
+
+                ResultInput { name: "result_2" }
+                div { "{cx.props.player2}" }
             }
 
+            Submit {}
         }
+    }))
+}
+
+#[derive(PartialEq, Props)]
+pub(crate) struct ResultProps<'a> {
+    pub name: &'a str,
+}
+
+fn ResultInput<'a>(cx: Scope<'a, ResultProps<'a>>) -> Element<'a> {
+    cx.render(rsx!(input {
+        class: "border border-gray-300 text-sm rounded-lg \
+                    focus:ring-blue-500 focus:border-blue-500 block \
+                    p-2.5 w-16",
+        r#type: "number",
+        name: "{cx.props.name}",
     }))
 }
 
@@ -67,11 +54,11 @@ fn update_result(cx: Scope<FormProps>, bracket: &UseSharedState<Bracket>, e: Eve
     let modal = use_shared_state::<Option<Modal>>(cx).expect("modal to show");
     let b = bracket.write().clone();
     let matches = b.get_matches();
-    
+
     let Some(m) = matches.iter().find(|m| m.get_id() == cx.props.match_id) else {
         return;
     };
-    
+
     let (p1, p2) = match m.get_players() {
         [Opponent::Player(p1), Opponent::Player(p2)] => (p1, p2),
         _ => return,
@@ -80,14 +67,14 @@ fn update_result(cx: Scope<FormProps>, bracket: &UseSharedState<Bracket>, e: Eve
     let r1 = r1.parse::<i8>().unwrap();
     let r2 = e.values.get("result_2").expect("result for p2");
     let r2 = r2.parse::<i8>().unwrap();
-    let result = (r1,r2);
-    
-    let b = match b.tournament_organiser_reports_result(p1, result, p2){
-        Ok(b) => b.0 ,
+    let result = (r1, r2);
+
+    let b = match b.tournament_organiser_reports_result(p1, result, p2) {
+        Ok(b) => b.0,
         Err(e) => {
             println!("{e}"); // TODO use a logging library
             return;
-        }       
+        }
     };
     *bracket.write() = b;
     *modal.write() = None;
@@ -98,14 +85,29 @@ pub(crate) fn MatchEditModal(cx: Scope<Props>) -> Element {
     // inspired from: https://www.kindacode.com/article/how-to-create-a-modal-dialog-with-tailwind-css/
     let modal = use_shared_state::<Option<Modal>>(cx).expect("active modal");
     let (match_id, isHidden, player1, player2) = match *modal.read() {
-        Some(Modal::EnterMatchResult(m_id, player1, player2)) => (m_id, "", ShortName { value: player1 }, ShortName { value: player2 }),
-        _ => (MatchId::new_v4(), "hidden", ShortName::default(), ShortName::default()),
+        Some(Modal::EnterMatchResult(m_id, player1, player2)) => (
+            m_id,
+            "",
+            ShortName { value: player1 },
+            ShortName { value: player2 },
+        ),
+        _ => (
+            MatchId::new_v4(),
+            "hidden",
+            ShortName::default(),
+            ShortName::default(),
+        ),
     };
 
     cx.render(rsx!(
         div {
             id:"overlay",
-            class: "fixed {isHidden} z-40 w-screen h-screen inset-0 bg-gray-900 bg-opacity-60",
+            class: "fixed {isHidden} z-40 w-screen h-screen inset-0 \
+                    bg-gray-900 bg-opacity-60",
+            // close if clicking outside the modal
+            onclick: |_| {
+                *modal.write() = None;
+            },
         }
         div {
             id: "match_edit_modal",
@@ -117,7 +119,7 @@ pub(crate) fn MatchEditModal(cx: Scope<Props>) -> Element {
                 "Match results"
             }
             div {
-                class: "py-5 border-t border-b border-gray-300",
+                class: "py-5 divide-x-1",
                 rsx! {
                     MatchEdit {
                         match_id: match_id,
