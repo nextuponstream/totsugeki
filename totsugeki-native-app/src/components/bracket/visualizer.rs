@@ -5,11 +5,13 @@ use crate::{
     components::bracket::match_edit::MatchEditModal,
     components::Submit,
     single_elimination::{ordering::reorder_rounds, partition::winner_bracket},
-    Modal,
+    DisplayableMatch, Modal,
 };
 use chrono::{TimeZone, Utc};
 use dioxus::prelude::*;
 use totsugeki::{bracket::Bracket, format::Format, matches::Id as MatchId};
+
+use super::displayable_round::{winner_bracket_lines, BoxWithBorder};
 
 pub fn GeneralDetails(cx: Scope) -> Element {
     let bracket = use_shared_state::<Bracket>(cx).expect("bracket");
@@ -127,6 +129,13 @@ struct SomeProps {
     id: &'static MatchId,
 }
 
+enum DisplayStuff {
+    /// Display match
+    Match(Vec<DisplayableMatch>),
+    /// Padding block with
+    Block(Vec<BoxWithBorder>),
+}
+
 fn SingleEliminationBracketView(cx: Scope) -> Element {
     let modal = use_shared_state::<Option<Modal>>(cx).expect("modal to show");
     let isMatchEditModalHidden = !matches!(*modal.read(), Some(Modal::EnterMatchResult(_, _, _)));
@@ -141,34 +150,56 @@ fn SingleEliminationBracketView(cx: Scope) -> Element {
     let mut rounds = winner_bracket(matches, &participants);
     reorder_rounds(&mut rounds);
 
-    let rounds = rounds.iter().map(|round| Round(cx, round.clone()));
-
-    // TODO insert between each round two columns where for one line, one box
-    // of the left column has border-b and many boxes of the right column has
-    // one border-b and many border-l
-    // this draws a line from one match to another
-
-    // TODO zip(lines) and not rounds
-    let to_display = rounds.clone().zip(rounds.clone());
+    let lines = winner_bracket_lines(rounds.clone());
 
     // NOTE: given a number of players, the number of the matches is know
     // Then I can deal with an array of fixed size for the matches. It's not
     // like switching from Vec to array would hurt me, now would it?
 
     // TODO finish this code before next job maybe
-    let columns = rounds.len() * 2;
 
-    return cx.render(rsx!(
+    let mut stuff: Vec<DisplayStuff> = vec![];
+
+    // TODO avoid copy (always split everything and last of rounds)
+    for (round, round_line) in rounds.clone().into_iter().zip(lines) {
+        stuff.push(DisplayStuff::Match(round));
+        let (left_col, right_col) = round_line.split_at(round_line.len() / 2);
+        stuff.push(DisplayStuff::Block(left_col.to_vec()));
+        stuff.push(DisplayStuff::Block(right_col.to_vec()));
+    }
+    stuff.push(DisplayStuff::Match(rounds.into_iter().last().unwrap()));
+    let columns = stuff.len();
+
+    cx.render(rsx!(div {
         MatchEditModal { isHidden: isMatchEditModalHidden }
         div {
-            class: "grid grid-rows-1 grid-cols-{columns}",
-            for (round, lines) in to_display {
-
-                rsx! { round }
-                rsx! { lines }
+            class: "grid grid-rows-1 grid-cols-{columns} flex",
+            for s in stuff {
+                match s {
+                    DisplayStuff::Match(round) => rsx! { Round(cx, round) },
+                    DisplayStuff::Block(line) => rsx! {
+                        RoundWithLines(line)
+                    },
+                }
             }
         }
-    ));
+    }))
+}
+
+fn RoundWithLines<'a, 'b>(lines: Vec<BoxWithBorder>) -> LazyNodes<'a, 'b> {
+    rsx!(
+        div {
+            class: "grid grid-cols-1",
+            lines.iter().map(|b| {
+                let left = if b.left { "border-l" } else { "" };
+                let bottom = if b.bottom { "border-b" } else { "" };
+                rsx!(div {
+                    class: "{left} {bottom}",
+                    // "yooo" // TODO remove
+                })
+            })
+        }
+    )
 }
 
 fn DoubleEliminationBracketView(cx: Scope) -> Element {

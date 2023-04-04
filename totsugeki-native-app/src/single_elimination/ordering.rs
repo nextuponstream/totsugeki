@@ -36,6 +36,16 @@ pub fn reorder_rounds(rounds: &mut [Vec<DisplayableMatch>]) {
         round.sort_by_key(|m| m.row_hint);
         rounds[i] = round;
     }
+
+    rounds[rounds.len() - 2][0].row_hint = Some(0);
+    // when there is exactly 3 players
+    if rounds[rounds.len() - 2].len() == 1 {
+        rounds[rounds.len() - 2][0].row_hint = Some(1);
+    } else {
+        rounds[rounds.len() - 2][1].row_hint = Some(1);
+    }
+
+    rounds[rounds.len() - 1][0].row_hint = Some(0);
 }
 
 #[cfg(test)]
@@ -52,8 +62,8 @@ mod tests {
 
         reorder_rounds(&mut rounds);
 
-        assert_eq!(rounds[0][0].row_hint, None);
-        assert_eq!(rounds[1][0].row_hint, None);
+        assert_eq!(rounds[0][0].row_hint, Some(1));
+        assert_eq!(rounds[1][0].row_hint, Some(0));
     }
 
     #[test]
@@ -65,9 +75,10 @@ mod tests {
 
         reorder_rounds(&mut rounds);
 
-        assert_eq!(rounds[0][0].row_hint, None);
-        assert_eq!(rounds[0][1].row_hint, None);
-        assert_eq!(rounds[1][0].row_hint, None);
+        assert_eq!(rounds[0][0].row_hint, Some(0));
+        assert_eq!(rounds[0][1].row_hint, Some(1));
+
+        assert_eq!(rounds[1][0].row_hint, Some(0));
     }
 
     #[test]
@@ -83,9 +94,10 @@ mod tests {
         // 3 filler match (0-2), then first real match
         assert_eq!(rounds[0][3].row_hint, Some(1));
 
-        assert_eq!(rounds[1][0].row_hint, None);
-        assert_eq!(rounds[1][1].row_hint, None);
-        assert_eq!(rounds[2][0].row_hint, None);
+        assert_eq!(rounds[1][0].row_hint, Some(0));
+        assert_eq!(rounds[1][1].row_hint, Some(1));
+
+        assert_eq!(rounds[2][0].row_hint, Some(0));
     }
 
     #[test]
@@ -111,9 +123,9 @@ mod tests {
         assert_eq!(rounds[1][2].row_hint, Some(2)); // 2-7
         assert_eq!(rounds[1][3].row_hint, Some(3)); // 3-6
 
-        assert_eq!(rounds[2][0].row_hint, None); // 1-4
-        assert_eq!(rounds[2][1].row_hint, None); // 2-3
+        assert_eq!(rounds[2][0].row_hint, Some(0)); // 1-4
+        assert_eq!(rounds[2][1].row_hint, Some(1)); // 2-3
 
-        assert_eq!(rounds[3][0].row_hint, None); // 1-2
+        assert_eq!(rounds[3][0].row_hint, Some(0)); // 1-2
     }
 }
