@@ -16,6 +16,7 @@ pub struct DisplayableMatch {
     pub(crate) players: [Name; 2],
     score: (i8, i8),
     seeds: [usize; 2],
+    /// Indicate which row it belongs to, starting from 0 index
     row_hint: Option<usize>,
 }
 
