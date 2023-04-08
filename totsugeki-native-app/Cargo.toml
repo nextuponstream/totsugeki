@@ -11,6 +11,10 @@ default-run = "totsugeki-native-app"
 name = "css_row"
 path = "./src/bin/css_row.rs"
 
+[[bin]]
+name = "css_col"
+path = "./src/bin/css_col.rs"
+
 [dependencies]
 totsugeki = { path = "../totsugeki" }
 dioxus = { git = "https://github.com/DioxusLabs/dioxus", rev = "5b61cbb9a0f37c5582c81fbaaa09b0385c996940", features = ["hot-reload"]}

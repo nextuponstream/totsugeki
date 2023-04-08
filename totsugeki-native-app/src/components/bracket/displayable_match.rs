@@ -78,7 +78,7 @@ pub(crate) fn DisplayMatch(cx: Scope, m: DisplayableMatch) -> Element {
             },
 
             class: "col-span-1 flex flex-col my-auto {start} {outerStyle}",
-            style: "max-width: 130px;",
+            style: "max-width: 140px;",
 
             rsx! { row1 }
             rsx! { row2 }
