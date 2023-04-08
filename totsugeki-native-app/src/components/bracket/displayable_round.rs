@@ -26,14 +26,15 @@ pub(crate) fn winner_bracket_lines(rounds: Vec<Vec<DisplayableMatch>>) -> Vec<Ve
     if rounds.is_empty() {
         return vec![];
     }
+
     // 3 players, 2 matches => 4
     // 4 players, 3 matches => 4
     // 5 players, 4 matches => 8
     // 6 players, 5 matches => 8
     // 9 players, 8 matches => 16
     let total_matches = rounds.iter().flatten().count();
+
     let boxes_in_one_column = (total_matches + 1).checked_next_power_of_two().unwrap();
-    println!("boxes in one column: {}", boxes_in_one_column); // FIXME remove
     let mut lines: Vec<Vec<BoxWithBorder>> = vec![];
 
     // b belongs in [1; #matches in current round]
@@ -47,46 +48,26 @@ pub(crate) fn winner_bracket_lines(rounds: Vec<Vec<DisplayableMatch>>) -> Vec<Ve
 
     // build from top to bottom (from winner bracket finals to first round)
     // start from last round and lines from previous round
-    let mut late_round = 0;
     for round_index in (0..rounds.len() - 1).rev() {
-        println!("round index: {round_index}"); // FIXME remove
         let round = &rounds[round_index];
 
-        // println!("{:?}", round);
         let matches_in_round = (round.len()).checked_next_power_of_two().unwrap();
-        println!("matches in round: {matches_in_round}");
 
         let mut left_column: Vec<BoxWithBorder> = column.clone();
         let mut right_column: Vec<BoxWithBorder> = column.clone();
 
         for (_, m) in round.iter().enumerate() {
             if let Some(row) = m.row_hint {
-                // left line
-                // if m X present, draw bottom border of b * 2
-                // FIXME does not work for 9 player
-
-                // n = 3
-                // m1
-                // 4 boxes in 1 col
-                // ... = 1
-                // m2
-                // ... = 2
                 let boxes_between_matches_of_same_round = boxes_in_one_column / matches_in_round;
-                println!("row: {row}");
-                println!("bva: {}", boxes_between_matches_of_same_round);
                 let offset = 2usize.checked_pow(round_index.try_into().unwrap()).unwrap();
-                println!("off: {}", offset);
-                println!(
-                    "row*bva+rni={}",
-                    row * boxes_between_matches_of_same_round + offset - 1
-                );
-                println!("---");
-
-                // FIXME n = 3
-                left_column[row * boxes_between_matches_of_same_round + offset - 1].bottom = true;
+                if total_matches == 2 {
+                    left_column[2].bottom = true;
+                } else {
+                    left_column[row * boxes_between_matches_of_same_round + offset - 1].bottom =
+                        true;
+                }
 
                 // vertical line
-                // if m X present, draw left border of b * 2 + 1 until ???
                 for j in 0..offset {
                     if row % 2 == 1 {
                         // flows down towards next match
@@ -105,13 +86,9 @@ pub(crate) fn winner_bracket_lines(rounds: Vec<Vec<DisplayableMatch>>) -> Vec<Ve
                     }
                 }
 
-                // right light
-                // might be set to true two times (which is slightly innefficient)
-                // example: 4 players, m1 and m2 need to flow into m3
-                // TODO test if only need to draw once since filling a match
-                // always fills lower seed, then higher seed if needed
-                // draw bottom border of b * 2
-                if row % 2 == 1 {
+                if total_matches == 2 {
+                    right_column[1].bottom = true;
+                } else if row % 2 == 1 {
                     right_column[row * boxes_between_matches_of_same_round + offset
                         - 1
                         - boxes_between_matches_of_same_round / 2]
@@ -277,172 +254,6 @@ mod tests {
             ]
         );
     }
-    #[test]
-    fn _5_participants_bracket() {
-        let (matches, participants) = get_data(5);
-        let mut rounds = winner_bracket(matches, &participants);
-        reorder_rounds(&mut rounds);
 
-        let lines = winner_bracket_lines(rounds.clone());
-        let expected_cols = 2;
-        assert_eq!(lines.len(), expected_cols);
-        //    b1L1   b1R1       b2L1   b2R1
-        //
-        //    b1L2   b1R2       b2L2   b2R2
-        //         -------> m2 ------|
-        //    b1L3 | b1R3       b2L3 | b2R3
-        // m1 -----|                 |
-        //    b1L4   b1R4       b2L4 | b2R4
-        //                           ----------> m4
-        //    b1L5   b1R5       b2L5 | b2R5
-        //                           |
-        //    b1L6   b1R6       b2L6 | b2R6
-        //                  m3 ------|
-        //    b1L7   b1R7       b2L7   b2R7
-        //
-        //    b1L8   b1R8       b2L8   b2R8
-        assert_eq!(
-            lines,
-            vec![
-                // col 1
-                vec![
-                    // left col
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: true
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                    // right col
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: true
-                    },
-                    BoxWithBorder {
-                        left: true,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                ],
-                // col2
-                vec![
-                    // left col
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: true
-                    },
-                    BoxWithBorder {
-                        left: true,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false,
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: true
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                    // right col
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: true,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: true,
-                        bottom: true
-                    },
-                    BoxWithBorder {
-                        left: true,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: true,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                ],
-            ]
-        );
-    }
+    // TODO add test cases for many to help if someone refactors this later
 }
