@@ -75,28 +75,35 @@ pub(crate) fn winner_bracket_lines(rounds: Vec<Vec<DisplayableMatch>>) -> Vec<Ve
                 println!("row: {row}");
                 println!("bva: {}", boxes_between_matches_of_same_round);
                 let offset = 2usize.checked_pow(round_index.try_into().unwrap()).unwrap();
+                println!("off: {}", offset);
                 println!(
                     "row*bva+rni={}",
-                    row * boxes_between_matches_of_same_round + offset
+                    row * boxes_between_matches_of_same_round + offset - 1
                 );
                 println!("---");
 
+                // FIXME n = 3
                 left_column[row * boxes_between_matches_of_same_round + offset - 1].bottom = true;
 
                 // vertical line
                 // if m X present, draw left border of b * 2 + 1 until ???
-                // for j in 0..round_index + 1 {
-                // if row % 2 == 1 {
-                // flows down towards next match
-                // right_column[row * 2 + round_index * 2 + j].left = true;
-                // } else {
-                // 4p, m2
-                // println!("row {}", row);
-                // println!("j {}", j);
-                // flows up towards next match
-                // right_column[row * 2 + 1 + round_index * 2 - j].left = true;
-                // }
-                // }
+                for j in 0..offset {
+                    if row % 2 == 1 {
+                        // flows down towards next match
+                        // right_column[row * boxes_between_matches_of_same_round + offset - 1 + j]
+                        // .left = true;
+                        right_column[row * boxes_between_matches_of_same_round + 3 * offset
+                            - 1
+                            - j
+                            - boxes_between_matches_of_same_round]
+                            .left = true;
+                    } else {
+                        // flows up towards next match
+                        right_column
+                            [row * boxes_between_matches_of_same_round + 2 * offset - 1 - j]
+                            .left = true;
+                    }
+                }
 
                 // right light
                 // might be set to true two times (which is slightly innefficient)
@@ -104,7 +111,6 @@ pub(crate) fn winner_bracket_lines(rounds: Vec<Vec<DisplayableMatch>>) -> Vec<Ve
                 // TODO test if only need to draw once since filling a match
                 // always fills lower seed, then higher seed if needed
                 // draw bottom border of b * 2
-                // FIXME pb with 17+ players, offset is too much
                 if row % 2 == 1 {
                     right_column[row * boxes_between_matches_of_same_round + offset
                         - 1
