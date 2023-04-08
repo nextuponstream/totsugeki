@@ -167,7 +167,9 @@ fn SingleEliminationBracketView(cx: Scope) -> Element {
         stuff.push(DisplayStuff::Block(left_col.to_vec()));
         stuff.push(DisplayStuff::Block(right_col.to_vec()));
     }
-    stuff.push(DisplayStuff::Match(rounds.into_iter().last().unwrap()));
+    if !rounds.is_empty() {
+        stuff.push(DisplayStuff::Match(rounds.into_iter().last().unwrap()));
+    }
     let columns = stuff.len();
 
     cx.render(rsx!(div {
