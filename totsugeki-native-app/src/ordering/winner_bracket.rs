@@ -1,7 +1,8 @@
+//! Give positionnal hints to winner bracket matches
 use crate::DisplayableMatch;
 
-/// Matches are given positionnal hints
-pub fn reorder_rounds(rounds: &mut [Vec<DisplayableMatch>]) {
+/// Give positionnal hints to winner bracket matches
+pub fn reorder(rounds: &mut [Vec<DisplayableMatch>]) {
     if rounds.len() < 2 {
         return;
     }
@@ -50,7 +51,7 @@ pub fn reorder_rounds(rounds: &mut [Vec<DisplayableMatch>]) {
 
 #[cfg(test)]
 mod tests {
-    use super::reorder_rounds;
+    use super::reorder;
     use crate::DisplayableMatch;
 
     #[test]
@@ -60,7 +61,7 @@ mod tests {
             vec![DisplayableMatch::new([1, 2])],
         ];
 
-        reorder_rounds(&mut rounds);
+        reorder(&mut rounds);
 
         assert_eq!(rounds[0][0].row_hint, Some(1));
         assert_eq!(rounds[1][0].row_hint, Some(0));
@@ -73,7 +74,7 @@ mod tests {
             vec![DisplayableMatch::new([1, 2])],
         ];
 
-        reorder_rounds(&mut rounds);
+        reorder(&mut rounds);
 
         assert_eq!(rounds[0][0].row_hint, Some(0));
         assert_eq!(rounds[0][1].row_hint, Some(1));
@@ -89,7 +90,7 @@ mod tests {
             vec![DisplayableMatch::new([1, 2])],
         ];
 
-        reorder_rounds(&mut rounds);
+        reorder(&mut rounds);
 
         // 3 filler match (0-2), then first real match
         assert_eq!(rounds[0][3].row_hint, Some(1));
@@ -114,7 +115,7 @@ mod tests {
             vec![DisplayableMatch::new([1, 2])],
         ];
 
-        reorder_rounds(&mut rounds);
+        reorder(&mut rounds);
 
         assert_eq!(rounds[0][7].row_hint, Some(1)); // 8-9
 

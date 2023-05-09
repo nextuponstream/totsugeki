@@ -1,15 +1,15 @@
-use crate::{convert, DisplayableMatch};
-use totsugeki::{matches::Match, player::Participants};
+//! Winner bracket
 
-pub fn winner_bracket(
-    matches: Vec<Match>,
-    participants: &Participants,
-) -> Vec<Vec<DisplayableMatch>> {
+use crate::{matches::Match, player::Participants};
+
+// FIXME create error enum and handle math errors
+
+/// Partition list of matches into rounds for a winner bracket
+pub(crate) fn winner_bracket(matches: Vec<Match>, participants: &Participants) -> Vec<Vec<Match>> {
     let n = participants.len();
     let Some(mut npo2) =  n.checked_next_power_of_two() else {
         panic!("MATH");
     };
-    let matches: Vec<DisplayableMatch> = matches.iter().map(|m| convert(m, participants)).collect();
     let byes = npo2 - n;
     let mut remaining_matches = matches;
     let mut partition = vec![];
@@ -76,8 +76,8 @@ pub fn winner_bracket(
 
 #[cfg(test)]
 mod tests {
-    use crate::single_elimination::partition::winner_bracket;
-    use totsugeki::{
+    use super::winner_bracket;
+    use crate::{
         matches::Match,
         player::{Participants, Player},
     };

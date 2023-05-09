@@ -1,3 +1,4 @@
+//! Modal component to edit match
 #![allow(non_snake_case)]
 
 use crate::{components::Submit, Modal, ShortName};
