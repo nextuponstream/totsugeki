@@ -1,5 +1,7 @@
 //! generate seeded matches for double elimination bracket
 
+use std::ops::ControlFlow;
+
 use crate::{matches::Match, player::Id as PlayerId, seeding::Error};
 
 /// Get seed of player from seeding
@@ -36,99 +38,45 @@ fn get_seed_of(player: &PlayerId, seeding: &[PlayerId]) -> usize {
 pub fn get_loser_bracket_matches_top_seed_favored(
     seeding: &[PlayerId],
 ) -> Result<Vec<Match>, Error> {
-    let mut remaining_loosers = seeding.to_vec();
-    // winner of winner bracket is the only player not playing in lower bracket
-    remaining_loosers.reverse();
-    remaining_loosers.pop();
-    // compute the number of winner rounds
-    let mut loosers_by_round = vec![];
-    let mut total_waves = 0;
-    let mut n = 0;
-    while n < seeding.len() - 1 {
-        n += match 2usize.checked_pow(total_waves) {
-            Some(c) => c,
-            None => return Err(Error::MathOverflow),
-        };
-        total_waves += 1;
-    }
-    // compute a looser wave by taking a power of two number of participants
-    for i in 0..total_waves {
-        // take 2^i participants for this wave starting from the last possible wave
-        let number_of_loosers_for_this_round = match usize::checked_pow(2, i) {
-            Some(power_of_two) => power_of_two.min(remaining_loosers.len()),
-            None => return Err(Error::MathOverflow),
-        };
-        let mut loosers_for_this_round = vec![];
-        for _ in 0..number_of_loosers_for_this_round {
-            loosers_for_this_round.push(remaining_loosers.pop().expect("looser"));
-        }
-        loosers_by_round.push(loosers_for_this_round);
-    }
-    // get waves of looser by order of arrival
-    loosers_by_round.reverse();
+    let losers_by_round = match partition_players_of_loser_bracket(seeding) {
+        Ok(value) => value,
+        Err(value) => return value,
+    };
 
     let mut matches = vec![];
-    let mut incoming_wave = vec![];
+    let mut incoming_players_of_this_wave = vec![];
     let mut initial_wave = true;
     // initial looser wave <= next wave
-    let skip_initial_wave_match_generation = loosers_by_round[0].len() <= loosers_by_round[1].len();
-    // generate looser bracket matches
-    for loosers_for_this_round in loosers_by_round {
-        // Unlike single elimination, you cannot assume that
-        // `loosers_for_this_round` is a multiple of two. Then you may have to
-        // send the participants of the initial loser round to the next round
-        let mut winners_of_previous_round = incoming_wave.clone();
-        // sort incoming wave of looser by seed
-        incoming_wave = vec![];
-        incoming_wave.append(&mut loosers_for_this_round.clone());
-        incoming_wave.append(&mut winners_of_previous_round);
-
-        // Initial wave need to be thinned out when next wave has strictly more
-        // people in it.
-        // Example: in 10 man bracket, 2 people drop from winner, then 4 drop.
-        if initial_wave && skip_initial_wave_match_generation {
-            initial_wave = false;
+    let skip_initial_wave_match_generation = losers_by_round[0].len() <= losers_by_round[1].len();
+    // generate loser bracket matches
+    for losers_for_this_round in losers_by_round {
+        if let ControlFlow::Break(_) = fill_incoming_wave(
+            &mut incoming_players_of_this_wave,
+            &losers_for_this_round,
+            &mut initial_wave,
+            skip_initial_wave_match_generation,
+        ) {
             continue;
         }
 
-        // generate matches for players without byes
-        let byes = match (incoming_wave.len()).checked_next_power_of_two() {
-            Some(next_higher_power_of_two) => next_higher_power_of_two - incoming_wave.len(),
-            None => return Err(Error::MathOverflow),
+        let tmp = incoming_players_of_this_wave.clone();
+        let wave = form_wave(&tmp)?;
+        let (p_with_bye, p_without_bye) =
+            generate_matches_of_first_round_in_wave(wave, seeding, &mut matches);
+
+        let Some(remaining) = fun_name(
+            p_without_bye,
+            p_with_bye,
+            &mut initial_wave,
+            &mut incoming_players_of_this_wave,
+        ) else {
+             continue;
         };
-        let (p_with_bye, p_without_bye) = incoming_wave.split_at(byes);
-        let half = p_without_bye.len() / 2;
-        let (expected_winners, expected_loosers) = p_without_bye.split_at(half);
-        let mut other_opponents = expected_loosers.to_vec();
-        other_opponents.reverse();
-        for (o1, o2) in expected_winners.iter().zip(other_opponents.iter()) {
-            let seed_o1 = get_seed_of(o1, seeding);
-            let seed_o2 = get_seed_of(o2, seeding);
-            let m = Match::new_looser_bracket_match([seed_o1, seed_o2]);
-            matches.push(m);
-        }
-
-        // take winners of this round and match them against players with byes
-        // reason: readability
-        #[allow(clippy::bool_to_int_with_if)]
-        let at_least_half =
-            p_without_bye.len() / 2 + if p_without_bye.len() % 2 == 0 { 0 } else { 1 };
-        let (winners_of_p_without_bye, _) = p_without_bye.split_at(at_least_half);
-        let remaining = [p_with_bye, winners_of_p_without_bye].concat().clone();
-        // with one exception: don't thin out more players during initial
-        // looser round because there are always enough player from initial
-        // wave after one round of match generation
-        if initial_wave {
-            initial_wave = false;
-            incoming_wave = vec![];
-            incoming_wave.append(&mut remaining.clone());
-            continue;
-        }
         // reason: readability
         #[allow(clippy::bool_to_int_with_if)]
         let at_least_half = remaining.len() / 2 + if remaining.len() % 2 == 0 { 0 } else { 1 };
-        let (expected_winners, expected_loosers) = remaining.split_at(at_least_half);
-        let mut other_opponents = expected_loosers.to_vec();
+        let (expected_winners, expected_losers) = remaining.split_at(at_least_half);
+        let mut other_opponents = expected_losers.to_vec();
         other_opponents.reverse();
         for (o1, o2) in expected_winners.iter().zip(other_opponents.iter()) {
             let seed_o1 = get_seed_of(o1, seeding);
@@ -137,14 +85,14 @@ pub fn get_loser_bracket_matches_top_seed_favored(
             matches.push(m);
         }
 
-        incoming_wave = vec![];
-        incoming_wave.append(&mut expected_winners.to_vec());
+        incoming_players_of_this_wave = vec![];
+        incoming_players_of_this_wave.append(&mut expected_winners.to_vec());
     }
 
     // use unused remaining participants
-    if !incoming_wave.is_empty() {
-        let half = incoming_wave.len() / 2;
-        let (expected_winners, expected_loosers) = incoming_wave.split_at(half);
+    if !incoming_players_of_this_wave.is_empty() {
+        let half = incoming_players_of_this_wave.len() / 2;
+        let (expected_winners, expected_loosers) = incoming_players_of_this_wave.split_at(half);
         let mut expected_loosers = expected_loosers.to_vec();
         expected_loosers.reverse();
         for (o1, o2) in expected_winners.iter().zip(expected_loosers.iter()) {
@@ -160,6 +108,140 @@ pub fn get_loser_bracket_matches_top_seed_favored(
     }
 
     Ok(matches)
+}
+
+/// qiej
+fn fun_name(
+    p_without_bye: &[uuid::Uuid],
+    p_with_bye: &[uuid::Uuid],
+    initial_wave: &mut bool,
+    incoming_players_of_this_wave: &mut Vec<uuid::Uuid>,
+) -> Option<Vec<uuid::Uuid>> {
+    #[allow(clippy::bool_to_int_with_if)]
+    let at_least_half = p_without_bye.len() / 2 + if p_without_bye.len() % 2 == 0 { 0 } else { 1 };
+    let (winners_of_p_without_bye, _) = p_without_bye.split_at(at_least_half);
+    let mut remaining = [p_with_bye, winners_of_p_without_bye].concat();
+    if *initial_wave {
+        *initial_wave = false;
+        *incoming_players_of_this_wave = vec![];
+        incoming_players_of_this_wave.append(&mut remaining);
+        return None;
+    }
+    Some(remaining)
+}
+
+/// Generate the first out of the two round (of matches) in a wave, using the
+/// players without byes. Each match has one of the expected winners and one of
+/// the expected loser
+fn generate_matches_of_first_round_in_wave<'a>(
+    wave: Wave<'a>,
+    seeding: &'a [uuid::Uuid],
+    matches: &'a mut Vec<Match>,
+) -> (&'a [uuid::Uuid], &'a [uuid::Uuid]) {
+    let p_with_bye = wave.players_with_bye;
+    let p_without_bye = wave.players_without_bye;
+    let expected_winners = wave.expected_winners;
+    let expected_losers = wave.expected_losers;
+    for (o1, o2) in expected_winners.iter().zip(expected_losers.iter()) {
+        let seed_o1 = get_seed_of(o1, seeding);
+        let seed_o2 = get_seed_of(o2, seeding);
+        let m = Match::new_looser_bracket_match([seed_o1, seed_o2]);
+        matches.push(m);
+    }
+    (p_with_bye, p_without_bye)
+}
+
+/// Players of a loser bracket wave. A wave is two consecutive rounds of the
+/// loser bracket.
+///
+/// In the first round of a wave, players without byes fight
+/// each other to determine who will move on to the next round, where they will
+/// fight the players with bye. The players that move on to the second round
+/// are the
+struct Wave<'a> {
+    /// oqiwje
+    players_with_bye: &'a [uuid::Uuid],
+    /// owqijeh
+    players_without_bye: &'a [uuid::Uuid],
+    /// players that are expected to move on in the matches between players
+    /// without byes for this wave
+    expected_winners: &'a [uuid::Uuid],
+    /// players that are not expected to move on in the matches between players
+    /// without byes for this wave
+    expected_losers: Vec<uuid::Uuid>,
+}
+
+/// Returns wave of players. See `Wave` documentation for more information
+fn form_wave(incoming_players_of_wave: &Vec<uuid::Uuid>) -> Result<Wave, Error> {
+    let byes = match (incoming_players_of_wave.len()).checked_next_power_of_two() {
+        Some(next_higher_power_of_two) => next_higher_power_of_two - incoming_players_of_wave.len(),
+        None => return Err(Error::MathOverflow),
+    };
+    let (players_with_bye, players_without_bye) = incoming_players_of_wave.split_at(byes);
+    let half = players_without_bye.len() / 2;
+    let (expected_winners, expected_losers) = players_without_bye.split_at(half);
+    let mut expected_losers = expected_losers.to_vec();
+    expected_losers.reverse();
+    Ok(Wave {
+        players_with_bye,
+        players_without_bye,
+        expected_winners,
+        expected_losers,
+    })
+}
+
+/// Returns `ControlFlow::Break` when the players from the initial wave should
+/// be group together with the player for the next wave
+fn fill_incoming_wave(
+    incoming_wave: &mut Vec<uuid::Uuid>,
+    losers_for_this_round: &[uuid::Uuid],
+    initial_wave: &mut bool,
+    skip_initial_wave_match_generation: bool,
+) -> ControlFlow<()> {
+    let mut winners_of_previous_round = incoming_wave.clone();
+    *incoming_wave = vec![];
+    incoming_wave.append(&mut losers_for_this_round.to_vec());
+    incoming_wave.append(&mut winners_of_previous_round);
+    if *initial_wave && skip_initial_wave_match_generation {
+        *initial_wave = false;
+        return ControlFlow::Break(());
+    }
+    ControlFlow::Continue(())
+}
+
+/// Partitions players by "waves". Waves are made of the winner of the previous
+/// loser bracket round and the incoming player from the winner bracket (who
+/// lost a mathc)
+fn partition_players_of_loser_bracket(
+    seeding: &[uuid::Uuid],
+) -> Result<Vec<Vec<uuid::Uuid>>, Result<Vec<Match>, Error>> {
+    let mut remaining_loosers = seeding.to_vec();
+    remaining_loosers.reverse();
+    remaining_loosers.pop();
+    let mut losers_by_round = vec![];
+    let mut total_waves = 0;
+    let mut n = 0;
+    while n < seeding.len() - 1 {
+        n += match 2usize.checked_pow(total_waves) {
+            Some(c) => c,
+            None => return Err(Err(Error::MathOverflow)),
+        };
+        total_waves += 1;
+    }
+    for i in 0..total_waves {
+        // take 2^i participants for this wave starting from the last possible wave
+        let number_of_losers_for_this_round = match usize::checked_pow(2, i) {
+            Some(power_of_two) => power_of_two.min(remaining_loosers.len()),
+            None => return Err(Err(Error::MathOverflow)),
+        };
+        let mut loosers_for_this_round = vec![];
+        for _ in 0..number_of_losers_for_this_round {
+            loosers_for_this_round.push(remaining_loosers.pop().expect("looser"));
+        }
+        losers_by_round.push(loosers_for_this_round);
+    }
+    losers_by_round.reverse();
+    Ok(losers_by_round)
 }
 
 #[cfg(test)]

@@ -13,7 +13,7 @@ rand = { version = "0.8.5", features = ["getrandom"] }
 chrono = { version = "0.4.21", features = ["serde"] }
 test-log = { version = "0.2.11", features = ["trace"] }
 # TODO remove unused code
-poem-openapi = { optional = true, git = "https://github.com/poem-web/poem", rev = "0c54289b4e94b3385b3a746f70a878531e725b5b", features = ["swagger-ui", "uuid"] }
-tracing = "0.1.36"
+#poem-openapi = { optional = true, git = "https://github.com/poem-web/poem", rev = "0c54289b4e94b3385b3a746f70a878531e725b5b", features = ["swagger-ui", "uuid"] }
+#tracing = "0.1.36"
 thiserror = "1.0.34"
 # proptest = "1.0.0" # TODO try to use it?

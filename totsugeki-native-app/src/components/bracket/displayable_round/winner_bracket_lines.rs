@@ -1,28 +1,10 @@
-//! Display some round
-#![allow(non_snake_case)]
+//! Lines between rounds of a winner bracket
 
-use crate::components::bracket::displayable_match::DisplayMatch;
+use super::BoxWithBorder;
 use crate::DisplayableMatch;
-use dioxus::prelude::*;
-
-pub(crate) fn Round(cx: Scope, round: Vec<DisplayableMatch>) -> Element {
-    cx.render(rsx!(
-        div {
-            class: "grid grid-cols-1",
-            round.iter().map(|m| DisplayMatch(cx, *m))
-        }
-    ))
-}
-
-/// Box that may have a left or bottom border
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub(crate) struct BoxWithBorder {
-    pub(crate) left: bool,
-    pub(crate) bottom: bool,
-}
 
 /// Lines flow from matches of one round to the next round for a winner bracket
-pub(crate) fn winner_bracket_lines(rounds: Vec<Vec<DisplayableMatch>>) -> Vec<Vec<BoxWithBorder>> {
+pub(crate) fn lines(rounds: Vec<Vec<DisplayableMatch>>) -> Vec<Vec<BoxWithBorder>> {
     if rounds.is_empty() {
         return vec![];
     }
@@ -111,13 +93,10 @@ pub(crate) fn winner_bracket_lines(rounds: Vec<Vec<DisplayableMatch>>) -> Vec<Ve
 #[cfg(test)]
 mod tests {
     use chrono::DateTime;
-    use totsugeki::{bracket::Bracket, matches::Match, player::Participants};
+    use totsugeki::bracket::single_elimination_bracket::Variant;
+    use totsugeki::bracket::Bracket;
 
-    use crate::single_elimination::{ordering::reorder_rounds, partition::winner_bracket};
-
-    use super::{winner_bracket_lines, BoxWithBorder};
-
-    fn get_data(n: usize) -> (Vec<Match>, Participants) {
+    fn get_data(n: usize) -> Bracket {
         let mut bracket = Bracket::new(
             "",
             totsugeki::format::Format::SingleElimination,
@@ -130,18 +109,29 @@ mod tests {
                 .add_participant(format!("player {i}").as_str())
                 .unwrap();
         }
-        let matches = bracket.get_matches();
-        let participants = bracket.get_participants();
-        (matches, participants)
+
+        bracket
     }
+
+    use super::{lines, BoxWithBorder};
+    use crate::convert;
+    use crate::ordering::winner_bracket::reorder;
 
     #[test]
     fn _3_participants_bracket() {
-        let (matches, participants) = get_data(3);
-        let mut rounds = winner_bracket(matches, &participants);
-        reorder_rounds(&mut rounds);
+        let bracket = get_data(3);
+        let participants = bracket.get_participants();
+        let sev: Variant = bracket.try_into().expect("single elimination bracket");
+        let matches_by_rounds = sev.partition_by_round().expect("rounds");
+        let mut rounds = vec![];
+        for r in matches_by_rounds {
+            let round = r.iter().map(|m| convert(m, &participants)).collect();
+            rounds.push(round)
+        }
 
-        let lines = winner_bracket_lines(rounds.clone());
+        reorder(&mut rounds);
+
+        let lines = lines(rounds.clone());
         let expected_cols = 1;
         assert_eq!(lines.len(), expected_cols);
         //     b1L1   b1R1
@@ -197,11 +187,18 @@ mod tests {
 
     #[test]
     fn _4_participants_bracket() {
-        let (matches, participants) = get_data(4);
-        let mut rounds = winner_bracket(matches, &participants);
-        reorder_rounds(&mut rounds);
+        let bracket = get_data(4);
+        let participants = bracket.get_participants();
+        let sev: Variant = bracket.try_into().expect("single elimination bracket");
+        let matches_by_rounds = sev.partition_by_round().expect("rounds");
+        let mut rounds = vec![];
+        for r in matches_by_rounds {
+            let round = r.iter().map(|m| convert(m, &participants)).collect();
+            rounds.push(round)
+        }
+        reorder(&mut rounds);
 
-        let lines = winner_bracket_lines(rounds.clone());
+        let lines = lines(rounds.clone());
         let expected_cols = 1;
         assert_eq!(lines.len(), expected_cols);
         //     b1L1   b1R1

@@ -23,7 +23,7 @@ fn App(cx: Scope) -> Element {
     dioxus_desktop::use_window(cx).set_title("Totsugeki bracket viewer");
     let b = Bracket::new(
         "test",
-        totsugeki::format::Format::SingleElimination,
+        totsugeki::format::Format::DoubleElimination,
         totsugeki::seeding::Method::Strict,
         Utc.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap(),
         true,

@@ -1099,6 +1099,12 @@ mod tests {
 
     #[test]
     fn match_score_is_0_and_0_when_there_is_no_winner() {
-        panic!("unimplemented")
+        let p1 = PlayerId::new_v4();
+        let p2 = PlayerId::new_v4();
+        let m = Match::new([Opponent::Player(p1), Opponent::Player(p2)], [0, 0]).expect("match");
+
+        let score = m.get_score();
+
+        assert_eq!(score, (0, 0));
     }
 }

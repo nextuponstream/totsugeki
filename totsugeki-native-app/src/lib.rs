@@ -1,5 +1,6 @@
 pub mod components;
-pub mod single_elimination;
+pub mod ordering;
+pub mod partition;
 
 use totsugeki::{
     matches::{Id as MatchId, Match},

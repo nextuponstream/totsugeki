@@ -2,6 +2,7 @@
 
 mod assertions;
 mod disqualification;
+pub mod double_elimination_bracket;
 mod getter_setter;
 pub mod http_responses;
 pub mod matches;
@@ -10,6 +11,8 @@ mod progression;
 mod query_state;
 pub mod raw;
 mod seeding;
+pub mod single_elimination_bracket;
+mod winner_bracket;
 
 use crate::{
     bracket::{matches::Error as ProgressError, Id as BracketId},
@@ -402,4 +405,11 @@ impl Default for Bracket {
             true,
         )
     }
+}
+
+/// Errors while manipulating bracket
+#[derive(Debug)]
+pub enum PartitionError {
+    /// You need at least 3 players to perform this operation
+    NotEnoughPlayersInBracket,
 }

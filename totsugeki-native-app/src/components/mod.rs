@@ -1,3 +1,5 @@
+//! Components of the user interface
+
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
 
