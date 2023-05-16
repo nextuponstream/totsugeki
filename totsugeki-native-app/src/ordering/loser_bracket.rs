@@ -3,11 +3,71 @@
 use crate::DisplayableMatch;
 
 /// Give positionnal hints to loser bracket matches
-pub fn reorder(lb_rounds: &mut [Vec<DisplayableMatch>]) {
-    for r in lb_rounds {
-        for (i, m) in r.iter_mut().enumerate() {
-            m.row_hint = Some(i);
+pub fn reorder(rounds: &mut [Vec<DisplayableMatch>]) {
+    // implementation is the same as winner bracket implementation. It seems
+    // to also work for a loser bracket
+    if rounds.len() < 2 {
+        return;
+    }
+
+    let lb_rounds_count = rounds.len();
+
+    // give row hints to last 3 rounds
+    if lb_rounds_count > 2 {
+        rounds[lb_rounds_count - 3][0].row_hint = Some(0);
+        if rounds[lb_rounds_count - 3].len() > 1 {
+            rounds[lb_rounds_count - 3][1].row_hint = Some(1);
         }
+    }
+
+    if lb_rounds_count > 1 {
+        rounds[lb_rounds_count - 2][0].row_hint = Some(0);
+    }
+
+    rounds[lb_rounds_count - 1][0].row_hint = Some(0);
+
+    // give hints to all other rounds
+    for i in (0..rounds.len() - 2).rev() {
+        let mut round = rounds[i].clone();
+
+        // iterate over previous round and set positional hints
+        for (j, m) in rounds[i + 1].iter().enumerate() {
+            let winner_seed = m.seeds[0];
+            // (first) player of round 1 with highest seed is expected to win
+            if let Some(m) = round.iter_mut().find(|r_m| r_m.seeds[0] == winner_seed) {
+                m.row_hint = Some(rounds[i + 1][j].row_hint.expect("") * 2);
+                // if (lb_rounds_count - i) % 2 == 0 {
+                //     m.row_hint = Some(rounds[i + 1][j].row_hint.expect("") * 2);
+                //     #[cfg(test)]
+                //     println!("winner seed {winner_seed}, even, {}", m.summary());
+                // } else {
+                //     // 5-12 (1), 6-11 (0)
+                //     m.row_hint = Some(rounds[i + 1][j].row_hint.expect("") * 2);
+                //     #[cfg(test)]
+                //     println!("winner seed {winner_seed}, odd, {}", m.summary());
+                // }
+            }
+            let loser_seed = m.seeds[1];
+            if let Some(m) = round.iter_mut().find(|r_m| r_m.seeds[0] == loser_seed) {
+                // TODO check if if is ok here
+                if (lb_rounds_count - i) % 2 == 0 {
+                    m.row_hint = rounds[i + 1][j].row_hint;
+                    #[cfg(test)]
+                    println!("loser seed {loser_seed}, even, {}", m.summary());
+                } else {
+                    // 7-10 (1), 8-9 (3)
+                    m.row_hint = Some(rounds[i + 1][j].row_hint.expect("") * 2 + 1);
+                    #[cfg(test)]
+                    println!("loser seed {loser_seed}, odd, {}", m.summary());
+                }
+            }
+        }
+
+        // println!("sort round {i}"); // FIXME remove
+
+        round.sort_by_key(|m| m.row_hint);
+        // println!("{:?}", round);
+        rounds[i] = round;
     }
 }
 
@@ -22,7 +82,9 @@ mod tests {
         let mut rounds = [vec![DisplayableMatch::new([2, 3])]];
 
         reorder(&mut rounds);
-        assert_eq!(rounds[0][0].row_hint, Some(0));
+
+        assert_eq!(rounds.len(), 1);
+        assert_eq!(rounds[0][0].row_hint, None);
     }
 
     #[test]
@@ -33,6 +95,8 @@ mod tests {
         ];
 
         reorder(&mut rounds);
+
+        assert_eq!(rounds.len(), 2);
         assert_eq!(rounds[0][0].row_hint, Some(0));
         assert_eq!(rounds[1][0].row_hint, Some(0));
     }
@@ -46,7 +110,14 @@ mod tests {
         ];
 
         reorder(&mut rounds);
-        assert_eq!(rounds[0][0].row_hint, Some(1));
+
+        assert_eq!(rounds.len(), 3);
+        assert_eq!(
+            rounds[0][0].row_hint,
+            Some(1),
+            "4-5 {:?}",
+            rounds[0][0].summary()
+        );
         assert_eq!(rounds[1][0].row_hint, Some(0));
         assert_eq!(rounds[2][0].row_hint, Some(0));
     }
@@ -54,16 +125,224 @@ mod tests {
     #[test]
     fn _6_players() {
         let mut rounds = [
-            vec![DisplayableMatch::new([3, 6])],
-            vec![DisplayableMatch::new([4, 5])],
+            vec![DisplayableMatch::new([3, 6]), DisplayableMatch::new([4, 5])],
             vec![DisplayableMatch::new([3, 4])],
             vec![DisplayableMatch::new([2, 3])],
         ];
 
         reorder(&mut rounds);
-        assert_eq!(rounds[0][0].row_hint, Some(0));
+
+        assert_eq!(rounds.len(), 3);
+        assert_eq!(rounds[0][0].row_hint, Some(0), "{}", rounds[0][0].summary());
         assert_eq!(rounds[0][1].row_hint, Some(1));
         assert_eq!(rounds[1][0].row_hint, Some(0));
         assert_eq!(rounds[2][0].row_hint, Some(0));
+    }
+
+    #[test]
+    fn _8_players() {
+        let mut rounds = [
+            vec![DisplayableMatch::new([5, 8]), DisplayableMatch::new([6, 7])],
+            vec![DisplayableMatch::new([3, 6]), DisplayableMatch::new([4, 5])],
+            vec![DisplayableMatch::new([3, 4])],
+            vec![DisplayableMatch::new([2, 3])],
+        ];
+
+        reorder(&mut rounds);
+
+        assert_eq!(rounds.len(), 4);
+        assert_eq!(rounds[3][0].row_hint, Some(0));
+        assert_eq!(rounds[2][0].row_hint, Some(0));
+        assert_eq!(rounds[1][0].row_hint, Some(0));
+        assert_eq!(rounds[1][1].row_hint, Some(1));
+        println!("{}", rounds[0][1].summary());
+        assert_eq!(
+            rounds[0][0].row_hint,
+            Some(0),
+            "{:?}",
+            rounds[0][0].summary()
+        );
+        assert_eq!(
+            rounds[0][1].row_hint,
+            Some(1),
+            "{:?}",
+            rounds[0][1].summary()
+        );
+    }
+
+    #[test]
+    fn _9_players() {
+        let mut rounds = [
+            vec![DisplayableMatch::new([8, 9])],
+            vec![DisplayableMatch::new([5, 8]), DisplayableMatch::new([6, 7])],
+            vec![DisplayableMatch::new([3, 6]), DisplayableMatch::new([4, 5])],
+            vec![DisplayableMatch::new([3, 4])],
+            vec![DisplayableMatch::new([2, 3])],
+        ];
+
+        reorder(&mut rounds);
+
+        assert_eq!(rounds.len(), 5);
+        assert_eq!(rounds[4].len(), 1);
+        assert_eq!(rounds[4][0].seeds, [2, 3]); // 2 drops in
+        assert_eq!(rounds[4][0].row_hint, Some(0));
+
+        assert_eq!(rounds[3].len(), 1);
+        assert_eq!(rounds[3][0].seeds, [3, 4]); // previous rounds
+        assert_eq!(rounds[3][0].row_hint, Some(0));
+
+        assert_eq!(rounds[2].len(), 2);
+        assert_eq!(rounds[2][0].seeds, [3, 6]); // 3 drops in
+        assert_eq!(rounds[2][0].row_hint, Some(0));
+        assert_eq!(rounds[2][1].seeds, [4, 5]); // 4 drops in
+        assert_eq!(rounds[2][1].row_hint, Some(1));
+
+        assert_eq!(rounds[1].len(), 2);
+        assert_eq!(rounds[1][0].seeds, [6, 7]); // 6 drops in
+        assert_eq!(rounds[1][0].row_hint, Some(0));
+        assert_eq!(rounds[1][1].seeds, [5, 8]); // 5 drops in
+        assert_eq!(rounds[1][1].row_hint, Some(1));
+
+        assert_eq!(rounds[0].len(), 1);
+        assert_eq!(rounds[0][0].seeds, [8, 9]); // 8 and 9 drops in
+        assert_eq!(rounds[0][0].row_hint, Some(3));
+    }
+
+    #[test]
+    fn _10_players() {
+        let mut rounds = [
+            vec![
+                DisplayableMatch::new([7, 10]),
+                DisplayableMatch::new([8, 9]),
+            ],
+            vec![DisplayableMatch::new([5, 8]), DisplayableMatch::new([6, 7])],
+            vec![DisplayableMatch::new([3, 6]), DisplayableMatch::new([4, 5])],
+            vec![DisplayableMatch::new([3, 4])],
+            vec![DisplayableMatch::new([2, 3])],
+        ];
+
+        reorder(&mut rounds);
+
+        assert_eq!(rounds.len(), 5);
+        assert_eq!(rounds[4].len(), 1);
+        assert_eq!(rounds[4][0].seeds, [2, 3]); // 2 drops in
+        assert_eq!(rounds[4][0].row_hint, Some(0));
+
+        assert_eq!(rounds[3].len(), 1);
+        assert_eq!(rounds[3][0].seeds, [3, 4]); // previous rounds
+        assert_eq!(rounds[3][0].row_hint, Some(0));
+
+        assert_eq!(rounds[2].len(), 2);
+        assert_eq!(rounds[2][0].seeds, [3, 6]); // 3 drops in
+        assert_eq!(rounds[2][0].row_hint, Some(0));
+        assert_eq!(rounds[2][1].seeds, [4, 5]); // 4 drops in
+        assert_eq!(rounds[2][1].row_hint, Some(1));
+
+        assert_eq!(rounds[1].len(), 2);
+        assert_eq!(rounds[1][0].seeds, [6, 7]); // 6 drops in
+        assert_eq!(rounds[1][0].row_hint, Some(0));
+        assert_eq!(rounds[1][1].seeds, [5, 8]); // 5 drops in
+        assert_eq!(rounds[1][1].row_hint, Some(1));
+
+        assert_eq!(rounds[0].len(), 2);
+        assert_eq!(rounds[0][0].seeds, [7, 10]); // 8 and 9 drops in
+        assert_eq!(rounds[0][0].row_hint, Some(1));
+        assert_eq!(rounds[0][1].seeds, [8, 9]); // 8 and 9 drops in
+        assert_eq!(rounds[0][1].row_hint, Some(3));
+    }
+
+    #[test]
+    fn _11_players() {
+        let mut rounds = [
+            vec![
+                DisplayableMatch::new([6, 11]),
+                DisplayableMatch::new([7, 10]),
+                DisplayableMatch::new([8, 9]),
+            ],
+            vec![DisplayableMatch::new([5, 8]), DisplayableMatch::new([6, 7])],
+            vec![DisplayableMatch::new([3, 6]), DisplayableMatch::new([4, 5])],
+            vec![DisplayableMatch::new([3, 4])],
+            vec![DisplayableMatch::new([2, 3])],
+        ];
+
+        reorder(&mut rounds);
+
+        assert_eq!(rounds.len(), 5);
+        assert_eq!(rounds[4].len(), 1);
+        assert_eq!(rounds[4][0].seeds, [2, 3]); // 2 drops in
+        assert_eq!(rounds[4][0].row_hint, Some(0));
+
+        assert_eq!(rounds[3].len(), 1);
+        assert_eq!(rounds[3][0].seeds, [3, 4]); // previous rounds
+        assert_eq!(rounds[3][0].row_hint, Some(0));
+
+        assert_eq!(rounds[2].len(), 2);
+        assert_eq!(rounds[2][0].seeds, [3, 6]); // 3 drops in
+        assert_eq!(rounds[2][0].row_hint, Some(0));
+        assert_eq!(rounds[2][1].seeds, [4, 5]); // 4 drops in
+        assert_eq!(rounds[2][1].row_hint, Some(1));
+
+        assert_eq!(rounds[1].len(), 2);
+        assert_eq!(rounds[1][0].seeds, [6, 7]); // 6 drops in
+        assert_eq!(rounds[1][0].row_hint, Some(0));
+        assert_eq!(rounds[1][1].seeds, [5, 8]); // 5 drops in
+        assert_eq!(rounds[1][1].row_hint, Some(1));
+
+        assert_eq!(rounds[0].len(), 3);
+        assert_eq!(rounds[0][0].seeds, [6, 11]); // 8 and 9 drops in
+        assert_eq!(rounds[0][0].row_hint, Some(0));
+        assert_eq!(rounds[0][1].seeds, [7, 10]); // 8 and 9 drops in
+        assert_eq!(rounds[0][1].row_hint, Some(1));
+        assert_eq!(rounds[0][2].seeds, [8, 9]); // 8 and 9 drops in
+        assert_eq!(rounds[0][2].row_hint, Some(3));
+    }
+
+    #[test]
+    fn _12_players() {
+        let mut rounds = [
+            vec![
+                DisplayableMatch::new([5, 12]),
+                DisplayableMatch::new([6, 11]),
+                DisplayableMatch::new([7, 10]),
+                DisplayableMatch::new([8, 9]),
+            ],
+            vec![DisplayableMatch::new([5, 8]), DisplayableMatch::new([6, 7])],
+            vec![DisplayableMatch::new([3, 6]), DisplayableMatch::new([4, 5])],
+            vec![DisplayableMatch::new([3, 4])],
+            vec![DisplayableMatch::new([2, 3])],
+        ];
+
+        reorder(&mut rounds);
+
+        assert_eq!(rounds.len(), 5);
+        assert_eq!(rounds[4].len(), 1);
+        assert_eq!(rounds[4][0].seeds, [2, 3]); // 2 drops in
+        assert_eq!(rounds[4][0].row_hint, Some(0));
+
+        assert_eq!(rounds[3].len(), 1);
+        assert_eq!(rounds[3][0].seeds, [3, 4]); // previous rounds
+        assert_eq!(rounds[3][0].row_hint, Some(0));
+
+        assert_eq!(rounds[2].len(), 2);
+        assert_eq!(rounds[2][0].seeds, [3, 6]); // 3 drops in
+        assert_eq!(rounds[2][0].row_hint, Some(0));
+        assert_eq!(rounds[2][1].seeds, [4, 5]); // 4 drops in
+        assert_eq!(rounds[2][1].row_hint, Some(1));
+
+        assert_eq!(rounds[1].len(), 2);
+        assert_eq!(rounds[1][0].seeds, [6, 7]); // 6 drops in
+        assert_eq!(rounds[1][0].row_hint, Some(0));
+        assert_eq!(rounds[1][1].seeds, [5, 8]); // 5 drops in
+        assert_eq!(rounds[1][1].row_hint, Some(1));
+
+        assert_eq!(rounds[0].len(), 4);
+        assert_eq!(rounds[0][0].seeds, [6, 11]); // 8 and 9 drops in
+        assert_eq!(rounds[0][0].row_hint, Some(0));
+        assert_eq!(rounds[0][1].seeds, [7, 10]); // 8 and 9 drops in
+        assert_eq!(rounds[0][1].row_hint, Some(1));
+        assert_eq!(rounds[0][2].seeds, [5, 12]); // 8 and 9 drops in
+        assert_eq!(rounds[0][2].row_hint, Some(2));
+        assert_eq!(rounds[0][3].seeds, [8, 9]); // 8 and 9 drops in
+        assert_eq!(rounds[0][3].row_hint, Some(3));
     }
 }

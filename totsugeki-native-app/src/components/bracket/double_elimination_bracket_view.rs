@@ -34,7 +34,10 @@ pub(crate) fn View(cx: Scope) -> Element {
     }
     reorder_winner_bracket(&mut wb_rounds);
     let lines = lines(wb_rounds.clone());
-    let lb_lines = lines.clone();
+    let mut lb_lines = vec![];
+    for _ in 0..11 {
+        lb_lines.push(vec![]);
+    }
     let mut wb_elements: Vec<DisplayStuff> = vec![];
 
     for (round, round_line) in wb_rounds.clone().into_iter().zip(lines) {
@@ -75,17 +78,21 @@ pub(crate) fn View(cx: Scope) -> Element {
 
     cx.render(rsx!(
         // FIXME uncomment
-        // div {
-        //     class: "grid grid-rows-1 grid-cols-{wb_columns} flex",
-        //     for e in wb_elements {
-        //         match e {
-        //             DisplayStuff::Match(round) => rsx! { Round(cx, round) },
-        //             DisplayStuff::Block(line) => rsx! {
-        //                 RoundWithLines(line)
-        //             },
-        //         }
-        //     }
-        // }
+        div {
+            class: "grid grid-rows-1 grid-cols-{wb_columns} flex",
+            for e in wb_elements {
+                match e {
+                    DisplayStuff::Match(round) => rsx! { Round(cx, round) },
+                    DisplayStuff::Block(line) => rsx! {
+                        RoundWithLines(line)
+                    },
+                }
+            }
+        }
+        br {}
+        br {}
+        br {}
+        br {}
         div {
             class: "grid grid-rows-1 grid-cols-{lb_columns} flex",
             for e in lb_elements {
