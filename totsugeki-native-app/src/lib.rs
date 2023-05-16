@@ -50,6 +50,11 @@ impl DisplayableMatch {
         }
     }
 
+    #[cfg(test)]
+    fn summary(&self) -> String {
+        format!("{:?}; row hint = {:?}", self.seeds, self.row_hint)
+    }
+
     fn player(&self, is_player1: bool) -> &str {
         let id = if is_player1 { 0 } else { 1 };
         std::str::from_utf8(&self.players[id]).unwrap()

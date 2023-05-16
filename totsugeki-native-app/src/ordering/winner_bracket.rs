@@ -7,10 +7,13 @@ pub fn reorder(rounds: &mut [Vec<DisplayableMatch>]) {
         return;
     }
 
+    // set hint for all rounds except last two
+    // traverse from last to first
     for i in (0..rounds.len() - 2).rev() {
         let mut round = rounds[i].clone();
         let number_of_matches_in_round = rounds[i + 1].len() * 2;
 
+        // iterate over previous round and set positional hints
         for (j, m) in rounds[i + 1].iter().enumerate() {
             let row_hint_1 = 2 * j;
             let row_hint_2 = 2 * j + 1;
@@ -38,6 +41,7 @@ pub fn reorder(rounds: &mut [Vec<DisplayableMatch>]) {
         rounds[i] = round;
     }
 
+    // round before last round
     rounds[rounds.len() - 2][0].row_hint = Some(0);
     // when there is exactly 3 players
     if rounds[rounds.len() - 2].len() == 1 {
@@ -46,6 +50,7 @@ pub fn reorder(rounds: &mut [Vec<DisplayableMatch>]) {
         rounds[rounds.len() - 2][1].row_hint = Some(1);
     }
 
+    // last round
     rounds[rounds.len() - 1][0].row_hint = Some(0);
 }
 
