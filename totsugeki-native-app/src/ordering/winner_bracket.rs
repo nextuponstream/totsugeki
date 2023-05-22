@@ -29,6 +29,7 @@ pub fn reorder(rounds: &mut [Vec<DisplayableMatch>]) {
             }
         }
 
+        // Padding matches for initial round
         if i == 0 {
             for _ in 0..number_of_matches_in_round - rounds[i].len() {
                 round.push(DisplayableMatch::default())

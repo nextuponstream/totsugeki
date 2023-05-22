@@ -93,11 +93,7 @@ impl Variant {
 
 /// Partition loser brackets matches into rounds
 fn loser_bracket(lb_matches: Vec<Match>, participants: &Participants) -> Vec<Vec<Match>> {
-    let n = participants.len();
-    let total_matches = 2 * n - 1;
-    let total_winner_bracket_matches = n - 1;
     // 2 is grand finals and grand finals reset
-    let total_loser_bracket_matches = total_matches - total_winner_bracket_matches - 2;
 
     let mut rounds = vec![];
 
@@ -107,11 +103,10 @@ fn loser_bracket(lb_matches: Vec<Match>, participants: &Participants) -> Vec<Vec
 
     for m in lb_matches.into_iter().rev() {
         round.push(m);
-        println!("{}", round_qualifies_to_fight_next_wave_opponents); // FIXME remove
-        println!("{}/{}", round.len(), matches_for_current_round); // FIXME remove
+        // println!("{}", round_qualifies_to_fight_next_wave_opponents);
+        // println!("{}/{}", round.len(), matches_for_current_round);
 
         if round.len() == matches_for_current_round {
-            println!("DRAIN"); // FIXME remove
             round.reverse();
             let finalized_round = round.drain(0..).collect();
             rounds.push(finalized_round);
@@ -126,7 +121,6 @@ fn loser_bracket(lb_matches: Vec<Match>, participants: &Participants) -> Vec<Vec
     }
 
     if !round.is_empty() {
-        println!("DRAIN remaining"); // FIXME remove
         let finalized_round = round.drain(0..).collect();
         rounds.push(finalized_round);
     }

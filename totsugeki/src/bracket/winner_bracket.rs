@@ -51,7 +51,6 @@ pub(crate) fn winner_bracket(matches: Vec<Match>, participants: &Participants) -
             let (first_round_matches, matches) = tmp.split_at(split);
             remaining_matches = matches.to_vec();
             partition.push(first_round_matches.to_vec());
-            continue;
         } else {
             npo2 /= 2;
             let split = npo2 / 2;
@@ -65,8 +64,8 @@ pub(crate) fn winner_bracket(matches: Vec<Match>, participants: &Participants) -
                 let (a, b) = remaining_matches.split_at(split);
                 (a.to_vec(), b.to_vec())
             };
-            partition.push(round.to_vec());
-            remaining_matches = matches.to_vec();
+            partition.push(round.clone());
+            remaining_matches = matches.clone();
             continue;
         }
     }

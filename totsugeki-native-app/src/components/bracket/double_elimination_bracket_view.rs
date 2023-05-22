@@ -1,12 +1,12 @@
 //! View of double elimination bracket
 
 use super::ui_primitives::DisplayStuff;
+use crate::components::bracket::displayable_round::loser_bracket_lines::lines as loser_bracket_lines;
 use crate::components::bracket::displayable_round::winner_bracket_lines::lines;
 use crate::components::bracket::displayable_round::Round;
 use crate::components::bracket::ui_primitives::RoundWithLines;
 use crate::ordering::loser_bracket::reorder as reorder_loser_bracket;
 use crate::ordering::winner_bracket::reorder as reorder_winner_bracket;
-use crate::partition::loser_bracket::loser_bracket;
 use crate::{convert, DisplayableMatch};
 use dioxus::prelude::*;
 use totsugeki::bracket::double_elimination_bracket::Variant as DoubleEliminationVariant;
@@ -34,10 +34,6 @@ pub(crate) fn View(cx: Scope) -> Element {
     }
     reorder_winner_bracket(&mut wb_rounds);
     let lines = lines(wb_rounds.clone());
-    let mut lb_lines = vec![];
-    for _ in 0..11 {
-        lb_lines.push(vec![]);
-    }
     let mut wb_elements: Vec<DisplayStuff> = vec![];
 
     for (round, round_line) in wb_rounds.clone().into_iter().zip(lines) {
@@ -63,7 +59,8 @@ pub(crate) fn View(cx: Scope) -> Element {
     }
     reorder_loser_bracket(&mut lb_rounds);
     let mut lb_elements: Vec<DisplayStuff> = vec![];
-    // let lb_lines = lines(lb_rounds.clone()); // FIXME get lb_lines the right way
+    let lb_lines = loser_bracket_lines(lb_rounds.clone()); // FIXME get lb_lines the right way
+    println!("lb lines: {:?}", lb_lines); // FIXME remove
 
     for (round, round_line) in lb_rounds.clone().into_iter().zip(lb_lines) {
         lb_elements.push(DisplayStuff::Match(round));
@@ -77,7 +74,6 @@ pub(crate) fn View(cx: Scope) -> Element {
     let lb_columns = lb_elements.len();
 
     cx.render(rsx!(
-        // FIXME uncomment
         div {
             class: "grid grid-rows-1 grid-cols-{wb_columns} flex",
             for e in wb_elements {
@@ -98,11 +94,12 @@ pub(crate) fn View(cx: Scope) -> Element {
             for e in lb_elements {
                 match e {
                     DisplayStuff::Match(round) => rsx! { Round(cx, round) },
-                    DisplayStuff::Block(line) => rsx! { "TODO"},
-                    // rsx! {
-                    //     // RoundWithLines(line)
+                    // DisplayStuff::Block(line) => rsx! { "TODO"},
+                    DisplayStuff::Block(line) =>
+                    rsx! {
+                        RoundWithLines(line)
 
-                    // },
+                    },
                 }
             }
         }
