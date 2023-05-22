@@ -29,6 +29,7 @@ pub fn reorder(rounds: &mut [Vec<DisplayableMatch>]) {
     // give hints to all other rounds
     for i in (0..rounds.len() - 2).rev() {
         let mut round = rounds[i].clone();
+        let number_of_matches_in_round = rounds[i + 1].len() * 2;
 
         // iterate over previous round and set positional hints
         for (j, m) in rounds[i + 1].iter().enumerate() {
@@ -59,6 +60,28 @@ pub fn reorder(rounds: &mut [Vec<DisplayableMatch>]) {
                     m.row_hint = Some(rounds[i + 1][j].row_hint.expect("") * 2 + 1);
                     #[cfg(test)]
                     println!("loser seed {loser_seed}, odd, {}", m.summary());
+                }
+            }
+        }
+
+        println!("yooooo {}", rounds.len() % 2 == 1);
+        if i == 0 {
+            println!("n o m i r {}", number_of_matches_in_round);
+            println!("round i+1 len: {}", rounds[i + 1].len());
+            println!("round i len: {}", rounds[i].len());
+            if rounds.len() % 2 == 0 {
+                for _ in 0..rounds[i + 1].len() - rounds[i].len() {
+                    round.push(DisplayableMatch::default())
+                }
+                // for _ in 0..number_of_matches_in_round - rounds[i].len() {
+                //     round.push(DisplayableMatch::default())
+                // }
+            } else {
+                // for _ in 0..rounds[i + 1].len() - rounds[i].len() {
+                //     round.push(DisplayableMatch::default())
+                // }
+                for _ in 0..number_of_matches_in_round - rounds[i].len() {
+                    round.push(DisplayableMatch::default())
                 }
             }
         }

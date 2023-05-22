@@ -33,6 +33,7 @@ pub(crate) fn lines(rounds: Vec<Vec<DisplayableMatch>>) -> Vec<Vec<BoxWithBorder
     for round_index in (0..rounds.len() - 1).rev() {
         let round = &rounds[round_index];
 
+        // FIXME remove unwrap and throw error
         let matches_in_round = (round.len()).checked_next_power_of_two().unwrap();
 
         let mut left_column: Vec<BoxWithBorder> = column.clone();
