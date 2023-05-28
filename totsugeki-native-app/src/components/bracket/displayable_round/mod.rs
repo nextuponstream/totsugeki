@@ -19,7 +19,7 @@ pub(crate) fn Round(cx: Scope, round: Vec<DisplayableMatch>) -> Element {
 }
 
 /// Box that may have a left or bottom border
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub(crate) struct BoxWithBorder {
     pub(crate) left: bool,
     pub(crate) bottom: bool,
