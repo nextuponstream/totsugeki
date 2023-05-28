@@ -118,6 +118,43 @@ mod tests {
     use crate::convert;
     use crate::ordering::winner_bracket::reorder;
 
+    static LINES_TO_WINNERS_FINALS: [BoxWithBorder; 8] = [
+        // left col
+        BoxWithBorder {
+            left: false,
+            bottom: true,
+        },
+        BoxWithBorder {
+            left: false,
+            bottom: false,
+        },
+        BoxWithBorder {
+            left: false,
+            bottom: true,
+        },
+        BoxWithBorder {
+            left: false,
+            bottom: false,
+        },
+        // right col
+        BoxWithBorder {
+            left: false,
+            bottom: false,
+        },
+        BoxWithBorder {
+            left: true,
+            bottom: true,
+        },
+        BoxWithBorder {
+            left: true,
+            bottom: false,
+        },
+        BoxWithBorder {
+            left: false,
+            bottom: false,
+        },
+    ];
+
     #[test]
     fn _3_participants_bracket() {
         let bracket = get_data(3);
@@ -209,32 +246,108 @@ mod tests {
         //     b1L3 | b1R3
         // m2 ------
         //     b1L4   b1R4
+        assert_eq!(lines, vec![LINES_TO_WINNERS_FINALS,]);
+    }
+
+    #[test]
+    fn _5_participants_bracket() {
+        let bracket = get_data(5);
+        let participants = bracket.get_participants();
+        let sev: Variant = bracket.try_into().expect("single elimination bracket");
+        let matches_by_rounds = sev.partition_by_round().expect("rounds");
+        let mut rounds = vec![];
+        for r in matches_by_rounds {
+            let round = r.iter().map(|m| convert(m, &participants)).collect();
+            rounds.push(round)
+        }
+        reorder(&mut rounds);
+
+        let lines = lines(rounds.clone());
+        let expected_cols = 2;
+        assert_eq!(lines.len(), expected_cols);
+        //     b1L1   b1R1
+        // m1 -------
+        //     b1L2 | b1R2
+        //          --------> m3
+        //     b1L3 | b1R3
+        // m2 ------
+        //     b1L4   b1R4
         assert_eq!(
             lines,
             vec![
-                // col 1
                 vec![
-                    // left col
+                    BoxWithBorder::default(),
+                    BoxWithBorder::default(),
                     BoxWithBorder {
                         left: false,
-                        bottom: true
+                        bottom: true,
+                    },
+                    BoxWithBorder::default(),
+                    BoxWithBorder::default(),
+                    BoxWithBorder::default(),
+                    BoxWithBorder::default(),
+                    BoxWithBorder::default(),
+                    // right
+                    BoxWithBorder::default(),
+                    BoxWithBorder {
+                        left: false,
+                        bottom: true,
+                    },
+                    BoxWithBorder {
+                        left: true,
+                        bottom: false,
+                    },
+                    BoxWithBorder::default(),
+                    BoxWithBorder::default(),
+                    BoxWithBorder::default(),
+                    BoxWithBorder::default(),
+                    BoxWithBorder::default(),
+                ],
+                vec![
+                    BoxWithBorder {
+                        left: false,
+                        bottom: false,
                     },
                     BoxWithBorder {
                         left: false,
-                        bottom: false
+                        bottom: true,
                     },
                     BoxWithBorder {
                         left: false,
-                        bottom: true
+                        bottom: false,
                     },
                     BoxWithBorder {
                         left: false,
-                        bottom: false
+                        bottom: false,
+                    },
+                    BoxWithBorder {
+                        left: false,
+                        bottom: false,
+                    },
+                    BoxWithBorder {
+                        left: false,
+                        bottom: true,
+                    },
+                    BoxWithBorder {
+                        left: false,
+                        bottom: false,
+                    },
+                    BoxWithBorder {
+                        left: false,
+                        bottom: false,
                     },
                     // right col
                     BoxWithBorder {
                         left: false,
-                        bottom: false
+                        bottom: false,
+                    },
+                    BoxWithBorder {
+                        left: false,
+                        bottom: false,
+                    },
+                    BoxWithBorder {
+                        left: true,
+                        bottom: false,
                     },
                     BoxWithBorder {
                         left: true,
@@ -242,13 +355,21 @@ mod tests {
                     },
                     BoxWithBorder {
                         left: true,
-                        bottom: false
+                        bottom: false,
+                    },
+                    BoxWithBorder {
+                        left: true,
+                        bottom: false,
                     },
                     BoxWithBorder {
                         left: false,
-                        bottom: false
+                        bottom: false,
                     },
-                ],
+                    BoxWithBorder {
+                        left: false,
+                        bottom: false,
+                    },
+                ]
             ]
         );
     }

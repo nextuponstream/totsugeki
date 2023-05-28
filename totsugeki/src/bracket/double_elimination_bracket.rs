@@ -1,14 +1,12 @@
 //! Double elimination bracket with methods you would only call on a double
 //! elimination bracket
 
+use super::winner_bracket::winner_bracket;
 use crate::bracket::Bracket;
 use crate::bracket::PartitionError;
 use crate::format::Format;
 use crate::matches::partition_double_elimination_matches as partition;
 use crate::matches::Match;
-use crate::player::Participants;
-
-use super::winner_bracket::winner_bracket;
 
 /// Double elimination bracket
 #[derive(Debug)]
@@ -87,14 +85,26 @@ impl Variant {
         }
         let (_, lb_matches, _, _) =
             partition(&self.bracket.matches, self.bracket.participants.len());
-        Ok(loser_bracket(lb_matches, &self.bracket.participants))
+        Ok(loser_bracket(lb_matches))
+    }
+
+    /// Returns Grand Finals and Grand finals reset
+    ///
+    /// # Errors
+    /// When there is not enough players in the bracket for matches
+    pub fn grand_finals_and_reset(&self) -> Result<(Match, Match), PartitionError> {
+        if self.bracket.participants.len() < 3 {
+            return Err(PartitionError::NotEnoughPlayersInBracket);
+        }
+        let (_, _, gf, gf_reset) =
+            partition(&self.bracket.matches, self.bracket.participants.len());
+        Ok((gf, gf_reset))
     }
 }
 
 /// Partition loser brackets matches into rounds
-fn loser_bracket(lb_matches: Vec<Match>, participants: &Participants) -> Vec<Vec<Match>> {
+fn loser_bracket(lb_matches: Vec<Match>) -> Vec<Vec<Match>> {
     // 2 is grand finals and grand finals reset
-
     let mut rounds = vec![];
 
     let mut matches_for_current_round = 1;
@@ -103,8 +113,6 @@ fn loser_bracket(lb_matches: Vec<Match>, participants: &Participants) -> Vec<Vec
 
     for m in lb_matches.into_iter().rev() {
         round.push(m);
-        // println!("{}", round_qualifies_to_fight_next_wave_opponents);
-        // println!("{}/{}", round.len(), matches_for_current_round);
 
         if round.len() == matches_for_current_round {
             round.reverse();
@@ -126,21 +134,13 @@ fn loser_bracket(lb_matches: Vec<Match>, participants: &Participants) -> Vec<Vec
     }
     rounds.reverse();
 
-    // idea 1: reuse double_elimination_seeded_bracket function, both for loops
-    // within it already "groups by round" (do it again for initial wave two
-    // for loops)
-    // TODO refactor those functions
-    // TODO function in t-native that transforms matches by round to html
-    // elements
-
     rounds
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::bracket::double_elimination_bracket::Variant;
-
     use super::PartitionError;
+    use crate::bracket::double_elimination_bracket::Variant;
 
     #[test]
     fn less_than_3_participants_throws_error() {
@@ -208,7 +208,7 @@ mod tests {
 
         assert_eq!(rounds.len(), 1, "expected 1 round");
         assert_eq!(rounds[0].len(), 1, "expected 1 match in round 1 LB");
-        assert_eq!(rounds[0][0].get_id(), deb.bracket.matches[2].get_id(),);
+        assert_eq!(rounds[0][0].get_id(), deb.bracket.matches[2].get_id());
     }
 
     #[test]

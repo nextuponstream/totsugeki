@@ -15,6 +15,9 @@ pub(crate) struct FormProps {
 pub(crate) fn MatchEdit(cx: Scope<FormProps>) -> Element {
     let bracket = use_shared_state::<Bracket>(cx).expect("bracket");
 
+    let result_1 = use_state(cx, || 0);
+    let result_2 = use_state(cx, || 0);
+
     cx.render(rsx!(div {
         form {
             onsubmit: move |event| { update_result(cx, bracket, event) },
@@ -22,12 +25,66 @@ pub(crate) fn MatchEdit(cx: Scope<FormProps>) -> Element {
             div { "Match ID:" }
             div { "{cx.props.match_id}" }
             div {
+                button {
+                    onclick: move |_| {
+                        result_1.set(2);
+                        result_2.set(0);
+                    },
+                    prevent_default: "onclick",
+                    class: "text-white bg-blue-700 hover:bg-blue-800 \
+                        focus:ring-4 focus:ring-blue-300 font-medium \
+                        rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 \
+                        dark:bg-blue-600 dark:hover:bg-blue-700 \
+                        focus:outline-none dark:focus:ring-blue-800",
+                    "2-0",
+                }
+                button {
+                    onclick: move |_| {
+                        result_1.set(2);
+                        result_2.set(1);
+                    },
+                    prevent_default: "onclick",
+                    class: "text-white bg-blue-700 hover:bg-blue-800 \
+                        focus:ring-4 focus:ring-blue-300 font-medium \
+                        rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 \
+                        dark:bg-blue-600 dark:hover:bg-blue-700 \
+                        focus:outline-none dark:focus:ring-blue-800",
+                    "2-1",
+                }
+                button {
+                    onclick: move |_| {
+                        result_1.set(1);
+                        result_2.set(2);
+                    },
+                    prevent_default: "onclick",
+                    class: "text-white bg-blue-700 hover:bg-blue-800 \
+                        focus:ring-4 focus:ring-blue-300 font-medium \
+                        rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 \
+                        dark:bg-blue-600 dark:hover:bg-blue-700 \
+                        focus:outline-none dark:focus:ring-blue-800",
+                    "1-2",
+                }
+                button {
+                    onclick: move |_| {
+                        result_1.set(0);
+                        result_2.set(2);
+                    },
+                    prevent_default: "onclick",
+                    class: "text-white bg-blue-700 hover:bg-blue-800 \
+                        focus:ring-4 focus:ring-blue-300 font-medium \
+                        rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 \
+                        dark:bg-blue-600 dark:hover:bg-blue-700 \
+                        focus:outline-none dark:focus:ring-blue-800",
+                    "0-2",
+                }
+            }
+            div {
                 class: "py-3 flex flex-row justify-between items-center",
 
                 div { "{cx.props.player1}" }
-                ResultInput { name: "result_1" }
+                ResultInput { name: "result_1", value: "{result_1}" }
 
-                ResultInput { name: "result_2" }
+                ResultInput { name: "result_2", value: "{result_2}" }
                 div { "{cx.props.player2}" }
             }
 
@@ -39,6 +96,7 @@ pub(crate) fn MatchEdit(cx: Scope<FormProps>) -> Element {
 #[derive(PartialEq, Props)]
 pub(crate) struct ResultProps<'a> {
     pub name: &'a str,
+    pub value: &'a str,
 }
 
 fn ResultInput<'a>(cx: Scope<'a, ResultProps<'a>>) -> Element<'a> {
@@ -48,6 +106,7 @@ fn ResultInput<'a>(cx: Scope<'a, ResultProps<'a>>) -> Element<'a> {
                     p-2.5 w-16",
         r#type: "number",
         name: "{cx.props.name}",
+        value: "{cx.props.value}",
     }))
 }
 

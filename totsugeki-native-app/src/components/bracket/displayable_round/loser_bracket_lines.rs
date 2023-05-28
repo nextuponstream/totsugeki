@@ -9,13 +9,9 @@ pub(crate) fn lines(rounds: Vec<Vec<DisplayableMatch>>) -> Vec<Vec<BoxWithBorder
 
     let boxes_in_one_column = (total_matches + 1).checked_next_power_of_two().unwrap();
     let boxes_in_one_column = boxes_in_one_column / 2;
-    println!("boxes: {}", boxes_in_one_column); // FIXME remove
     let mut column = vec![];
     for _ in 0..boxes_in_one_column {
-        column.push(BoxWithBorder {
-            left: false,
-            bottom: false,
-        });
+        column.push(BoxWithBorder::default());
     }
 
     for (round_index, round) in rounds.iter().enumerate() {
@@ -24,63 +20,55 @@ pub(crate) fn lines(rounds: Vec<Vec<DisplayableMatch>>) -> Vec<Vec<BoxWithBorder
         }
 
         let next_round = &rounds[round_index + 1];
-        // FIXME straight lines for when the number of matches between rounds is not the same
 
+        // Sometimes, the first round of a loser bracket qualifies you to the
+        // next round where there is more matches or the same amount of
+        // matches. This the convoluted condition to draw horizontal lines from
+        // one match to the other for the first round
         if round_index == 0 && rounds.len() % 2 == 0 {
-            let mut straight_lines = vec![];
             let mut left = vec![];
             let mut right = vec![];
-            for _m in round {
-                left.push(BoxWithBorder {
-                    left: false,
-                    bottom: false,
-                });
-                left.push(BoxWithBorder {
-                    left: false,
-                    bottom: false,
-                });
-                right.push(BoxWithBorder {
-                    left: false,
-                    bottom: false,
-                });
-                right.push(BoxWithBorder {
-                    left: false,
-                    bottom: false,
-                });
+            // we assume there may be padding matches (where row_hint is None)
+            for _ in round {
+                left.push(BoxWithBorder::default());
+                left.push(BoxWithBorder::default());
+                right.push(BoxWithBorder::default());
+                right.push(BoxWithBorder::default());
             }
-            // border bottom
+
+            // draw an horizontal line from a real matches to the next round
+            // TODO update clippy and see if annoying _m disappear
             for m in round {
-                // TODO change left and right vectors
+                // Only real matches have row_hint set
                 if let Some(hint) = m.row_hint {
                     left[hint * 2].bottom = true;
                     right[hint * 2].bottom = true;
                 }
             }
-            straight_lines = [left, right].concat();
+
+            let straight_lines = [left, right].concat();
 
             lines.push(straight_lines);
         } else if round.len() == next_round.len() {
+            // when there is the same amount of matches from one round to the
+            // next, draw horizontal lines
             let mut straight_lines = vec![];
-            for m in round {
+            for _m in round {
                 straight_lines.push(BoxWithBorder {
                     left: false,
                     bottom: true,
                 });
-                straight_lines.push(BoxWithBorder {
-                    left: false,
-                    bottom: false,
-                });
+                straight_lines.push(BoxWithBorder::default());
                 straight_lines.push(BoxWithBorder {
                     left: false,
                     bottom: true,
                 });
-                straight_lines.push(BoxWithBorder {
-                    left: false,
-                    bottom: false,
-                });
+                straight_lines.push(BoxWithBorder::default());
             }
             lines.push(straight_lines);
         } else {
+            // when it's not the first round, either there is the same amount
+            // of matches from this round to the next or there is not
             let round = &rounds[round_index];
 
             // FIXME remove unwrap and throw error
@@ -99,10 +87,15 @@ pub(crate) fn lines(rounds: Vec<Vec<DisplayableMatch>>) -> Vec<Vec<BoxWithBorder
                 if let Some(row) = m.row_hint {
                     let boxes_between_matches_of_same_round =
                         boxes_in_one_column / matches_in_round;
+                    // FIXME throw error
+                    // Taken from winner bracket lines function. Has twice as
+                    // many rounds, so gotta adjust it by dividing round_index
+                    // by two
                     let offset = 2usize
                         .checked_pow((round_index / 2).try_into().unwrap())
                         .unwrap();
                     if total_matches == 2 {
+                        // TODO check if this branch is used (insert panic and test the case)
                         left_column_flowing_out_of[2].bottom = true;
                     } else {
                         left_column_flowing_out_of
@@ -114,7 +107,6 @@ pub(crate) fn lines(rounds: Vec<Vec<DisplayableMatch>>) -> Vec<Vec<BoxWithBorder
                     for j in 0..offset {
                         if row % 2 == 1 {
                             // flows down towards next match
-                            // FIXME uncomment and fix when not straight lines
                             right_column_flow_into[row * boxes_between_matches_of_same_round
                                 + 3 * offset
                                 - 1
@@ -165,6 +157,94 @@ mod tests {
 
     use super::lines;
 
+    static LINES_TO_LOSER_FINALS: [BoxWithBorder; 4] = [
+        BoxWithBorder {
+            left: false,
+            bottom: true,
+        },
+        BoxWithBorder {
+            left: false,
+            bottom: false,
+        },
+        BoxWithBorder {
+            left: false,
+            bottom: true,
+        },
+        BoxWithBorder {
+            left: false,
+            bottom: false,
+        },
+    ];
+    static LINES_TO_SEMI_FINALS_1_OF_2: [BoxWithBorder; 8] = [
+        BoxWithBorder {
+            left: false,
+            bottom: false,
+        },
+        BoxWithBorder {
+            left: false,
+            bottom: false,
+        },
+        BoxWithBorder {
+            left: false,
+            bottom: true,
+        },
+        BoxWithBorder {
+            left: false,
+            bottom: false,
+        },
+        // right
+        BoxWithBorder {
+            left: false,
+            bottom: false,
+        },
+        BoxWithBorder {
+            left: false,
+            bottom: true,
+        },
+        BoxWithBorder {
+            left: true,
+            bottom: false,
+        },
+        BoxWithBorder {
+            left: false,
+            bottom: false,
+        },
+    ];
+    static LINES_TO_SEMI_FINALS: [BoxWithBorder; 8] = [
+        BoxWithBorder {
+            left: false,
+            bottom: true,
+        },
+        BoxWithBorder {
+            left: false,
+            bottom: false,
+        },
+        BoxWithBorder {
+            left: false,
+            bottom: true,
+        },
+        BoxWithBorder {
+            left: false,
+            bottom: false,
+        },
+        BoxWithBorder {
+            left: false,
+            bottom: false,
+        },
+        BoxWithBorder {
+            left: true,
+            bottom: true,
+        },
+        BoxWithBorder {
+            left: true,
+            bottom: false,
+        },
+        BoxWithBorder {
+            left: false,
+            bottom: false,
+        },
+    ];
+
     #[test]
     fn _3_players_bracket() {
         let mut rounds = [vec![DisplayableMatch::new([2, 3])]];
@@ -177,7 +257,6 @@ mod tests {
 
     #[test]
     fn _4_players_bracket() {
-        // TODO refactor test constants in separate file so it's easier to import
         let mut rounds = [
             vec![DisplayableMatch::new([3, 4])],
             vec![DisplayableMatch::new([2, 3])],
@@ -187,34 +266,13 @@ mod tests {
         let lines = lines(rounds.to_vec());
 
         assert_eq!(lines.len(), 1);
-        assert_eq!(
-            lines,
-            vec![vec![
-                BoxWithBorder {
-                    left: false,
-                    bottom: true
-                },
-                BoxWithBorder {
-                    left: false,
-                    bottom: false
-                },
-                BoxWithBorder {
-                    left: false,
-                    bottom: true
-                },
-                BoxWithBorder {
-                    left: false,
-                    bottom: false
-                },
-            ]]
-        );
+        assert_eq!(lines, vec![LINES_TO_LOSER_FINALS]);
     }
 
     #[test]
     fn _5_players_bracket() {
-        // TODO refactor test constants in separate file so it's easier to import
         let mut rounds = [
-            vec![DisplayableMatch::new([4, 5])],
+            vec![DisplayableMatch::new([4, 5]), DisplayableMatch::default()],
             vec![DisplayableMatch::new([3, 4])],
             vec![DisplayableMatch::new([2, 3])],
         ];
@@ -226,42 +284,8 @@ mod tests {
         assert_eq!(
             lines,
             vec![
-                vec![
-                    BoxWithBorder {
-                        left: false,
-                        bottom: true
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: true
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                ],
-                vec![
-                    BoxWithBorder {
-                        left: false,
-                        bottom: true
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: true
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                ],
+                LINES_TO_SEMI_FINALS_1_OF_2.to_vec(),
+                LINES_TO_LOSER_FINALS.to_vec()
             ]
         );
     }
@@ -282,58 +306,8 @@ mod tests {
         assert_eq!(
             lines,
             vec![
-                vec![
-                    BoxWithBorder {
-                        left: false,
-                        bottom: true,
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false,
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: true,
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false,
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false,
-                    },
-                    BoxWithBorder {
-                        left: true,
-                        bottom: true,
-                    },
-                    BoxWithBorder {
-                        left: true,
-                        bottom: false,
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false,
-                    },
-                ],
-                vec![
-                    BoxWithBorder {
-                        left: false,
-                        bottom: true,
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false,
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: true,
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false,
-                    },
-                ],
+                LINES_TO_SEMI_FINALS.to_vec(),
+                LINES_TO_LOSER_FINALS.to_vec()
             ]
         );
     }
@@ -355,10 +329,9 @@ mod tests {
             lines,
             vec![
                 vec![
-                    // TODO adjust for first round
                     BoxWithBorder {
                         left: false,
-                        bottom: false
+                        bottom: true
                     },
                     BoxWithBorder {
                         left: false,
@@ -382,83 +355,15 @@ mod tests {
                     },
                     BoxWithBorder {
                         left: false,
-                        bottom: true
+                        bottom: false
                     },
                     BoxWithBorder {
                         left: false,
                         bottom: false
                     },
                 ],
-                vec![
-                    BoxWithBorder {
-                        left: false,
-                        bottom: true
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: true
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: true
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                ],
-                vec![
-                    BoxWithBorder {
-                        left: false,
-                        bottom: true
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: true
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                ],
-                vec![
-                    BoxWithBorder {
-                        left: false,
-                        bottom: true
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: true
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                ],
+                LINES_TO_SEMI_FINALS.to_vec(),
+                LINES_TO_LOSER_FINALS.to_vec(),
             ]
         );
     }
