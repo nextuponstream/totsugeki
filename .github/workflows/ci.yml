@@ -29,6 +29,7 @@ jobs:
       - run: sudo apt-get update
       # https://dioxuslabs.com/docs/0.3/guide/en/getting_started/desktop.html#linux
       - run: sudo apt install libwebkit2gtk-4.0-dev libgtk-3-dev libappindicator3-dev
+      - run: mkdir totsugeki-native-app/ressources
       - run: touch totsugeki-native-app/ressources/tailwind.css
       - uses: actions-rs/cargo@v1
         with:
