@@ -1,7 +1,7 @@
 //! Ajidqwoijdoqwj
 
 #![allow(non_snake_case)]
-use crate::components::Submit;
+use crate::components::SUBMIT_CLASS;
 use dioxus::prelude::*;
 use totsugeki::bracket::Bracket;
 
@@ -16,7 +16,10 @@ pub fn Form(cx: Scope) -> Element {
         }
 
         form {
-            onsubmit: move |event| { add_player(bracket, event ) },
+            onsubmit: move |event| {
+                // println!("submitted {event:?}")
+                add_player(bracket, event);
+            },
 
             div {
                 class: "pb-2",
@@ -29,14 +32,18 @@ pub fn Form(cx: Scope) -> Element {
                 }
             }
 
-            Submit {}
+            input {
+                class: "{SUBMIT_CLASS}",
+                r#type: "submit",
+            },
         }
     ))
 }
 
 /// Update stored bracket with new player using `Form`
 fn add_player(bracket: &UseSharedState<Bracket>, e: Event<FormData>) {
-    let name = e.values.get("name").expect("name");
+    let Some(name) = e.values.get("name") else {return};
+    let Some(name) = name.first() else {return};
     let name = if name.is_empty() {
         let i = bracket.read().get_participants().len() + 1;
         format!("player {}", i)

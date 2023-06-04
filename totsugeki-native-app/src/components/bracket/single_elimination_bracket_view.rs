@@ -71,7 +71,7 @@ pub(crate) fn View(cx: Scope) -> Element {
         MatchEditModal { isHidden: isMatchEditModalHidden }
         div {
             class: "grid grid-rows-1 grid-cols-{columns} flex",
-            for s in ui_primitives {
+            for s in ui_primitives.into_iter() {
                 match s {
                     BracketPrimitives::Match(round) => rsx! { Round(cx, round) },
                     BracketPrimitives::Block(line) => rsx! {

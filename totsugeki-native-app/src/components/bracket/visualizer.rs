@@ -6,7 +6,7 @@ use crate::{
     components::bracket::single_elimination_bracket_view::View as SingleEliminationBracketView,
     components::Submit,
 };
-use chrono::{TimeZone, Utc};
+use chrono::prelude::*;
 use dioxus::prelude::*;
 use totsugeki::{bracket::Bracket, format::Format};
 
@@ -85,8 +85,8 @@ pub fn UpdateBracketDetails(cx: Scope) -> Element {
 /// existing bracket matches and regenerate matches for new format.
 // FIXME do not regenerate bracket when updating name
 fn update_general_details_of_bracket(bracket: &UseSharedState<Bracket>, e: Event<FormData>) {
-    let name = e.values.get("name").expect("name");
-    let format = e.values.get("format").expect("format");
+    let name = e.values.get("name").expect("name").first().expect("");
+    let format = e.values.get("format").expect("format").first().expect("f");
     let is_valid = true;
     let (format, is_valid) = match format.parse::<Format>() {
         Ok(f) => (f, is_valid),

@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 // import the prelude to get access to the `rsx!` macro and the `Scope` and `Element` types
-use chrono::prelude::*;
 use dioxus::prelude::*;
 use dioxus_desktop::Config;
 use totsugeki::bracket::Bracket;
@@ -21,13 +20,7 @@ fn main() {
 
 fn App(cx: Scope) -> Element {
     dioxus_desktop::use_window(cx).set_title("Totsugeki bracket viewer");
-    let b = Bracket::new(
-        "test",
-        totsugeki::format::Format::DoubleElimination,
-        totsugeki::seeding::Method::Strict,
-        Utc.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap(),
-        true,
-    );
+    let b = Bracket::default();
     use_shared_state_provider(cx, || b); // TODO revert to Bracket::default
     use_shared_state_provider::<Option<Modal>>(cx, || None);
 

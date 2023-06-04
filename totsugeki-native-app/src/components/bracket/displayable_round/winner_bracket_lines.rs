@@ -106,7 +106,7 @@ pub(crate) fn lines(rounds: Vec<Vec<MinimalMatch>>) -> Option<Vec<Vec<BoxElement
 
 #[cfg(test)]
 mod tests {
-    use chrono::DateTime;
+    use chrono::prelude::*;
     use totsugeki::bracket::single_elimination_variant::Variant;
     use totsugeki::bracket::Bracket;
 
