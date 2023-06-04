@@ -367,15 +367,23 @@ impl Progression for Step {
         result: (i8, i8),
         player2: crate::player::Id,
     ) -> Result<(Vec<Match>, crate::matches::Id, Vec<Match>), Error> {
-        let result_player_1 = ReportedResult(result);
+        // clear reported results
         let bracket = self.clone().clear_reported_result(player1)?;
         let bracket = bracket.clear_reported_result(player2)?;
+
+        // report score as p1
+        let result_player_1 = ReportedResult(result);
         let (matches, first_affected_match, _new_matches) =
             bracket.report_result(player1, result_player_1.0)?;
+
+        // report same score as p2
         let bracket = Step::new(Some(matches), self.seeding.clone(), self.auto)?;
+
         let (matches, second_affected_match, new_matches) =
             bracket.report_result(player2, result_player_1.reverse().0)?;
+
         assert_eq!(first_affected_match, second_affected_match);
+
         Ok((matches, first_affected_match, new_matches))
     }
 
