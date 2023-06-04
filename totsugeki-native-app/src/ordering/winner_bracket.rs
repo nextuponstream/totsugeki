@@ -1,8 +1,8 @@
 //! Give positionnal hints to winner bracket matches
-use crate::DisplayableMatch;
+use crate::MinimalMatch;
 
 /// Give positionnal hints to winner bracket matches
-pub fn reorder(rounds: &mut [Vec<DisplayableMatch>]) {
+pub fn reorder(rounds: &mut [Vec<MinimalMatch>]) {
     if rounds.len() < 2 {
         return;
     }
@@ -32,7 +32,7 @@ pub fn reorder(rounds: &mut [Vec<DisplayableMatch>]) {
         // Padding matches for initial round
         if i == 0 {
             for _ in 0..number_of_matches_in_round - rounds[i].len() {
-                round.push(DisplayableMatch::default())
+                round.push(MinimalMatch::default())
             }
         }
 
@@ -58,13 +58,13 @@ pub fn reorder(rounds: &mut [Vec<DisplayableMatch>]) {
 #[cfg(test)]
 mod tests {
     use super::reorder;
-    use crate::DisplayableMatch;
+    use crate::MinimalMatch;
 
     #[test]
     fn _3_players() {
         let mut rounds = [
-            vec![DisplayableMatch::new([2, 3])],
-            vec![DisplayableMatch::new([1, 2])],
+            vec![MinimalMatch::new([2, 3])],
+            vec![MinimalMatch::new([1, 2])],
         ];
 
         reorder(&mut rounds);
@@ -76,8 +76,8 @@ mod tests {
     #[test]
     fn _4_players() {
         let mut rounds = [
-            vec![DisplayableMatch::new([1, 4]), DisplayableMatch::new([2, 3])],
-            vec![DisplayableMatch::new([1, 2])],
+            vec![MinimalMatch::new([1, 4]), MinimalMatch::new([2, 3])],
+            vec![MinimalMatch::new([1, 2])],
         ];
 
         reorder(&mut rounds);
@@ -91,9 +91,9 @@ mod tests {
     #[test]
     fn _5_players() {
         let mut rounds = [
-            vec![DisplayableMatch::new([4, 5])],
-            vec![DisplayableMatch::new([1, 4]), DisplayableMatch::new([2, 3])],
-            vec![DisplayableMatch::new([1, 2])],
+            vec![MinimalMatch::new([4, 5])],
+            vec![MinimalMatch::new([1, 4]), MinimalMatch::new([2, 3])],
+            vec![MinimalMatch::new([1, 2])],
         ];
 
         reorder(&mut rounds);
@@ -110,15 +110,15 @@ mod tests {
     #[test]
     fn _9_players() {
         let mut rounds = [
-            vec![DisplayableMatch::new([8, 9])],
+            vec![MinimalMatch::new([8, 9])],
             vec![
-                DisplayableMatch::new([1, 8]),
-                DisplayableMatch::new([2, 7]),
-                DisplayableMatch::new([3, 6]),
-                DisplayableMatch::new([4, 5]),
+                MinimalMatch::new([1, 8]),
+                MinimalMatch::new([2, 7]),
+                MinimalMatch::new([3, 6]),
+                MinimalMatch::new([4, 5]),
             ],
-            vec![DisplayableMatch::new([1, 4]), DisplayableMatch::new([2, 3])],
-            vec![DisplayableMatch::new([1, 2])],
+            vec![MinimalMatch::new([1, 4]), MinimalMatch::new([2, 3])],
+            vec![MinimalMatch::new([1, 2])],
         ];
 
         reorder(&mut rounds);

@@ -2,7 +2,7 @@
 
 mod assertions;
 mod disqualification;
-pub mod double_elimination_bracket;
+pub mod double_elimination_variant;
 mod getter_setter;
 pub mod http_responses;
 pub mod matches;
@@ -11,7 +11,7 @@ mod progression;
 mod query_state;
 pub mod raw;
 mod seeding;
-pub mod single_elimination_bracket;
+pub mod single_elimination_variant;
 mod winner_bracket;
 
 use crate::{

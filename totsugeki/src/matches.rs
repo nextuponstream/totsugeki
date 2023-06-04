@@ -735,7 +735,7 @@ pub fn print_player_name(o: &Opponent, players: &[Player]) -> Option<String> {
     }
 }
 
-/// Id of match
+/// Match identifier
 pub type Id = uuid::Uuid;
 
 /// Response to query: "who is my next opponent"

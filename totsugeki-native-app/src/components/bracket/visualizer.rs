@@ -1,3 +1,4 @@
+//! Visualize general details of bracket and view of the bracket
 #![allow(non_snake_case)]
 
 use crate::{
@@ -7,8 +8,9 @@ use crate::{
 };
 use chrono::{TimeZone, Utc};
 use dioxus::prelude::*;
-use totsugeki::{bracket::Bracket, format::Format, matches::Id as MatchId};
+use totsugeki::{bracket::Bracket, format::Format};
 
+/// Display bracket name, number of players and players
 pub fn GeneralDetails(cx: Scope) -> Element {
     let bracket = use_shared_state::<Bracket>(cx).expect("bracket");
 
@@ -37,6 +39,7 @@ pub fn GeneralDetails(cx: Scope) -> Element {
     }))
 }
 
+/// Update bracket format and rename bracket
 pub fn UpdateBracketDetails(cx: Scope) -> Element {
     let bracket = use_shared_state::<Bracket>(cx).expect("bracket");
 
@@ -47,7 +50,7 @@ pub fn UpdateBracketDetails(cx: Scope) -> Element {
             "Update bracket"
         }
         form {
-            onsubmit: move |event| { update_bracket(bracket, event ) },
+            onsubmit: move |event| { update_general_details_of_bracket(bracket, event ) },
 
             div {
                 class: "pb-2",
@@ -78,7 +81,10 @@ pub fn UpdateBracketDetails(cx: Scope) -> Element {
     ))
 }
 
-fn update_bracket(bracket: &UseSharedState<Bracket>, e: Event<FormData>) {
+/// Update bracket name and/or format. When bracket format is updated, thrashes
+/// existing bracket matches and regenerate matches for new format.
+// FIXME do not regenerate bracket when updating name
+fn update_general_details_of_bracket(bracket: &UseSharedState<Bracket>, e: Event<FormData>) {
     let name = e.values.get("name").expect("name");
     let format = e.values.get("format").expect("format");
     let is_valid = true;
@@ -100,6 +106,8 @@ fn update_bracket(bracket: &UseSharedState<Bracket>, e: Event<FormData>) {
     );
 }
 
+/// Dioxus component for interactive bracket, using dioxus shared state
+/// `Bracket`
 pub fn View(cx: Scope) -> Element {
     let format = match use_shared_state::<Bracket>(cx) {
         Some(bracket_ref) => bracket_ref.read().get_format(),
@@ -118,9 +126,4 @@ pub fn View(cx: Scope) -> Element {
         view
 
     ))
-}
-
-#[derive(PartialEq, Clone)]
-struct SomeProps {
-    id: &'static MatchId,
 }

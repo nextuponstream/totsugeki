@@ -1,12 +1,12 @@
 //! Lines between rounds of a winner bracket
 
-use super::BoxWithBorder;
-use crate::DisplayableMatch;
+use super::BoxElement;
+use crate::MinimalMatch;
 
 /// Lines flow from matches of one round to the next round for a winner bracket
-pub(crate) fn lines(rounds: Vec<Vec<DisplayableMatch>>) -> Vec<Vec<BoxWithBorder>> {
+pub(crate) fn lines(rounds: Vec<Vec<MinimalMatch>>) -> Option<Vec<Vec<BoxElement>>> {
     if rounds.is_empty() {
-        return vec![];
+        return None;
     }
 
     // 3 players, 2 matches => 4
@@ -16,15 +16,17 @@ pub(crate) fn lines(rounds: Vec<Vec<DisplayableMatch>>) -> Vec<Vec<BoxWithBorder
     // 9 players, 8 matches => 16
     let total_matches = rounds.iter().flatten().count();
 
-    let boxes_in_one_column = (total_matches + 1).checked_next_power_of_two().unwrap();
-    let mut lines: Vec<Vec<BoxWithBorder>> = vec![];
+    let Some(boxes_in_one_column) = (total_matches + 1).checked_next_power_of_two() else {
+        // TODO log error
+        return None;
+    };
+    let mut lines: Vec<Vec<BoxElement>> = vec![];
 
-    // b belongs in [1; #matches in current round]
     let mut column = vec![];
     for _ in 0..boxes_in_one_column {
-        column.push(BoxWithBorder {
-            left: false,
-            bottom: false,
+        column.push(BoxElement {
+            left_border: false,
+            bottom_border: false,
         });
     }
 
@@ -34,53 +36,64 @@ pub(crate) fn lines(rounds: Vec<Vec<DisplayableMatch>>) -> Vec<Vec<BoxWithBorder
         let round = &rounds[round_index];
 
         // FIXME remove unwrap and throw error
-        let matches_in_round = (round.len()).checked_next_power_of_two().unwrap();
+        let Some(matches_in_round) = (round.len()).checked_next_power_of_two() else{
+            // TODO log error
+            return None;
+        };
 
-        let mut left_column: Vec<BoxWithBorder> = column.clone();
-        let mut right_column: Vec<BoxWithBorder> = column.clone();
+        let mut left_column_flow_out_of: Vec<BoxElement> = column.clone();
+        let mut right_column_flow_into: Vec<BoxElement> = column.clone();
 
         for (_, m) in round.iter().enumerate() {
             if let Some(row) = m.row_hint {
                 let boxes_between_matches_of_same_round = boxes_in_one_column / matches_in_round;
-                let offset = 2usize.checked_pow(round_index.try_into().unwrap()).unwrap();
+                let Ok(r_i) = round_index.try_into() else {
+                    // TODO log error
+                    return None;
+                };
+                let Some(offset) = 2usize.checked_pow(r_i) else {
+                    // TODO log error
+                    return None;
+                };
+                // lines that flows from matches
                 if total_matches == 2 {
-                    left_column[2].bottom = true;
+                    left_column_flow_out_of[2].bottom_border = true;
                 } else {
-                    left_column[row * boxes_between_matches_of_same_round + offset - 1].bottom =
-                        true;
+                    left_column_flow_out_of
+                        [row * boxes_between_matches_of_same_round + offset - 1]
+                        .bottom_border = true;
                 }
 
-                // vertical line
+                // vertical lines
                 for j in 0..offset {
                     if row % 2 == 1 {
                         // flows down towards next match
-                        // right_column[row * boxes_between_matches_of_same_round + offset - 1 + j]
-                        // .left = true;
-                        right_column[row * boxes_between_matches_of_same_round + 3 * offset
+                        right_column_flow_into[row * boxes_between_matches_of_same_round
+                            + 3 * offset
                             - 1
                             - j
                             - boxes_between_matches_of_same_round]
-                            .left = true;
+                            .left_border = true;
                     } else {
                         // flows up towards next match
-                        right_column
+                        right_column_flow_into
                             [row * boxes_between_matches_of_same_round + 2 * offset - 1 - j]
-                            .left = true;
+                            .left_border = true;
                     }
                 }
 
                 if total_matches == 2 {
-                    right_column[1].bottom = true;
+                    right_column_flow_into[1].bottom_border = true;
                 } else if row % 2 == 1 {
-                    right_column[row * boxes_between_matches_of_same_round + offset
+                    right_column_flow_into[row * boxes_between_matches_of_same_round + offset
                         - 1
                         - boxes_between_matches_of_same_round / 2]
-                        .bottom = true;
+                        .bottom_border = true;
                 }
             };
         }
 
-        let lines_for_round = [left_column, right_column].concat();
+        let lines_for_round = [left_column_flow_out_of, right_column_flow_into].concat();
 
         lines.push(lines_for_round);
     }
@@ -88,13 +101,13 @@ pub(crate) fn lines(rounds: Vec<Vec<DisplayableMatch>>) -> Vec<Vec<BoxWithBorder
     // from bottom to top
     lines.reverse();
 
-    lines
+    Some(lines)
 }
 
 #[cfg(test)]
 mod tests {
     use chrono::DateTime;
-    use totsugeki::bracket::single_elimination_bracket::Variant;
+    use totsugeki::bracket::single_elimination_variant::Variant;
     use totsugeki::bracket::Bracket;
 
     fn get_data(n: usize) -> Bracket {
@@ -108,51 +121,39 @@ mod tests {
         for i in 1..=n {
             bracket = bracket
                 .add_participant(format!("player {i}").as_str())
-                .unwrap();
+                .expect("bracket");
         }
 
         bracket
     }
 
-    use super::{lines, BoxWithBorder};
-    use crate::convert;
+    use super::{lines, BoxElement};
+    use crate::from_participants;
     use crate::ordering::winner_bracket::reorder;
 
-    static LINES_TO_WINNERS_FINALS: [BoxWithBorder; 8] = [
+    const LINES_TO_WINNERS_FINALS: [BoxElement; 8] = [
         // left col
-        BoxWithBorder {
-            left: false,
-            bottom: true,
+        BoxElement {
+            left_border: false,
+            bottom_border: true,
         },
-        BoxWithBorder {
-            left: false,
-            bottom: false,
+        BoxElement::empty(),
+        BoxElement {
+            left_border: false,
+            bottom_border: true,
         },
-        BoxWithBorder {
-            left: false,
-            bottom: true,
-        },
-        BoxWithBorder {
-            left: false,
-            bottom: false,
-        },
+        BoxElement::empty(),
         // right col
-        BoxWithBorder {
-            left: false,
-            bottom: false,
+        BoxElement::empty(),
+        BoxElement {
+            left_border: true,
+            bottom_border: true,
         },
-        BoxWithBorder {
-            left: true,
-            bottom: true,
+        BoxElement {
+            left_border: true,
+            bottom_border: false,
         },
-        BoxWithBorder {
-            left: true,
-            bottom: false,
-        },
-        BoxWithBorder {
-            left: false,
-            bottom: false,
-        },
+        BoxElement::empty(),
     ];
 
     #[test]
@@ -163,13 +164,16 @@ mod tests {
         let matches_by_rounds = sev.partition_by_round().expect("rounds");
         let mut rounds = vec![];
         for r in matches_by_rounds {
-            let round = r.iter().map(|m| convert(m, &participants)).collect();
+            let round = r
+                .iter()
+                .map(|m| from_participants(m, &participants))
+                .collect();
             rounds.push(round)
         }
 
         reorder(&mut rounds);
 
-        let lines = lines(rounds.clone());
+        let lines = lines(rounds.clone()).expect("lines");
         let expected_cols = 1;
         assert_eq!(lines.len(), expected_cols);
         //     b1L1   b1R1
@@ -185,39 +189,24 @@ mod tests {
                 // col 1
                 vec![
                     // left col
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
+                    BoxElement::empty(),
+                    BoxElement::empty(),
+                    BoxElement {
+                        left_border: false,
+                        bottom_border: true
                     },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: true
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    },
+                    BoxElement::empty(),
                     // right col
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
+                    BoxElement::empty(),
+                    BoxElement {
+                        left_border: false,
+                        bottom_border: true
                     },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: true
+                    BoxElement {
+                        left_border: true,
+                        bottom_border: false
                     },
-                    BoxWithBorder {
-                        left: true,
-                        bottom: false
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false
-                    }
+                    BoxElement::empty(),
                 ]
             ]
         );
@@ -231,12 +220,15 @@ mod tests {
         let matches_by_rounds = sev.partition_by_round().expect("rounds");
         let mut rounds = vec![];
         for r in matches_by_rounds {
-            let round = r.iter().map(|m| convert(m, &participants)).collect();
+            let round = r
+                .iter()
+                .map(|m| from_participants(m, &participants))
+                .collect();
             rounds.push(round)
         }
         reorder(&mut rounds);
 
-        let lines = lines(rounds.clone());
+        let lines = lines(rounds.clone()).expect("lines");
         let expected_cols = 1;
         assert_eq!(lines.len(), expected_cols);
         //     b1L1   b1R1
@@ -257,12 +249,15 @@ mod tests {
         let matches_by_rounds = sev.partition_by_round().expect("rounds");
         let mut rounds = vec![];
         for r in matches_by_rounds {
-            let round = r.iter().map(|m| convert(m, &participants)).collect();
+            let round = r
+                .iter()
+                .map(|m| from_participants(m, &participants))
+                .collect();
             rounds.push(round)
         }
         reorder(&mut rounds);
 
-        let lines = lines(rounds.clone());
+        let lines = lines(rounds.clone()).expect("lines");
         let expected_cols = 2;
         assert_eq!(lines.len(), expected_cols);
         //     b1L1   b1R1
@@ -276,99 +271,69 @@ mod tests {
             lines,
             vec![
                 vec![
-                    BoxWithBorder::default(),
-                    BoxWithBorder::default(),
-                    BoxWithBorder {
-                        left: false,
-                        bottom: true,
+                    BoxElement::empty(),
+                    BoxElement::empty(),
+                    BoxElement {
+                        left_border: false,
+                        bottom_border: true,
                     },
-                    BoxWithBorder::default(),
-                    BoxWithBorder::default(),
-                    BoxWithBorder::default(),
-                    BoxWithBorder::default(),
-                    BoxWithBorder::default(),
+                    BoxElement::empty(),
+                    BoxElement::empty(),
+                    BoxElement::empty(),
+                    BoxElement::empty(),
+                    BoxElement::empty(),
                     // right
-                    BoxWithBorder::default(),
-                    BoxWithBorder {
-                        left: false,
-                        bottom: true,
+                    BoxElement::empty(),
+                    BoxElement {
+                        left_border: false,
+                        bottom_border: true,
                     },
-                    BoxWithBorder {
-                        left: true,
-                        bottom: false,
+                    BoxElement {
+                        left_border: true,
+                        bottom_border: false,
                     },
-                    BoxWithBorder::default(),
-                    BoxWithBorder::default(),
-                    BoxWithBorder::default(),
-                    BoxWithBorder::default(),
-                    BoxWithBorder::default(),
+                    BoxElement::empty(),
+                    BoxElement::empty(),
+                    BoxElement::empty(),
+                    BoxElement::empty(),
+                    BoxElement::empty(),
                 ],
                 vec![
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false,
+                    BoxElement::empty(),
+                    BoxElement {
+                        left_border: false,
+                        bottom_border: true,
                     },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: true,
+                    BoxElement::empty(),
+                    BoxElement::empty(),
+                    BoxElement::empty(),
+                    BoxElement {
+                        left_border: false,
+                        bottom_border: true,
                     },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false,
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false,
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false,
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: true,
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false,
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false,
-                    },
+                    BoxElement::empty(),
+                    BoxElement::empty(),
                     // right col
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false,
+                    BoxElement::empty(),
+                    BoxElement::empty(),
+                    BoxElement {
+                        left_border: true,
+                        bottom_border: false,
                     },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false,
+                    BoxElement {
+                        left_border: true,
+                        bottom_border: true,
                     },
-                    BoxWithBorder {
-                        left: true,
-                        bottom: false,
+                    BoxElement {
+                        left_border: true,
+                        bottom_border: false,
                     },
-                    BoxWithBorder {
-                        left: true,
-                        bottom: true,
+                    BoxElement {
+                        left_border: true,
+                        bottom_border: false,
                     },
-                    BoxWithBorder {
-                        left: true,
-                        bottom: false,
-                    },
-                    BoxWithBorder {
-                        left: true,
-                        bottom: false,
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false,
-                    },
-                    BoxWithBorder {
-                        left: false,
-                        bottom: false,
-                    },
+                    BoxElement::empty(),
+                    BoxElement::empty(),
                 ]
             ]
         );
