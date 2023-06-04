@@ -1,7 +1,7 @@
 //! Modal component to edit match
 #![allow(non_snake_case)]
 
-use crate::{components::Submit, Modal, ShortName};
+use crate::{components::SUBMIT_CLASS, Modal, ShortName};
 use dioxus::prelude::*;
 use totsugeki::{bracket::Bracket, matches::Id as MatchId, opponent::Opponent};
 
@@ -93,7 +93,14 @@ pub(crate) fn MatchEdit(cx: Scope<FormProps>) -> Element {
                 div { "{cx.props.player2}" }
             }
 
-            Submit {}
+            input {
+                onclick: move |_| {
+                    result_1.set(0);
+                    result_2.set(0);
+                },
+                class: "{SUBMIT_CLASS}",
+                r#type: "submit",
+            },
         }
     }))
 }
@@ -166,7 +173,7 @@ fn update_bracket_with_match_result(
     *modal.write() = None;
 }
 
-// FIXME when modal is open, cannot tab into the first field right away
+// TODO nitpick when modal is open, cannot tab into the first field right away
 /// Component that becomes visible when dioxus shared state `Modal` is set to
 /// variant `Some(Modal::EnterMatchResult)`.
 /// When either match results is submitted or user closes modal, Match edit
