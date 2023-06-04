@@ -1,8 +1,6 @@
 //! player
 
 use crate::{bracket::Id as BracketId, player::Id as PlayerId};
-#[cfg(feature = "poem-openapi")]
-use poem_openapi::Object;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;

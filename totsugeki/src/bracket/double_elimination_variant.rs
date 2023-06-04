@@ -1,5 +1,5 @@
-//! Double elimination bracket with methods you would only call on a double
-//! elimination bracket
+//! Double elimination bracket variant with methods you would only call on a
+//! double elimination bracket
 
 use super::winner_bracket::winner_bracket;
 use crate::bracket::Bracket;

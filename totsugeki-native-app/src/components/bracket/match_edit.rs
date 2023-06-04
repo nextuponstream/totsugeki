@@ -6,12 +6,17 @@ use dioxus::prelude::*;
 use totsugeki::{bracket::Bracket, matches::Id as MatchId, opponent::Opponent};
 
 #[derive(PartialEq, Props)]
+/// Props for match edit modal
 pub(crate) struct FormProps {
+    /// match identifier
     pub match_id: MatchId,
+    /// name of player 1
     pub player1: String,
+    /// name of player 2
     pub player2: String,
 }
 
+/// Component to edit match in modal
 pub(crate) fn MatchEdit(cx: Scope<FormProps>) -> Element {
     let bracket = use_shared_state::<Bracket>(cx).expect("bracket");
 
@@ -20,7 +25,7 @@ pub(crate) fn MatchEdit(cx: Scope<FormProps>) -> Element {
 
     cx.render(rsx!(div {
         form {
-            onsubmit: move |event| { update_result(cx, bracket, event) },
+            onsubmit: move |event| { update_bracket_with_match_result(cx, bracket, event) },
 
             div { "Match ID:" }
             div { "{cx.props.match_id}" }
@@ -82,9 +87,9 @@ pub(crate) fn MatchEdit(cx: Scope<FormProps>) -> Element {
                 class: "py-3 flex flex-row justify-between items-center",
 
                 div { "{cx.props.player1}" }
-                ResultInput { name: "result_1", value: "{result_1}" }
+                RoundWonByPlayer { name: "result_1", value: "{result_1}" }
 
-                ResultInput { name: "result_2", value: "{result_2}" }
+                RoundWonByPlayer { name: "result_2", value: "{result_2}" }
                 div { "{cx.props.player2}" }
             }
 
@@ -94,12 +99,16 @@ pub(crate) fn MatchEdit(cx: Scope<FormProps>) -> Element {
 }
 
 #[derive(PartialEq, Props)]
-pub(crate) struct ResultProps<'a> {
+/// Props for input RoundWonByPlayer
+pub(crate) struct RoundWonByPlayerProps<'a> {
+    /// name of input for form submission
     pub name: &'a str,
+    /// value of number of round won for form submission
     pub value: &'a str,
 }
 
-fn ResultInput<'a>(cx: Scope<'a, ResultProps<'a>>) -> Element<'a> {
+/// Input UI element for number of won round by player
+fn RoundWonByPlayer<'a>(cx: Scope<'a, RoundWonByPlayerProps<'a>>) -> Element<'a> {
     cx.render(rsx!(input {
         class: "border border-gray-300 text-sm rounded-lg \
                     focus:ring-blue-500 focus:border-blue-500 block \
@@ -110,7 +119,12 @@ fn ResultInput<'a>(cx: Scope<'a, ResultProps<'a>>) -> Element<'a> {
     }))
 }
 
-fn update_result(cx: Scope<FormProps>, bracket: &UseSharedState<Bracket>, e: Event<FormData>) {
+/// Update bracket with match result using input values in match edit modal
+fn update_bracket_with_match_result(
+    cx: Scope<FormProps>,
+    bracket: &UseSharedState<Bracket>,
+    e: Event<FormData>,
+) {
     let modal = use_shared_state::<Option<Modal>>(cx).expect("modal to show");
     let b = bracket.write().clone();
     let matches = b.get_matches();
@@ -123,10 +137,22 @@ fn update_result(cx: Scope<FormProps>, bracket: &UseSharedState<Bracket>, e: Eve
         [Opponent::Player(p1), Opponent::Player(p2)] => (p1, p2),
         _ => return,
     };
-    let r1 = e.values.get("result_1").expect("result for p1");
-    let r1 = r1.parse::<i8>().unwrap();
-    let r2 = e.values.get("result_2").expect("result for p2");
-    let r2 = r2.parse::<i8>().unwrap();
+    let Some(r1) = e.values.get("result_1") else {
+        // TODO log error
+        return;
+    };
+    let Ok(r1) = r1.parse::<i8>() else {
+        // TODO log error
+        return;
+    };
+    let Some(r2) = e.values.get("result_2") else {
+        // TODO log error
+        return;
+    };
+    let Ok(r2) = r2.parse::<i8>() else {
+        // TODO log error
+        return;
+    };
     let result = (r1, r2);
 
     let b = match b.tournament_organiser_reports_result(p1, result, p2) {
@@ -141,6 +167,10 @@ fn update_result(cx: Scope<FormProps>, bracket: &UseSharedState<Bracket>, e: Eve
 }
 
 // FIXME when modal is open, cannot tab into the first field right away
+/// Component that becomes visible when dioxus shared state `Modal` is set to
+/// variant `Some(Modal::EnterMatchResult)`.
+/// When either match results is submitted or user closes modal, Match edit
+/// modal gets hidden.
 pub(crate) fn MatchEditModal(cx: Scope<Props>) -> Element {
     // inspired from: https://www.kindacode.com/article/how-to-create-a-modal-dialog-with-tailwind-css/
     let modal = use_shared_state::<Option<Modal>>(cx).expect("active modal");
@@ -205,6 +235,8 @@ pub(crate) fn MatchEditModal(cx: Scope<Props>) -> Element {
 }
 
 #[derive(PartialEq, Props)]
+/// Props for match edit dioxus component
 pub(crate) struct Props {
+    /// set to `true` to hide modal
     pub isHidden: bool,
 }

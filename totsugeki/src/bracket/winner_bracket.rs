@@ -58,7 +58,10 @@ pub(crate) fn winner_bracket(matches: Vec<Match>, participants: &Participants) -
                 // NOTE: I really don't like the unwrap but assigning
                 // `remaining_matches` to an empty vec produces a warning
                 // TODO remove unwrap
-                let tmp = remaining_matches.drain(0..1).next().unwrap();
+                let tmp = remaining_matches
+                    .drain(0..1)
+                    .next()
+                    .expect("iterated over last match");
                 (vec![tmp], vec![])
             } else {
                 let (a, b) = remaining_matches.split_at(split);

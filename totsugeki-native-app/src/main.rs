@@ -7,7 +7,7 @@ use totsugeki::bracket::Bracket;
 use totsugeki_native_app::components::{
     bracket::add_player::Form as AddPlayerForm,
     bracket::visualizer::{GeneralDetails, UpdateBracketDetails, View},
-    navigation::Navigation,
+    navigation::NavBar,
 };
 use totsugeki_native_app::Modal;
 
@@ -37,7 +37,7 @@ fn App(cx: Scope) -> Element {
         div {
             class: "pl-2",
 
-            Navigation {}
+            NavBar {}
             div {
                 class: "pt-2 flex flex-row justify-around",
                 UpdateBracketDetails {}

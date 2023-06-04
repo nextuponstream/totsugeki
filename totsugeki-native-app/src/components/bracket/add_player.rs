@@ -5,6 +5,7 @@ use crate::components::Submit;
 use dioxus::prelude::*;
 use totsugeki::bracket::Bracket;
 
+/// Form to add player to the bracket
 pub fn Form(cx: Scope) -> Element {
     let bracket = use_shared_state::<Bracket>(cx).expect("bracket");
 
@@ -33,6 +34,7 @@ pub fn Form(cx: Scope) -> Element {
     ))
 }
 
+/// Update stored bracket with new player using `Form`
 fn add_player(bracket: &UseSharedState<Bracket>, e: Event<FormData>) {
     let name = e.values.get("name").expect("name");
     let name = if name.is_empty() {

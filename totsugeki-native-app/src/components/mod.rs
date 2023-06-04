@@ -6,6 +6,7 @@ use dioxus::prelude::*;
 pub mod bracket;
 pub mod navigation;
 
+/// Generic submission button with styling
 pub(crate) fn Submit(cx: Scope) -> Element {
     cx.render(rsx!(
         div {

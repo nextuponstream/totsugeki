@@ -1,8 +1,11 @@
+//! Navigation bar of totsugeki app
+
 #![allow(non_snake_case)]
 
 use dioxus::prelude::*;
 
-pub fn Navigation(cx: Scope) -> Element {
+/// Navigation bar
+pub fn NavBar(cx: Scope) -> Element {
     cx.render(rsx!(
         div {
             class: "grid grid-cols-3 gap-4 p-4 bg-blue-100",
