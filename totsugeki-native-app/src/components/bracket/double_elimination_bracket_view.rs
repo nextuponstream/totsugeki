@@ -117,7 +117,7 @@ pub(crate) fn View(cx: Scope) -> Element {
         }
         div {
             class: "grid grid-rows-1 grid-cols-{wb_columns} flex",
-            for e in wb_elements {
+            for e in wb_elements.into_iter() {
                 match e {
                     BracketPrimitives::Match(round) => rsx! { Round(cx, round) },
                     BracketPrimitives::Block(line) => rsx! {
@@ -136,7 +136,7 @@ pub(crate) fn View(cx: Scope) -> Element {
         }
         div {
             class: "grid grid-rows-1 grid-cols-{lb_columns} flex",
-            for e in lb_elements {
+            for e in lb_elements.into_iter() {
                 match e {
                     BracketPrimitives::Match(round) => rsx! { Round(cx, round) },
                     BracketPrimitives::Block(line) =>
