@@ -12,16 +12,20 @@ use totsugeki_native_app::Modal;
 
 fn main() {
     hot_reload_init!();
+    // wasm_logger::init(wasm_logger::Config::default());
+    // console_error_panic_hook::set_once();
+
     // TODO add some auto-completion for css class
     // wait for https://github.com/helix-editor/helix/issues/2213
     // TODO i18n (fluent crate)
     dioxus_desktop::launch_cfg(App, Config::new());
+    // dioxus_web::launch(App);
 }
 
 fn App(cx: Scope) -> Element {
     dioxus_desktop::use_window(cx).set_title("Totsugeki bracket viewer");
     let b = Bracket::default();
-    use_shared_state_provider(cx, || b); // TODO revert to Bracket::default
+    use_shared_state_provider(cx, || b);
     use_shared_state_provider::<Option<Modal>>(cx, || None);
 
     cx.render(rsx! {
