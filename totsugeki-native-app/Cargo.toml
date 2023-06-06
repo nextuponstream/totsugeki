@@ -8,12 +8,12 @@ edition = "2021"
 default-run = "totsugeki-native-app"
 
 [[bin]]
-name = "css_row"
-path = "./src/bin/css_row.rs"
+name = "css_class_row"
+path = "./src/bin/css_class_row.rs"
 
 [[bin]]
-name = "css_col"
-path = "./src/bin/css_col.rs"
+name = "css_class_col"
+path = "./src/bin/css_class_col.rs"
 
 [dependencies]
 totsugeki = { path = "../totsugeki" }

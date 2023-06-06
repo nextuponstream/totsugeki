@@ -3,4 +3,6 @@ members = [
   "totsugeki",
   "totsugeki-discord-bot",
   "totsugeki-native-app",
+  "dioxus-components",
+  "web",
 ]

@@ -1,0 +1,23 @@
+[package]
+name = "web"
+version = "0.1.0"
+authors = ["takecare"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+dioxus = "0.3.0"
+dioxus-web = "0.3.0"
+totsugeki = { path = "../totsugeki" }
+# totsugeki-native-app = { path = "../totsugeki-native-app" }
+dioxus-components = { path = "../dioxus-components" }
+# dioxus = { git = "https://github.com/DioxusLabs/dioxus", rev = "0f684f056762a0dee05c321290b6cc4fc5299d72"}
+# dioxus-web = { git = "https://github.com/DioxusLabs/dioxus", rev = "0f684f056762a0dee05c321290b6cc4fc5299d72"}
+getrandom = { version = "0.2", features = ["js"] }
+
+log = "0.4.6"
+
+# WebAssembly Debug
+wasm-logger = "0.2.0"
+console_error_panic_hook = "0.1.7"
