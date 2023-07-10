@@ -4,6 +4,9 @@ Web version of the desktop prototype application.
 
 ## Usage
 
+Build tailwindcss (read totsugeki) following `totsugeki-native-app`
+instructions.
+
 ### Prerequisites
 
 ```bash
