@@ -4,15 +4,8 @@
 //! cargo run -p example-static-file-server
 //! ```
 
-use axum::{
-    body::Body,
-    handler::HandlerWithoutStateExt,
-    http::{Request, StatusCode},
-    routing::get,
-    Router,
-};
+use axum::{routing::get, Router};
 use std::net::SocketAddr;
-use tower::ServiceExt;
 use tower_http::{
     services::{ServeDir, ServeFile},
     trace::TraceLayer,
