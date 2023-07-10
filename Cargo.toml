@@ -5,4 +5,5 @@ members = [
   "totsugeki-native-app",
   "dioxus-components",
   "web",
+  "tournament-organiser-api",
 ]
