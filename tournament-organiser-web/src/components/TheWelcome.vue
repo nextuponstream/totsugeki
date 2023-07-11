@@ -1,39 +1,27 @@
-<script lang="ts">
-import WelcomeItem from './WelcomeItem.vue'
-import DocumentationIcon from './icons/IconDocumentation.vue'
-import ToolingIcon from './icons/IconTooling.vue'
-import EcosystemIcon from './icons/IconEcosystem.vue'
-import CommunityIcon from './icons/IconCommunity.vue'
-import SupportIcon from './icons/IconSupport.vue'
+<script setup lang="ts">
 import draggable from 'vuedraggable'
 import { onMounted } from 'vue'
+import { ref } from 'vue'
 
 // https://github.com/SortableJS/vue.draggable.next/blob/master/example/components/simple.vue
-export default {
-  setup() {
-    onMounted( async () => {
-      console.log('hello'); // TODO remove
+onMounted(async () => {
+  const response = await fetch("http://localhost:3000/foo");
+  if (response.ok) {
+    const text = await response.text();
+    console.log(text);
+  } else {
+    console.log('oh no', response.body)
+  }
+});
 
-      const response = await fetch("http://localhost:3000/foo");
-      // const text = await response.json();
-      const text = await response.text();
-      console.log(text);
-    });
-  },
-  components: {
-    draggable,
-  },
-  data() {
-    return {
-      list: [
-        {id:1, name: "jean"},
-        {id:2, name: "jean2"},
-      ],
-      dragging: false,
-      enabled: true,
-    }
-  },
-}
+const list = ref([
+  {id: 1, name: 'jean'},
+  {id: 2, name: 'jean2'},
+])
+
+const dragging = ref(false)
+const enabled = ref(true)
+
 </script>
 
 <template>
