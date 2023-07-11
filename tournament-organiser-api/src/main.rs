@@ -1,11 +1,6 @@
-//! Run with
-//!
-//! ```not_rust
-//! cargo run -p example-static-file-server
-//! ```
-
-use axum::{routing::get, Router};
+use axum::{response::IntoResponse, routing::get, Json, Router};
 use http::Method;
+use serde::Serialize;
 use std::net::SocketAddr;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::{
@@ -33,6 +28,7 @@ fn using_serve_dir_with_assets_fallback() -> Router {
 
     Router::new()
         .route("/foo", get(|| async { "Hi from /foo" }))
+        .route("/health", get(health))
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
@@ -41,6 +37,17 @@ fn using_serve_dir_with_assets_fallback() -> Router {
         )
         .nest_service("/dist", serve_dir.clone())
         .fallback_service(serve_dir)
+}
+
+/// HealthCheck response
+#[derive(Serialize)]
+struct HealthCheck {
+    /// true if api is health
+    ok: bool,
+}
+
+async fn health() -> impl IntoResponse {
+    Json(HealthCheck { ok: true })
 }
 
 async fn serve(app: Router, port: u16) {
