@@ -27,20 +27,23 @@ const enabled = ref(true)
 
 <template>
   <p>
-      <draggable 
-        :list="list" 
-        :disabled="!enabled"
-        item-key="name"
-        class="list-group"
-        ghost-class="ghost"
-        @start="dragging = true"
-        @end="dragging = false;console.log(JSON.stringify(list))"
-      >
+    <draggable 
+      :list="list" 
+      :disabled="!enabled"
+      item-key="name"
+      class="list-group"
+      ghost-class="ghost"
+      @start="dragging = true"
+      @end="dragging = false;console.log(JSON.stringify(list))"
+    >
       <template #item="{ element }">
-          <div class="list-group-item" :class="{ 'not-draggable': !enabled }">
-            {{ element.name }}
-          </div>
-        </template>
-      </draggable>
+        <div
+          class="list-group-item"
+          :class="{ 'not-draggable': !enabled }"
+        >
+          {{ element.name }}
+        </div>
+      </template>
+    </draggable>
   </p>
 </template>
