@@ -3992,6 +3992,7 @@ dependencies = [
  "axum",
  "axum-extra",
  "http",
+ "serde",
  "tokio",
  "tower",
  "tower-http",
