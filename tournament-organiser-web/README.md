@@ -1,6 +1,14 @@
 # tournament-organiser-web
 
-This template should help get you started developing with Vue 3 in Vite.
+A web interface to manage brackets as a tournament organiser.
+
+Current development efforts are on making bracket managing accessible. Player
+login and result reporting may come in a future release.
+
+Rationale for mounting a vue app onto an axum API is so that you get access to
+vue draggable, for which there does not seem to exist any equivalent in any 
+rust UI frameworks. Seeding through drag and drop in place feels like a 
+necessary feature for such an app.
 
 ## Recommended IDE Setup
 
