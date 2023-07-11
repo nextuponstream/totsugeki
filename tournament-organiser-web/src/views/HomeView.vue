@@ -26,6 +26,7 @@ const enabled = ref(true)
 </script>
 
 <template>
+  <div class="text-3xl">Seeder</div>
   <p>
     <draggable 
       :list="list" 
