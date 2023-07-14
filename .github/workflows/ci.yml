@@ -149,3 +149,21 @@ jobs:
         working-directory: tournament-organiser-web
       - run: npm run build
         working-directory: tournament-organiser-web
+
+  tournament-organiser-api-build:
+    name: build tournament organiser web application
+    # rust, node and npm are installed https://github.com/actions/runner-images/blob/main/images/linux/Ubuntu2204-Readme.md#rust-tools
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+            tournament-organiser-web/node_modules
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - run: cargo build --package tournament-organiser-api --release
