@@ -1,5 +1,7 @@
 <template>
-  <div class="text-3xl">Seeder</div>
+  <div class="text-3xl">
+    Seeder
+  </div>
   <p>
     <draggable 
       :list="list" 
