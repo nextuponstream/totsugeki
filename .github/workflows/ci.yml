@@ -114,6 +114,8 @@ jobs:
             tournament-organiser-web/node_modules
             tournament-organiser-web/dist
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - run: npm install
+        working-directory: tournament-organiser-web
       - run: npm run lint-check:ci
         working-directory: tournament-organiser-web
 
