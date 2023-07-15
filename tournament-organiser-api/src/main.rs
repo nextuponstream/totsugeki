@@ -14,17 +14,28 @@ async fn main() {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "example_static_file_server=debug,tower_http=debug".into()),
+                // example_static_file_server=debug,tower_http=debug
+                // you can append this tower_http=debug to see more details
+                .unwrap_or_else(|_| "INFO,".into()),
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
 
+    tracing::info!("Starting tournament organiser application...");
     tokio::join!(serve(using_serve_dir_with_assets_fallback(), 3000),);
 }
 
 fn using_serve_dir_with_assets_fallback() -> Router {
-    let serve_dir = ServeDir::new("../tournament-organiser-web/dist")
-        .not_found_service(ServeFile::new("dist/index.html"));
+    let web_build_path = match std::env::var("BUILD_PATH_TOURNAMENT_ORGANISER_WEB") {
+        Ok(s) => s,
+        Err(e) => {
+            tracing::info!("BUILD_PATH_TOURNAMENT_ORGANISER_WEB could not be parsed. Defaulting to relative path: {e}");
+            "../tournament-organiser-web/dist".into()
+        }
+    };
+
+    let serve_dir =
+        ServeDir::new(web_build_path).not_found_service(ServeFile::new("dist/index.html"));
 
     Router::new()
         .route("/foo", get(|| async { "Hi from /foo" }))
