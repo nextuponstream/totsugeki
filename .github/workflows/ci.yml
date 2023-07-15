@@ -133,6 +133,8 @@ jobs:
     name: tournament organiser cypress tests
     # rust, node and npm are installed https://github.com/actions/runner-images/blob/main/images/linux/Ubuntu2204-Readme.md#rust-tools
     runs-on: ubuntu-latest
+    env:
+      CYPRESS_BASE_URL: http://localhost:3000
     steps:
       - uses: actions/checkout@v3
       - uses: actions/cache@v3
