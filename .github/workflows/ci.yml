@@ -129,10 +129,12 @@ jobs:
           command: clippy
           args: -- -D warnings
 
-  tournament-organiser-web-build:
-    name: build tournament organiser web application
+  tournament-organiser-cypress-tests:
+    name: tournament organiser cypress tests
     # rust, node and npm are installed https://github.com/actions/runner-images/blob/main/images/linux/Ubuntu2204-Readme.md#rust-tools
     runs-on: ubuntu-latest
+    env:
+      BUILD_PATH_TOURNAMENT_ORGANISER_WEB: ./tournament-organiser-web/dist
     steps:
       - uses: actions/checkout@v3
       - uses: actions/cache@v3
@@ -150,48 +152,7 @@ jobs:
         working-directory: tournament-organiser-web
       - run: npm run build
         working-directory: tournament-organiser-web
-
-  tournament-organiser-api-build:
-    name: build tournament organiser api application
-    # rust, node and npm are installed https://github.com/actions/runner-images/blob/main/images/linux/Ubuntu2204-Readme.md#rust-tools
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-            tournament-organiser-web/node_modules
-            tournament-organiser-web/dist
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - run: cargo build --package tournament-organiser-api --release
-
-  tournament-organiser-cypress-tests:
-    name: tournament organiser cypress tests
-    # rust, node and npm are installed https://github.com/actions/runner-images/blob/main/images/linux/Ubuntu2204-Readme.md#rust-tools
-    runs-on: ubuntu-latest
-    env:
-      BUILD_PATH_TOURNAMENT_ORGANISER_WEB: ./tournament-organiser-web/dist
-    needs:
-      - tournament-organiser-api-build
-      - tournament-organiser-web-build
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-            tournament-organiser-web/node_modules
-            tournament-organiser-web/dist
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - uses: cypress-io/github-action@v5
         with:
           working-directory: tournament-organiser-web
