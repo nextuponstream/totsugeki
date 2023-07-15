@@ -32,9 +32,7 @@ jobs:
       - run: mkdir web/resources
       - run: touch web/resources/tailwind.css
 
-      - uses: actions-rs/cargo@v1
-        with:
-          command: check
+      - run: cargo check
   
   # TODO compile tailwindcss using tailwind cli in CI
 
@@ -147,11 +145,8 @@ jobs:
       - run: touch totsugeki-native-app/resources/tailwind.css
       - run: mkdir web/resources
       - run: touch web/resources/tailwind.css
-      
-      - uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: -- -D warnings
+
+      - run: cargo clippy -- -D warnings
 
   tournament-organiser-cypress-tests:
     name: tournament organiser cypress tests
