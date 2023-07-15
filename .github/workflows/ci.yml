@@ -148,9 +148,10 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - uses: cypress-io/github-action@v5
         with:
+          working-directory: tournament-organiser-web
           start: |
-            npm --prefix tournament-organiser-web install && \
-            npm --prefix tournament-organiser-web run build && \
+            npm install && \
+            npm run build && \
             cargo build --package tournament-organiser-api --release && \
             cargo run --package tournament-organiser-api --release
           wait-on: 'http://localhost:3000'
