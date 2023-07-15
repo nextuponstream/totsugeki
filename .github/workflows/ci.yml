@@ -153,6 +153,15 @@ jobs:
       - run: npm run build
         working-directory: tournament-organiser-web
       - run: cargo build --package tournament-organiser-api --release
+      - run: |
+          FILE=../target/release/tournament-organiser-api 
+          if [ -f "$FILE" ]; then
+              echo "$FILE exists."
+          else 
+              echo "$FILE does not exist."
+          fi
+        working-directory: tournament-organiser-web     
+      
       - uses: cypress-io/github-action@v5
         with:
           working-directory: tournament-organiser-web
