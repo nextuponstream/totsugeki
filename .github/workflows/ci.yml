@@ -133,8 +133,6 @@ jobs:
     name: tournament organiser cypress tests
     # rust, node and npm are installed https://github.com/actions/runner-images/blob/main/images/linux/Ubuntu2204-Readme.md#rust-tools
     runs-on: ubuntu-latest
-    env:
-      BUILD_PATH_TOURNAMENT_ORGANISER_WEB: ./tournament-organiser-web/dist
     steps:
       - uses: actions/checkout@v3
       - uses: actions/cache@v3
@@ -148,24 +146,13 @@ jobs:
             tournament-organiser-web/node_modules
             tournament-organiser-web/dist
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - run: npm install
-        working-directory: tournament-organiser-web
-      - run: npm run build
-        working-directory: tournament-organiser-web
-      - run: cargo build --package tournament-organiser-api --release
-      - run: |
-          FILE=../target/release/tournament-organiser-api 
-          if [ -f "$FILE" ]; then
-              echo "$FILE exists."
-          else 
-              echo "$FILE does not exist."
-          fi
-        working-directory: tournament-organiser-web     
-      
       - uses: cypress-io/github-action@v5
         with:
-          working-directory: tournament-organiser-web
-          start: ../target/release/tournament-organiser-api
+          start: |
+            npm --prefix tournament-organiser-web install && \
+            npm --prefix tournament-organiser-web run build && \
+            cargo build --package tournament-organiser-api --release && \
+            cargo run --package tournament-organiser-api --release
           wait-on: 'http://localhost:3000'
           wait-on-timeout: 30
           browser: chrome
