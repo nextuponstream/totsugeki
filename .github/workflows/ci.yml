@@ -21,6 +21,7 @@ jobs:
             ~/.cargo/git/db/
             target/
             tournament-organiser-web/node_modules
+            tournament-organiser-web/dist
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       # setup
       - run: sudo apt-get update
@@ -55,6 +56,7 @@ jobs:
             ~/.cargo/git/db/
             target/
             tournament-organiser-web/node_modules
+            tournament-organiser-web/dist
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       # setup
@@ -88,6 +90,7 @@ jobs:
             ~/.cargo/git/db/
             target/
             tournament-organiser-web/node_modules
+            tournament-organiser-web/dist
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - run: rustup component add rustfmt
       - run: cargo fmt --all -- --check
@@ -141,6 +144,7 @@ jobs:
             ~/.cargo/git/db/
             target/
             tournament-organiser-web/node_modules
+            tournament-organiser-web/dist
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - run: npm install
         working-directory: tournament-organiser-web
@@ -148,7 +152,7 @@ jobs:
         working-directory: tournament-organiser-web
 
   tournament-organiser-api-build:
-    name: build tournament organiser web application
+    name: build tournament organiser api application
     # rust, node and npm are installed https://github.com/actions/runner-images/blob/main/images/linux/Ubuntu2204-Readme.md#rust-tools
     runs-on: ubuntu-latest
     steps:
@@ -162,5 +166,36 @@ jobs:
             ~/.cargo/git/db/
             target/
             tournament-organiser-web/node_modules
+            tournament-organiser-web/dist
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - run: cargo build --package tournament-organiser-api --release
+
+  tournament-organiser-cypress-tests:
+    name: tournament organiser cypress tests
+    # rust, node and npm are installed https://github.com/actions/runner-images/blob/main/images/linux/Ubuntu2204-Readme.md#rust-tools
+    runs-on: ubuntu-latest
+    env:
+      BUILD_PATH_TOURNAMENT_ORGANISER_WEB: ./tournament-organiser-web/dist
+    needs:
+      - tournament-organiser-api-build
+      - tournament-organiser-web-build
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+            tournament-organiser-web/node_modules
+            tournament-organiser-web/dist
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - uses: cypress-io/github-action@v5
+        with:
+          working-directory: tournament-organiser-web
+          start: ../target/release/tournament-organiser-api
+          wait-on: 'http://localhost:3000'
+          wait-on-timeout: 30
+          browser: chrome

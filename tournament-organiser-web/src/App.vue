@@ -1,4 +1,5 @@
 <template>
+  <h1>Totsugeki</h1>
   <NavBar />
   <RouterView />
 </template>
