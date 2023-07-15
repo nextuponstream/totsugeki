@@ -149,11 +149,9 @@ jobs:
       - uses: cypress-io/github-action@v5
         with:
           working-directory: tournament-organiser-web
-          start: |
-            npm install && \
-            npm run build && \
-            cargo build --package tournament-organiser-api --release && \
-            cargo run --package tournament-organiser-api --release
+          install: true
+          build: cargo build --package tournament-organiser-api --release && npm run build
+          start: cargo run --package tournament-organiser-api --release
           wait-on: 'http://localhost:3000'
           wait-on-timeout: 30
           browser: chrome
