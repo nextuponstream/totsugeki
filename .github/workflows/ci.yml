@@ -73,7 +73,7 @@ jobs:
           command: test
           args: -- --include-ignored
 
-  fmt:
+  lint-rust:
     name: Rustfmt
     runs-on: ubuntu-latest
     env:
@@ -94,6 +94,28 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - run: rustup component add rustfmt
       - run: cargo fmt --all -- --check
+
+  lint-typescript:
+    name: eslint
+    runs-on: ubuntu-latest
+    env:
+      API_ADDR: localhost
+      API_PORT: 3000
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+            tournament-organiser-web/node_modules
+            tournament-organiser-web/dist
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - run: npm run lint-check:ci
+        working-directory: tournament-organiser-web
 
   clippy:
     name: Clippy
