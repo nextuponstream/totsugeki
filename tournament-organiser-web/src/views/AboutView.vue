@@ -1,15 +1,11 @@
 <template>
-  <div class="about">
-    <h1>This is an about page</h1>
+  <div class="px-2 py-2">
+    <p>Totsugeki is a tool for creating and managing brackets.</p>
+    <p>
+      <i class="pi pi-github pr-1"></i>
+      <a href="https://github.com/nextuponstream/totsugeki">Github</a>
+    </p>
   </div>
 </template>
-
-<style>
-@media (min-width: 1024px) {
-  .about {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-  }
-}
-</style>
+<script setup lang="ts">
+</script>
