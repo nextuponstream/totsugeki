@@ -7,6 +7,7 @@
     <NavLink
       to="/about"
       text="About"
+      data-test-id="about"
     />
     <NavLink
       to="/"
