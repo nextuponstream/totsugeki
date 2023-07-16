@@ -66,10 +66,7 @@ jobs:
       - run: mkdir web/resources
       - run: touch web/resources/tailwind.css
 
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: -- --include-ignored
+      - run: cargo test -- --include-ignored
 
   lint-rust:
     name: Rustfmt
