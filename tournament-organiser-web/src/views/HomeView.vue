@@ -1,6 +1,8 @@
 <template>
   <div class="px-2 pt-2">
-    <div class="text-xl">Create a new bracket</div>
+    <div class="text-xl">
+      Create a new bracket
+    </div>
     <bracket-form />
     <player-seeder />
   </div>

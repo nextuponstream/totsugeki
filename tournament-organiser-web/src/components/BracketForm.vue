@@ -2,13 +2,13 @@
   <input
     v-model="name"
     placeholder="Weekly #"
+    class="px-2"
   >
-  <button @click="createBracket">
-    Create bracket
-  </button>
+  <SubmitBtn @click="createBracket" />
 </template>
 <script setup lang="ts">
 import { ref } from 'vue'
+import SubmitBtn from './SubmitBtn.vue';
 
 const name = ref('')
 
