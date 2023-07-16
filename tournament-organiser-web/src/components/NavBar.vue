@@ -9,10 +9,6 @@
       text="About"
       data-test-id="about"
     />
-    <NavLink
-      to="/"
-      text="Contact TODO"
-    />
   </div>
 </template>
 <script setup lang="ts">

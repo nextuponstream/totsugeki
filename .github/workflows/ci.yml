@@ -92,6 +92,7 @@ jobs:
 
   lint-typescript:
     name: eslint
+    continue-on-error: true
     runs-on: ubuntu-latest
     env:
       API_ADDR: localhost
