@@ -1,10 +1,14 @@
 <template>
   <div class="px-2 pt-2">
-    <div class="text-xl">
-      Create a new bracket
+    <div class="pb-2" v-if="submittedBracketName.length === 0">
+      <bracket-form @new-bracket="registerBracket"/>
     </div>
-    <bracket-form />
-    <player-seeder />
+    <div v-else>
+      <div class="text-xl">Bracket name: {{ submittedBracketName }}</div>
+      <div>TODO register player</div>
+      <player-seeder />
+      <div>TODO reset bracket</div>
+    </div>
   </div>
 </template>
 
@@ -26,5 +30,9 @@ const list = ref([
 
 const dragging = ref(false)
 const enabled = ref(true)
+const submittedBracketName = ref('')
 
+function registerBracket(n: string): void {
+  submittedBracketName.value = n
+}
 </script>
