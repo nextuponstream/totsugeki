@@ -60,13 +60,3 @@ npm run test:e2e
 ```sh
 npm run lint
 ```
-
-Note: this will give errors for smth as simple as defining
-
-```ts
-function registerBracket(n: string): void {
-  submittedBracketName.value = n
-}
-```
-
-... because it can't parse '.'. Whatever. Use it to lint the rest of the code but don't expect too much from it.
