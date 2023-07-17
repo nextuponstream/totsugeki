@@ -11,7 +11,7 @@
         Bracket name: {{ submittedBracketName }}
       </div>
       <player-registration @new-player="addPlayer" />
-      <player-seeder :players="playerList"/>
+      <player-seeder :players="playerList" />
       <div>TODO reset bracket</div>
     </div>
   </div>
