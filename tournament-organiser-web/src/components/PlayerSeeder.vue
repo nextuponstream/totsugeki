@@ -26,15 +26,21 @@
   
   <script setup lang="ts">
   import draggable from 'vuedraggable'
-  import { onMounted } from 'vue'
+  import { onMounted, type PropType } from 'vue'
   import { ref } from 'vue'
   
   // https://github.com/SortableJS/vue.draggable.next/blob/master/example/components/simple.vue
   onMounted(async () => {
 
   });
+
+  interface Player {
+    name: string,
+  }
   
-  const props = defineProps(['players'])
+  const props = defineProps({
+    players: { type: Array as PropType<Player[]>, required: false, default: () => {return []} }
+  })
   
   const dragging = ref(false)
   const enabled = ref(true)
