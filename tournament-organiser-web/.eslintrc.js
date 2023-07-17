@@ -1,10 +1,9 @@
 module.exports = {
-  // Attempted to fix linter but got into problem
-  //"parser": "@typescript-eslint/parser",
-/*     ,
-    "plugins": [
-      "@typescript-eslint"
-    ], */
+    // see https://medium.com/@jodavid/configure-eslint-with-typescript-prettier-and-vue-js-3-902aae3d1440
+    "parser": "vue-eslint-parser",
+    "parserOptions": {
+        "parser": "@typescript-eslint/parser",
+    },
     extends: [
       // add more generic rulesets here, such as:
       //'eslint:recommended',

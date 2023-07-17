@@ -1,10 +1,15 @@
 <template>
   <div class="px-2 pt-2">
-    <div class="pb-2" v-if="submittedBracketName.length === 0">
-      <bracket-form @new-bracket="registerBracket"/>
+    <div
+      v-if="submittedBracketName.length === 0"
+      class="pb-2"
+    >
+      <bracket-form @new-bracket="registerBracket" />
     </div>
     <div v-else>
-      <div class="text-xl">Bracket name: {{ submittedBracketName }}</div>
+      <div class="text-xl">
+        Bracket name: {{ submittedBracketName }}
+      </div>
       <div>TODO register player</div>
       <player-seeder />
       <div>TODO reset bracket</div>
