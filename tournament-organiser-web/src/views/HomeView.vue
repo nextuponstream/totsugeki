@@ -10,8 +10,8 @@
       <div class="text-xl">
         Bracket name: {{ submittedBracketName }}
       </div>
-      <div>TODO register player</div>
-      <player-seeder />
+      <player-registration @new-player="addPlayer" />
+      <player-seeder :players="playerList"/>
       <div>TODO reset bracket</div>
     </div>
   </div>
@@ -20,24 +20,27 @@
 <script setup lang="ts">
 import BracketForm from '@/components/BracketForm.vue';
 import PlayerSeeder from '@/components/PlayerSeeder.vue'
+import PlayerRegistration from '@/components/PlayerRegistration.vue'
 import { onMounted } from 'vue'
 import { ref } from 'vue'
+import type { Ref } from 'vue'
 
 // https://github.com/SortableJS/vue.draggable.next/blob/master/example/components/simple.vue
 onMounted(async () => {
 
 });
 
-const list = ref([
-  {id: 1, name: 'jean'},
-  {id: 2, name: 'jean2'},
-])
+const playerList : Ref<{name: string}[]>= ref([])
 
 const dragging = ref(false)
 const enabled = ref(true)
 const submittedBracketName = ref('')
 
-function registerBracket(n: string): void {
-  submittedBracketName.value = n
+function registerBracket(name: string): void {
+  submittedBracketName.value = name
+}
+
+function addPlayer(name: string): void {
+  playerList.value.push({name: name})
 }
 </script>

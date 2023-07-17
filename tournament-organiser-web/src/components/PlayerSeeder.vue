@@ -4,13 +4,13 @@
   </div>
   <p>
     <draggable 
-      :list="list" 
+      :list="players" 
       :disabled="!enabled"
       item-key="name"
       class="list-group"
       ghost-class="ghost"
       @start="dragging = true"
-      @end="dragging = false;console.log(JSON.stringify(list))"
+      @end="dragging = false"
     >
       <template #item="{ element }">
         <div
@@ -34,10 +34,7 @@
 
   });
   
-  const list = ref([
-    {id: 1, name: 'jean'},
-    {id: 2, name: 'jean2'},
-  ])
+  const props = defineProps(['players'])
   
   const dragging = ref(false)
   const enabled = ref(true)
