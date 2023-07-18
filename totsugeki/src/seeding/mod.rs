@@ -101,7 +101,7 @@ pub fn seed(
         Method::Random => {
             let mut key = [0u8; 16];
             OsRng.try_fill_bytes(&mut key)?;
-            let mut rng = OsRng::default();
+            let mut rng = OsRng;
             let mut players = participants.get_players_list();
             players.shuffle(&mut rng);
             let players = Participants::try_from(players)?;

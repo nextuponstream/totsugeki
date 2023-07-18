@@ -10,9 +10,15 @@
       <div class="text-xl">
         {{ t('home.bracketNameLabel') }}: {{ submittedBracketName }}
       </div>
-      <player-registration @new-player="addPlayer" />
-      <player-seeder :players="playerList" />
-      <div>TODO reset bracket</div>
+      <div class="pt-6">
+        <player-registration @new-player="addPlayer" />
+      </div>
+      <div class="pt-6">
+        <player-seeder :players="playerList" />
+      </div>
+      <div class="pt-6">
+        <submit-btn></submit-btn>
+      </div>
     </div>
   </div>
 </template>
@@ -24,6 +30,7 @@ import PlayerRegistration from '@/components/PlayerRegistration.vue'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n';
+import SubmitBtn from '@/components/SubmitBtn.vue';
 
 const {t} = useI18n({})
 
