@@ -8,7 +8,7 @@
     </div>
     <div v-else>
       <div class="text-xl">
-        Bracket name: {{ submittedBracketName }}
+        {{ t('home.bracketNameLabel') }}: {{ submittedBracketName }}
       </div>
       <player-registration @new-player="addPlayer" />
       <player-seeder :players="playerList" />
@@ -21,14 +21,11 @@
 import BracketForm from '@/components/BracketForm.vue';
 import PlayerSeeder from '@/components/PlayerSeeder.vue'
 import PlayerRegistration from '@/components/PlayerRegistration.vue'
-import { onMounted } from 'vue'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
+import { useI18n } from 'vue-i18n';
 
-// https://github.com/SortableJS/vue.draggable.next/blob/master/example/components/simple.vue
-onMounted(async () => {
-
-});
+const {t} = useI18n({})
 
 const playerList : Ref<{name: string}[]>= ref([])
 

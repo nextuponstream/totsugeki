@@ -1,18 +1,30 @@
 <template>
   <div class="text-xl">
-    Register new player
+    {{ t('playerRegistrationForm.title') }}
   </div>
-  <input
-    v-model="name"
-    placeholder="Player name"
-    class="px-2"
-  >
-  <SubmitBtn @click="$emit('newPlayer', name)" />
+  <div>
+    <FormInput
+      v-model:m="name"
+      :placeholder="t('playerRegistrationForm.newPlayerPlaceholder')"
+      @keydown.enter="submitPlayer"
+    />
+  </div>
+  <div class="pt-2">
+    <SubmitBtn @click="submitPlayer" />
+  </div>
 </template>
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n';
+
+const {t} = useI18n({})
 
 const name = ref('')
 
 const emit = defineEmits(['newPlayer'])
+
+function submitPlayer(){
+  emit('newPlayer', name.value)
+  name.value = ''
+}
 </script>

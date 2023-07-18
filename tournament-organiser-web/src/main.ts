@@ -9,6 +9,7 @@ import SubmitBtnVue from './components/SubmitBtn.vue'
 import en from './locales/en'
 import fr from './locales/fr'
 import { createI18n } from 'vue-i18n'
+import FormInputVue from './components/FormInput.vue'
 
 const app = createApp(App)
 
@@ -24,5 +25,6 @@ app.use(createPinia())
 app.use(router)
 
 app.component('SubmitBtn', SubmitBtnVue)
+app.component('FormInput', FormInputVue)
 
 app.mount('#app')

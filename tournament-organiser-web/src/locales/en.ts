@@ -7,5 +7,12 @@ export default {
     },
     generic: {
         submit: "Submit",
+    },
+    playerRegistrationForm: {
+        title: "Register players",
+        newPlayerPlaceholder: 'Player name',
+    },
+    home: {
+        bracketNameLabel: 'Bracket',
     }
 }
