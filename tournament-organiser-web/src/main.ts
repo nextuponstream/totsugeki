@@ -11,6 +11,7 @@ import { createI18n } from 'vue-i18n'
 
 import FormInputVue from './components/ui/FormInput.vue'
 import SubmitBtnVue from './components/ui/SubmitBtn.vue'
+import BaseTooltip from './components/ui/BaseTooltip.vue'
 
 const app = createApp(App)
 
@@ -27,5 +28,6 @@ app.use(router)
 
 app.component('SubmitBtn', SubmitBtnVue)
 app.component('FormInput', FormInputVue)
+app.component('BaseTooltip', BaseTooltip)
 
 app.mount('#app')

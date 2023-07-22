@@ -14,6 +14,7 @@ export default {
     },
     home: {
         bracketNameLabel: 'Bracket',
+        startBracket: 'Start bracket',
     },
     playerSeeder: {
         empty: 'No players registered...',

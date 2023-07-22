@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="text-xl">
+    <div class="text-2xl">
       {{ t('bracketForm.title') }}
     </div>
     <div class="pt-2">

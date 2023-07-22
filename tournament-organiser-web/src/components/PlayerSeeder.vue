@@ -1,5 +1,5 @@
 <template>
-  <div class="text-3xl">
+  <div class="text-2xl">
     Seeder
   </div>
   
@@ -29,16 +29,11 @@
   
   <script setup lang="ts">
   import draggable from 'vuedraggable'
-  import { onMounted, type PropType } from 'vue'
+  import { type PropType } from 'vue'
   import { ref } from 'vue'
   import { useI18n } from 'vue-i18n';
 
   const {t} = useI18n({})
-  
-  // https://github.com/SortableJS/vue.draggable.next/blob/master/example/components/simple.vue
-  onMounted(async () => {
-
-  });
 
   interface Player {
     name: string,

@@ -10,11 +10,29 @@
       <div class="text-xl">
         {{ t('home.bracketNameLabel') }}: {{ submittedBracketName }}
       </div>
-      <div class="pt-6">
-        <player-registration @new-player="addPlayer" />
+      <div class="flex flex-row gap-7">
+        <div class="pt-6">
+          <player-registration @new-player="addPlayer" />
+        </div>
+
+        <div class="pt-6">
+          <player-seeder :players="playerList" />
+        </div>
       </div>
-      <div class="pt-6">
-        <player-seeder :players="playerList" />
+
+      <div class="group mt-5">
+        <submit-btn
+          :disabled="playerList.length < 3"
+          @click="openConfirmModal"
+        >
+          {{ t('home.startBracket') }}
+        </submit-btn>
+        <base-tooltip
+          v-if="playerList.length < 3"
+          class="ml-3"
+        >
+          3 players minimum
+        </base-tooltip>
       </div>
     </div>
   </div>
@@ -42,5 +60,9 @@ function registerBracket(name: string): void {
 
 function addPlayer(name: string): void {
   playerList.value.push({name: name})
+}
+
+function openConfirmModal(){
+  // TODO
 }
 </script>
