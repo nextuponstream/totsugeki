@@ -14,6 +14,7 @@ export default {
     },
     home: {
         bracketNameLabel: 'Bracket',
+        startBracket: 'Commencer le tournoi',
     },
     playerSeeder: {
         empty: "Aucun joueur n'a été enregistré...",

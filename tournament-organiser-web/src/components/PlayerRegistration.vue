@@ -1,5 +1,5 @@
 <template>
-  <div class="text-xl">
+  <div class="text-2xl">
     {{ t('playerRegistrationForm.title') }}
   </div>
   <div>
