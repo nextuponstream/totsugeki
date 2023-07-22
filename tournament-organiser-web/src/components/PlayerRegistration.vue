@@ -4,7 +4,7 @@
   </div>
   <div>
     <FormInput
-      v-model:m="name"
+      v-model="name"
       :placeholder="t('playerRegistrationForm.newPlayerPlaceholder')"
       @keydown.enter="submitPlayer"
     />

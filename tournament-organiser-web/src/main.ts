@@ -5,11 +5,12 @@ import { createPinia } from 'pinia'
 
 import App from './App.vue'
 import router from './router'
-import SubmitBtnVue from './components/SubmitBtn.vue'
 import en from './locales/en'
 import fr from './locales/fr'
 import { createI18n } from 'vue-i18n'
-import FormInputVue from './components/FormInput.vue'
+
+import FormInputVue from './components/ui/FormInput.vue'
+import SubmitBtnVue from './components/ui/SubmitBtn.vue'
 
 const app = createApp(App)
 

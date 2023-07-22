@@ -16,9 +16,6 @@
       <div class="pt-6">
         <player-seeder :players="playerList" />
       </div>
-      <div class="pt-6">
-        <submit-btn></submit-btn>
-      </div>
     </div>
   </div>
 </template>

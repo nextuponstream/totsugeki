@@ -6,7 +6,7 @@
     <div class="pt-2">
       <label>{{ t('bracketForm.nameLabel') }}</label>
       <FormInput
-        v-model:m="name"
+        v-model="name"
         :placeholder="t('bracketForm.namePlaceholder')"
         @keydown.enter="$emit('newBracket', name)"
       />

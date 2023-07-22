@@ -25,7 +25,6 @@
   <div v-else>
     <div>{{ t('playerSeeder.empty') }}</div>
   </div>
-
 </template>
   
   <script setup lang="ts">
