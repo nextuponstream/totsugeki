@@ -10,29 +10,28 @@
       <div class="text-xl">
         {{ t('home.bracketNameLabel') }}: {{ submittedBracketName }}
       </div>
-      <div class="flex flex-row gap-7">
-        <div class="pt-6">
+      <div class="grid grid-cols-2">
+        <div>
           <player-registration @new-player="addPlayer" />
+          <div class="group mt-5 items-center flex">
+            <submit-btn
+              :disabled="hasMinNumberOfPlayerToStartBracket"
+              @click="openConfirmModal"
+            >
+              {{ t('home.startBracket') }}
+            </submit-btn>
+            <base-tooltip
+              v-if="hasMinNumberOfPlayerToStartBracket"
+              class="ml-3"
+            >
+              3 players minimum
+            </base-tooltip>
+          </div>
         </div>
 
-        <div class="pt-6">
+        <div>
           <player-seeder :players="playerList" />
         </div>
-      </div>
-
-      <div class="group mt-5">
-        <submit-btn
-          :disabled="playerList.length < 3"
-          @click="openConfirmModal"
-        >
-          {{ t('home.startBracket') }}
-        </submit-btn>
-        <base-tooltip
-          v-if="playerList.length < 3"
-          class="ml-3"
-        >
-          3 players minimum
-        </base-tooltip>
       </div>
     </div>
   </div>
@@ -42,7 +41,7 @@
 import BracketForm from '@/components/BracketForm.vue';
 import PlayerSeeder from '@/components/PlayerSeeder.vue'
 import PlayerRegistration from '@/components/PlayerRegistration.vue'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n';
 
@@ -61,6 +60,10 @@ function registerBracket(name: string): void {
 function addPlayer(name: string): void {
   playerList.value.push({name: name})
 }
+
+const hasMinNumberOfPlayerToStartBracket = computed(() => {
+  return playerList.value.length < 3
+})
 
 function openConfirmModal(){
   // TODO
