@@ -27,7 +27,6 @@ import PlayerRegistration from '@/components/PlayerRegistration.vue'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n';
-import SubmitBtn from '@/components/SubmitBtn.vue';
 
 const {t} = useI18n({})
 
