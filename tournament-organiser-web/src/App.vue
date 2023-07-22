@@ -1,6 +1,8 @@
 <template>
   <NavBar />
-  <RouterView />
+  <div class="px-4">
+    <RouterView />
+  </div>
 </template>
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
