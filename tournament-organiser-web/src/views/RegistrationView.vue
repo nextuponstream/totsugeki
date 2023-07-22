@@ -1,6 +1,6 @@
 <template>
   <div class="text-xl">
-    {{ t('home.bracketNameLabel') }}: {{ bracketName }}
+    {{ t('registration.bracketNameLabel') }}: {{ bracketName }}
   </div>
   <div class="grid grid-cols-2">
     <div>
@@ -10,7 +10,7 @@
           :disabled="hasMinNumberOfPlayerToStartBracket"
           @click="openConfirmModal"
         >
-          {{ t('home.startBracket') }}
+          {{ t('registration.startBracket') }}
         </submit-btn>
         <base-tooltip
           v-if="hasMinNumberOfPlayerToStartBracket"
@@ -33,8 +33,10 @@
   import { computed, ref, onMounted } from 'vue'
   import type { Ref } from 'vue'
   import { useI18n } from 'vue-i18n';
+  import { useRouter } from 'vue-router'
   
   const {t} = useI18n({})
+  const router = useRouter()
 
   const bracketName = ref('')
 
@@ -56,7 +58,10 @@
   })
   
   function openConfirmModal(){
-    // TODO
+    // TODO add modal
+    router.push({
+     name: 'bracket',
+  })
   }
   </script>
   
