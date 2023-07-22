@@ -18,6 +18,11 @@ const router = createRouter({
       component: () => import('../views/AboutView.vue')
     },
     {
+      path: '/registration',
+      name: 'registration',
+      component: () => import('../views/RegistrationView.vue')
+    },
+    {
       path: '/bracket',
       name: 'bracket',
       component: () => import('../views/BracketView.vue')
