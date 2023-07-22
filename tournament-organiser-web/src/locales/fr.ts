@@ -9,7 +9,7 @@ export default {
         submit: "Envoyer",
     },
     playerRegistrationForm: {
-        title: "Enregister un nouveau joueur",
+        title: "Enregistrer un nouveau joueur",
         newPlayerPlaceholder: 'Nom du joueur',
     },
     home: {
