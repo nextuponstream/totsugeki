@@ -10,7 +10,10 @@
     />
   </div>
   <div class="pt-2">
-    <SubmitBtn @click="submitPlayer" />
+    <SubmitBtn
+      :disabled="name.length === 0"
+      @click="submitPlayer"
+    />
   </div>
 </template>
 <script setup lang="ts">

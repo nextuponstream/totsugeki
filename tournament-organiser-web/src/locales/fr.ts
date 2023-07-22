@@ -12,7 +12,7 @@ export default {
         title: "Enregistrer un nouveau joueur",
         newPlayerPlaceholder: 'Nom du joueur',
     },
-    home: {
+    registration: {
         bracketNameLabel: 'Bracket',
         startBracket: 'Commencer le tournoi',
     },

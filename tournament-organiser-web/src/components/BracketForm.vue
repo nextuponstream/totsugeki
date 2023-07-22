@@ -6,13 +6,16 @@
     <div class="pt-2">
       <label>{{ t('bracketForm.nameLabel') }}</label>
       <FormInput
-        v-model="name"
+        v-model="bracketName"
         :placeholder="t('bracketForm.namePlaceholder')"
-        @keydown.enter="$emit('newBracket', name)"
+        @keydown.enter="$emit('newBracket', bracketName)"
       />
     </div>
     <div class="pt-2">
-      <SubmitBtn @click="$emit('newBracket', name)" />
+      <SubmitBtn
+        :disabled="bracketName.length === 0"
+        @click="$emit('newBracket', bracketName)"
+      />
     </div>
   </div>
 </template>
@@ -22,7 +25,7 @@ import { useI18n } from 'vue-i18n';
 
 const {t} = useI18n({})
 
-const name = ref('')
+const bracketName = ref('')
 
 const emit = defineEmits(['newBracket'])
 </script>

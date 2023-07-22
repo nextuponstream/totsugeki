@@ -12,7 +12,7 @@ export default {
         title: "Register players",
         newPlayerPlaceholder: 'Player name',
     },
-    home: {
+    registration: {
         bracketNameLabel: 'Bracket',
         startBracket: 'Start bracket',
     },

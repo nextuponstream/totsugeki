@@ -5,28 +5,24 @@
       text="Home"
     />
     <div class="flex gap-2 items-center">
-      <div class="py-1">
-        <NavLink
-          to="/about"
-          text="About"
-          data-test-id="about"
-        />
-      </div>
-      <div class="flex">
-        <select
-          class="mt-1 block rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring
+      <NavLink
+        to="/about"
+        text="About"
+        data-test-id="about"
+      />
+      <select
+        class="mt-1 block rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring
         focus:ring-indigo-200 focus:ring-opacity-50"
-          @input="changeLocale"
+        @input="changeLocale"
+      >
+        <option
+          v-for="supportedLocale in supportedLocales"
+          :key="supportedLocale"
+          :value="supportedLocale"
         >
-          <option
-            v-for="supportedLocale in supportedLocales"
-            :key="supportedLocale"
-            :value="supportedLocale"
-          >
-            {{ supportedLocale }}
-          </option>
-        </select>
-      </div>
+          {{ supportedLocale }}
+        </option>
+      </select>
     </div>
   </div>
 </template>
