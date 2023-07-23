@@ -31,7 +31,8 @@ async fn main() {
             tracing_subscriber::EnvFilter::try_from_default_env()
                 // example_static_file_server=debug,tower_http=debug
                 // you can append this tower_http=debug to see more details
-                .unwrap_or_else(|_| "INFO,".into()),
+                // .unwrap_or_else(|_| "INFO,tower_http=debug".into()),
+                .unwrap_or_else(|_| "INFO".into()),
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
@@ -52,7 +53,8 @@ fn using_serve_dir_with_assets_fallback() -> Router {
     };
 
     let serve_dir = ServeDir::new(web_build_path.clone())
-        .not_found_service(ServeFile::new(format!("{web_build_path}/index.html")));
+        // .not_found_service will throw 404, which makes cypress test fail
+        .fallback(ServeFile::new(format!("{web_build_path}/index.html")));
 
     Router::new()
         .route("/health", get(health))
