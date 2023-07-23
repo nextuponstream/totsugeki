@@ -8,7 +8,7 @@
       <div class="group mt-5 items-center flex">
         <submit-btn
           :disabled="hasMinNumberOfPlayerToStartBracket"
-          @click="openConfirmModal"
+          @click="createBracketFromPlayers"
         >
           {{ t('registration.startBracket') }}
         </submit-btn>
@@ -34,6 +34,7 @@
   import type { Ref } from 'vue'
   import { useI18n } from 'vue-i18n';
   import { useRouter } from 'vue-router'
+import config from '@/config';
   
   const {t} = useI18n({})
   const router = useRouter()
@@ -57,11 +58,24 @@
     return playerList.value.length < 3
   })
   
-  function openConfirmModal(){
-    // TODO add modal
+  async function createBracketFromPlayers(){
+    // FIXME remove 'no-cors' after development is over
+    try {
+      let response = await fetch('http://localhost:3000/bracket-from-players', config.axumHeaders)
+      console.log(JSON.stringify(response))
+      let bracket = await response.json()
+      console.log(JSON.stringify(bracket)) // FIXME still empty with npm run dev
+      localStorage.setItem('bracket', JSON.stringify(bracket))
+    } catch (e) {
+      console.error(e)
+    }
+
+    // TODO fix cors issue with npm run dev when not using mode:no-cors
+    // FIXME can't visit /registration directly
+
     router.push({
      name: 'bracket',
-  })
+    })
   }
   </script>
   

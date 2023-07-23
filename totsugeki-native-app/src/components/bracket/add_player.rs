@@ -17,7 +17,6 @@ pub fn Form(cx: Scope) -> Element {
 
         form {
             onsubmit: move |event| {
-                // println!("submitted {event:?}")
                 add_player(bracket, event);
             },
 
