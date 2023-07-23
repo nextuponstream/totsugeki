@@ -9,8 +9,12 @@
 #![warn(clippy::unwrap_used)]
 #![forbid(unsafe_code)]
 
-use axum::{response::IntoResponse, routing::get, Json, Router};
-use serde::Serialize;
+use axum::{
+    response::IntoResponse,
+    routing::{get, post},
+    Json, Router,
+};
+use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use tower_http::cors::CorsLayer;
 use tower_http::{
@@ -58,18 +62,16 @@ fn using_serve_dir_with_assets_fallback() -> Router {
 
     Router::new()
         .route("/health", get(health))
+        .route("/bracket-from-players", post(new_bracket_from_players))
+        .nest_service("/dist", serve_dir.clone())
+        .fallback_service(serve_dir)
+        // CORS after route declaration https://github.com/tokio-rs/axum/issues/1330#issue-1351827022
+        // this allows npm run dev from localhost:5173 to work with api at
+        // localhost:3000
         .layer(
             // FIXME remove after end of development
             CorsLayer::very_permissive(),
-            // CorsLayer::new()
-            // use tower_http::cors::Any
-            //     .allow_origin(Any)
-            //     .allow_headers([http::header::CONTENT_TYPE])
-            //     .allow_methods([Method::GET]),
         )
-        .route("/bracket-from-players", get(new_bracket_from_players))
-        .nest_service("/dist", serve_dir.clone())
-        .fallback_service(serve_dir)
 }
 
 /// Health check response
@@ -107,8 +109,17 @@ struct BracketDisplay {
     grand_finals_reset: bool,
 }
 
+/// List of players from which a bracket can be created
+#[derive(Deserialize)]
+struct PlayerList {
+    /// player names
+    names: Vec<String>,
+}
+
 /// Return a newly instanciated bracket from ordered (=seeded) player names
-async fn new_bracket_from_players() -> impl IntoResponse {
+async fn new_bracket_from_players(Json(player_list): Json<PlayerList>) -> impl IntoResponse {
+    tracing::info!("{:?}", player_list.names);
+
     let bracket = BracketDisplay {
         winner_bracket: vec![],
         loser_bracket: vec![],
