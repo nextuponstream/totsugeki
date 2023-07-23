@@ -13,7 +13,7 @@
     @start="dragging = true"
     @end="dragging = false"
   >
-    <template #item="{ element }">
+    <template #item="{element}">
       <div
         class="list-group-item"
         :class="{ 'not-draggable': !enabled }"

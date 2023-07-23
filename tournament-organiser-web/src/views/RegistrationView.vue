@@ -27,14 +27,13 @@
   </div>
 </template>
   
-  <script setup lang="ts">
+<script setup lang="ts">
   import PlayerSeeder from '@/components/PlayerSeeder.vue'
   import PlayerRegistration from '@/components/PlayerRegistration.vue'
   import { computed, ref, onMounted } from 'vue'
   import type { Ref } from 'vue'
   import { useI18n } from 'vue-i18n';
   import { useRouter } from 'vue-router'
-import config from '@/config';
   
   const {t} = useI18n({})
   const router = useRouter()
@@ -61,7 +60,17 @@ import config from '@/config';
   async function createBracketFromPlayers(){
     // FIXME remove 'no-cors' after development is over
     try {
-      let response = await fetch('http://localhost:3000/bracket-from-players', config.axumHeaders)
+      console.log(JSON.stringify(playerList.value.map(p => p.name)))
+      let response = await fetch('http://localhost:3000/bracket-from-players', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({names: playerList.value.map(p => p.name)}),
+        // can't send json without cors... https://stackoverflow.com/a/45655314
+        // documentation: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch#supplying_request_options
+      })
       console.log(JSON.stringify(response))
       let bracket = await response.json()
       console.log(JSON.stringify(bracket)) // FIXME still empty with npm run dev
