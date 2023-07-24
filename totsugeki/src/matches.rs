@@ -736,6 +736,8 @@ pub fn print_player_name(o: &Opponent, players: &[Player]) -> Option<String> {
 }
 
 /// Match identifier
+// TODO look for possible way this could be interpreted as smth like Player ID
+// and prevent that
 pub type Id = uuid::Uuid;
 
 /// Response to query: "who is my next opponent"

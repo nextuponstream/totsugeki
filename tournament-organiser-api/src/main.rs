@@ -14,8 +14,9 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::net::SocketAddr;
+use tournament_organiser_api::new_bracket_from_players;
 use tower_http::cors::CorsLayer;
 use tower_http::{
     services::{ServeDir, ServeFile},
@@ -94,38 +95,4 @@ async fn serve(app: Router, port: u16) {
         .serve(app.layer(TraceLayer::new_for_http()).into_make_service())
         .await
         .expect("server serving tournament-organiser application");
-}
-
-/// Bracket to display
-#[derive(Serialize, Debug)]
-struct BracketDisplay {
-    /// Winner bracket matches and lines to draw
-    winner_bracket: Vec<bool>,
-    /// Loser bracket matches and lines to draw
-    loser_bracket: Vec<bool>,
-    /// Grand finals
-    grand_finals: bool,
-    /// Grand finals reset
-    grand_finals_reset: bool,
-}
-
-/// List of players from which a bracket can be created
-#[derive(Deserialize)]
-struct PlayerList {
-    /// player names
-    names: Vec<String>,
-}
-
-/// Return a newly instanciated bracket from ordered (=seeded) player names
-async fn new_bracket_from_players(Json(player_list): Json<PlayerList>) -> impl IntoResponse {
-    tracing::info!("{:?}", player_list.names);
-
-    let bracket = BracketDisplay {
-        winner_bracket: vec![],
-        loser_bracket: vec![],
-        grand_finals: false,
-        grand_finals_reset: false,
-    };
-    tracing::info!("{:?}", bracket);
-    Json(bracket)
 }
