@@ -1,22 +1,18 @@
 <template>
-  <!--   <div class="col-span-1 flex flex-col my-auto divide-x divide-y border-1 border-box border hover:bg-gray-300 rounded-md">
-    <div class="match flex flex-row divide-x">
-      <div>{{ bracket.grand_finals?.seeds[0] }}</div>
-      <div class="grow pl-1">{{ bracket.grand_finals?.players[0] }}</div>
-      <div>{{ bracket.grand_finals?.score[0] }}</div>
-    </div>
-    <div class="match flex flex-row divide-x">
-      <div>{{ bracket.grand_finals?.seeds[1] }}</div>
-      <div class="grow pl-1">{{ bracket.grand_finals?.players[1] }}</div>
-      <div>{{ bracket.grand_finals?.score[1] }}</div>
-    </div>
-  </div> -->
-  <MatchNode :match="bracket.grand_finals" />
+  <div class="grid grid-cols-2">
+    <div>{{ t('bracketView.grandFinals') }}</div>
+    <div>{{ t('bracketView.bracketReset') }}</div>
+    <MatchNode :match="bracket.grand_finals" />
+    <MatchNode :match="bracket.grand_finals_reset" />
+  </div>
 </template>
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import type { Ref } from 'vue';
 import MatchNode from '@/components/MatchNode.vue';
+import { useI18n } from 'vue-i18n';
+
+const {t} = useI18n({})
 
 interface Match {
   id: string,
