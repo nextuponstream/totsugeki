@@ -18,5 +18,9 @@ export default {
     },
     playerSeeder: {
         empty: "Aucun joueur n'a été enregistré...",
-    }
+    },  
+    bracketView: {
+        grandFinals: "Grand finales",
+        bracketReset: "Bracket reset",
+    },
 }
