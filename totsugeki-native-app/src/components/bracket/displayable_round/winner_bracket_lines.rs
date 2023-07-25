@@ -35,7 +35,6 @@ pub(crate) fn lines(rounds: Vec<Vec<MinimalMatch>>) -> Option<Vec<Vec<BoxElement
     for round_index in (0..rounds.len() - 1).rev() {
         let round = &rounds[round_index];
 
-        // FIXME remove unwrap and throw error
         let Some(matches_in_round) = (round.len()).checked_next_power_of_two() else{
             // TODO log error
             return None;

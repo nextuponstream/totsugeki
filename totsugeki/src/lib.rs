@@ -9,7 +9,6 @@
 #![warn(clippy::unwrap_used)]
 #![forbid(unsafe_code)]
 
-use bracket::ActiveBrackets;
 use serde::Deserialize;
 use std::str::FromStr;
 use std::sync::{LockResult, RwLock, RwLockReadGuard};
@@ -20,7 +19,6 @@ pub mod format;
 pub mod join;
 pub mod matches;
 pub mod opponent;
-pub mod organiser;
 pub mod player;
 pub mod quit;
 pub mod remove;
