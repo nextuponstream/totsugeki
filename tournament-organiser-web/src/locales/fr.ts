@@ -22,5 +22,7 @@ export default {
     bracketView: {
         grandFinals: "Grand finales",
         bracketReset: "Bracket reset",
+        winnerBracket: "Winner bracket",
+        loserBracket: "Loser bracket",
     },
 }

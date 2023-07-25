@@ -58,7 +58,6 @@
   })
   
   async function createBracketFromPlayers(){
-    // FIXME remove 'no-cors' after development is over
     try {
       console.log(JSON.stringify(playerList.value.map(p => p.name)))
       let response = await fetch('http://localhost:3000/bracket-from-players', {
@@ -71,16 +70,11 @@
         // can't send json without cors... https://stackoverflow.com/a/45655314
         // documentation: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch#supplying_request_options
       })
-      console.log(JSON.stringify(response))
       let bracket = await response.json()
-      console.log(JSON.stringify(bracket)) // FIXME still empty with npm run dev
       localStorage.setItem('bracket', JSON.stringify(bracket))
     } catch (e) {
       console.error(e)
     }
-
-    // TODO fix cors issue with npm run dev when not using mode:no-cors
-    // FIXME can't visit /registration directly
 
     router.push({
      name: 'bracket',

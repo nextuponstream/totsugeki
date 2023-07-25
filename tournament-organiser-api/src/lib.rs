@@ -15,7 +15,7 @@ struct BracketDisplay {
     /// Winner bracket matches and lines to draw
     winner_bracket: Vec<Vec<MinimalMatch>>,
     /// Loser bracket matches and lines to draw
-    loser_bracket: Vec<bool>,
+    loser_bracket: Vec<Vec<MinimalMatch>>,
     /// Grand finals
     grand_finals: MinimalMatch,
     /// Grand finals reset
