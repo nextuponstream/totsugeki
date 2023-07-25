@@ -23,14 +23,14 @@ interface Match {
 }
 
 interface Bracket {
-  winner_bracket: boolean,
+  winner_bracket: Match[][],
   loser_bracket: boolean,
   grand_finals: Match | null,
   grand_finals_reset: Match | null,
 }
 
 const bracket: Ref<Bracket> = ref({
-  winner_bracket: false,
+  winner_bracket: [],
   loser_bracket: false,
   grand_finals: null,
   grand_finals_reset: null,

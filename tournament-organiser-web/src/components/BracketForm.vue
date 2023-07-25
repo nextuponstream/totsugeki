@@ -8,13 +8,13 @@
       <FormInput
         v-model="bracketName"
         :placeholder="t('bracketForm.namePlaceholder')"
-        @keydown.enter="$emit('newBracket', bracketName)"
+        @keydown.enter="submitNewBracket"
       />
     </div>
     <div class="pt-2">
       <SubmitBtn
         :disabled="bracketName.length === 0"
-        @click="$emit('newBracket', bracketName)"
+        @click="submitNewBracket"
       />
     </div>
   </div>
@@ -28,4 +28,10 @@ const {t} = useI18n({})
 const bracketName = ref('')
 
 const emit = defineEmits(['newBracket'])
+
+function submitNewBracket(){
+  if (bracketName.value.length > 0) {
+    emit('newBracket', bracketName.value)
+  }
+}
 </script>
