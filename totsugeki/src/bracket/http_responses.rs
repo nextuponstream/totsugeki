@@ -1,9 +1,6 @@
 //! Http responses to bracket queries
 
-use crate::{
-    bracket::Id, matches::MatchGET, organiser::Id as OrganiserId, player::Player,
-    DiscussionChannelId,
-};
+use crate::{bracket::Id, matches::MatchGET, player::Player, DiscussionChannelId};
 #[cfg(feature = "poem-openapi")]
 use poem_openapi::Object;
 use serde::{Deserialize, Serialize};
@@ -91,8 +88,6 @@ impl GET {
 pub struct POSTResult {
     /// id of created bracket
     pub bracket_id: Id,
-    /// id of organiser
-    pub organiser_id: OrganiserId,
     /// id of discussion channel
     pub discussion_channel_id: DiscussionChannelId,
 }

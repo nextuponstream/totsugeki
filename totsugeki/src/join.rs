@@ -1,8 +1,6 @@
 //! join domain
 
-use crate::{bracket::Id as BracketId, organiser::Id as OrganiserId, player::Id as PlayerId};
-#[cfg(feature = "poem-openapi")]
-use poem_openapi::Object;
+use crate::{bracket::Id as BracketId, player::Id as PlayerId};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -14,8 +12,6 @@ pub struct POSTResponse {
     pub player_id: PlayerId,
     /// bracket identifier
     pub bracket_id: BracketId,
-    /// organiser identifier
-    pub organiser_id: OrganiserId,
 }
 
 #[derive(Serialize, Debug)]
