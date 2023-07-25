@@ -8,8 +8,6 @@ use crate::{
     opponent::Opponent,
     player::{Error as PlayerError, Id as PlayerId, Participants},
 };
-#[cfg(feature = "poem-openapi")]
-use poem_openapi::Object;
 use rand::prelude::*;
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
@@ -141,19 +139,6 @@ fn seeding_initial_round(
         )
         .expect("match"),
     );
-}
-
-/// Request to seed a bracket
-#[derive(Serialize, Deserialize, Debug)]
-#[cfg_attr(feature = "poem-openapi", derive(Object))]
-#[cfg_attr(feature = "poem-openapi", oai(rename = "SeedingPOST"))]
-pub struct POST {
-    /// Discussion channel internal id
-    pub internal_channel_id: String,
-    /// Service
-    pub service: String,
-    /// List of seeded players
-    pub players: Vec<String>,
 }
 
 #[cfg(test)]
