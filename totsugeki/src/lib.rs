@@ -16,7 +16,6 @@ use uuid::Uuid;
 
 pub mod bracket;
 pub mod format;
-pub mod join;
 pub mod matches;
 pub mod opponent;
 pub mod player;
