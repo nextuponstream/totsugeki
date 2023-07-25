@@ -27,7 +27,9 @@ const name = ref('')
 const emit = defineEmits(['newPlayer'])
 
 function submitPlayer(){
-  emit('newPlayer', name.value)
-  name.value = ''
+  if (name.value.length > 0) {
+    emit('newPlayer', name.value)
+    name.value = ''
+  }
 }
 </script>
