@@ -13,7 +13,7 @@ use totsugeki::{
 #[derive(Serialize, Debug)]
 struct BracketDisplay {
     /// Winner bracket matches and lines to draw
-    winner_bracket: Vec<bool>,
+    winner_bracket: Vec<Vec<MinimalMatch>>,
     /// Loser bracket matches and lines to draw
     loser_bracket: Vec<bool>,
     /// Grand finals
@@ -39,23 +39,101 @@ pub async fn new_bracket_from_players(Json(player_list): Json<PlayerList>) -> im
         };
         bracket = tmp;
     }
+    let participants = bracket.get_participants();
     let dev: DoubleEliminationVariant = bracket.clone().try_into().expect("partition");
 
-    let Ok((gf, gf_reset)) = dev.grand_finals_and_reset() else {
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
+    // TODO test if tracing shows from which methods it was called
+    let wb_rounds_matches = match dev.partition_winner_bracket() {
+        Ok(wb) => wb,
+        Err(e) => {
+            tracing::error!("{e:?}");
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
     };
-    let participants = bracket.get_participants();
+    let mut wb_rounds = vec![];
+    for r in wb_rounds_matches {
+        let round = r
+            .iter()
+            .map(|m| from_participants(m, &participants))
+            .collect();
+        wb_rounds.push(round);
+    }
+
+    reorder(&mut wb_rounds);
+
+    let (gf, gf_reset) = match dev.grand_finals_and_reset() {
+        Ok((gf, bracket_reset)) => (gf, bracket_reset),
+        Err(e) => {
+            tracing::error!("{e:?}");
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
     let gf = from_participants(&gf, &participants);
     let gf_reset = from_participants(&gf_reset, &participants);
 
     let bracket = BracketDisplay {
-        winner_bracket: vec![],
+        winner_bracket: wb_rounds,
         loser_bracket: vec![],
         grand_finals: gf,
         grand_finals_reset: gf_reset,
     };
     tracing::debug!("created bracket {:?}", bracket);
     Ok(Json(bracket))
+}
+
+// TODO use common lib between native and tournament-organiser-api
+/// Give positionnal hints to winner bracket matches
+pub fn reorder(rounds: &mut [Vec<MinimalMatch>]) {
+    if rounds.len() < 2 {
+        return;
+    }
+
+    // set hint for all rounds except last two
+    // traverse from last to first
+    for i in (0..rounds.len() - 2).rev() {
+        let mut round = rounds[i].clone();
+        let number_of_matches_in_round = rounds[i + 1].len() * 2;
+
+        // iterate over previous round and set positional hints
+        for (j, m) in rounds[i + 1].iter().enumerate() {
+            let row_hint_1 = 2 * j;
+            let row_hint_2 = 2 * j + 1;
+
+            let seed_1 = m.seeds[0];
+            // (first) player of round 1 with highest seed is expected to win
+            if let Some(m) = round.iter_mut().find(|r_m| r_m.seeds[0] == seed_1) {
+                m.row_hint = Some(row_hint_1);
+            }
+            let seed_2 = m.seeds[1];
+            if let Some(m) = round.iter_mut().find(|r_m| r_m.seeds[0] == seed_2) {
+                m.row_hint = Some(row_hint_2);
+            }
+        }
+
+        // Padding matches for initial round
+        if i == 0 {
+            for _ in 0..number_of_matches_in_round - rounds[i].len() {
+                round.push(MinimalMatch::default())
+            }
+        }
+
+        // sort row i+1 so unsorted row i can be sorted next iteration
+        // NOTE: for round 1, filler matches are first after sorting
+        round.sort_by_key(|m| m.row_hint);
+        rounds[i] = round;
+    }
+
+    // round before last round
+    rounds[rounds.len() - 2][0].row_hint = Some(0);
+    // when there is exactly 3 players
+    if rounds[rounds.len() - 2].len() == 1 {
+        rounds[rounds.len() - 2][0].row_hint = Some(1);
+    } else {
+        rounds[rounds.len() - 2][1].row_hint = Some(1);
+    }
+
+    // last round
+    rounds[rounds.len() - 1][0].row_hint = Some(0);
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -71,6 +149,18 @@ pub struct MinimalMatch {
     seeds: [usize; 2],
     /// Indicate which row it belongs to, starting from 0 index
     row_hint: Option<usize>,
+}
+
+impl Default for MinimalMatch {
+    fn default() -> Self {
+        MinimalMatch {
+            id: MatchId::new_v4(),
+            players: [String::default(), String::default()],
+            score: (0, 0),
+            seeds: [0, 0],
+            row_hint: None,
+        }
+    }
 }
 
 /// Convert match struct from Totsugeki library into minimal struct, using
