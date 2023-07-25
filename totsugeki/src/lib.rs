@@ -19,8 +19,6 @@ pub mod format;
 pub mod matches;
 pub mod opponent;
 pub mod player;
-pub mod quit;
-pub mod remove;
 pub mod seeding;
 
 /// Discussion channel identifier
