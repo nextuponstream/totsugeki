@@ -5,33 +5,29 @@
     <MatchNode :match="bracket.grand_finals" />
     <MatchNode :match="bracket.grand_finals_reset" />
   </div>
+  <div class="pt-6">
+    <ShowBracket :bracket="bracket.winner_bracket">
+      {{ t('bracketView.winnerBracket') }}
+    </ShowBracket>
+  </div>
+  <div class="pt-6">
+    <ShowBracket :bracket="bracket.loser_bracket">
+      {{ t('bracketView.loserBracket') }}
+    </ShowBracket>
+  </div>
 </template>
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import type { Ref } from 'vue';
 import MatchNode from '@/components/MatchNode.vue';
+import ShowBracket from '@/components/ShowBracket.vue';
 import { useI18n } from 'vue-i18n';
 
 const {t} = useI18n({})
 
-interface Match {
-  id: string,
-  players: string[],
-  seeds: number[],
-  score: number[],
-  row_hint: number | null,
-}
-
-interface Bracket {
-  winner_bracket: Match[][],
-  loser_bracket: boolean,
-  grand_finals: Match | null,
-  grand_finals_reset: Match | null,
-}
-
 const bracket: Ref<Bracket> = ref({
   winner_bracket: [],
-  loser_bracket: false,
+  loser_bracket: [],
   grand_finals: null,
   grand_finals_reset: null,
 })
