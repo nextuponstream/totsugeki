@@ -27,6 +27,8 @@ export default {
     'grid-cols-10',
     'grid-cols-11',
     'grid-cols-12',
+    'row-start-1',
+    'row-start-2',
   ],
   plugins: [
     require('@tailwindcss/forms'),

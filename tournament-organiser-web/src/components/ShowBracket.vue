@@ -11,15 +11,12 @@
       :key="indexCol"
       class="grid grid-cols-1"
     >
-      <div
+      <MatchNode
         v-for="match in element"
         :key="match.id"
         class="my-auto"
-      >
-        <MatchNode
-          :match="match"
-        />
-      </div>
+        :match="match"
+      />
     </div>
   </div>
 </template>
