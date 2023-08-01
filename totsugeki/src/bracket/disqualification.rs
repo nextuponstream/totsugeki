@@ -63,56 +63,25 @@ impl Bracket {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        bracket::{raw::Raw, Id as BracketId},
-        format::Format,
-        player::{Participants, Player},
-        seeding::{
-            single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored,
-            Method as SeedingMethod,
-        },
-    };
-    use chrono::prelude::*;
+    use crate::format::Format;
 
     #[test]
     fn cannot_disqualify_player_before_bracket_starts() {
-        let p1_id = PlayerId::new_v4();
-        let p2_id = PlayerId::new_v4();
-        let p3_id = PlayerId::new_v4();
-        let player_ids = vec![p1_id, p2_id, p3_id];
-        let player_names = vec!["p1".to_string(), "p2".to_string(), "p3".to_string()];
-        let players = Participants::from_raw_id(
-            player_ids
-                .iter()
-                .zip(player_names.iter())
-                .map(|p| (p.0.to_string(), p.1.clone()))
-                .collect(),
-        )
-        .expect("players");
-        let matches = get_balanced_round_matches_top_seed_favored(
-            &players
-                .get_players_list()
-                .iter()
-                .map(Player::get_id)
-                .collect::<Vec<_>>(),
-        )
-        .expect("matches");
-        let bracket_id = BracketId::new_v4();
-        let bracket: Bracket = Raw {
-            bracket_id,
-            bracket_name: "bracket".to_string(),
-            players: player_ids,
-            player_names,
-            matches,
+        let mut bracket = Bracket {
             format: Format::SingleElimination,
-            seeding_method: SeedingMethod::Strict,
-            start_time: Utc.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap(),
-            accept_match_results: false,
-            automatic_match_validation: false,
-            barred_from_entering: true,
+            ..Bracket::default()
+        };
+
+        for i in 1..=3 {
+            bracket = bracket
+                .add_participant(format!("p{i}").as_str())
+                .expect("add player");
         }
-        .try_into()
-        .expect("bracket");
+
+        let players = bracket.get_participants().get_players_list();
+        let p1_id = players[0].get_id();
+
+        let bracket_id = bracket.bracket_id;
         match bracket.disqualify_participant(p1_id) {
             Err(Error::NotStarted(id, _)) => assert_eq!(id, bracket_id),
             Err(e) => panic!("Expected Started error, got {e}"),
