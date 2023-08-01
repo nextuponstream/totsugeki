@@ -1,4 +1,10 @@
 <template>
+  <div
+    class="pb-5"
+    style="color: gray;"
+  >
+    {{ t('bracketView.hint') }}
+  </div>
   <div class="grid grid-cols-2">
     <div>{{ t('bracketView.grandFinals') }}</div>
     <div>{{ t('bracketView.bracketReset') }}</div>

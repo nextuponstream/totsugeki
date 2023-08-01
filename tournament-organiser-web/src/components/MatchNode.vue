@@ -63,8 +63,3 @@ const verticalSeparator = computed(() => {
   }
 })
 </script>
-<style scoped>
-.match {
-  max-width: 200px;
-}
-</style>

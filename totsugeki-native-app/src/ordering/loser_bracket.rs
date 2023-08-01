@@ -4,8 +4,6 @@ use crate::MinimalMatch;
 
 /// Give positionnal hints to loser bracket matches
 pub fn reorder(rounds: &mut [Vec<MinimalMatch>]) {
-    // implementation is the same as winner bracket implementation. It seems
-    // to also work for a loser bracket
     if rounds.len() < 2 {
         return;
     }
