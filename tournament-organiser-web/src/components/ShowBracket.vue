@@ -9,14 +9,15 @@
     <div
       v-for="(element, indexCol) in bracket"
       :key="indexCol"
+      class="grid grid-cols-1"
     >
       <div
-        v-for="(match, index) in element"
+        v-for="match in element"
         :key="match.id"
+        class="my-auto"
       >
         <MatchNode
           :match="match"
-          :class="`row-start-${index+1}`"
         />
       </div>
     </div>

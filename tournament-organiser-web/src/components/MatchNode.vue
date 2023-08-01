@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-[140px] divide-x divide-y border-1 border-box border hover:bg-gray-300 rounded-md">
+  <div class="max-w-[140px] flex flex-col divide-x divide-y border-1 border-box border hover:bg-gray-300 rounded-md">
     <div class="flex divide-x">
       <div>{{ match?.seeds[0] }}</div>
       <div class="grow pl-1">
