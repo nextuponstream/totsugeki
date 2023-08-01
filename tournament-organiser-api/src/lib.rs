@@ -61,6 +61,20 @@ pub async fn new_bracket_from_players(Json(player_list): Json<PlayerList>) -> im
 
     reorder(&mut wb_rounds);
 
+    let Ok(lb_rounds_matches) = dev.partition_loser_bracket() else {
+        // TODO log error
+        return Err(StatusCode::INTERNAL_SERVER_ERROR);
+    };
+    let mut lb_rounds: Vec<Vec<MinimalMatch>> = vec![];
+    for r in lb_rounds_matches {
+        let round = r
+            .iter()
+            .map(|m| from_participants(m, &participants))
+            .collect();
+        lb_rounds.push(round);
+    }
+    reorder_loser_bracket(&mut lb_rounds);
+
     let (gf, gf_reset) = match dev.grand_finals_and_reset() {
         Ok((gf, bracket_reset)) => (gf, bracket_reset),
         Err(e) => {
@@ -73,7 +87,7 @@ pub async fn new_bracket_from_players(Json(player_list): Json<PlayerList>) -> im
 
     let bracket = BracketDisplay {
         winner_bracket: wb_rounds,
-        loser_bracket: vec![],
+        loser_bracket: lb_rounds,
         grand_finals: gf,
         grand_finals_reset: gf_reset,
     };
@@ -179,5 +193,68 @@ fn from_participants(m: &Match, participants: &Participants) -> MinimalMatch {
         score: m.get_score(),
         seeds: m.get_seeds(),
         row_hint: None,
+    }
+}
+
+// TODO refactor common code in native
+/// Give positionnal hints to loser bracket matches
+pub fn reorder_loser_bracket(rounds: &mut [Vec<MinimalMatch>]) {
+    if rounds.len() < 2 {
+        return;
+    }
+
+    let lb_rounds_count = rounds.len();
+
+    // give row hints to last 3 rounds
+    if lb_rounds_count > 2 {
+        rounds[lb_rounds_count - 3][0].row_hint = Some(0);
+        if rounds[lb_rounds_count - 3].len() > 1 {
+            rounds[lb_rounds_count - 3][1].row_hint = Some(1);
+        }
+    }
+
+    if lb_rounds_count > 1 {
+        rounds[lb_rounds_count - 2][0].row_hint = Some(0);
+    }
+
+    rounds[lb_rounds_count - 1][0].row_hint = Some(0);
+
+    // give hints to all other rounds
+    for i in (0..rounds.len() - 2).rev() {
+        let mut round = rounds[i].clone();
+        let number_of_matches_in_round = rounds[i + 1].len() * 2;
+
+        // iterate over previous round and set positional hints
+        for (j, m) in rounds[i + 1].iter().enumerate() {
+            let winner_seed = m.seeds[0];
+            // (first) player of round 1 with highest seed is expected to win
+            if let Some(m) = round.iter_mut().find(|r_m| r_m.seeds[0] == winner_seed) {
+                m.row_hint = Some(rounds[i + 1][j].row_hint.expect("") * 2);
+            }
+            let loser_seed = m.seeds[1];
+            if let Some(m) = round.iter_mut().find(|r_m| r_m.seeds[0] == loser_seed) {
+                if (lb_rounds_count - i) % 2 == 0 {
+                    m.row_hint = rounds[i + 1][j].row_hint;
+                } else {
+                    // 7-10 (1), 8-9 (3)
+                    m.row_hint = Some(rounds[i + 1][j].row_hint.expect("") * 2 + 1);
+                }
+            }
+        }
+
+        if i == 0 {
+            if rounds.len() % 2 == 0 {
+                for _ in 0..rounds[i + 1].len() - rounds[i].len() {
+                    round.push(MinimalMatch::default())
+                }
+            } else {
+                for _ in 0..number_of_matches_in_round - rounds[i].len() {
+                    round.push(MinimalMatch::default())
+                }
+            }
+        }
+
+        round.sort_by_key(|m| m.row_hint);
+        rounds[i] = round;
     }
 }

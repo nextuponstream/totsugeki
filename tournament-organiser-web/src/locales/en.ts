@@ -24,5 +24,6 @@ export default {
         bracketReset: "Bracket reset",
         winnerBracket: "Winner bracket",
         loserBracket: "Loser bracket",
+        hint: "Click on matches to enter results",
     },
 }
