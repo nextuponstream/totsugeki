@@ -49,42 +49,26 @@ impl Bracket {
 mod tests {
     use super::*;
     use crate::{
-        bracket::{raw::Raw, Id as BracketId},
+        bracket::builder::Builder,
         format::Format,
         matches::{Id as MatchId, Match, MatchGET},
         opponent::Opponent,
-        player::{Error as PlayerError, Player},
-        seeding::{
-            single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored,
-            Error as SeedingError, Method as SeedingMethod,
-        },
+        player::Error as PlayerError,
+        seeding::Error as SeedingError,
     };
-    use chrono::prelude::*;
 
     #[test]
     fn cannot_seed_bracket_after_it_started() {
-        let p1_id = PlayerId::new_v4();
-        let p2_id = PlayerId::new_v4();
-        let p3_id = PlayerId::new_v4();
-        let player_ids = vec![p1_id, p2_id, p3_id];
-        let player_names = vec!["p1".to_string(), "p2".to_string(), "p3".to_string()];
-        let matches = get_balanced_round_matches_top_seed_favored(&player_ids).expect("matches");
-        let bracket_id = BracketId::new_v4();
-        let bracket: Bracket = Raw {
-            bracket_id,
-            bracket_name: "bracket".to_string(),
-            players: player_ids,
-            player_names,
-            matches,
-            format: Format::SingleElimination,
-            seeding_method: SeedingMethod::Strict,
-            start_time: Utc.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap(),
-            accept_match_results: false,
-            automatic_match_validation: false,
-            barred_from_entering: true,
-        }
-        .try_into()
-        .expect("bracket");
+        let bracket = Builder::new()
+            .set_format(Format::SingleElimination)
+            .set_new_players(3)
+            .build()
+            .expect("bracket");
+        let bracket_id = bracket.bracket_id;
+        let players = bracket.get_participants().get_players_list();
+        let p1_id = players[0].get_id();
+        let p2_id = players[1].get_id();
+        let p3_id = players[2].get_id();
         let (updated_bracket, _) = bracket.start().expect("start");
         let seeding = vec![p3_id, p2_id, p1_id];
         match updated_bracket.update_seeding(&seeding) {
@@ -96,34 +80,21 @@ mod tests {
 
     #[test]
     fn seeding_single_elimination_bracket_with_wrong_players_fails() {
-        let p1_id = PlayerId::new_v4();
-        let p2_id = PlayerId::new_v4();
-        let p3_id = PlayerId::new_v4();
         let unknown_player = PlayerId::new_v4();
-        let player_ids = vec![p1_id, p2_id, p3_id];
-        let player_names = vec!["p1".to_string(), "p2".to_string(), "p3".to_string()];
-        let matches = get_balanced_round_matches_top_seed_favored(&player_ids).expect("matches");
-        let bracket_id = BracketId::new_v4();
-        let bracket: Bracket = Raw {
-            bracket_id,
-            bracket_name: "bracket".to_string(),
-            players: player_ids,
-            player_names,
-            matches,
-            format: Format::SingleElimination,
-            seeding_method: SeedingMethod::Strict,
-            start_time: Utc.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap(),
-            accept_match_results: false,
-            automatic_match_validation: false,
-            barred_from_entering: true,
-        }
-        .try_into()
-        .expect("bracket");
+        let bracket = Builder::new()
+            .set_format(Format::SingleElimination)
+            .set_new_players(3)
+            .build()
+            .expect("bracket");
+        let players = bracket.get_participants().get_players_list();
+        let p1_id = players[0].get_id();
+        let p2_id = players[1].get_id();
+        let p3_id = players[2].get_id();
 
         // Unknown player
         let seeding = vec![p3_id, p2_id, unknown_player];
         let expected_participants = bracket.get_participants();
-        let expected_bracket_id = bracket_id;
+        let expected_bracket_id = bracket.bracket_id;
         let (id, p, bracket_id) = match bracket.clone().update_seeding(&seeding) {
             Err(Error::UnknownPlayer(id, p, bracket_id)) => (id, p, bracket_id),
             Err(e) => panic!("Expected Players error, got {e}"),
@@ -157,39 +128,18 @@ mod tests {
 
     #[test]
     fn updating_seeding_changes_matches_of_3_man_bracket() {
-        let mut players = vec![];
-        for i in 1..=3 {
-            let p = Player::new(format!("p{i}"));
-            players.push(p);
-        }
-        let matches = get_balanced_round_matches_top_seed_favored(
-            &players.iter().map(Player::get_id).collect::<Vec<_>>(),
-        )
-        .expect("matches");
-        let bracket: Bracket = Raw {
-            bracket_id: BracketId::new_v4(),
-            bracket_name: "bracket".to_string(),
-            players: players.clone().iter().map(Player::get_id).collect(),
-            player_names: players.iter().map(Player::get_name).collect(),
-            matches,
-            format: Format::SingleElimination,
-            seeding_method: SeedingMethod::Strict,
-            start_time: Utc.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap(),
-            accept_match_results: false,
-            automatic_match_validation: false,
-            barred_from_entering: true,
-        }
-        .try_into()
-        .expect("bracket");
-        players.reverse();
-        players.push(Player::new("don't use".into())); // for readability
-        players.reverse();
+        let bracket = Builder::new()
+            .set_format(Format::SingleElimination)
+            .set_new_players(3)
+            .build()
+            .expect("bracket");
+        let players = bracket.get_participants().get_players_list();
+        let p1_id = players[0].get_id();
+        let p2_id = players[1].get_id();
+        let p3_id = players[2].get_id();
+
         let updated_bracket = bracket
-            .update_seeding(&[
-                players[3].get_id(),
-                players[2].get_id(),
-                players[1].get_id(),
-            ])
+            .update_seeding(&[p3_id, p2_id, p1_id])
             .expect("seeding update");
         let mut match_ids: Vec<MatchId> = updated_bracket
             .get_matches()
@@ -197,9 +147,9 @@ mod tests {
             .map(Match::get_id)
             .collect();
         match_ids.reverse();
-        let p1 = Opponent::Player(players[1].get_id());
-        let p2 = Opponent::Player(players[2].get_id());
-        let p3 = Opponent::Player(players[3].get_id());
+        let p1 = Opponent::Player(players[0].get_id());
+        let p2 = Opponent::Player(players[1].get_id());
+        let p3 = Opponent::Player(players[2].get_id());
         assert_eq!(
             updated_bracket.get_matches(),
             vec![
@@ -227,41 +177,20 @@ mod tests {
 
     #[test]
     fn updating_seeding_changes_matches_of_5_man_bracket() {
-        let mut players = vec![];
-        for i in 1..=5 {
-            let p = Player::new(format!("p{i}"));
-            players.push(p);
-        }
-        let matches = get_balanced_round_matches_top_seed_favored(
-            &players.iter().map(Player::get_id).collect::<Vec<_>>(),
-        )
-        .expect("matches");
-        let bracket: Bracket = Raw {
-            bracket_id: BracketId::new_v4(),
-            bracket_name: "bracket".to_string(),
-            players: players.iter().map(Player::get_id).collect(),
-            player_names: players.iter().map(Player::get_name).collect(),
-            matches,
-            format: Format::SingleElimination,
-            seeding_method: SeedingMethod::Strict,
-            start_time: Utc.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap(),
-            accept_match_results: false,
-            automatic_match_validation: false,
-            barred_from_entering: true,
-        }
-        .try_into()
-        .expect("bracket");
-        players.reverse();
-        players.push(Player::new("don't use".into())); // for readability
-        players.reverse();
+        let bracket = Builder::new()
+            .set_format(Format::SingleElimination)
+            .set_new_players(5)
+            .build()
+            .expect("bracket");
+        let players = bracket.get_participants().get_players_list();
+        let p1_id = players[0].get_id();
+        let p2_id = players[1].get_id();
+        let p3_id = players[2].get_id();
+        let p4_id = players[3].get_id();
+        let p5_id = players[4].get_id();
+
         let updated_bracket = bracket
-            .update_seeding(&[
-                players[4].get_id(),
-                players[5].get_id(),
-                players[3].get_id(),
-                players[2].get_id(),
-                players[1].get_id(),
-            ])
+            .update_seeding(&[p4_id, p5_id, p3_id, p2_id, p1_id])
             .expect("seeding update");
         let mut match_ids: Vec<MatchId> = updated_bracket
             .get_matches()
@@ -269,11 +198,11 @@ mod tests {
             .map(Match::get_id)
             .collect();
         match_ids.reverse();
-        let p1 = Opponent::Player(players[1].get_id());
-        let p2 = Opponent::Player(players[2].get_id());
-        let p3 = Opponent::Player(players[3].get_id());
-        let p4 = Opponent::Player(players[4].get_id());
-        let p5 = Opponent::Player(players[5].get_id());
+        let p1 = Opponent::Player(players[0].get_id());
+        let p2 = Opponent::Player(players[1].get_id());
+        let p3 = Opponent::Player(players[2].get_id());
+        let p4 = Opponent::Player(players[3].get_id());
+        let p5 = Opponent::Player(players[4].get_id());
         assert_eq!(
             updated_bracket.get_matches(),
             vec![

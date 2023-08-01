@@ -1,6 +1,7 @@
 //! Bracket domain
 
 mod assertions;
+mod builder;
 mod disqualification;
 pub mod double_elimination_variant;
 mod getter_setter;

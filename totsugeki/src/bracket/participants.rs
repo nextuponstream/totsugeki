@@ -5,7 +5,8 @@ use super::{Bracket, Error};
 use crate::player::{Id as PlayerId, Participants, Player};
 
 impl Bracket {
-    /// Regenerate matches. Used when participants are added or removed
+    /// Regenerate matches and set participants of bracket with provided
+    /// participants. Used when participants are added or removed.
     ///
     /// # Errors
     /// thrown when math overflow happens
@@ -66,13 +67,7 @@ impl Bracket {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        bracket::{raw::Raw, Format, Id as BracketId},
-        seeding::{
-            single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored,
-            Method as SeedingMethod,
-        },
-    };
+    use crate::{bracket::Format, seeding::Method as SeedingMethod};
     use chrono::prelude::*;
 
     #[test]
@@ -93,27 +88,16 @@ mod tests {
 
     #[test]
     fn closing_bracket_will_deny_new_participants_from_entering() {
-        let p1_id = PlayerId::new_v4();
-        let p2_id = PlayerId::new_v4();
-        let p3_id = PlayerId::new_v4();
-        let player_ids = vec![p1_id, p2_id, p3_id];
-        let player_names = vec!["p1".to_string(), "p2".to_string(), "p3".to_string()];
-        let matches = get_balanced_round_matches_top_seed_favored(&player_ids).expect("matches");
-        let bracket: Bracket = Raw {
-            bracket_id: BracketId::new_v4(),
-            bracket_name: "bracket".to_string(),
-            players: player_ids,
-            player_names,
-            matches,
+        let mut bracket = Bracket {
             format: Format::SingleElimination,
-            seeding_method: SeedingMethod::Strict,
-            start_time: Utc.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap(),
-            accept_match_results: false,
-            automatic_match_validation: false,
-            barred_from_entering: true,
+            ..Bracket::default()
+        };
+        for i in 1..=3 {
+            bracket = bracket
+                .add_participant(format!("p{i}").as_str())
+                .expect("ok");
         }
-        .try_into()
-        .expect("bracket");
+
         let updated_bracket = bracket.close();
         let bracket_id = updated_bracket.get_id();
 
@@ -131,27 +115,15 @@ mod tests {
 
     #[test]
     fn starting_bracket_will_deny_new_participants_from_entering() {
-        let p1_id = PlayerId::new_v4();
-        let p2_id = PlayerId::new_v4();
-        let p3_id = PlayerId::new_v4();
-        let player_ids = vec![p1_id, p2_id, p3_id];
-        let player_names = vec!["p1".to_string(), "p2".to_string(), "p3".to_string()];
-        let matches = get_balanced_round_matches_top_seed_favored(&player_ids).expect("matches");
-        let bracket: Bracket = Raw {
-            bracket_id: BracketId::new_v4(),
-            bracket_name: "bracket".to_string(),
-            players: player_ids,
-            player_names,
-            matches,
+        let mut bracket = Bracket {
             format: Format::SingleElimination,
-            seeding_method: SeedingMethod::Strict,
-            start_time: Utc.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap(),
-            accept_match_results: false,
-            automatic_match_validation: false,
-            barred_from_entering: true,
+            ..Bracket::default()
+        };
+        for i in 1..=3 {
+            bracket = bracket
+                .add_participant(format!("p{i}").as_str())
+                .expect("ok");
         }
-        .try_into()
-        .expect("bracket");
         let (updated_bracket, _) = bracket.start().expect("start");
         let bracket_id = updated_bracket.get_id();
 
