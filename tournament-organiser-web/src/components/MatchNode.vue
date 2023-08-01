@@ -1,13 +1,13 @@
 <template>
-  <div class="max-w-[200px] col-span-1 flex flex-col my-auto divide-x divide-y border-1 border-box border hover:bg-gray-300 rounded-md">
-    <div class="flex flex-row divide-x">
+  <div class="max-w-[140px] divide-x divide-y border-1 border-box border hover:bg-gray-300 rounded-md">
+    <div class="flex divide-x">
       <div>{{ match?.seeds[0] }}</div>
       <div class="grow pl-1">
         {{ match?.players[0] }}
       </div>
       <div>{{ match?.score[0] }}</div>
     </div>
-    <div class="flex flex-row divide-x">
+    <div class="flex divide-x">
       <div>{{ match?.seeds[1] }}</div>
       <div class="grow pl-1">
         {{ match?.players[1] }}
