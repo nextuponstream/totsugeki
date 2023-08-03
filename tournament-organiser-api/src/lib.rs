@@ -14,8 +14,12 @@ use totsugeki::{
 struct BracketDisplay {
     /// Winner bracket matches and lines to draw
     winner_bracket: Vec<Vec<MinimalMatch>>,
+    /// Lines to draw between winner bracket matches
+    winner_bracket_lines: Vec<Vec<BoxElement>>,
     /// Loser bracket matches and lines to draw
     loser_bracket: Vec<Vec<MinimalMatch>>,
+    /// Lines to draw between loser bracket matches
+    loser_bracket_lines: Vec<Vec<BoxElement>>,
     /// Grand finals
     grand_finals: MinimalMatch,
     /// Grand finals reset
@@ -60,6 +64,10 @@ pub async fn new_bracket_from_players(Json(player_list): Json<PlayerList>) -> im
     }
 
     reorder(&mut wb_rounds);
+    let Some(winner_bracket_lines) = winner_bracket_lines(wb_rounds.clone()) else {
+        tracing::error!("winner bracket connecting lines");
+        return Err(StatusCode::INTERNAL_SERVER_ERROR);
+    };
 
     let Ok(lb_rounds_matches) = dev.partition_loser_bracket() else {
         // TODO log error
@@ -74,6 +82,10 @@ pub async fn new_bracket_from_players(Json(player_list): Json<PlayerList>) -> im
         lb_rounds.push(round);
     }
     reorder_loser_bracket(&mut lb_rounds);
+    let Some(loser_bracket_lines) = loser_bracket_lines(lb_rounds.clone()) else {
+        tracing::error!("loser bracket connecting lines");
+        return Err(StatusCode::INTERNAL_SERVER_ERROR);
+    };
 
     let (gf, gf_reset) = match dev.grand_finals_and_reset() {
         Ok((gf, bracket_reset)) => (gf, bracket_reset),
@@ -87,7 +99,9 @@ pub async fn new_bracket_from_players(Json(player_list): Json<PlayerList>) -> im
 
     let bracket = BracketDisplay {
         winner_bracket: wb_rounds,
+        winner_bracket_lines,
         loser_bracket: lb_rounds,
+        loser_bracket_lines,
         grand_finals: gf,
         grand_finals_reset: gf_reset,
     };
@@ -257,4 +271,281 @@ pub fn reorder_loser_bracket(rounds: &mut [Vec<MinimalMatch>]) {
         round.sort_by_key(|m| m.row_hint);
         rounds[i] = round;
     }
+}
+
+/// Display lines using boxes and their borders
+#[derive(Clone, Copy, Debug, PartialEq, Default, Serialize)]
+pub(crate) struct BoxElement {
+    /// true when left border of box should be visible
+    pub(crate) left_border: bool,
+    /// true when bottom border of box should be visible
+    pub(crate) bottom_border: bool,
+}
+
+// TODO refactor common code with native
+/// Lines flow from matches of one round to the next round for a winner bracket
+pub(crate) fn winner_bracket_lines(rounds: Vec<Vec<MinimalMatch>>) -> Option<Vec<Vec<BoxElement>>> {
+    if rounds.is_empty() {
+        return None;
+    }
+
+    // 3 players, 2 matches => 4
+    // 4 players, 3 matches => 4
+    // 5 players, 4 matches => 8
+    // 6 players, 5 matches => 8
+    // 9 players, 8 matches => 16
+    let total_matches = rounds.iter().flatten().count();
+
+    let Some(boxes_in_one_column) = (total_matches + 1).checked_next_power_of_two() else {
+        // TODO log error
+        return None;
+    };
+    let mut lines: Vec<Vec<BoxElement>> = vec![];
+
+    let mut column = vec![];
+    for _ in 0..boxes_in_one_column {
+        column.push(BoxElement {
+            left_border: false,
+            bottom_border: false,
+        });
+    }
+
+    // build from top to bottom (from winner bracket finals to first round)
+    // start from last round and lines from previous round
+    for round_index in (0..rounds.len() - 1).rev() {
+        let round = &rounds[round_index];
+
+        // FIXME remove unwrap and throw error
+        let Some(matches_in_round) = (round.len()).checked_next_power_of_two() else{
+            // TODO log error
+            return None;
+        };
+
+        let mut left_column_flow_out_of: Vec<BoxElement> = column.clone();
+        let mut right_column_flow_into: Vec<BoxElement> = column.clone();
+
+        for (_, m) in round.iter().enumerate() {
+            if let Some(row) = m.row_hint {
+                let boxes_between_matches_of_same_round = boxes_in_one_column / matches_in_round;
+                let Ok(r_i) = round_index.try_into() else {
+                    // TODO log error
+                    return None;
+                };
+                let Some(offset) = 2usize.checked_pow(r_i) else {
+                    // TODO log error
+                    return None;
+                };
+                // lines that flows from matches
+                if total_matches == 2 {
+                    left_column_flow_out_of[2].bottom_border = true;
+                } else {
+                    left_column_flow_out_of
+                        [row * boxes_between_matches_of_same_round + offset - 1]
+                        .bottom_border = true;
+                }
+
+                // vertical lines
+                for j in 0..offset {
+                    if row % 2 == 1 {
+                        // flows down towards next match
+                        right_column_flow_into[row * boxes_between_matches_of_same_round
+                            + 3 * offset
+                            - 1
+                            - j
+                            - boxes_between_matches_of_same_round]
+                            .left_border = true;
+                    } else {
+                        // flows up towards next match
+                        right_column_flow_into
+                            [row * boxes_between_matches_of_same_round + 2 * offset - 1 - j]
+                            .left_border = true;
+                    }
+                }
+
+                if total_matches == 2 {
+                    right_column_flow_into[1].bottom_border = true;
+                } else if row % 2 == 1 {
+                    right_column_flow_into[row * boxes_between_matches_of_same_round + offset
+                        - 1
+                        - boxes_between_matches_of_same_round / 2]
+                        .bottom_border = true;
+                }
+            };
+        }
+
+        let lines_for_round = [left_column_flow_out_of, right_column_flow_into].concat();
+
+        lines.push(lines_for_round);
+    }
+
+    // from bottom to top
+    lines.reverse();
+
+    Some(lines)
+}
+
+impl BoxElement {
+    /// Box with no borders. Alternative to `default()` to use in constants
+    const fn empty() -> Self {
+        BoxElement {
+            left_border: false,
+            bottom_border: false,
+        }
+    }
+}
+
+/// Lines flow from matches of one round to the next round for a loser bracket
+pub(crate) fn loser_bracket_lines(rounds: Vec<Vec<MinimalMatch>>) -> Option<Vec<Vec<BoxElement>>> {
+    let mut lines = vec![];
+    let total_matches = rounds.iter().flatten().count();
+
+    let Some(boxes_in_one_column) = (total_matches + 1).checked_next_power_of_two() else {
+        // TODO log error
+        return None;
+    };
+    let boxes_in_one_column = boxes_in_one_column / 2;
+    let mut column = vec![];
+    for _ in 0..boxes_in_one_column {
+        column.push(BoxElement::empty());
+    }
+
+    for (round_index, round) in rounds.iter().enumerate() {
+        if round_index == rounds.len() - 1 {
+            continue;
+        }
+
+        let next_round = &rounds[round_index + 1];
+
+        // Sometimes, the first round of a loser bracket qualifies you to the
+        // next round where there is more matches or the same amount of
+        // matches. This the convoluted condition to draw horizontal lines from
+        // one match to the other for the first round
+        if round_index == 0 && rounds.len() % 2 == 0 {
+            let mut left = vec![];
+            let mut right = vec![];
+            // we assume there may be padding matches (where row_hint is None)
+            for _ in round {
+                left.push(BoxElement::default());
+                left.push(BoxElement::default());
+                right.push(BoxElement::default());
+                right.push(BoxElement::default());
+            }
+
+            // draw an horizontal line from a real matches to the next round
+            for m in round {
+                // Only real matches have row_hint set
+                if let Some(hint) = m.row_hint {
+                    left[hint * 2].bottom_border = true;
+                    right[hint * 2].bottom_border = true;
+                }
+            }
+
+            let straight_lines = [left, right].concat();
+
+            lines.push(straight_lines);
+        } else if round.len() == next_round.len() {
+            // when there is the same amount of matches from one round to the
+            // next, draw horizontal lines
+            let mut straight_lines = vec![];
+            for _m in round {
+                straight_lines.push(BoxElement {
+                    left_border: false,
+                    bottom_border: true,
+                });
+                straight_lines.push(BoxElement::default());
+                straight_lines.push(BoxElement {
+                    left_border: false,
+                    bottom_border: true,
+                });
+                straight_lines.push(BoxElement::default());
+            }
+            lines.push(straight_lines);
+        } else {
+            // when it's not the first round, either there is the same amount
+            // of matches from this round to the next or there is not
+            let round = &rounds[round_index];
+
+            // FIXME remove unwrap and throw error
+            // FIXME this should not be named matches_in_round but then what?
+            // FIXME change name in winner bracket lines implementation also
+            let Some(matches_in_round) = (round.len()).checked_next_power_of_two() else {
+                // TODO log error
+                return None;
+            };
+
+            // FIXME change name in winner bracket lines implementation also
+            let mut left_column_flowing_out_of: Vec<BoxElement> = column.clone();
+            // one or two matches flows into match
+            // FIXME change name in winner bracket lines implementation also
+            let mut right_column_flow_into: Vec<BoxElement> = column.clone();
+
+            for (i, m) in round.iter().enumerate() {
+                // ignore padding matches by selecting matches with set row_hint
+                if let Some(row) = m.row_hint {
+                    let boxes_between_matches_of_same_round =
+                        boxes_in_one_column / matches_in_round;
+                    // FIXME throw error
+                    // Taken from winner bracket lines function. Has twice as
+                    // many rounds, so gotta adjust it by dividing round_index
+                    // by two
+                    let Ok(r_i) =(round_index / 2).try_into() else {
+                        // TODO log error
+                        return None;
+                    };
+                    let Some(offset) = 2usize.checked_pow(r_i) else {
+                        // TODO log error
+                        return None;
+                    };
+                    if total_matches == 2 {
+                        // TODO check if this branch is used (insert panic and test the case)
+                        left_column_flowing_out_of[2].bottom_border = true;
+                    } else {
+                        left_column_flowing_out_of
+                            [row * boxes_between_matches_of_same_round + offset - 1]
+                            .bottom_border = true;
+                    }
+
+                    // vertical line
+                    for j in 0..offset {
+                        if row % 2 == 1 {
+                            // flows down towards next match
+                            right_column_flow_into[row * boxes_between_matches_of_same_round
+                                + 3 * offset
+                                - 1
+                                - j
+                                - boxes_between_matches_of_same_round]
+                                .left_border = true;
+                        } else {
+                            // flows up towards next match
+                            right_column_flow_into
+                                [row * boxes_between_matches_of_same_round + 2 * offset - 1 - j]
+                                .left_border = true;
+                        }
+                    }
+
+                    if total_matches == 2 {
+                        right_column_flow_into[1].bottom_border = true;
+                    } else if row % 2 == 1 {
+                        right_column_flow_into[row * boxes_between_matches_of_same_round
+                            + offset
+                            - 1
+                            - boxes_between_matches_of_same_round / 2]
+                            .bottom_border = true;
+                    } else if i % 2 == 1 {
+                        // row % 2 == 0
+                        right_column_flow_into[row * boxes_between_matches_of_same_round
+                            + offset
+                            + 1
+                            - boxes_between_matches_of_same_round / 2]
+                            .bottom_border = true;
+                    }
+                };
+            }
+
+            let lines_for_round = [left_column_flowing_out_of, right_column_flow_into].concat();
+
+            lines.push(lines_for_round);
+        }
+    }
+    Some(lines)
 }
