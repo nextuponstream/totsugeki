@@ -1,7 +1,6 @@
 <template>
   <div
-    class="pb-5"
-    style="color: gray;"
+    class="pb-5 text-gray-400"
   >
     {{ t('bracketView.hint') }}
   </div>
@@ -12,12 +11,18 @@
     <MatchNode :match="bracket.grand_finals_reset" />
   </div>
   <div class="pt-6">
-    <ShowBracket :bracket="bracket.winner_bracket">
+    <ShowBracket
+      :bracket="bracket.winner_bracket"
+      :lines="bracket.winner_bracket_lines"
+    >
       {{ t('bracketView.winnerBracket') }}
     </ShowBracket>
   </div>
   <div class="pt-6">
-    <ShowBracket :bracket="bracket.loser_bracket">
+    <ShowBracket 
+      :bracket="bracket.loser_bracket"
+      :lines="bracket.loser_bracket_lines"
+    >
       {{ t('bracketView.loserBracket') }}
     </ShowBracket>
   </div>
@@ -33,7 +38,9 @@ const {t} = useI18n({})
 
 const bracket: Ref<Bracket> = ref({
   winner_bracket: [],
+  winner_bracket_lines: [],
   loser_bracket: [],
+  loser_bracket_lines: [],
   grand_finals: null,
   grand_finals_reset: null,
 })

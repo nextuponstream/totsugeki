@@ -1,6 +1,6 @@
 <template>
   <div
-    class="max-w-[140px] flex flex-col"
+    class="max-w-[140px] flex flex-col my-auto"
     :class="matchClass"
   >
     <div 
