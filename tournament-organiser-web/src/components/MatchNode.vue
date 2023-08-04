@@ -1,27 +1,32 @@
 <template>
   <div
-    class="max-w-[140px] flex flex-col my-auto"
-    :class="matchClass"
+    class="py-2 flex flex-col"   
+    :class="rowClass" 
   >
-    <div 
-      class="flex"
-      :class="verticalSeparator"
+    <div
+      class="flex flex-col my-auto"
+      :class="matchClass"
     >
-      <div>{{ !isPaddingMatch ? match?.seeds[0] : '&#8205;' }}</div>
-      <div class="grow pl-1">
-        {{ match?.players[0] }}
+      <div 
+        class="flex"
+        :class="verticalSeparator"
+      >
+        <div>{{ !isPaddingMatch ? match?.seeds[0] : '&#8205;' }}</div>
+        <div class="grow pl-1">
+          {{ match?.players[0] }}
+        </div>
+        <div>{{ !isPaddingMatch ? match?.score[0] : '&#8205;' }}</div>
       </div>
-      <div>{{ !isPaddingMatch ? match?.score[0] : '&#8205;' }}</div>
-    </div>
-    <div 
-      class="flex"
-      :class="verticalSeparator"
-    >
-      <div>{{ !isPaddingMatch ? match?.seeds[1] : '&#8205;' }}</div>
-      <div class="grow pl-1">
-        {{ match?.players[1] }}
+      <div 
+        class="flex"
+        :class="verticalSeparator"
+      >
+        <div>{{ !isPaddingMatch ? match?.seeds[1] : '&#8205;' }}</div>
+        <div class="grow pl-1">
+          {{ match?.players[1] }}
+        </div>
+        <div>{{ !isPaddingMatch ? match?.score[1] : '&#8205;' }}</div>
       </div>
-      <div>{{ !isPaddingMatch ? match?.score[1] : '&#8205;' }}</div>
     </div>
   </div>
 </template>
@@ -49,10 +54,12 @@ const matchClass = computed(() => {
    if (isPaddingMatch.value) {
     return null
   } else {
-    let r = 'max-w-[140px] flex flex-col divide-y border-1 border-box border hover:bg-gray-300 rounded-md'
-    r = r + ' ' + `${props.match?.row_hint != null ? `row-start-${props.match.row_hint + 1}` : ''}`
-    return r
+    return 'flex flex-col divide-y border-1 border-box border hover:bg-gray-300 rounded-md'
   }
+})
+
+const rowClass = computed(() => {
+  return `${props.match?.row_hint != null ? `row-start-${props.match.row_hint + 1}` : ''}`
 })
 
 const verticalSeparator = computed(() => {
