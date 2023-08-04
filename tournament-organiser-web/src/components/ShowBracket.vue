@@ -4,14 +4,13 @@
   </div>
   <div class="flex flex-row">
     <div
-      class="grid grid-rows-1 grow"
+      class="grid grid-rows-1"
       :class="gridClassSetup"
     >
       <div
         v-for="(element, indexCol) in mix"
         :key="indexCol"
-        class="grid"
-        :class="indexCol < mix.length - 1 ? 'grid-cols-3' : 'grid-cols-fixed auto-cols-fr'"
+        class="grid grid-cols-[200px_50px_50px]"
       >
         <div
           v-if="indexCol < mix.length - 1"
@@ -47,8 +46,49 @@
     </div>
     <div class="my-auto py-auto grow-0 w-[200px]">
       <MatchNode
-        
-        :match="mix[mix.length-1].match[0]"
+        :match="bracketFinalMatch"
+      />
+    </div>
+    <div
+      v-if="grandFinals"
+      class="grid grid-cols-[50px_50px]"
+    >
+      <div class="my-auto">
+        <div class="border-b" />
+        <div class="" />
+      </div>
+      <div class="my-auto">
+        <div class="border-b" />
+        <div class="" />
+      </div>
+    </div>
+    <div
+      v-if="grandFinals"
+      class="my-auto py-auto grow-0 w-[200px]"
+    >
+      <MatchNode
+        :match="grandFinals"
+      />
+    </div>
+    <div
+      v-if="grandFinalsReset"
+      class="grid grid-cols-[50px_50px]"
+    >
+      <div class="my-auto">
+        <div class="border-b" />
+        <div class="" />
+      </div>
+      <div class="my-auto">
+        <div class="border-b" />
+        <div class="" />
+      </div>
+    </div>
+    <div
+      v-if="grandFinalsReset"
+      class="my-auto py-auto grow-0 w-[200px]"
+    >
+      <MatchNode
+        :match="grandFinalsReset"
       />
     </div>
   </div>
@@ -60,6 +100,8 @@ import MatchNode from '@/components/MatchNode.vue';
 const props = defineProps({
     bracket: { type: Array as PropType<Match[][]>, default: () => {return []} },
     lines: { type: Array as PropType<Lines[][]>, default: () => {return []} },
+    grandFinals: { type: Object as PropType<Match | undefined>, default: () => {return undefined} },
+    grandFinalsReset: { type: Object as PropType<Match | undefined>, default: () => {return undefined} },
 })
 
 const mix = computed(() => {
@@ -76,6 +118,15 @@ const mix = computed(() => {
 
   return r
 });
+
+const bracketFinalMatch = computed(() => {
+  let bracket = props.bracket
+  if (bracket.length > 0) {
+    return bracket[bracket.length - 1][0]
+  } else {
+    return undefined
+  }
+})
 
 const gridClassSetup = computed(() => `grid-cols-${props.bracket.length - 1}`)
 

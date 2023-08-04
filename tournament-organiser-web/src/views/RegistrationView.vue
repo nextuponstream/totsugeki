@@ -59,7 +59,6 @@
   
   async function createBracketFromPlayers(){
     try {
-      console.log(JSON.stringify(playerList.value.map(p => p.name)))
       let response = await fetch('http://localhost:3000/bracket-from-players', {
         method: 'POST',
         headers: {

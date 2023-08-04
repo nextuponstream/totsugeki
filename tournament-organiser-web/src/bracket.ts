@@ -16,6 +16,6 @@ interface Bracket {
   winner_bracket_lines: Lines[][],
   loser_bracket: Match[][],
   loser_bracket_lines: Lines[][],
-  grand_finals: Match | null,
-  grand_finals_reset: Match | null,
+  grand_finals: Match | undefined,
+  grand_finals_reset: Match | undefined,
 }

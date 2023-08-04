@@ -20,8 +20,6 @@ export default {
         empty: "Aucun joueur n'a été enregistré...",
     },  
     bracketView: {
-        grandFinals: "Grand finales",
-        bracketReset: "Bracket reset",
         winnerBracket: "Winner bracket",
         loserBracket: "Loser bracket",
         hint: "Veuillez cliquer un match pour entrer un résultat",
