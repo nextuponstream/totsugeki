@@ -2,46 +2,54 @@
   <div class="text-lg">
     <slot />
   </div>
-  <div
-    class="grid grid-rows-1"
-    :class="gridClassSetup"
-  >
+  <div class="flex flex-row">
     <div
-      v-for="(element, indexCol) in mix"
-      :key="indexCol"
-      class="grid"
-      :class="indexCol < mix.length - 1 ? 'grid-cols-3' : 'grid-cols-1'"
+      class="grid grid-rows-1 grow"
+      :class="gridClassSetup"
     >
       <div
-        class="grid grid-cols-1"
-      >
-        <MatchNode
-          v-for="match in element.match"
-          :key="match.id"
-          :match="match"
-        />
-      </div>
-      
-      <div
-        v-if="indexCol < mix.length - 1"
-        class="grid grid-cols-1"
+        v-for="(element, indexCol) in mix"
+        :key="indexCol"
+        class="grid"
+        :class="indexCol < mix.length - 1 ? 'grid-cols-3' : 'grid-cols-fixed auto-cols-fr'"
       >
         <div
-          v-for="(line, index) in element.lines.slice(0, element.lines.length/2)"
-          :key="index"
-          :class="show(line)"
-        />
-      </div>
-      <div
-        v-if="indexCol < mix.length - 1"
-        class="grid grid-cols-1"
-      >
+          v-if="indexCol < mix.length - 1"
+          class="grid grid-cols-1"
+        >
+          <MatchNode
+            v-for="match in element.match"
+            :key="match.id"
+            :match="match"
+          />
+        </div>
         <div
-          v-for="(line, index) in element.lines.slice(element.lines.length/2, element.lines.length)"
-          :key="index"
-          :class="show(line)"
-        />
+          v-if="indexCol < mix.length - 1"
+          class="grid grid-cols-1"
+        >
+          <div
+            v-for="(line, index) in element.lines.slice(0, element.lines.length/2)"
+            :key="index"
+            :class="show(line)"
+          />
+        </div>
+        <div
+          v-if="indexCol < mix.length - 1"
+          class="grid grid-cols-1"
+        >
+          <div
+            v-for="(line, index) in element.lines.slice(element.lines.length/2, element.lines.length)"
+            :key="index"
+            :class="show(line)"
+          />
+        </div>
       </div>
+    </div>
+    <div class="my-auto py-auto grow-0 w-[200px]">
+      <MatchNode
+        
+        :match="mix[mix.length-1].match[0]"
+      />
     </div>
   </div>
 </template>
@@ -69,6 +77,8 @@ const mix = computed(() => {
   return r
 });
 
+const gridClassSetup = computed(() => `grid-cols-${props.bracket.length - 1}`)
+
 function show(l: Lines) {
   if (l.bottom_border && l.left_border) {
     return 'border-l border-b'
@@ -80,7 +90,5 @@ function show(l: Lines) {
     return ''
   }
 }
-
-const gridClassSetup = computed(() => `grid-cols-${props.bracket.length}`)
 
 </script>

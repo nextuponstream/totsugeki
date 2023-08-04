@@ -7,8 +7,14 @@
   <div class="grid grid-cols-2">
     <div>{{ t('bracketView.grandFinals') }}</div>
     <div>{{ t('bracketView.bracketReset') }}</div>
-    <MatchNode :match="bracket.grand_finals" />
-    <MatchNode :match="bracket.grand_finals_reset" />
+    <MatchNode
+      :match="bracket.grand_finals"
+      class="max-w-[160px] "
+    />
+    <MatchNode
+      :match="bracket.grand_finals_reset"
+      class="max-w-[160px] "
+    />
   </div>
   <div class="pt-6">
     <ShowBracket
