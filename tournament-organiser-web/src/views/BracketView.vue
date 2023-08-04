@@ -4,22 +4,12 @@
   >
     {{ t('bracketView.hint') }}
   </div>
-  <div class="grid grid-cols-2">
-    <div>{{ t('bracketView.grandFinals') }}</div>
-    <div>{{ t('bracketView.bracketReset') }}</div>
-    <MatchNode
-      :match="bracket.grand_finals"
-      class="max-w-[160px] "
-    />
-    <MatchNode
-      :match="bracket.grand_finals_reset"
-      class="max-w-[160px] "
-    />
-  </div>
-  <div class="pt-6">
+  <div>
     <ShowBracket
       :bracket="bracket.winner_bracket"
       :lines="bracket.winner_bracket_lines"
+      :grand-finals="bracket.grand_finals"
+      :grand-finals-reset="bracket.grand_finals_reset"
     >
       {{ t('bracketView.winnerBracket') }}
     </ShowBracket>
@@ -47,8 +37,8 @@ const bracket: Ref<Bracket> = ref({
   winner_bracket_lines: [],
   loser_bracket: [],
   loser_bracket_lines: [],
-  grand_finals: null,
-  grand_finals_reset: null,
+  grand_finals: undefined as Match | undefined,
+  grand_finals_reset: undefined as Match | undefined,
 })
 
 onMounted(() => {
