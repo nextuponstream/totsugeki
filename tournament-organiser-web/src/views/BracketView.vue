@@ -1,7 +1,11 @@
 <template>
-  <div
-    class="pb-5 text-gray-400"
-  >
+  <ReportResultModal 
+    v-model="show"
+    :match-id="matchId"
+    :players="players"
+  />
+
+  <div class="pb-5 text-gray-400">
     {{ t('bracketView.hint') }}
   </div>
   <div>
@@ -10,6 +14,7 @@
       :lines="bracket.winner_bracket_lines"
       :grand-finals="bracket.grand_finals"
       :grand-finals-reset="bracket.grand_finals_reset"
+      @show-result-modal="showResultModal"
     >
       {{ t('bracketView.winnerBracket') }}
     </ShowBracket>
@@ -18,6 +23,7 @@
     <ShowBracket 
       :bracket="bracket.loser_bracket"
       :lines="bracket.loser_bracket_lines"
+      @show-result-modal="showResultModal"
     >
       {{ t('bracketView.loserBracket') }}
     </ShowBracket>
@@ -26,9 +32,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import type { Ref } from 'vue';
-import MatchNode from '@/components/MatchNode.vue';
 import ShowBracket from '@/components/ShowBracket.vue';
 import { useI18n } from 'vue-i18n';
+import ReportResultModal from '@/components/ReportResultModal.vue';
 
 const {t} = useI18n({})
 
@@ -44,6 +50,16 @@ const bracket: Ref<Bracket> = ref({
 onMounted(() => {
   bracket.value = JSON.parse(localStorage.getItem('bracket')!)
 })
+
+const matchId = ref<string | null>(null)
+const players = ref<string[] | null>(null)
+const show = ref(false)
+
+function showResultModal(clickedMatchId: string, clickedPlayers: string[]) {
+  matchId.value = clickedMatchId
+  players.value = clickedPlayers
+  show.value = true
+}
 
 </script>
 <style scoped>

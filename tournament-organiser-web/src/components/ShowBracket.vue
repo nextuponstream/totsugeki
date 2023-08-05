@@ -20,6 +20,7 @@
             v-for="match in element.match"
             :key="match.id"
             :match="match"
+            @click="showResultModal(match.id, match.players)"
           />
         </div>
         <div
@@ -44,9 +45,13 @@
         </div>
       </div>
     </div>
-    <div class="my-auto py-auto grow-0 w-[200px]">
+    <div
+      v-if="bracketFinalMatch"
+      class="my-auto py-auto grow-0 w-[200px]"
+    >
       <MatchNode
         :match="bracketFinalMatch"
+        @click="showResultModal(bracketFinalMatch.id, bracketFinalMatch.players)"
       />
     </div>
     <div
@@ -68,6 +73,7 @@
     >
       <MatchNode
         :match="grandFinals"
+        @click="showResultModal(grandFinals.id, grandFinals.players)"
       />
     </div>
     <div
@@ -89,6 +95,7 @@
     >
       <MatchNode
         :match="grandFinalsReset"
+        @click="showResultModal(grandFinalsReset.id, grandFinalsReset.players)"
       />
     </div>
   </div>
@@ -103,6 +110,8 @@ const props = defineProps({
     grandFinals: { type: Object as PropType<Match | undefined>, default: () => {return undefined} },
     grandFinalsReset: { type: Object as PropType<Match | undefined>, default: () => {return undefined} },
 })
+
+const emits = defineEmits(['showResultModal'])
 
 const mix = computed(() => {
   let lines = props.lines
@@ -140,6 +149,10 @@ function show(l: Lines) {
   } else {
     return ''
   }
+}
+
+function showResultModal(matchId: string, players: string[]){
+  emits('showResultModal', matchId, players)
 }
 
 </script>
