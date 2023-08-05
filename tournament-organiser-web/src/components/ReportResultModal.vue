@@ -11,34 +11,92 @@
     <h1 class="text-2xl font-semibold">
       Match results
     </h1>
-    <button>2-0</button><button>2-1</button><button>1-2</button><button>0-2</button>
-    <div class="flex flex-row">
-      <div>{{ players ? players[0] : '' }}</div>
-      <div>{{ players ? players[1] : '' }}</div>
+    <div class="grid grid-cols-4 gap-4">
+      <OtherBtn @click="setScore(2,0)">
+        2 - 0
+      </OtherBtn>
+      <OtherBtn @click="setScore(2,1)">
+        2 - 1
+      </OtherBtn>
+      <OtherBtn @click="setScore(1,2)">
+        1 - 2
+      </OtherBtn>
+      <OtherBtn @click="setScore(0,2)">
+        0 - 2
+      </OtherBtn>
     </div>
-    <SubmitBtn />
-    <button @click="hideModal">
-      Close
-    </button>
+    <div class="grid grid-cols-6 gap-1">
+      <OtherBtn @click="setScore(3,0)">
+        3 - 0
+      </OtherBtn>
+      <OtherBtn @click="setScore(3,1)">
+        3 - 1
+      </OtherBtn>
+      <OtherBtn @click="setScore(3,2)">
+        3 - 2
+      </OtherBtn>
+      <OtherBtn @click="setScore(2,3)">
+        2 - 3
+      </OtherBtn>
+      <OtherBtn @click="setScore(1,3)">
+        1 - 3
+      </OtherBtn>
+      <OtherBtn @click="setScore(0,3)">
+        0 - 3
+      </OtherBtn>
+    </div>
+    <div class="grid grid-cols-3">
+      <div>{{ players ? players[0].name : '' }}</div>
+      <div class="place-self-center">
+        <div>{{ scoreP1 }} - {{ scoreP2 }}</div>
+      </div>
+      <div class="flex flex-row-reverse">
+        {{ players ? players[1].name : '' }}
+      </div>
+    </div>
+    <div class="flex gap-1">
+      <SubmitBtn
+        :disabled="isSubmitDisabled"
+        @click="submit"
+      />
+      <CancelBtn @click="hideModal" />
+    </div>
   </div>
 </template>
 <script setup lang="ts">
 
-import {ref, computed} from 'vue'
-import SubmitBtn from './ui/SubmitBtn.vue';
+import {ref, computed, onUpdated} from 'vue'
 
 const props = defineProps<{
     matchId: string | null,
-    players: string[] | null,
+    players: {name: string, id: string}[] | null,
     modelValue: boolean,
 }>()
 
 const hide = ref(false)
-const emits = defineEmits(['update:modelValue'])
+const scoreP1 = ref(0)
+const scoreP2 = ref(0)
+const emits = defineEmits(['update:modelValue', 'newResult'])
+
+onUpdated(() => {
+    if (!props.modelValue) {
+        scoreP1.value = 0
+        scoreP2.value = 0
+    }})
 
 function hideModal() {
     hide.value = true
     emits('update:modelValue', false)
+}
+
+function setScore(p1: number, p2: number) {
+    scoreP1.value = p1
+    scoreP2.value = p2
+}
+
+function submit() {
+    emits('newResult', props.players, scoreP1.value, scoreP2.value)
+    hideModal()
 }
 
 const isHidden = computed(() => {
@@ -47,6 +105,9 @@ const isHidden = computed(() => {
     } else {
         return 'hidden'
     }
+})
+const isSubmitDisabled = computed(() => {
+    return scoreP1.value === 0 && scoreP2.value === 0 
 })
 
 </script>

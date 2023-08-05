@@ -3,7 +3,8 @@ use axum::{response::IntoResponse, Json};
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use totsugeki::bracket::Bracket;
-use totsugeki::player::Participants;
+use totsugeki::opponent::Opponent;
+use totsugeki::player::{Participants, Player};
 use totsugeki::{
     bracket::double_elimination_variant::Variant as DoubleEliminationVariant,
     matches::Id as MatchId, matches::Match, player::Id as PlayerId,
@@ -24,6 +25,8 @@ struct BracketDisplay {
     grand_finals: MinimalMatch,
     /// Grand finals reset
     grand_finals_reset: MinimalMatch,
+    /// Bracket object to update
+    bracket: Bracket,
 }
 
 /// List of players from which a bracket can be created
@@ -104,6 +107,105 @@ pub async fn new_bracket_from_players(Json(player_list): Json<PlayerList>) -> im
         loser_bracket_lines,
         grand_finals: gf,
         grand_finals_reset: gf_reset,
+        bracket,
+    };
+    tracing::debug!("updated bracket {:?}", bracket);
+    Ok(Json(bracket))
+}
+
+/// List of players from which a bracket can be created
+#[derive(Deserialize)]
+pub struct ReportResultForBracket {
+    /// current state of the bracket
+    bracket: Bracket,
+    p1_id: PlayerId,
+    p2_id: PlayerId,
+    score_p1: i8,
+    score_p2: i8,
+}
+
+/// Returns updated bracket with result. Because there is no persistence, it's
+/// obviously limited in that TO can manipulate localStorage to change the
+/// bracket but we are not worried about that right now. For now, the goal is
+/// that it just works for normal use cases
+pub async fn report_result_for_bracket(
+    Json(report): Json<ReportResultForBracket>,
+) -> impl IntoResponse {
+    tracing::debug!("new reported result");
+    let mut bracket = report.bracket;
+
+    // FIXME deal with error
+    bracket = bracket
+        .tournament_organiser_reports_result(
+            report.p1_id,
+            (report.score_p1, report.score_p2),
+            report.p2_id,
+        )
+        .unwrap()
+        .0;
+
+    let participants = bracket.get_participants();
+    let dev: DoubleEliminationVariant = bracket.clone().try_into().expect("partition");
+
+    // TODO test if tracing shows from which methods it was called
+    let wb_rounds_matches = match dev.partition_winner_bracket() {
+        Ok(wb) => wb,
+        Err(e) => {
+            tracing::error!("{e:?}");
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+    let mut wb_rounds = vec![];
+    for r in wb_rounds_matches {
+        let round = r
+            .iter()
+            .map(|m| from_participants(m, &participants))
+            .collect();
+        wb_rounds.push(round);
+    }
+
+    reorder(&mut wb_rounds);
+    let Some(winner_bracket_lines) = winner_bracket_lines(wb_rounds.clone()) else {
+        tracing::error!("winner bracket connecting lines");
+        return Err(StatusCode::INTERNAL_SERVER_ERROR);
+    };
+
+    let Ok(lb_rounds_matches) = dev.partition_loser_bracket() else {
+        // TODO log error
+        return Err(StatusCode::INTERNAL_SERVER_ERROR);
+    };
+    let mut lb_rounds: Vec<Vec<MinimalMatch>> = vec![];
+    for r in lb_rounds_matches {
+        let round = r
+            .iter()
+            .map(|m| from_participants(m, &participants))
+            .collect();
+        lb_rounds.push(round);
+    }
+    reorder_loser_bracket(&mut lb_rounds);
+    let Some(loser_bracket_lines) = loser_bracket_lines(lb_rounds.clone()) else {
+        tracing::error!("loser bracket connecting lines");
+        return Err(StatusCode::INTERNAL_SERVER_ERROR);
+    };
+
+    let (gf, gf_reset) = match dev.grand_finals_and_reset() {
+        Ok((gf, bracket_reset)) => (gf, bracket_reset),
+        Err(e) => {
+            tracing::error!("{e:?}");
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+    let gf = from_participants(&gf, &participants);
+    let gf_reset = from_participants(&gf_reset, &participants);
+
+    let bracket = BracketDisplay {
+        winner_bracket: wb_rounds,
+        winner_bracket_lines,
+        loser_bracket: lb_rounds,
+        loser_bracket_lines,
+        grand_finals: gf,
+        grand_finals_reset: gf_reset,
+        bracket,
     };
     tracing::debug!("created bracket {:?}", bracket);
     Ok(Json(bracket))
@@ -170,7 +272,7 @@ pub struct MinimalMatch {
     /// Match identifier
     id: MatchId,
     /// Names of players participating in match
-    players: [String; 2],
+    players: [Player; 2],
     /// Score of match
     score: (i8, i8),
     /// Expected seeds of player in match
@@ -183,7 +285,10 @@ impl Default for MinimalMatch {
     fn default() -> Self {
         MinimalMatch {
             id: MatchId::new_v4(),
-            players: [String::default(), String::default()],
+            players: [
+                Player::new(String::default()),
+                Player::new(String::default()),
+            ],
             score: (0, 0),
             seeds: [0, 0],
             row_hint: None,
@@ -193,17 +298,26 @@ impl Default for MinimalMatch {
 
 /// Convert match struct from Totsugeki library into minimal struct, using
 /// `participants` to fill in name of players.
-///
-///
 fn from_participants(m: &Match, participants: &Participants) -> MinimalMatch {
     let list = participants.get_players_list();
     let players: Vec<(PlayerId, String)> =
         list.iter().map(|p| (p.get_id(), p.get_name())).collect();
+
+    // TODO find out if storing both player name and id is better than storing
+    // only the id and doing some work to get back id and name.
+    let p1 = match m.get_players()[0] {
+        Opponent::Player(id) => id,
+        Opponent::Unknown => PlayerId::new_v4(),
+    };
+    let p2 = match m.get_players()[1] {
+        Opponent::Player(id) => id,
+        Opponent::Unknown => PlayerId::new_v4(),
+    };
     let player1 = m.get_players()[0].get_name(&players);
     let player2 = m.get_players()[1].get_name(&players);
     MinimalMatch {
         id: m.get_id(),
-        players: [player1, player2],
+        players: [Player::from((p1, player1)), Player::from((p2, player2))],
         score: m.get_score(),
         seeds: m.get_seeds(),
         row_hint: None,
