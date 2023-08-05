@@ -12,6 +12,8 @@ import { createI18n } from 'vue-i18n'
 import FormInputVue from './components/ui/FormInput.vue'
 import SubmitBtnVue from './components/ui/SubmitBtn.vue'
 import BaseTooltip from './components/ui/BaseTooltip.vue'
+import CancelBtnVue from './components/ui/CancelBtn.vue'
+import OtherBtnVue from './components/ui/OtherBtn.vue'
 
 const app = createApp(App)
 
@@ -27,6 +29,8 @@ app.use(createPinia())
 app.use(router)
 
 app.component('SubmitBtn', SubmitBtnVue)
+app.component('CancelBtn', CancelBtnVue)
+app.component('OtherBtn', OtherBtnVue)
 app.component('FormInput', FormInputVue)
 app.component('BaseTooltip', BaseTooltip)
 

@@ -7,6 +7,7 @@ export default {
     },
     generic: {
         submit: "Envoyer",
+        cancel: "Annuler",
     },
     playerRegistrationForm: {
         title: "Enregistrer un nouveau joueur",

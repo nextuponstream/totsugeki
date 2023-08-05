@@ -1,6 +1,6 @@
 interface Match {
     id: string,
-    players: string[],
+    players: {name: string, id: string}[],
     seeds: number[],
     score: number[],
     row_hint: number | null,
@@ -18,4 +18,5 @@ interface Bracket {
   loser_bracket_lines: Lines[][],
   grand_finals: Match | undefined,
   grand_finals_reset: Match | undefined,
+  bracket: Object | undefined,
 }

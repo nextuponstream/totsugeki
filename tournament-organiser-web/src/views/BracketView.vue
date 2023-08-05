@@ -3,6 +3,7 @@
     v-model="show"
     :match-id="matchId"
     :players="players"
+    @new-result="reportResult"
   />
 
   <div class="pb-5 text-gray-400">
@@ -45,6 +46,7 @@ const bracket: Ref<Bracket> = ref({
   loser_bracket_lines: [],
   grand_finals: undefined as Match | undefined,
   grand_finals_reset: undefined as Match | undefined,
+  bracket: undefined,
 })
 
 onMounted(() => {
@@ -52,13 +54,38 @@ onMounted(() => {
 })
 
 const matchId = ref<string | null>(null)
-const players = ref<string[] | null>(null)
+const players = ref<{name: string, id: string}[] | null>(null)
 const show = ref(false)
 
-function showResultModal(clickedMatchId: string, clickedPlayers: string[]) {
+function showResultModal(clickedMatchId: string, clickedPlayers: {name: string, id: string}[]) {
   matchId.value = clickedMatchId
   players.value = clickedPlayers
   show.value = true
+}
+
+async function reportResult(players: {name: string, id: string}[], scoreP1: number, scoreP2: number) {
+  try {
+      console.log(bracket.value.bracket)
+      let response = await fetch('http://localhost:3000/report-result-for-bracket', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bracket: bracket.value.bracket, 
+          p1_id: players[0].id, 
+          p2_id: players[1].id, 
+          score_p1: scoreP1, 
+          score_p2: scoreP2, 
+        }),
+      })
+      let newBracket = await response.json()
+      localStorage.setItem('bracket', JSON.stringify(bracket))
+      bracket.value = newBracket
+    } catch (e) {
+      console.error(e)
+    }
 }
 
 </script>

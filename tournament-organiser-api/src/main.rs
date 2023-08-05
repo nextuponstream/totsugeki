@@ -16,7 +16,7 @@ use axum::{
 };
 use serde::Serialize;
 use std::net::SocketAddr;
-use tournament_organiser_api::new_bracket_from_players;
+use tournament_organiser_api::{new_bracket_from_players, report_result_for_bracket};
 use tower_http::cors::CorsLayer;
 use tower_http::{
     services::{ServeDir, ServeFile},
@@ -64,6 +64,10 @@ fn using_serve_dir_with_assets_fallback() -> Router {
     Router::new()
         .route("/health", get(health))
         .route("/bracket-from-players", post(new_bracket_from_players))
+        .route(
+            "/report-result-for-bracket",
+            post(report_result_for_bracket),
+        )
         .nest_service("/dist", serve_dir.clone())
         .fallback_service(serve_dir)
         // CORS after route declaration https://github.com/tokio-rs/axum/issues/1330#issue-1351827022

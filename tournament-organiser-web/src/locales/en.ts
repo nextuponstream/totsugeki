@@ -7,6 +7,7 @@ export default {
     },
     generic: {
         submit: "Submit",
+        cancel: "Cancel",
     },
     playerRegistrationForm: {
         title: "Register players",

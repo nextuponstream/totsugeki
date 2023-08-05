@@ -13,7 +13,7 @@
       >
         <div>{{ !isPaddingMatch ? match?.seeds[0] : '&#8205;' }}</div>
         <div class="grow pl-1">
-          {{ match?.players[0] }}
+          {{ match?.players[0].name }}
         </div>
         <div>{{ !isPaddingMatch ? match?.score[0] : '&#8205;' }}</div>
       </div>
@@ -23,7 +23,7 @@
       >
         <div>{{ !isPaddingMatch ? match?.seeds[1] : '&#8205;' }}</div>
         <div class="grow pl-1">
-          {{ match?.players[1] }}
+          {{ match?.players[1].name }}
         </div>
         <div>{{ !isPaddingMatch ? match?.score[1] : '&#8205;' }}</div>
       </div>
@@ -36,7 +36,7 @@ import { computed } from 'vue';
 
 interface Match {
   id: string,
-  players: string[],
+  players: {name: string, id: string}[],
   seeds: number[],
   score: number[],
   row_hint: number | null,

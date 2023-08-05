@@ -151,7 +151,7 @@ function show(l: Lines) {
   }
 }
 
-function showResultModal(matchId: string, players: string[]){
+function showResultModal(matchId: string, players: {name: string, id: string}[]){
   emits('showResultModal', matchId, players)
 }
 
