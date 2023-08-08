@@ -5,13 +5,13 @@
     @click="hideModal"
   />
   <div
-    class="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 bg-white rounded-md px-8 py-6 space-y-5 drop-shadow-lg"
+    class="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-auto bg-white rounded-md px-8 py-6 space-y-5 drop-shadow-lg"
     :class="isHidden"
   >
     <h1 class="text-2xl font-semibold">
       Match results
     </h1>
-    <div class="grid grid-cols-4 gap-4">
+    <div class="grid grid-cols-4 gap-7">
       <OtherBtn @click="setScore(2,0)">
         2 - 0
       </OtherBtn>
@@ -25,7 +25,7 @@
         0 - 2
       </OtherBtn>
     </div>
-    <div class="grid grid-cols-6 gap-1">
+    <div class="grid grid-cols-6 gap-2">
       <OtherBtn @click="setScore(3,0)">
         3 - 0
       </OtherBtn>

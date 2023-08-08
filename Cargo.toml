@@ -6,4 +6,5 @@ members = [
   "dioxus-components",
   "web",
   "tournament-organiser-api",
+  "ui",
 ]

@@ -2,19 +2,18 @@
   <div class="text-lg">
     <slot />
   </div>
-  <div class="flex flex-row">
+  <div class="flex flex-row overflow-auto overflow-x-auto flex-shrink-0">
     <div
-      class="grid grid-rows-1"
+      class="grid grid-rows-1 auto-rows-[1fr] flex-shrink-0"
       :class="gridClassSetup"
     >
       <div
         v-for="(element, indexCol) in mix"
         :key="indexCol"
-        class="grid grid-cols-[200px_50px_50px]"
+        class="grid grid-cols-[200px_50px_50px] w-[300px]"
       >
         <div
-          v-if="indexCol < mix.length - 1"
-          class="grid grid-cols-1"
+          class="grid grid-cols-1 w-[200px]"
         >
           <MatchNode
             v-for="match in element.match"
@@ -24,8 +23,7 @@
           />
         </div>
         <div
-          v-if="indexCol < mix.length - 1"
-          class="grid grid-cols-1"
+          class="grid grid-cols-1 w-[50px]"
         >
           <div
             v-for="(line, index) in element.lines.slice(0, element.lines.length/2)"
@@ -34,8 +32,7 @@
           />
         </div>
         <div
-          v-if="indexCol < mix.length - 1"
-          class="grid grid-cols-1"
+          class="grid grid-cols-1 w-[50px]"
         >
           <div
             v-for="(line, index) in element.lines.slice(element.lines.length/2, element.lines.length)"
@@ -47,7 +44,7 @@
     </div>
     <div
       v-if="bracketFinalMatch"
-      class="my-auto py-auto grow-0 w-[200px]"
+      class="my-auto py-auto w-[200px] flex-shrink-0"
     >
       <MatchNode
         :match="bracketFinalMatch"
@@ -56,7 +53,7 @@
     </div>
     <div
       v-if="grandFinals"
-      class="grid grid-cols-[50px_50px]"
+      class="grid grid-cols-[50px_50px] flex-shrink-0"
     >
       <div class="my-auto">
         <div class="border-b" />
@@ -69,7 +66,7 @@
     </div>
     <div
       v-if="grandFinals"
-      class="my-auto py-auto grow-0 w-[200px]"
+      class="my-auto py-auto grow-0 w-[200px] flex-shrink-0"
     >
       <MatchNode
         :match="grandFinals"
@@ -78,7 +75,7 @@
     </div>
     <div
       v-if="grandFinalsReset"
-      class="grid grid-cols-[50px_50px]"
+      class="grid grid-cols-[50px_50px] flex-shrink-0"
     >
       <div class="my-auto">
         <div class="border-b" />
@@ -91,7 +88,7 @@
     </div>
     <div
       v-if="grandFinalsReset"
-      class="my-auto py-auto grow-0 w-[200px]"
+      class="my-auto py-auto grow-0 w-[200px] flex-shrink-0"
     >
       <MatchNode
         :match="grandFinalsReset"
@@ -117,7 +114,7 @@ const mix = computed(() => {
   let lines = props.lines
   lines.push([])
   let r = []
-  for (let i = 0; i < props.bracket.length; i++) {
+  for (let i = 0; i < props.bracket.length - 1; i++) {
     let o = {
       match: props.bracket[i],
       lines: lines[i],
