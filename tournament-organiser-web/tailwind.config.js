@@ -1,4 +1,7 @@
 /** @type {import('tailwindcss').Config} */
+
+import {gridSetup, rowSetup, safelist} from './test'
+gridSetup['fixed'] = '200px'
 export default {
   content: [
     "./index.html",
@@ -9,27 +12,16 @@ export default {
       'roboto': ['Roboto', 'sans-serif'],
     },
     extend: {
-      gridTemplateColumns: {
-        '13': 'repeat(13, minmax(0, 1fr))',
-        'fixed': '200px',
-      }
+      gridRow: {
+        'span-16384': 'span 16384 / span 16384',
+      },
+      // FIXME should not be 10k but closer to 1k
+      gridTemplateColumns: gridSetup,
+      gridRowStart: rowSetup,
     },
   },
   safelist: [
-    'grid-cols-1',
-    'grid-cols-2',
-    'grid-cols-3',
-    'grid-cols-4',
-    'grid-cols-5',
-    'grid-cols-6',
-    'grid-cols-7',
-    'grid-cols-8',
-    'grid-cols-9',
-    'grid-cols-10',
-    'grid-cols-11',
-    'grid-cols-12',
-    'row-start-1',
-    'row-start-2',
+      ...safelist
   ],
   plugins: [
     require('@tailwindcss/forms'),
