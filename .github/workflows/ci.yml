@@ -164,11 +164,12 @@ jobs:
             tournament-organiser-web/node_modules
             tournament-organiser-web/dist
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - run: cd ui && cargo run > test.ts && mv test.ts ../tournament-organiser-web/
       - uses: cypress-io/github-action@v5
         with:
           working-directory: tournament-organiser-web
           install: true
-          build: cd ../ui && cargo run > test.ts && mv test.ts ../tournament-organiser-web/ && cd ../tournament-organiser-web && npm run build:ci
+          build: npm run build:ci
           start: cargo run --package tournament-organiser-api --release
           wait-on: 'http://localhost:3000'
           wait-on-timeout: 30
