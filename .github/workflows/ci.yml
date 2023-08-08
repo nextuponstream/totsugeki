@@ -168,7 +168,7 @@ jobs:
         with:
           working-directory: tournament-organiser-web
           install: true
-          build: cd ../ui && cargo run > test.ts && mv test.ts ../tournament-organiser-web/ cd ../tournament-organiser-web && npm run build:ci
+          build: cd ../ui && cargo run > test.ts && mv test.ts ../tournament-organiser-web/ && cd ../tournament-organiser-web && npm run build:ci
           start: cargo run --package tournament-organiser-api --release
           wait-on: 'http://localhost:3000'
           wait-on-timeout: 30
