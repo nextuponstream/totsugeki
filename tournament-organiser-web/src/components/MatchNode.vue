@@ -15,7 +15,12 @@
         <div class="grow pl-1">
           {{ match?.players[0].name }}
         </div>
-        <div>{{ !isPaddingMatch ? match?.score[0] : '&#8205;' }}</div>
+        <MatchScore
+          :is-padding-match="isPaddingMatch"
+          :scores="match?.score"
+          :index="0"
+          :other-index="1"
+        />
       </div>
       <div 
         class="flex"
@@ -25,14 +30,21 @@
         <div class="grow pl-1">
           {{ match?.players[1].name }}
         </div>
-        <div>{{ !isPaddingMatch ? match?.score[1] : '&#8205;' }}</div>
+        <MatchScore
+          :is-padding-match="isPaddingMatch"
+          :scores="match?.score"
+          :index="1"
+          :other-index="0"
+        />
       </div>
     </div>
   </div>
 </template>
 <script setup lang="ts">
 import { computed } from 'vue';
+import MatchScore from './match/MatchScore.vue'
 
+// TODO hover only for matches for which you can submit scores
 
 interface Match {
   id: string,
@@ -54,7 +66,7 @@ const matchClass = computed(() => {
    if (isPaddingMatch.value) {
     return null
   } else {
-    return 'flex flex-col divide-y border-1 border-box border hover:bg-gray-300 rounded-md'
+    return 'flex flex-col divide-y border-1 border-box border hover:bg-gray-300'
   }
 })
 
