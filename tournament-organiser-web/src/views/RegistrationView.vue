@@ -51,9 +51,13 @@
   
   const dragging = ref(false)
   const enabled = ref(true)
+  const counter = ref(0)
   
   function addPlayer(name: string): void {
-    playerList.value.push({name: name, index: playerList.value.length})
+    // index is used as vue key. Because it must be unique, then we tie it to some independent counter
+    // rather than playerList size (which varies when removing player)
+    counter.value = counter.value + 1
+    playerList.value.push({name: name, index: counter.value})
   }
 
   function removePlayer(index: number): void {
