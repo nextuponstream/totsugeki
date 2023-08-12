@@ -10,7 +10,7 @@
 
 const props = defineProps<{
     isPaddingMatch: boolean,
-    scores: number[] | undefined,
+    scores: number[],
     index: number,
     otherIndex: number,
 }>()

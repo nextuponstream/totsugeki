@@ -55,7 +55,7 @@ interface Match {
 }
 
 const props = defineProps<{
-    match: Match | undefined,
+    match: Match,
 }>()
 
 const isPaddingMatch = computed(() => {
