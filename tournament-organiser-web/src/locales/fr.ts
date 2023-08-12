@@ -18,6 +18,8 @@ export default {
         startBracket: 'Commencer le tournoi',
     },
     playerSeeder: {
+        title: "Seeding",
+        hint: 'Déplacer les joueurs pour mettre à jour le seeding',
         empty: "Aucun joueur n'a été enregistré...",
     },  
     bracketView: {

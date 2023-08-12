@@ -22,7 +22,10 @@
     </div>
 
     <div>
-      <player-seeder :players="playerList" />
+      <player-seeder
+        :players="playerList"
+        @remove-player="removePlayer"
+      />
     </div>
   </div>
 </template>
@@ -51,6 +54,13 @@
   
   function addPlayer(name: string): void {
     playerList.value.push({name: name, index: playerList.value.length})
+  }
+
+  function removePlayer(index: number): void {
+      let player = playerList.value.findIndex(p => p.index = index)
+      if (player > -1) {
+        playerList.value.splice(player, 1)
+      }
   }
   
   const hasMinNumberOfPlayerToStartBracket = computed(() => {
