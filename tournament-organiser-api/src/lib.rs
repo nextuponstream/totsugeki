@@ -10,6 +10,8 @@ use totsugeki::{
     matches::Id as MatchId, matches::Match, player::Id as PlayerId,
 };
 
+// FIXME do not panic when submitting score for match with missing player
+
 /// Bracket to display
 #[derive(Serialize, Debug)]
 struct BracketDisplay {
