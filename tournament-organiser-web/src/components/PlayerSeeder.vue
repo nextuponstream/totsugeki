@@ -7,7 +7,7 @@
     v-if="players.length > 0"
     :list="players" 
     :disabled="!enabled"
-    item-key="name"
+    item-key="index"
     class="list-group"
     ghost-class="ghost"
     @start="dragging = true"
@@ -35,8 +35,11 @@
 
   const {t} = useI18n({})
 
+  // TODO add option to remove player
+
   interface Player {
     name: string,
+    index: number,
   }
   
   const props = defineProps({
