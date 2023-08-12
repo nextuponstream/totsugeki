@@ -1,6 +1,9 @@
 <template>
   <div class="text-2xl">
-    Seeder
+    {{ t('playerSeeder.title') }}
+  </div>
+  <div class="text-gray-400">
+    {{ t('playerSeeder.hint') }}
   </div>
   
   <draggable 
@@ -18,7 +21,13 @@
         class="list-group-item"
         :class="{ 'not-draggable': !enabled }"
       >
-        {{ element.name }}
+        <div class="flex py-1 justify-between w-64">
+          <div>{{ element.name }}</div>
+          <i
+            class="pi pi-times text-gray-400 hover:text-gray-800 py-1"
+            @click="removePlayer(element.index)"
+          />
+        </div>
       </div>
     </template>
   </draggable>
@@ -35,8 +44,6 @@
 
   const {t} = useI18n({})
 
-  // TODO add option to remove player
-
   interface Player {
     name: string,
     index: number,
@@ -45,9 +52,15 @@
   const props = defineProps({
     players: { type: Array as PropType<Player[]>, required: false, default: () => {return []} }
   })
+
+  const emit = defineEmits(['removePlayer'])
   
   const dragging = ref(false)
   const enabled = ref(true)
+
+  function removePlayer(index: number) {
+    emit('removePlayer', index)
+  }
   
   </script>
   

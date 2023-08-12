@@ -18,6 +18,8 @@ export default {
         startBracket: 'Start bracket',
     },
     playerSeeder: {
+        title: 'Seeding',
+        hint: 'Drag and drop players to update the seeding',
         empty: 'No players registered...',
     },
     bracketView: {
