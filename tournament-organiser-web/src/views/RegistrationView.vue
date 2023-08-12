@@ -44,13 +44,13 @@
     bracketName.value = localStorage.getItem('bracketName') ?? ''
   }) 
   
-  const playerList : Ref<{name: string}[]>= ref([])
+  const playerList : Ref<{name: string, index: number}[]>= ref([])
   
   const dragging = ref(false)
   const enabled = ref(true)
   
   function addPlayer(name: string): void {
-    playerList.value.push({name: name})
+    playerList.value.push({name: name, index: playerList.value.length})
   }
   
   const hasMinNumberOfPlayerToStartBracket = computed(() => {
