@@ -3973,6 +3973,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "totsugeki-display"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "totsugeki",
+]
+
+[[package]]
 name = "totsugeki-native-app"
 version = "0.1.0"
 dependencies = [
@@ -3992,6 +4000,7 @@ dependencies = [
  "serde",
  "tokio",
  "totsugeki",
+ "totsugeki-display",
  "tower",
  "tower-http",
  "tracing",

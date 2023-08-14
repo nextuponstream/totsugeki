@@ -1,6 +1,7 @@
 [workspace]
 members = [
   "totsugeki",
+  "totsugeki-display",
   "totsugeki-discord-bot",
   "totsugeki-native-app",
   "dioxus-components",
