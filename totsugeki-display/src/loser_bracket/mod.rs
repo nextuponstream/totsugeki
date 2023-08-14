@@ -2,6 +2,9 @@
 
 use crate::{BoxElement, MinimalMatch};
 
+mod test_lines;
+mod test_ordering;
+
 // TODO refactor common code in native
 /// Give positionnal hints to loser bracket matches
 pub fn reorder(rounds: &mut [Vec<MinimalMatch>]) {

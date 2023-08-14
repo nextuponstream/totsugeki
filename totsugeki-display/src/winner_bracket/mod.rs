@@ -1,61 +1,9 @@
 //! Display winner bracket
 
+mod test_lines;
+mod test_ordering;
+
 use crate::{BoxElement, MinimalMatch};
-
-// TODO use common lib between native and tournament-organiser-api
-/// Give positionnal hints to winner bracket matches
-pub fn reorder(rounds: &mut [Vec<MinimalMatch>]) {
-    if rounds.len() < 2 {
-        return;
-    }
-
-    // set hint for all rounds except last two
-    // traverse from last to first
-    for i in (0..rounds.len() - 2).rev() {
-        let mut round = rounds[i].clone();
-        let number_of_matches_in_round = rounds[i + 1].len() * 2;
-
-        // iterate over previous round and set positional hints
-        for (j, m) in rounds[i + 1].iter().enumerate() {
-            let row_hint_1 = 2 * j;
-            let row_hint_2 = 2 * j + 1;
-
-            let seed_1 = m.seeds[0];
-            // (first) player of round 1 with highest seed is expected to win
-            if let Some(m) = round.iter_mut().find(|r_m| r_m.seeds[0] == seed_1) {
-                m.row_hint = Some(row_hint_1);
-            }
-            let seed_2 = m.seeds[1];
-            if let Some(m) = round.iter_mut().find(|r_m| r_m.seeds[0] == seed_2) {
-                m.row_hint = Some(row_hint_2);
-            }
-        }
-
-        // Padding matches for initial round
-        if i == 0 {
-            for _ in 0..number_of_matches_in_round - rounds[i].len() {
-                round.push(MinimalMatch::default());
-            }
-        }
-
-        // sort row i+1 so unsorted row i can be sorted next iteration
-        // NOTE: for round 1, filler matches are first after sorting
-        round.sort_by_key(|m| m.row_hint);
-        rounds[i] = round;
-    }
-
-    // round before last round
-    rounds[rounds.len() - 2][0].row_hint = Some(0);
-    // when there is exactly 3 players
-    if rounds[rounds.len() - 2].len() == 1 {
-        rounds[rounds.len() - 2][0].row_hint = Some(1);
-    } else {
-        rounds[rounds.len() - 2][1].row_hint = Some(1);
-    }
-
-    // last round
-    rounds[rounds.len() - 1][0].row_hint = Some(0);
-}
 
 // TODO refactor common code with native
 /// Lines flow from matches of one round to the next round for a winner bracket
@@ -161,4 +109,59 @@ pub fn lines(rounds: Vec<Vec<MinimalMatch>>) -> Option<Vec<Vec<BoxElement>>> {
     lines.reverse();
 
     Some(lines)
+}
+
+// TODO use common lib between native and tournament-organiser-api
+/// Give positionnal hints to winner bracket matches
+pub fn reorder(rounds: &mut [Vec<MinimalMatch>]) {
+    if rounds.len() < 2 {
+        return;
+    }
+
+    // set hint for all rounds except last two
+    // traverse from last to first
+    for i in (0..rounds.len() - 2).rev() {
+        let mut round = rounds[i].clone();
+        let number_of_matches_in_round = rounds[i + 1].len() * 2;
+
+        // iterate over previous round and set positional hints
+        for (j, m) in rounds[i + 1].iter().enumerate() {
+            let row_hint_1 = 2 * j;
+            let row_hint_2 = 2 * j + 1;
+
+            let seed_1 = m.seeds[0];
+            // (first) player of round 1 with highest seed is expected to win
+            if let Some(m) = round.iter_mut().find(|r_m| r_m.seeds[0] == seed_1) {
+                m.row_hint = Some(row_hint_1);
+            }
+            let seed_2 = m.seeds[1];
+            if let Some(m) = round.iter_mut().find(|r_m| r_m.seeds[0] == seed_2) {
+                m.row_hint = Some(row_hint_2);
+            }
+        }
+
+        // Padding matches for initial round
+        if i == 0 {
+            for _ in 0..number_of_matches_in_round - rounds[i].len() {
+                round.push(MinimalMatch::default());
+            }
+        }
+
+        // sort row i+1 so unsorted row i can be sorted next iteration
+        // NOTE: for round 1, filler matches are first after sorting
+        round.sort_by_key(|m| m.row_hint);
+        rounds[i] = round;
+    }
+
+    // round before last round
+    rounds[rounds.len() - 2][0].row_hint = Some(0);
+    // when there is exactly 3 players
+    if rounds[rounds.len() - 2].len() == 1 {
+        rounds[rounds.len() - 2][0].row_hint = Some(1);
+    } else {
+        rounds[rounds.len() - 2][1].row_hint = Some(1);
+    }
+
+    // last round
+    rounds[rounds.len() - 1][0].row_hint = Some(0);
 }

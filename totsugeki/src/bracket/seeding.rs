@@ -59,7 +59,7 @@ mod tests {
 
     #[test]
     fn cannot_seed_bracket_after_it_started() {
-        let bracket = Builder::new()
+        let bracket = Builder::default()
             .set_format(Format::SingleElimination)
             .set_new_players(3)
             .build()
@@ -81,7 +81,7 @@ mod tests {
     #[test]
     fn seeding_single_elimination_bracket_with_wrong_players_fails() {
         let unknown_player = PlayerId::new_v4();
-        let bracket = Builder::new()
+        let bracket = Builder::default()
             .set_format(Format::SingleElimination)
             .set_new_players(3)
             .build()
@@ -128,7 +128,7 @@ mod tests {
 
     #[test]
     fn updating_seeding_changes_matches_of_3_man_bracket() {
-        let bracket = Builder::new()
+        let bracket = Builder::default()
             .set_format(Format::SingleElimination)
             .set_new_players(3)
             .build()
@@ -177,7 +177,7 @@ mod tests {
 
     #[test]
     fn updating_seeding_changes_matches_of_5_man_bracket() {
-        let bracket = Builder::new()
+        let bracket = Builder::default()
             .set_format(Format::SingleElimination)
             .set_new_players(5)
             .build()
