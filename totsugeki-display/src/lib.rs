@@ -49,6 +49,21 @@ impl Default for MinimalMatch {
     }
 }
 
+impl MinimalMatch {
+    #[cfg(test)]
+    fn new(seeds: [usize; 2]) -> Self {
+        Self {
+            seeds,
+            ..Self::default()
+        }
+    }
+
+    #[cfg(test)]
+    fn summary(&self) -> String {
+        format!("{:?}; row hint = {:?}", self.seeds, self.row_hint)
+    }
+}
+
 /// Display lines using boxes and their borders
 #[derive(Clone, Copy, Debug, PartialEq, Default, Serialize)]
 pub struct BoxElement {

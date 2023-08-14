@@ -1,10 +1,12 @@
 //! Builer pattern for brackets
 
-#[cfg(test)]
-use crate::{bracket::Bracket, format::Format, player::Participants};
+use crate::bracket::Bracket;
+use crate::{format::Format, player::Participants};
 
 /// Initialize a new bracket with participants and format (but not matches)
-#[cfg(test)]
+// FIXME use code somewhere
+#[allow(dead_code)]
+#[derive(Default)]
 pub struct Builder {
     /// Format of bracket
     format: Option<Format>,
@@ -13,7 +15,6 @@ pub struct Builder {
 }
 
 /// Error while building bracket
-#[cfg(test)]
 #[derive(Debug)]
 pub enum Error {
     /// Missing format
@@ -22,22 +23,11 @@ pub enum Error {
     MissingPlayers,
 }
 
-#[cfg(test)]
 impl Builder {
-    /// Return new (invalid) builder
-    #[cfg(test)]
-    pub fn new() -> Builder {
-        Builder {
-            format: None,
-            participants: None,
-        }
-    }
-
     /// Build bracket
     ///
     /// # Errors
     /// Throws error when a required attribute is missing (example: format)
-    #[cfg(test)]
     pub fn build(self) -> Result<Bracket, Error> {
         let Some(format) = self.format else {
             return Err(Error::MissingFormat);
@@ -56,7 +46,7 @@ impl Builder {
     }
 
     /// Set format for bracket to build
-    #[cfg(test)]
+    #[must_use]
     pub fn set_format(self, format: Format) -> Builder {
         Builder {
             format: Some(format),
@@ -65,7 +55,7 @@ impl Builder {
     }
 
     /// Set `n` participants of bracket to build
-    #[cfg(test)]
+    #[must_use]
     pub fn set_new_players(self, n: usize) -> Builder {
         use crate::player::Player;
 
