@@ -247,7 +247,7 @@ fn partition_players_of_loser_bracket(
 #[cfg(test)]
 mod tests {
     use crate::format::Format;
-    use crate::matches::{Id as MatchId, Match, MatchGET};
+    use crate::matches::{Id as MatchId, Match};
     use crate::opponent::Opponent;
     use crate::player::{Participants, Player};
     use crate::seeding::double_elimination_seeded_bracket::get_loser_bracket_matches_top_seed_favored;
@@ -277,27 +277,25 @@ mod tests {
         assert_eq!(
             matches,
             vec![
-                Match::try_from(MatchGET::new(
-                    match_ids.pop().expect("id"),
-                    &[
+                Match {
+                    id: match_ids.pop().expect("id"),
+                    players: [
                         Opponent::Player(players[2].get_id()),
                         Opponent::Player(players[3].get_id())
                     ],
-                    [2, 3],
-                    &Opponent::Unknown,
-                    &Opponent::Unknown,
-                    [(0, 0), (0, 0)],
-                ))
-                .expect("match"),
-                Match::try_from(MatchGET::new(
-                    match_ids.pop().expect("id"),
-                    &[Opponent::Player(players[1].get_id()), Opponent::Unknown],
-                    [1, 2],
-                    &Opponent::Unknown,
-                    &Opponent::Unknown,
-                    [(0, 0), (0, 0)],
-                ))
-                .expect("match"),
+                    seeds: [2, 3],
+                    winner: Opponent::Unknown,
+                    automatic_loser: Opponent::Unknown,
+                    reported_results: [(0, 0), (0, 0)],
+                },
+                Match {
+                    id: match_ids.pop().expect("id"),
+                    players: [Opponent::Player(players[1].get_id()), Opponent::Unknown],
+                    seeds: [1, 2],
+                    winner: Opponent::Unknown,
+                    automatic_loser: Opponent::Unknown,
+                    reported_results: [(0, 0), (0, 0)],
+                },
                 Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3]),
                 Match::looser_bracket_match(match_ids.pop().expect("id"), [1, 2]),
                 Match::looser_bracket_match(match_ids.pop().expect("id"), [1, 2]),
