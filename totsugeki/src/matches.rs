@@ -104,18 +104,18 @@ pub type MatchPlayers = [Opponent; 2];
 #[derive(Debug, Default, PartialEq, Eq, Clone, Serialize, Deserialize, Copy)]
 pub struct Match {
     /// Identifier of match
-    id: Id,
+    pub(crate) id: Id,
     /// Participants
-    players: MatchPlayers,
+    pub(crate) players: MatchPlayers,
     /// seeds\[0\]: top seed
     /// seeds\[1\]: bottom seed
-    seeds: Seeds,
+    pub(crate) seeds: Seeds,
     /// The winner of this match
-    winner: Opponent,
-    /// The looser of this match by disqualification
-    automatic_looser: Opponent,
+    pub(crate) winner: Opponent,
+    /// The loser of this match by disqualification
+    pub(crate) automatic_loser: Opponent,
     /// Result reported by players
-    reported_results: MatchReportedResult,
+    pub(crate) reported_results: MatchReportedResult,
 }
 
 impl std::fmt::Display for Match {
@@ -132,12 +132,12 @@ impl Match {
         let p1 = &self.players[0].to_string();
         let p2 = &self.players[1].to_string();
 
-        let p1_status = match (self.winner, self.automatic_looser, self.players[0]) {
+        let p1_status = match (self.winner, self.automatic_loser, self.players[0]) {
             (Opponent::Player(w), _, Opponent::Player(p1)) if w == p1 => "W",
             (_, Opponent::Player(l), Opponent::Player(p1)) if l == p1 => "L",
             _ => "-",
         };
-        let p2_status = match (self.winner, self.automatic_looser, self.players[1]) {
+        let p2_status = match (self.winner, self.automatic_loser, self.players[1]) {
             (Opponent::Player(w), _, Opponent::Player(p2)) if w == p2 => "W",
             (_, Opponent::Player(l), Opponent::Player(p2)) if l == p2 => "L",
             _ => "-",
@@ -163,12 +163,12 @@ impl Match {
             Opponent::Unknown => Opponent::Unknown.to_string(),
         };
 
-        let p1_status = match (self.winner, self.automatic_looser, self.players[0]) {
+        let p1_status = match (self.winner, self.automatic_loser, self.players[0]) {
             (Opponent::Player(w), _, Opponent::Player(p1)) if w == p1 => "W",
             (_, Opponent::Player(l), Opponent::Player(p1)) if l == p1 => "L",
             _ => "-",
         };
-        let p2_status = match (self.winner, self.automatic_looser, self.players[1]) {
+        let p2_status = match (self.winner, self.automatic_loser, self.players[1]) {
             (Opponent::Player(w), _, Opponent::Player(p2)) if w == p2 => "W",
             (_, Opponent::Player(l), Opponent::Player(p2)) if l == p2 => "L",
             _ => "-",
@@ -258,7 +258,7 @@ impl Match {
     /// Get automatic looser of match. Loosers are always players
     #[must_use]
     pub fn get_automatic_loser(&self) -> Opponent {
-        self.automatic_looser
+        self.automatic_loser
     }
 
     /// Get players for this match
@@ -283,7 +283,7 @@ impl Match {
     /// player
     #[must_use]
     pub(crate) fn is_automatic_loser_by_disqualification(&self, player_id: PlayerId) -> bool {
-        matches!(self.automatic_looser, Opponent::Player(loser) if loser == player_id)
+        matches!(self.automatic_loser, Opponent::Player(loser) if loser == player_id)
     }
 
     #[must_use]
@@ -296,7 +296,7 @@ impl Match {
     #[must_use]
     pub fn is_over(&self) -> bool {
         #[allow(clippy::match_like_matches_macro)]
-        match (self.players, self.winner, self.automatic_looser) {
+        match (self.players, self.winner, self.automatic_loser) {
             ([Opponent::Player(_p1), Opponent::Player(_p2)], Opponent::Player(_winner), _) => true,
             ([Opponent::Player(_p1), Opponent::Player(_p2)], _, Opponent::Player(_winner)) => true,
             _ => false,
@@ -309,7 +309,7 @@ impl Match {
     #[must_use]
     pub fn needs_playing(&self) -> bool {
         self.winner == Opponent::Unknown
-            && self.automatic_looser == Opponent::Unknown
+            && self.automatic_loser == Opponent::Unknown
             && self.players[0] != Opponent::Unknown
             && self.players[1] != Opponent::Unknown
     }
@@ -317,13 +317,13 @@ impl Match {
     /// Create looser bracket match where opponents are unknown yet
     #[must_use]
     #[cfg(test)]
-    pub fn looser_bracket_match(id: Id, seeds: [usize; 2]) -> Self {
+    pub(crate) fn looser_bracket_match(id: Id, seeds: [usize; 2]) -> Self {
         Match {
             id,
             players: [Opponent::Unknown, Opponent::Unknown],
             seeds,
             winner: Opponent::Unknown,
-            automatic_looser: Opponent::Unknown,
+            automatic_loser: Opponent::Unknown,
             reported_results: [(0, 0), (0, 0)],
         }
     }
@@ -333,7 +333,7 @@ impl Match {
     #[must_use]
     pub fn needs_update_because_of_disqualified_participant(&self) -> bool {
         self.winner == Opponent::Unknown
-            && self.automatic_looser != Opponent::Unknown
+            && self.automatic_loser != Opponent::Unknown
             && self.players[0] != Opponent::Unknown
             && self.players[1] != Opponent::Unknown
     }
@@ -351,7 +351,7 @@ impl Match {
                 id: Id::new_v4(),
                 players,
                 winner: Opponent::Unknown,
-                automatic_looser: Opponent::Unknown,
+                automatic_loser: Opponent::Unknown,
                 seeds,
                 reported_results: [(0_i8, 0_i8), (0_i8, 0)],
             }),
@@ -366,7 +366,7 @@ impl Match {
             players: [Opponent::Unknown, Opponent::Unknown],
             seeds,
             winner: Opponent::Unknown,
-            automatic_looser: Opponent::Unknown,
+            automatic_loser: Opponent::Unknown,
             reported_results: [(0, 0), (0, 0)],
         }
     }
@@ -387,7 +387,7 @@ impl Match {
         };
 
         Ok(Self {
-            automatic_looser: loser,
+            automatic_loser: loser,
             ..self
         })
     }
@@ -470,7 +470,7 @@ impl Match {
     /// Returns an error if reported scores don't not agree on the winner
     pub fn update_outcome(self) -> Result<(Match, PlayerId, PlayerId), Error> {
         // if there is a disqualified player, try to set the winner
-        if let Opponent::Player(dq_player) = self.automatic_looser {
+        if let Opponent::Player(dq_player) = self.automatic_loser {
             return match self.players {
                 [Opponent::Player(p1), Opponent::Player(p2)] if p1 == dq_player => Ok((
                     Self {
@@ -528,7 +528,7 @@ impl Match {
                 players: self.players,
                 seeds: self.seeds,
                 winner: Opponent::Player(winner),
-                automatic_looser: self.automatic_looser,
+                automatic_loser: self.automatic_loser,
                 reported_results: self.reported_results,
             },
             winner,
@@ -557,7 +557,7 @@ impl Match {
                     players: self.players,
                     seeds: self.seeds,
                     winner: self.winner,
-                    automatic_looser: self.automatic_looser,
+                    automatic_loser: self.automatic_loser,
                     reported_results,
                 })
             }
@@ -569,7 +569,7 @@ impl Match {
                     players: self.players,
                     seeds: self.seeds,
                     winner: self.winner,
-                    automatic_looser: self.automatic_looser,
+                    automatic_loser: self.automatic_loser,
                     reported_results,
                 })
             }
@@ -599,50 +599,6 @@ impl Match {
     }
 }
 
-/// Match representation as received through the network
-// FIXME remove
-#[derive(Debug, Default, PartialEq, Eq, Clone, Serialize, Deserialize)]
-pub struct MatchGET {
-    /// Match id
-    pub id: Id,
-    /// Participants: "id name" x2
-    pub players: [String; 2],
-    /// seeds\[0\]: top seed
-    /// seeds\[1\]: bottom seed
-    pub seeds: Seeds,
-    /// The winner of this match, "?" if unknown
-    pub winner: String,
-    /// The looser of this match, "?" if unknown
-    pub looser: String,
-    /// Results reported by players
-    pub reported_results: [String; 2],
-}
-
-impl MatchGET {
-    #[must_use]
-    /// Create raw match data object
-    pub fn new(
-        id: Id,
-        players: &[Opponent; 2],
-        seeds: Seeds,
-        winner: &Opponent,
-        looser: &Opponent,
-        rr: MatchReportedResult,
-    ) -> Self {
-        Self {
-            id,
-            players: [players[0].to_string(), players[1].to_string()],
-            seeds,
-            winner: winner.to_string(),
-            looser: looser.to_string(),
-            reported_results: [
-                ReportedResult(rr[0]).to_string(),
-                ReportedResult(rr[1]).to_string(),
-            ],
-        }
-    }
-}
-
 /// Error while converting response from network
 #[derive(Error, Debug)]
 pub enum MatchParsingError {
@@ -663,38 +619,6 @@ pub enum MatchParsingError {
     /// Looser is not one of the players in the match
     #[error("Looser is not a participant of the match")]
     UnknownLooser,
-}
-
-impl TryFrom<MatchGET> for Match {
-    type Error = MatchParsingError;
-
-    fn try_from(m: MatchGET) -> Result<Match, Self::Error> {
-        let players = m
-            .players
-            .into_iter()
-            .map(|m| m.parse::<Opponent>())
-            .collect::<Result<Vec<Opponent>, ParsingOpponentError>>()?;
-        let players: [Opponent; 2] = players.try_into()?;
-        let winner = m.winner.parse::<Opponent>()?;
-        if winner != Opponent::Unknown && !players.iter().any(|p| *p == winner) {
-            return Err(MatchParsingError::UnknownWinner);
-        }
-        let looser = m.looser.parse::<Opponent>()?;
-        if looser != Opponent::Unknown && !players.iter().any(|p| *p == looser) {
-            return Err(MatchParsingError::UnknownLooser);
-        }
-        Ok(Self {
-            id: m.id,
-            players,
-            seeds: m.seeds,
-            winner,
-            automatic_looser: looser,
-            reported_results: [
-                m.reported_results[0].parse::<ReportedResult>()?.0,
-                m.reported_results[0].parse::<ReportedResult>()?.0,
-            ],
-        })
-    }
 }
 
 // NOTE: here because Vec<T> does not implement std::error::Error when used with try_into

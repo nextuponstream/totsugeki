@@ -44,14 +44,13 @@ impl Bracket {
         })
     }
 }
-// FIXME remove MatchGET
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::{
         bracket::builder::Builder,
         format::Format,
-        matches::{Id as MatchId, Match, MatchGET},
+        matches::{Id as MatchId, Match},
         opponent::Opponent,
         player::Error as PlayerError,
         seeding::Error as SeedingError,
@@ -153,24 +152,22 @@ mod tests {
         assert_eq!(
             updated_bracket.get_matches(),
             vec![
-                Match::try_from(MatchGET::new(
-                    match_ids.pop().expect("match id"),
-                    &[p2, p1],
-                    [2, 3],
-                    &Opponent::Unknown,
-                    &Opponent::Unknown,
-                    [(0, 0), (0, 0)]
-                ))
-                .expect("match"),
-                Match::try_from(MatchGET::new(
-                    match_ids.pop().expect("match id"),
-                    &[p3, Opponent::Unknown],
-                    [1, 2],
-                    &Opponent::Unknown,
-                    &Opponent::Unknown,
-                    [(0, 0), (0, 0)]
-                ))
-                .expect("match")
+                Match {
+                    id: match_ids.pop().expect("match id"),
+                    players: [p2, p1],
+                    seeds: [2, 3],
+                    winner: Opponent::Unknown,
+                    automatic_loser: Opponent::Unknown,
+                    reported_results: [(0, 0), (0, 0)]
+                },
+                Match {
+                    id: match_ids.pop().expect("match id"),
+                    players: [p3, Opponent::Unknown],
+                    seeds: [1, 2],
+                    winner: Opponent::Unknown,
+                    automatic_loser: Opponent::Unknown,
+                    reported_results: [(0, 0), (0, 0)]
+                }
             ]
         );
     }
@@ -206,42 +203,38 @@ mod tests {
         assert_eq!(
             updated_bracket.get_matches(),
             vec![
-                Match::try_from(MatchGET::new(
-                    match_ids.pop().expect("match id"),
-                    &[p2, p1],
-                    [4, 5],
-                    &Opponent::Unknown,
-                    &Opponent::Unknown,
-                    [(0, 0), (0, 0)]
-                ))
-                .expect("match"),
-                Match::try_from(MatchGET::new(
-                    match_ids.pop().expect("match id"),
-                    &[p4, Opponent::Unknown],
-                    [1, 4],
-                    &Opponent::Unknown,
-                    &Opponent::Unknown,
-                    [(0, 0), (0, 0)]
-                ))
-                .expect("match"),
-                Match::try_from(MatchGET::new(
-                    match_ids.pop().expect("match id"),
-                    &[p5, p3],
-                    [2, 3],
-                    &Opponent::Unknown,
-                    &Opponent::Unknown,
-                    [(0, 0), (0, 0)]
-                ))
-                .expect("match"),
-                Match::try_from(MatchGET::new(
-                    match_ids.pop().expect("match id"),
-                    &[Opponent::Unknown, Opponent::Unknown],
-                    [1, 2],
-                    &Opponent::Unknown,
-                    &Opponent::Unknown,
-                    [(0, 0), (0, 0)]
-                ))
-                .expect("match"),
+                Match {
+                    id: match_ids.pop().expect("match id"),
+                    players: [p2, p1],
+                    seeds: [4, 5],
+                    winner: Opponent::Unknown,
+                    automatic_loser: Opponent::Unknown,
+                    reported_results: [(0, 0), (0, 0)]
+                },
+                Match {
+                    id: match_ids.pop().expect("match id"),
+                    players: [p4, Opponent::Unknown],
+                    seeds: [1, 4],
+                    winner: Opponent::Unknown,
+                    automatic_loser: Opponent::Unknown,
+                    reported_results: [(0, 0), (0, 0)]
+                },
+                Match {
+                    id: match_ids.pop().expect("match id"),
+                    players: [p5, p3],
+                    seeds: [2, 3],
+                    winner: Opponent::Unknown,
+                    automatic_loser: Opponent::Unknown,
+                    reported_results: [(0, 0), (0, 0)]
+                },
+                Match {
+                    id: match_ids.pop().expect("match id"),
+                    players: [Opponent::Unknown, Opponent::Unknown],
+                    seeds: [1, 2],
+                    winner: Opponent::Unknown,
+                    automatic_loser: Opponent::Unknown,
+                    reported_results: [(0, 0), (0, 0)]
+                },
             ]
         );
     }
