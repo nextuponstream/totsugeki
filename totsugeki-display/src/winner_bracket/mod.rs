@@ -5,13 +5,9 @@ mod test_ordering;
 
 use crate::{BoxElement, MinimalMatch};
 
-// TODO refactor common code with native
 /// Lines flow from matches of one round to the next round for a winner bracket
-// FIXME add tests in this crate
-// FIXME remove allow macro
 #[must_use]
-#[allow(clippy::needless_pass_by_value)]
-pub fn lines(rounds: Vec<Vec<MinimalMatch>>) -> Option<Vec<Vec<BoxElement>>> {
+pub fn lines(rounds: &[Vec<MinimalMatch>]) -> Option<Vec<Vec<BoxElement>>> {
     if rounds.is_empty() {
         return None;
     }
@@ -111,7 +107,6 @@ pub fn lines(rounds: Vec<Vec<MinimalMatch>>) -> Option<Vec<Vec<BoxElement>>> {
     Some(lines)
 }
 
-// TODO use common lib between native and tournament-organiser-api
 /// Give positionnal hints to winner bracket matches
 pub fn reorder(rounds: &mut [Vec<MinimalMatch>]) {
     if rounds.len() < 2 {

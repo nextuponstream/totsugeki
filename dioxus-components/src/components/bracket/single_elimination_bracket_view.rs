@@ -40,7 +40,7 @@ pub(crate) fn View(cx: Scope) -> Element {
     }
     reorder(&mut rounds);
 
-    let Some(lines) = lines(rounds.clone()) else {
+    let Some(lines) = lines(&rounds) else {
         // TODO log error
         return None;
     };

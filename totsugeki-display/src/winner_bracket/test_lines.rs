@@ -61,7 +61,7 @@ mod tests {
 
         reorder(&mut rounds);
 
-        let lines = lines(rounds.clone()).expect("lines");
+        let lines = lines(&rounds).expect("lines");
         let expected_cols = 1;
         assert_eq!(lines.len(), expected_cols);
         //     b1L1   b1R1
@@ -116,7 +116,7 @@ mod tests {
         }
         reorder(&mut rounds);
 
-        let lines = lines(rounds.clone()).expect("lines");
+        let lines = lines(&rounds).expect("lines");
         let expected_cols = 1;
         assert_eq!(lines.len(), expected_cols);
         //     b1L1   b1R1
@@ -145,7 +145,7 @@ mod tests {
         }
         reorder(&mut rounds);
 
-        let lines = lines(rounds.clone()).expect("lines");
+        let lines = lines(&rounds).expect("lines");
         let expected_cols = 2;
         assert_eq!(lines.len(), expected_cols);
         //     b1L1   b1R1

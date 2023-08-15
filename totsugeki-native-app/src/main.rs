@@ -17,7 +17,7 @@ fn main() {
 
     // TODO add some auto-completion for css class
     // wait for https://github.com/helix-editor/helix/issues/2213
-    // TODO i18n (fluent crate)
+    // TODO internationalisation i18n https://github.com/DioxusLabs/dioxus-std
     dioxus_desktop::launch_cfg(App, Config::new());
     // dioxus_web::launch(App);
 }
