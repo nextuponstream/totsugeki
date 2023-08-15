@@ -9,7 +9,6 @@
 #![warn(clippy::unwrap_used)]
 #![forbid(unsafe_code)]
 
-use serde::Deserialize;
 use std::str::FromStr;
 use std::sync::{LockResult, RwLock, RwLockReadGuard};
 use uuid::Uuid;
@@ -64,29 +63,6 @@ pub trait DiscussionChannel {
 
     /// Get type of service
     fn get_service_type(&self) -> String;
-}
-
-/// Response body
-#[derive(Deserialize)]
-pub struct ServiceRegisterPOST {
-    /// New service identifier
-    id: ServiceId,
-    /// Authorization token for service with ID `id`
-    token: String,
-}
-
-impl ServiceRegisterPOST {
-    #[must_use]
-    /// Get id of service
-    pub fn get_id(&self) -> ServiceId {
-        self.id
-    }
-
-    #[must_use]
-    /// Get authorization header for API
-    pub fn get_token(&self) -> String {
-        self.token.clone()
-    }
 }
 
 #[cfg(test)]

@@ -1,6 +1,6 @@
 //! player
 
-use crate::{bracket::Id as BracketId, player::Id as PlayerId};
+use crate::player::Id as PlayerId;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
@@ -242,26 +242,6 @@ impl TryFrom<Vec<(&Id, &String)>> for Participants {
         }
         Ok(result)
     }
-}
-
-/// Body of request to get players from active bracket in discussion channel
-#[derive(Serialize, Deserialize, Debug)]
-pub struct GET {
-    /// Internal discussion channel ID
-    pub internal_discussion_channel_id: String,
-    /// String representation of service used (example: Discord)
-    pub service: String,
-}
-
-/// Response body of players request (see [`GET`])
-#[derive(Deserialize)]
-pub struct PlayersRaw {
-    /// Id of bracket
-    pub bracket_id: BracketId,
-    /// Players in bracket
-    pub players: Vec<Id>,
-    /// Players_names in bracket
-    pub player_names: Vec<String>,
 }
 
 #[cfg(test)]
