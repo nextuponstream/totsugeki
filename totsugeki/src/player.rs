@@ -246,8 +246,6 @@ impl TryFrom<Vec<(&Id, &String)>> for Participants {
 
 /// Body of request to get players from active bracket in discussion channel
 #[derive(Serialize, Deserialize, Debug)]
-#[cfg_attr(feature = "poem-openapi", derive(Object))]
-#[cfg_attr(feature = "poem-openapi", oai(rename = "PlayersGET"))]
 pub struct GET {
     /// Internal discussion channel ID
     pub internal_discussion_channel_id: String,
@@ -257,7 +255,6 @@ pub struct GET {
 
 /// Response body of players request (see [`GET`])
 #[derive(Deserialize)]
-#[cfg_attr(feature = "poem-openapi", derive(Object))]
 pub struct PlayersRaw {
     /// Id of bracket
     pub bracket_id: BracketId,

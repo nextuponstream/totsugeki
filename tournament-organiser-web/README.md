@@ -2,8 +2,8 @@
 
 A web interface to manage brackets as a tournament organiser.
 
-Current development efforts are on making bracket managing accessible. Player
-login and result reporting may come in a future release.
+Current development efforts are on making bracket managing usable. Player login
+and result reporting may come in a future release.
 
 Rationale for mounting a vue app onto an axum API is so that you get access to
 vue draggable, for which there does not seem to exist any equivalent in any 
@@ -13,7 +13,6 @@ necessary feature for such an app.
 ## Recommended IDE Setup
 
 [VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur) + [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin).
-
 
 ## Project Setup
 

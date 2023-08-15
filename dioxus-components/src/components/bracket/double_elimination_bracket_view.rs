@@ -48,7 +48,7 @@ pub(crate) fn View(cx: Scope) -> Element {
         wb_rounds.push(round);
     }
     reorder_winner_bracket(&mut wb_rounds);
-    let Some(wb_lines) = winner_bracket_lines(wb_rounds.clone()) else {
+    let Some(wb_lines) = winner_bracket_lines(&wb_rounds) else {
         log::error!("winner bracket connecting lines");
         return None;
     };

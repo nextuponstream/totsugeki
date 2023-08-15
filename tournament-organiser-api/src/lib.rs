@@ -72,7 +72,7 @@ pub async fn new_bracket_from_players(Json(player_list): Json<PlayerList>) -> im
     }
 
     reorder_winner_bracket(&mut wb_rounds);
-    let Some(winner_bracket_lines) = winner_bracket_lines(wb_rounds.clone()) else {
+    let Some(winner_bracket_lines) = winner_bracket_lines(&wb_rounds) else {
         tracing::error!("winner bracket connecting lines");
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
     };
@@ -170,7 +170,7 @@ pub async fn report_result_for_bracket(
     }
 
     reorder_winner_bracket(&mut wb_rounds);
-    let Some(winner_bracket_lines) = winner_bracket_lines(wb_rounds.clone()) else {
+    let Some(winner_bracket_lines) = winner_bracket_lines(&wb_rounds) else {
         tracing::error!("winner bracket connecting lines");
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
     };
