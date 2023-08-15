@@ -62,6 +62,36 @@ impl MinimalMatch {
     fn summary(&self) -> String {
         format!("{:?}; row hint = {:?}", self.seeds, self.row_hint)
     }
+
+    /// Return which row this match should be placed in the grid
+    #[must_use]
+    pub fn get_row_hint(&self) -> Option<usize> {
+        self.row_hint
+    }
+
+    /// Get players in match
+    #[must_use]
+    pub fn get_players(&self) -> [Player; 2] {
+        self.players.clone()
+    }
+
+    /// Get expected seeds of in match
+    #[must_use]
+    pub fn get_seeds(&self) -> [usize; 2] {
+        self.seeds
+    }
+
+    /// Get scores of match
+    #[must_use]
+    pub fn get_score(&self) -> (i8, i8) {
+        self.score
+    }
+
+    /// Get ID of match
+    #[must_use]
+    pub fn get_id(&self) -> MatchId {
+        self.id
+    }
 }
 
 /// Display lines using boxes and their borders
@@ -80,6 +110,18 @@ impl BoxElement {
             left_border: false,
             bottom_border: false,
         }
+    }
+
+    /// True if left border should be painted
+    #[must_use]
+    pub fn get_left_border(self) -> bool {
+        self.left_border
+    }
+
+    /// True if left border should be painted
+    #[must_use]
+    pub fn get_bottom_border(self) -> bool {
+        self.left_border
     }
 }
 

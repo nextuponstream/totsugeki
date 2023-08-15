@@ -2,17 +2,18 @@
 
 use super::ui_primitives::BracketPrimitives;
 use crate::components::bracket::displayable_match::DisplayMatch;
-use crate::components::bracket::displayable_round::loser_bracket_lines::lines as loser_bracket_lines;
-use crate::components::bracket::displayable_round::winner_bracket_lines::lines;
 use crate::components::bracket::displayable_round::Round;
 use crate::components::bracket::match_edit::MatchEditModal;
 use crate::components::bracket::ui_primitives::ConnectMatchesBetweenRounds;
-use crate::ordering::loser_bracket::reorder as reorder_loser_bracket;
-use crate::ordering::winner_bracket::reorder as reorder_winner_bracket;
-use crate::{from_participants, MinimalMatch, Modal};
+use crate::Modal;
 use dioxus::prelude::*;
 use totsugeki::bracket::double_elimination_variant::Variant as DoubleEliminationVariant;
 use totsugeki::bracket::Bracket;
+use totsugeki_display::loser_bracket::lines as loser_bracket_lines;
+use totsugeki_display::loser_bracket::reorder as reorder_loser_bracket;
+use totsugeki_display::winner_bracket::lines as winner_bracket_lines;
+use totsugeki_display::winner_bracket::reorder as reorder_winner_bracket;
+use totsugeki_display::{from_participants, MinimalMatch};
 
 /// View of a double elimination bracket with interactible elements to update
 /// its state
@@ -47,7 +48,7 @@ pub(crate) fn View(cx: Scope) -> Element {
         wb_rounds.push(round);
     }
     reorder_winner_bracket(&mut wb_rounds);
-    let Some(wb_lines) = lines(wb_rounds.clone()) else {
+    let Some(wb_lines) = winner_bracket_lines(wb_rounds.clone()) else {
         log::error!("winner bracket connecting lines");
         return None;
     };

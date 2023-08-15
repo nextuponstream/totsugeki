@@ -1,16 +1,15 @@
 //! View of a single elimination bracket
-use super::{
-    displayable_round::winner_bracket_lines::lines, ui_primitives::BracketPrimitives,
-    ui_primitives::ConnectMatchesBetweenRounds,
-};
-use crate::from_participants;
+use super::{ui_primitives::BracketPrimitives, ui_primitives::ConnectMatchesBetweenRounds};
 use crate::{
     components::bracket::displayable_round::Round, components::bracket::match_edit::MatchEditModal,
-    ordering::winner_bracket::reorder, Modal,
+    Modal,
 };
 use dioxus::prelude::*;
 use totsugeki::bracket::single_elimination_variant::Variant as SingleEliminationVariant;
 use totsugeki::bracket::Bracket;
+use totsugeki_display::from_participants;
+use totsugeki_display::winner_bracket::lines;
+use totsugeki_display::winner_bracket::reorder;
 
 /// View over single elimination bracket
 #[allow(dead_code)]
