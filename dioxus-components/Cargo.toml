@@ -8,5 +8,6 @@ edition = "2021"
 [dependencies]
 dioxus = "0.3.0"
 totsugeki = { path = "../totsugeki" }
+totsugeki-display = { path = "../totsugeki-display" }
 chrono = { version = "0.4.26", features = ["serde"] }
 log = "0.4.6"

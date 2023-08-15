@@ -786,6 +786,7 @@ dependencies = [
  "dioxus 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log",
  "totsugeki",
+ "totsugeki-display",
 ]
 
 [[package]]
