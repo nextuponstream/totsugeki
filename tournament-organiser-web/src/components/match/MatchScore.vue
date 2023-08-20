@@ -1,9 +1,11 @@
 <template>
   <div
-    class="px-1 py-1 text-xs" 
+    class="text-xs place-self-stretch grid" 
     :class="scoreClass(scores, index, otherIndex)"
   >
-    {{ !isPaddingMatch ? scores[index] : '&#8205;' }}
+    <div class="place-self-center">
+      {{ !isPaddingMatch ? scores[index] : '&#8205;' }}
+    </div>
   </div>
 </template>
 <script setup lang="ts">
