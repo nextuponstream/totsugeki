@@ -14,7 +14,8 @@ jobs:
       - run: rustup toolchain install nightly
       - run: cargo +nightly install cargo-binutils # to call llvm-tools
       - run: rustup toolchain install nightly --component llvm-tools-preview
-      - run: ls
+      - run: echo $(ls .)
+      # - run: ls # shows nothing????
       # - run: ls totsugeki # bugs
       - run: ls ./totsugeki
       - run: ls ..
