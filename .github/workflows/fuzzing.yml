@@ -7,6 +7,7 @@ jobs:
     name: bracket
     runs-on: ubuntu-latest
     steps:
+      - run: rustup toolchain install nightly
       - run: cargo +nightly install cargo-binutils # to call llvm-tools
       - run: rustup toolchain install nightly --component llvm-tools-preview
       - run: cargo +nightly fuzz run bracket -- -max_total_time_=60
@@ -14,6 +15,7 @@ jobs:
     name: randomly ordered events
     runs-on: ubuntu-latest
     steps:
+      - run: rustup toolchain install nightly
       - run: cargo +nightly install cargo-binutils # to call llvm-tools
       - run: rustup toolchain install nightly --component llvm-tools-preview
       - run: cargo +nightly fuzz run randomly_ordered_events -- -max_total_time_=60
@@ -21,6 +23,7 @@ jobs:
     name: big brackets
     runs-on: ubuntu-latest
     steps:
+      - run: rustup toolchain install nightly
       - run: cargo +nightly install cargo-binutils # to call llvm-tools
       - run: rustup toolchain install nightly --component llvm-tools-preview
       - run: cargo +nightly fuzz run big_brackets -- -max_total_time_=60
@@ -28,6 +31,7 @@ jobs:
     name: big brackets double elimination
     runs-on: ubuntu-latest
     steps:
+      - run: rustup toolchain install nightly
       - run: cargo +nightly install cargo-binutils # to call llvm-tools
       - run: rustup toolchain install nightly --component llvm-tools-preview
       - run: cargo +nightly fuzz run big_brackets_de -- -max_total_time_=60
@@ -35,6 +39,7 @@ jobs:
     name: very big brackets double elimination
     runs-on: ubuntu-latest
     steps:
+      - run: rustup toolchain install nightly
       - run: cargo +nightly install cargo-binutils # to call llvm-tools
       - run: rustup toolchain install nightly --component llvm-tools-preview
       - run: cargo +nightly fuzz run very_big_brackets_de -- -max_total_time_=60
