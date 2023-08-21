@@ -4,7 +4,7 @@ name: Fuzzing
 
 defaults:
   run:
-    working-directory: ./totsugeki/fuzz
+    working-directory: totsugeki/fuzz
 
 jobs:
   bracket:
