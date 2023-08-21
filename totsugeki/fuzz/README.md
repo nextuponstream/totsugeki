@@ -56,8 +56,8 @@ combinatorial complexity. A lower number is taken.
 
 5. very big brackets double elimination
 
-Player brackets for giants events might go up to 2000+ players. Fuzzing
-thoroughly through that many players is very slow.
+Player brackets for giants events might go up to 7000+ players (evo 2023 SF6).
+Fuzzing thoroughly through that many players is very slow.
 
 ```bash
 cargo +nightly fuzz run very_big_brackets_de -- -timeout=50000
@@ -70,3 +70,11 @@ finds a way to break them, then that's a new unit test for regression suite.
 
 Example: match where both players are the same player is malformed in the
 context of single+double elimination format.
+
+## Troubleshooting
+
+### Oh no, the nightly build does not work anymore
+
+Your nightly toolchain got updated with `rustup update` and Cargo.lock cannot
+work with it (because it worked with an older version). Remove the lock file
+and rerun fuzzing command.
