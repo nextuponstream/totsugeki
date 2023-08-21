@@ -19,7 +19,7 @@ jobs:
       # - run: ls totsugeki # bugs
       # - run: ls ./totsugeki
       # - run: ls ..
-      - run: cd totstugeki/fuzz && cargo +nightly fuzz run bracket -- -max_total_time_=60
+      - run: cd ./totstugeki/fuzz && cargo +nightly fuzz run bracket -- -max_total_time_=60
   randomly_ordered_events:
     name: randomly ordered events
     runs-on: ubuntu-latest
