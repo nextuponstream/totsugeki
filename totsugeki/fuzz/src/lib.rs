@@ -79,8 +79,9 @@ impl<'a> Arbitrary<'a> for EventsPermutation {
             .int_in_range(0..=(combinations.len() - 1))
             .expect("combination index");
         let combination = combinations[combination_index]
-            .iter()
-            .map(|e| *e.clone())
+            .clone()
+            .into_iter()
+            .map(|e| *e)
             .collect::<Vec<MatchEvent>>();
 
         let permutations = (0..len).permutations(len).into_iter().collect_vec();
