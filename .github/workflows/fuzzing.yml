@@ -2,28 +2,25 @@ on: [pull_request]
 
 name: Fuzzing
 
-# defaults:
-#   run:
-#     working-directory: ./totsugeki/fuzz
+defaults:
+  run:
+    working-directory: ./totsugeki/fuzz
 
 jobs:
   bracket:
     name: bracket
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
       - run: rustup toolchain install nightly
       - run: cargo +nightly install cargo-binutils # to call llvm-tools
       - run: rustup toolchain install nightly --component llvm-tools-preview
-      # - run: echo $(ls .)
-      # - run: ls # shows nothing????
-      # - run: ls totsugeki # bugs
-      # - run: ls ./totsugeki
-      # - run: ls ..
-      - run: cd ./totstugeki/fuzz && cargo +nightly fuzz run bracket -- -max_total_time_=60
+      - run: cargo +nightly fuzz run bracket -- -max_total_time_=60
   randomly_ordered_events:
     name: randomly ordered events
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
       - run: rustup toolchain install nightly
       - run: cargo +nightly install cargo-binutils # to call llvm-tools
       - run: rustup toolchain install nightly --component llvm-tools-preview
@@ -32,6 +29,7 @@ jobs:
     name: big brackets
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
       - run: rustup toolchain install nightly
       - run: cargo +nightly install cargo-binutils # to call llvm-tools
       - run: rustup toolchain install nightly --component llvm-tools-preview
@@ -40,6 +38,7 @@ jobs:
     name: big brackets double elimination
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
       - run: rustup toolchain install nightly
       - run: cargo +nightly install cargo-binutils # to call llvm-tools
       - run: rustup toolchain install nightly --component llvm-tools-preview
@@ -48,6 +47,7 @@ jobs:
     name: very big brackets double elimination
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
       - run: rustup toolchain install nightly
       - run: cargo +nightly install cargo-binutils # to call llvm-tools
       - run: rustup toolchain install nightly --component llvm-tools-preview
