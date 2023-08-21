@@ -14,12 +14,12 @@ jobs:
       - run: rustup toolchain install nightly
       - run: cargo +nightly install cargo-binutils # to call llvm-tools
       - run: rustup toolchain install nightly --component llvm-tools-preview
-      - run: echo $(ls .)
+      # - run: echo $(ls .)
       # - run: ls # shows nothing????
       # - run: ls totsugeki # bugs
-      - run: ls ./totsugeki
-      - run: ls ..
-      - run: cargo +nightly fuzz run bracket -- -max_total_time_=60
+      # - run: ls ./totsugeki
+      # - run: ls ..
+      - run: cd totstugeki/fuzz && cargo +nightly fuzz run bracket -- -max_total_time_=60
   randomly_ordered_events:
     name: randomly ordered events
     runs-on: ubuntu-latest
