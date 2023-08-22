@@ -56,5 +56,7 @@ jobs:
       - run: cargo +nightly install cargo-binutils # to call llvm-tools
       - run: cargo install cargo-fuzz
       - run: rustup toolchain install nightly --component llvm-tools-preview
+      # did timeout once and exited with code 1
+      # you could add -timeout_exitcode=0 but let's limit the imput size
       - run: cargo +nightly fuzz run very_big_brackets_de -- -max_total_time=60
 
