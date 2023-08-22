@@ -30,10 +30,10 @@ pub struct EventsPermutation {
 pub struct LotsOfEvents(pub Vec<MatchEvent>);
 
 #[derive(Debug)]
-/// A sequence of events for at most 2100 players
+/// A sequence of events for at most 512 players (big online bracket)
 ///
 /// Because fuzzing thoroughly through a lot of players slows iteration speed
-/// by a lot, 129 events is chosen (for 65 players)
+/// by a lot, 1023 events is chosen (for 512 players)
 pub struct ExtremeLotsOfEvents(pub Vec<MatchEvent>);
 
 #[derive(Arbitrary, Debug, Clone, Hash, Eq, PartialEq, Copy)]
@@ -111,7 +111,7 @@ impl<'a> Arbitrary<'a> for LotsOfEvents {
 
 impl<'a> Arbitrary<'a> for ExtremeLotsOfEvents {
     fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
-        let n = 4199;
+        let n = 1023;
         let mut events = Vec::with_capacity(n);
         for _ in 0..n {
             let element = MatchEvent::arbitrary(u)?;
