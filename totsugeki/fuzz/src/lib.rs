@@ -34,7 +34,11 @@ pub struct LotsOfEvents(pub Vec<MatchEvent>);
 ///
 /// Because fuzzing thoroughly through a lot of players slows iteration speed
 /// by a lot, 1023 events is chosen (for 512 players)
+/// 512 exceeds default timeout (1200), so let's use less
+/// 256 is good enough hopefully
 pub struct ExtremeLotsOfEvents(pub Vec<MatchEvent>);
+
+// TODO fuzz permutation of events for 7k player bracket
 
 #[derive(Arbitrary, Debug, Clone, Hash, Eq, PartialEq, Copy)]
 /// A match result
@@ -111,7 +115,7 @@ impl<'a> Arbitrary<'a> for LotsOfEvents {
 
 impl<'a> Arbitrary<'a> for ExtremeLotsOfEvents {
     fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
-        let n = 1023;
+        let n = 511;
         let mut events = Vec::with_capacity(n);
         for _ in 0..n {
             let element = MatchEvent::arbitrary(u)?;

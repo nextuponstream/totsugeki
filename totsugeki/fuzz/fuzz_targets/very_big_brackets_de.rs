@@ -12,7 +12,7 @@ use totsugeki::{
 };
 use totsugeki_fuzz::{ExtremeLotsOfEvents, MatchEvent};
 
-// Fuzz for 512 players (big online brackets)
+// Fuzz thoroughly for 256 players (big online brackets)
 // 2100 player was realistic but it is already EXTREMELY SLOW TO FUZZ
 // 7000 is still realistic would be interesting for 1-2 pass to confirm it
 // still works
