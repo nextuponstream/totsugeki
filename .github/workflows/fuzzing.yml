@@ -6,10 +6,14 @@ defaults:
   run:
     working-directory: ./totsugeki/fuzz
 
+# cargo install fails if already installed. Then just exit with true
+# TODO exit with 0 if already exit instead of ignoring all errors
+
 jobs:
   bracket:
     name: bracket
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v3
       - uses: actions/cache@v3
@@ -24,14 +28,15 @@ jobs:
             corpus/
             coverage/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - run: rustup toolchain install nightly
-      - run: cargo +nightly install cargo-binutils # to call llvm-tools
-      - run: cargo install cargo-fuzz
-      - run: rustup toolchain install nightly --component llvm-tools-preview
+      - run: rustup toolchain install nightly || true
+      - run: cargo +nightly install cargo-binutils || true # to call llvm-tools
+      - run: cargo install cargo-fuzz || true
+      - run: rustup toolchain install nightly --component llvm-tools-preview || true
       - run: cargo +nightly fuzz run bracket -- -max_total_time=60
   randomly_ordered_events:
     name: randomly ordered events
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v3
       - uses: actions/cache@v3
@@ -46,14 +51,15 @@ jobs:
             corpus/
             coverage/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - run: rustup toolchain install nightly
-      - run: cargo +nightly install cargo-binutils # to call llvm-tools
-      - run: cargo install cargo-fuzz
-      - run: rustup toolchain install nightly --component llvm-tools-preview
+      - run: rustup toolchain install nightly || true
+      - run: cargo +nightly install cargo-binutils || true # to call llvm-tools
+      - run: cargo install cargo-fuzz || true
+      - run: rustup toolchain install nightly --component llvm-tools-preview || true
       - run: cargo +nightly fuzz run randomly_ordered_events -- -max_total_time=60
   big_brackets:
     name: big brackets
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v3
       - uses: actions/cache@v3
@@ -68,14 +74,15 @@ jobs:
             corpus/
             coverage/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - run: rustup toolchain install nightly
-      - run: cargo +nightly install cargo-binutils # to call llvm-tools
-      - run: cargo install cargo-fuzz
-      - run: rustup toolchain install nightly --component llvm-tools-preview
+      - run: rustup toolchain install nightly || true
+      - run: cargo +nightly install cargo-binutils || true # to call llvm-tools
+      - run: cargo install cargo-fuzz || true
+      - run: rustup toolchain install nightly --component llvm-tools-preview || true
       - run: cargo +nightly fuzz run big_brackets -- -max_total_time=60
   big_brackets_de:
     name: big brackets double elimination
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v3
       - uses: actions/cache@v3
@@ -90,14 +97,15 @@ jobs:
             corpus/
             coverage/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - run: rustup toolchain install nightly
-      - run: cargo +nightly install cargo-binutils # to call llvm-tools
-      - run: cargo install cargo-fuzz
-      - run: rustup toolchain install nightly --component llvm-tools-preview
+      - run: rustup toolchain install nightly || true
+      - run: cargo +nightly install cargo-binutils || true # to call llvm-tools
+      - run: cargo install cargo-fuzz || true
+      - run: rustup toolchain install nightly --component llvm-tools-preview || true
       - run: cargo +nightly fuzz run big_brackets_de -- -max_total_time=60
   very_big_brackets_de:
     name: very big brackets double elimination
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v3
       - uses: actions/cache@v3
@@ -112,10 +120,10 @@ jobs:
             corpus/
             coverage/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - run: rustup toolchain install nightly
-      - run: cargo +nightly install cargo-binutils # to call llvm-tools
-      - run: cargo install cargo-fuzz
-      - run: rustup toolchain install nightly --component llvm-tools-preview
+      - run: rustup toolchain install nightly || true
+      - run: cargo +nightly install cargo-binutils || true # to call llvm-tools
+      - run: cargo install cargo-fuzz || true
+      - run: rustup toolchain install nightly --component llvm-tools-preview || true
       # did timeout once and exited with code 1
       # you could add -timeout_exitcode=0 but let's limit the imput size
       - run: cargo +nightly fuzz run very_big_brackets_de -- -max_total_time=60
