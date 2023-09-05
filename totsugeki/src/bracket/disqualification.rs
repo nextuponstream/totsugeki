@@ -63,7 +63,8 @@ impl Bracket {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::format::Format;
+    use crate::{format::Format, player::Player};
+    use std::time::Instant;
 
     #[test]
     fn cannot_disqualify_player_before_bracket_starts() {
@@ -87,5 +88,41 @@ mod tests {
             Err(e) => panic!("Expected Started error, got {e}"),
             Ok((b, _)) => panic!("Expected error, bracket: {b}"),
         }
+    }
+
+    // cargo t disqualify_8000 -- --include-ignored --nocapture
+    #[test]
+    #[ignore]
+    fn disqualify_8000_player_bracket() {
+        let start = Instant::now();
+        let mut bracket = Bracket::default();
+
+        for i in 1..=8000 {
+            let p = Player::new(format!("p{i}"));
+            bracket = bracket
+                .unchecked_join_skip_matches_generation(p)
+                .expect("updated");
+        }
+
+        bracket = bracket.generate_matches().expect("matches");
+        bracket = bracket.start().expect("bracket started").0;
+
+        let players = bracket.get_participants().get_players_list();
+
+        for _p in players {
+            // FIXME it takes 2 seconds per iteration to disqualify 1 player
+            // let start = Instant::now();
+            // if !bracket.is_over() {
+            //     bracket = bracket
+            //         .disqualify_participant(p.get_id())
+            //         .expect("updated bracket")
+            //         .0;
+            // }
+            // let duration = start.elapsed();
+            // println!("Disqualifying took: {duration:?}");
+        }
+
+        let duration = start.elapsed();
+        println!("Time elapsed in expensive_function() is: {duration:?}");
     }
 }
