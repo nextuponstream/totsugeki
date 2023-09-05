@@ -14,3 +14,14 @@ chrono = { version = "0.4.26", features = ["serde"] }
 test-log = { version = "0.2.11", features = ["trace"] }
 thiserror = "1.0.34"
 # proptest = "1.0.0" # TODO try to use it?
+
+[dev-dependencies]
+criterion = "0.5.1"
+
+# avoids `cargo bench -- --verbose` failing
+[lib]
+bench = false
+
+[[bench]]
+name = "disqualification"
+harness = false

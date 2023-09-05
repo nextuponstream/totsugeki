@@ -20,6 +20,18 @@ impl Bracket {
             .is_over()
     }
 
+    /// Returns the number of matches done and total remaining
+    #[must_use]
+    pub fn matches_progress(&self) -> (usize, usize) {
+        self.format
+            .get_progression(
+                self.get_matches(),
+                &self.get_participants(),
+                self.automatic_match_progression,
+            )
+            .matches_progress()
+    }
+
     /// Return next opponent for `player_id`, relevant match and player name
     ///
     /// # Errors

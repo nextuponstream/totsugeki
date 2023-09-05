@@ -54,3 +54,9 @@ name = "very_big_brackets_de"
 path = "fuzz_targets/very_big_brackets_de.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "still_realistic_events"
+path = "fuzz_targets/still_realistic_events.rs"
+test = false
+doc = false

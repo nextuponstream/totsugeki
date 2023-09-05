@@ -106,20 +106,6 @@ fuzz_target!(|data: (Events, BracketFormat)| {
                     return;
                 }
             }
-            // MatchEvent::Win(is_player_1) => {
-            //     let (p1, p2) = match m.get_players() {
-            //         [Opponent::Player(p1), Opponent::Player(p2)] => (p1, p2),
-            //         _ => panic!("oh no"),
-            //     };
-            //     let mut result = ReportedResult((2, 0));
-            //     if !*is_player_1 {
-            //         result = result.reverse();
-            //     }
-            //     if !bracket.is_over() {
-            //         bracket = bracket.report_result(p1, result.0).expect("").0;
-            //         bracket = bracket.report_result(p2, result.reverse().0).expect("").0;
-            //     }
-            // }
             MatchEvent::TOWin(is_player_1) => {
                 let (p1, p2) = match m.get_players() {
                     [Opponent::Player(p1), Opponent::Player(p2)] => (p1, p2),

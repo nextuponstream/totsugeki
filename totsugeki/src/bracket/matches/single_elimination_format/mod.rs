@@ -321,6 +321,13 @@ impl Progression for Step {
             assert_match_is_well_formed(m);
         }
     }
+
+    fn matches_progress(&self) -> (usize, usize) {
+        let right = self.matches.len();
+        let left = self.matches.iter().filter(|m| m.is_over()).count();
+
+        (left, right)
+    }
 }
 
 #[cfg(test)]
