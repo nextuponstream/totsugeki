@@ -540,6 +540,23 @@ impl Progression for Step {
             assert_match_is_well_formed(m);
         }
     }
+
+    fn matches_progress(&self) -> (usize, usize) {
+        let (winner_bracket, loser_bracket, gf, gfr) =
+            partition_double_elimination_matches(&self.matches, self.seeding.len());
+        let right = winner_bracket.len() + loser_bracket.len() + 2;
+        let mut left = 0;
+        left += winner_bracket.iter().filter(|m| m.is_over()).count();
+        left += loser_bracket.iter().filter(|m| m.is_over()).count();
+        if gf.is_over() {
+            left += 1;
+        }
+        if gfr.is_over() {
+            left += 1;
+        }
+
+        (left, right)
+    }
 }
 
 /// Set player as disqualified. Used when there is no need for further updates

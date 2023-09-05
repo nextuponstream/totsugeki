@@ -127,10 +127,28 @@ impl Participants {
         Ok(players)
     }
 
+    /// Returns player if present
+    #[must_use]
+    pub fn get(&self, participant_id: PlayerId) -> Option<Player> {
+        self.participants
+            .iter()
+            .cloned()
+            .find(|p| p.get_id() == participant_id)
+    }
+
     /// Return participants as a list of players
     #[must_use]
     pub fn get_players_list(&self) -> Vec<Player> {
         self.participants.clone()
+    }
+
+    /// Returns seeding, which is the players listed by ID
+    #[must_use]
+    pub fn get_seeding(&self) -> Vec<PlayerId> {
+        self.participants
+            .iter()
+            .map(Player::get_id)
+            .collect::<Vec<_>>()
     }
 
     /// Returns true if both group of participants have the same players,
@@ -181,22 +199,19 @@ impl Participants {
         }
     }
 
-    /// Returns player if present
+    /// Add player to participants but does not check if player is already
+    /// present in bracket. Use only for fuzzing tests when you can guarantee
+    /// you do not add duplicate players.
+    ///
+    /// # Safety
+    /// Adding two same players may result in undefined behavior
     #[must_use]
-    pub fn get(&self, participant_id: PlayerId) -> Option<Player> {
-        self.participants
-            .iter()
-            .cloned()
-            .find(|p| p.get_id() == participant_id)
-    }
-
-    /// Returns seeding, which is the players listed by ID
-    #[must_use]
-    pub fn get_seeding(&self) -> Vec<PlayerId> {
-        self.participants
-            .iter()
-            .map(Player::get_id)
-            .collect::<Vec<_>>()
+    pub fn unchecked_add_participant(self, new_player: Player) -> Self {
+        let mut updated_participants = self.participants;
+        updated_participants.push(new_player);
+        Self {
+            participants: updated_participants,
+        }
     }
 }
 

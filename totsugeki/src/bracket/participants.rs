@@ -32,7 +32,36 @@ impl Bracket {
         })
     }
 
-    /// Let `player` join participants and returns an updated version of the bracket
+    // FIXME gate method behind feature
+    /// Generate matches for bracket and return bracket. Only use in
+    /// combination with `uncheked_join_skip_matches_generation`.
+    ///
+    /// By default, most methods of this library generates matches. This incurs
+    /// some slowness when testing. An egregious example is having 7000 people
+    /// join the bracket (and regenerating the bracket 7000 times). This
+    /// methods is useful if you skipped match generation with methods like
+    /// `unchecked_join_skip_matches_generation`.
+    ///
+    /// # Errors
+    /// thrown when math overflow happens
+    pub fn generate_matches(self) -> Result<Self, Error> {
+        let matches = if self.participants.len() < 3 {
+            vec![]
+        } else {
+            self.format.generate_matches(
+                &self
+                    .participants
+                    .get_players_list()
+                    .iter()
+                    .map(Player::get_id)
+                    .collect::<Vec<_>>(),
+            )?
+        };
+        Ok(Self { matches, ..self })
+    }
+
+    /// Let `player` join participants and returns an updated version of the
+    /// bracket with matches regenerated
     ///
     /// # Errors
     /// Thrown when bracket has already started
@@ -45,6 +74,20 @@ impl Bracket {
             ..self
         };
         bracket.clone().regenerate_matches(bracket.participants)
+    }
+
+    /// Let `player` join participants and returns an updated version of the bracket
+    ///
+    /// # Errors
+    /// Thrown when bracket has already started
+    pub fn unchecked_join_skip_matches_generation(self, player: Player) -> Result<Bracket, Error> {
+        if self.is_closed {
+            return Err(Error::BarredFromEntering(player.get_id(), self.get_id()));
+        }
+        Ok(Self {
+            participants: self.participants.unchecked_add_participant(player),
+            ..self
+        })
     }
 
     /// Remove participant, regenerate matches and return updated bracket

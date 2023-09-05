@@ -228,6 +228,10 @@ pub trait Progression {
     #[must_use]
     fn is_over(&self) -> bool;
 
+    /// Returns true if bracket is over (all matches are played)
+    #[must_use]
+    fn matches_progress(&self) -> (usize, usize);
+
     /// List all matches that can be played out
     fn matches_to_play(&self) -> Vec<Match>;
 
