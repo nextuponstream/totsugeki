@@ -37,6 +37,9 @@ impl Bracket {
     /// # Errors
     /// Thrown when matches have yet to be generated or player has won/been
     /// eliminated
+    /// # Panics
+    /// We check if player is present in the inner implementation. If the inner
+    /// implementation does not check, then this method will panic.
     pub fn next_opponent(&self, player_id: PlayerId) -> Result<(Opponent, MatchId, String), Error> {
         match self
             .format

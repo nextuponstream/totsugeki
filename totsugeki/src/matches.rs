@@ -343,7 +343,8 @@ impl Match {
     /// Winner is automatically set if bye opponent is set
     ///
     /// # Errors
-    /// Returns an error if both players are the same
+    /// Returns an error if both players are the same (two unknown players will
+    /// not produce an error)
     pub fn new(players: [Opponent; 2], seeds: [usize; 2]) -> Result<Match, Error> {
         match players {
             [Opponent::Player(p1), Opponent::Player(p2)] if p1 == p2 => Err(Error::SamePlayer),
@@ -355,6 +356,25 @@ impl Match {
                 seeds,
                 reported_results: [(0_i8, 0_i8), (0_i8, 0)],
             }),
+        }
+    }
+
+    /// Create new match with two opponents
+    ///
+    /// Winner is automatically set if bye opponent is set
+    ///
+    /// # Errors
+    /// Returns an error if both players are the same (two unknown players will
+    /// not produce an error)
+    #[must_use]
+    pub fn new_empty(seeds: [usize; 2]) -> Match {
+        Self {
+            id: Id::new_v4(),
+            players: [Opponent::Unknown, Opponent::Unknown],
+            winner: Opponent::Unknown,
+            automatic_loser: Opponent::Unknown,
+            seeds,
+            reported_results: [(0_i8, 0_i8), (0_i8, 0)],
         }
     }
 

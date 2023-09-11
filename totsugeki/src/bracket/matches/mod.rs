@@ -188,7 +188,7 @@ fn update(bracket: &[Match], match_id: MatchId) -> Result<BracketUpdate, Error> 
 
 /// Assert any players set as disqualified at most once
 pub(crate) fn assert_disqualified_at_most_once(matches: &[Match], seeding: &[PlayerId]) {
-    for player in seeding.iter() {
+    for player in seeding {
         assert!(
             matches
                 .iter()

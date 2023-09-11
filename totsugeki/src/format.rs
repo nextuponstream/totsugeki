@@ -9,7 +9,6 @@ use crate::{
         Progression,
     },
     matches::Match,
-    opponent::Opponent,
     player::{Id as PlayerId, Participants, Player},
     seeding::{
         double_elimination_seeded_bracket::get_loser_bracket_matches_top_seed_favored,
@@ -43,20 +42,20 @@ impl Format {
                 let mut looser_bracket_matches =
                     get_loser_bracket_matches_top_seed_favored(seeding)?;
                 matches.append(&mut looser_bracket_matches);
-                let grand_finals: Match =
-                    Match::new([Opponent::Unknown, Opponent::Unknown], [1, 2])
-                        .expect("grand finals");
+                let grand_finals: Match = Match::new_empty([1, 2]);
                 matches.push(grand_finals);
-                let grand_finals_reset: Match =
-                    Match::new([Opponent::Unknown, Opponent::Unknown], [1, 2])
-                        .expect("grand finals reset");
+                let grand_finals_reset: Match = Match::new_empty([1, 2]);
                 matches.push(grand_finals_reset);
                 matches
             }
         })
     }
 
+    // TODO remove abstraction? Putting stuff on the heap may not be necessary
     /// Returns progression implementation for this bracket format
+    ///
+    /// # Panics
+    /// Panics if match generation of given format cannot generate match
     #[must_use]
     pub fn get_progression(
         &self,
@@ -67,7 +66,7 @@ impl Format {
         match self {
             Format::SingleElimination => Box::new(
                 SE_Step::new(Some(matches), &seeding.get_seeding(), automatic_progression)
-                    .expect(""),
+                    .expect("single elimination bracket state"),
             ),
             Format::DoubleElimination => Box::new(
                 DE_Step::new(
@@ -79,7 +78,7 @@ impl Format {
                         .collect(),
                     automatic_progression,
                 )
-                .expect(""),
+                .expect("double elimination bracket state"),
             ),
         }
     }

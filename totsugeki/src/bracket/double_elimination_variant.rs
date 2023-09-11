@@ -116,7 +116,7 @@ fn loser_bracket(lb_matches: Vec<Match>) -> Vec<Vec<Match>> {
 
         if round.len() == matches_for_current_round {
             round.reverse();
-            let finalized_round = round.drain(0..).collect();
+            let finalized_round = std::mem::take(&mut round);
             rounds.push(finalized_round);
 
             if !round_qualifies_to_fight_next_wave_opponents {
@@ -129,7 +129,7 @@ fn loser_bracket(lb_matches: Vec<Match>) -> Vec<Vec<Match>> {
     }
 
     if !round.is_empty() {
-        let finalized_round = round.drain(0..).collect();
+        let finalized_round = std::mem::take(&mut round);
         rounds.push(finalized_round);
     }
     rounds.reverse();

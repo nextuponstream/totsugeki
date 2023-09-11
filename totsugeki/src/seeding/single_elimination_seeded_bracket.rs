@@ -12,6 +12,11 @@ use crate::{matches::Match, opponent::Opponent, player::Id as PlayerId, seeding:
 ///
 /// # Errors
 /// Throws error when math overflow happens
+///
+/// # Panics
+/// We do not expect any panics here because we take the top and bottom seed to
+/// form a new match or we use the players with byes and give them an "unknown"
+/// Opponent.
 pub fn get_balanced_round_matches_top_seed_favored(
     seeding: &[PlayerId],
 ) -> Result<Vec<Match>, Error> {
@@ -50,18 +55,19 @@ pub fn get_balanced_round_matches_top_seed_favored(
             } else if second_round == i {
                 let top_seed = available_players.remove(0);
                 let player_list = seeding;
-                let top_seed_player = player_list.get(top_seed - 1).expect("player");
-                let bottom_seed = available_players.pop().expect("bottom seed");
-                let bottom_seed_player = player_list.get(bottom_seed - 1).expect("player");
+                let top_seed_player = player_list[top_seed - 1];
+                let bottom_seed = available_players[available_players.len() - 1];
+                available_players.pop();
+                let bottom_seed_player = player_list[bottom_seed - 1];
                 let player_1 = if remaining_byes > 0 && top_seed <= byes {
                     remaining_byes -= 1;
-                    Opponent::Player(*top_seed_player)
+                    Opponent::Player(top_seed_player)
                 } else {
                     Opponent::Unknown
                 };
                 let player_2 = if remaining_byes > 0 && bottom_seed <= byes {
                     remaining_byes -= 1;
-                    Opponent::Player(*bottom_seed_player)
+                    Opponent::Player(bottom_seed_player)
                 } else {
                     Opponent::Unknown
                 };
@@ -71,7 +77,8 @@ pub fn get_balanced_round_matches_top_seed_favored(
                 );
             } else {
                 let top_seed = available_players.remove(0);
-                let bottom_seed = available_players.pop().expect("bottom seed");
+                let bottom_seed = available_players[available_players.len() - 1];
+                available_players.pop();
 
                 this_round.push(
                     Match::new(
@@ -84,7 +91,7 @@ pub fn get_balanced_round_matches_top_seed_favored(
         }
 
         // empty iteration variable `this_round` into round_matches
-        round_matches.push(this_round.drain(..).collect());
+        round_matches.push(std::mem::take(&mut this_round));
         i /= 2;
         available_players = (1..=i).collect();
     }

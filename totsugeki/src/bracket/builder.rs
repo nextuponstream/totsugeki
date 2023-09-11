@@ -28,6 +28,8 @@ impl Builder {
     ///
     /// # Errors
     /// Throws error when a required attribute is missing (example: format)
+    /// # Panics
+    /// when math overflow happens
     pub fn build(self) -> Result<Bracket, Error> {
         let Some(format) = self.format else {
             return Err(Error::MissingFormat);
@@ -40,7 +42,9 @@ impl Builder {
             format,
             ..Bracket::default()
         };
-        bracket = bracket.regenerate_matches(participants).expect("ok");
+        bracket = bracket
+            .regenerate_matches(participants)
+            .expect("no math overflow errors");
 
         Ok(bracket)
     }
@@ -55,6 +59,11 @@ impl Builder {
     }
 
     /// Set `n` participants of bracket to build
+    ///
+    /// # Panics
+    /// We add new players sequentially and generate new UUID v4 everytime.
+    /// We do not expect two same UUID to be generated and cause a panic for
+    /// adding two same players.
     #[must_use]
     pub fn set_new_players(self, n: usize) -> Builder {
         use crate::player::Player;
@@ -63,7 +72,7 @@ impl Builder {
         for i in 1..=n {
             participants = participants
                 .add_participant(Player::new(format!("p{i}")))
-                .expect("ok");
+                .expect("players");
         }
         Builder {
             participants: Some(participants),
