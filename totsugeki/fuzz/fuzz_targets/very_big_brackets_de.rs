@@ -10,13 +10,13 @@ use totsugeki::{
     bracket::Bracket, format::Format, matches::ReportedResult, opponent::Opponent, player::Player,
     seeding::Method,
 };
-use totsugeki_fuzz::{ExtremeLotsOfEvents, MatchEvent};
+use totsugeki_fuzz::{BigOnlineBracketEvents, MatchEvent};
 
 // Fuzz thoroughly for 256 players (big online brackets)
 // 2100 player was realistic but it is already EXTREMELY SLOW TO FUZZ
 // 7000 is still realistic would be interesting for 1-2 pass to confirm it
 // still works
-fuzz_target!(|data: (ExtremeLotsOfEvents, u128)| {
+fuzz_target!(|data: (BigOnlineBracketEvents, u128)| {
     let (events, permutation_index) = data;
 
     let total_events = events.0.len();
