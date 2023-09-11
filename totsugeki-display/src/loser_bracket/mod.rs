@@ -6,6 +6,9 @@ mod test_lines;
 mod test_ordering;
 
 /// Give positionnal hints to loser bracket matches
+///
+/// # Panics
+/// When provided matches do no give row hints
 pub fn reorder(rounds: &mut [Vec<MinimalMatch>]) {
     if rounds.len() < 2 {
         return;
@@ -37,7 +40,7 @@ pub fn reorder(rounds: &mut [Vec<MinimalMatch>]) {
             let winner_seed = m.seeds[0];
             // (first) player of round 1 with highest seed is expected to win
             if let Some(m) = round.iter_mut().find(|r_m| r_m.seeds[0] == winner_seed) {
-                m.row_hint = Some(rounds[i + 1][j].row_hint.expect("") * 2);
+                m.row_hint = Some(rounds[i + 1][j].row_hint.expect("row hint") * 2);
             }
             let loser_seed = m.seeds[1];
             if let Some(m) = round.iter_mut().find(|r_m| r_m.seeds[0] == loser_seed) {
@@ -45,7 +48,7 @@ pub fn reorder(rounds: &mut [Vec<MinimalMatch>]) {
                     m.row_hint = rounds[i + 1][j].row_hint;
                 } else {
                     // 7-10 (1), 8-9 (3)
-                    m.row_hint = Some(rounds[i + 1][j].row_hint.expect("") * 2 + 1);
+                    m.row_hint = Some(rounds[i + 1][j].row_hint.expect("row hint") * 2 + 1);
                 }
             }
         }
