@@ -149,7 +149,7 @@ fn update_bracket_with_match_result(
         return;
     };
     let Some(r1) = r1.first() else {
-        return ;
+        return;
     };
     let Ok(r1) = r1.parse::<i8>() else {
         // TODO log error
@@ -160,7 +160,7 @@ fn update_bracket_with_match_result(
         return;
     };
     let Some(r2) = r2.first() else {
-        return ;
+        return;
     };
     let Ok(r2) = r2.parse::<i8>() else {
         // TODO log error

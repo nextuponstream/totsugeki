@@ -70,7 +70,7 @@ pub fn get_loser_bracket_matches_top_seed_favored(
             &mut initial_wave,
             &mut incoming_players_of_this_wave,
         ) else {
-             continue;
+            continue;
         };
         // reason: readability
         #[allow(clippy::bool_to_int_with_if)]

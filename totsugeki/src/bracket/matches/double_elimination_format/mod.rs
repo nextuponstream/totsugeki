@@ -65,7 +65,7 @@ impl Step {
                 seeding,
                 matches,
                 auto: automatic_progression,
-            })
+            });
         };
         Ok(Self {
             seeding,
@@ -183,9 +183,9 @@ impl Progression for Step {
                 && m.get_automatic_loser() == Opponent::Unknown
         }) else {
             if !self.seeding.contains(&player_id) {
-                return Err(Error::UnknownPlayer(player_id, self.seeding.clone()))
+                return Err(Error::UnknownPlayer(player_id, self.seeding.clone()));
             };
-           return Err(Error::ForbiddenDisqualified(player_id));
+            return Err(Error::ForbiddenDisqualified(player_id));
         };
         // disqualify player then validate match result to update double elimination bracket
         let current_match_to_play = (*m).set_automatic_loser(player_id)?;
@@ -209,8 +209,9 @@ impl Progression for Step {
             Ok((bracket, _)) => {
                 let Some(m) = bracket
                     .iter()
-                    .find(|m| m.contains(player_id) && m.get_winner() == Opponent::Unknown) else {
-                    let p = Step::new(Some(bracket.clone()), self.seeding.clone(),self.auto)?;
+                    .find(|m| m.contains(player_id) && m.get_winner() == Opponent::Unknown)
+                else {
+                    let p = Step::new(Some(bracket.clone()), self.seeding.clone(), self.auto)?;
                     let new_matches = get_new_matches(&old_matches_to_play, &p.matches_to_play());
                     return Ok((bracket, new_matches));
                 };
@@ -219,7 +220,7 @@ impl Progression for Step {
                 let bracket = update_bracket_with(&bracket, &match_in_losers);
                 let p = Step::new(Some(bracket), self.seeding.clone(), self.auto)?;
 
-                let Ok((bracket,_))= p.validate_match_result(match_in_losers.get_id()) else {
+                let Ok((bracket, _)) = p.validate_match_result(match_in_losers.get_id()) else {
                     let new_matches = get_new_matches(&old_matches_to_play, &p.matches_to_play());
                     return Ok((p.matches, new_matches));
                 };
@@ -232,7 +233,7 @@ impl Progression for Step {
                 // if no winner can be declared because there is a
                 // missing player, then don't throw an error
                 let Error::MatchUpdate(ref e) = bracket_e else {
-                    return Err(bracket_e)
+                    return Err(bracket_e);
                 };
                 match e {
                     MatchError::MissingOpponent(_) => {
@@ -302,9 +303,9 @@ impl Progression for Step {
         let Some(relevant_match) = next_match else {
             let last_match = self.matches.iter().last().expect("last match");
             return match last_match.get_winner() {
-               Opponent::Player(p) if p == player_id => Err(Error::NoNextMatch(player_id)),
+                Opponent::Player(p) if p == player_id => Err(Error::NoNextMatch(player_id)),
                 _ => Err(Error::Eliminated(player_id)),
-            }
+            };
         };
 
         let opponent = match relevant_match.get_players() {
@@ -332,8 +333,8 @@ impl Progression for Step {
         let Some(m) = self
             .matches
             .iter()
-            .find(|m| m.contains(player_id) && m.get_winner() == Opponent::Unknown) else
-        {
+            .find(|m| m.contains(player_id) && m.get_winner() == Opponent::Unknown)
+        else {
             return Err(Error::NoMatchToPlay(player_id));
         };
         let affected_match_id = m.get_id();

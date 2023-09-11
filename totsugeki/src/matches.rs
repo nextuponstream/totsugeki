@@ -445,7 +445,7 @@ impl Match {
     pub(crate) fn stronger_seed_wins(&self) -> Option<bool> {
         assert!(self.seeds[0] != self.seeds[1]);
         let Opponent::Player(winner) = self.winner else {
-            return None
+            return None;
         };
 
         match self.seeds {

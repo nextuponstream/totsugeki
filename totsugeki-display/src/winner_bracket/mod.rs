@@ -39,7 +39,7 @@ pub fn lines(rounds: &[Vec<MinimalMatch>]) -> Option<Vec<Vec<BoxElement>>> {
         let round = &rounds[round_index];
 
         // FIXME remove unwrap and throw error
-        let Some(matches_in_round) = (round.len()).checked_next_power_of_two() else{
+        let Some(matches_in_round) = (round.len()).checked_next_power_of_two() else {
             // TODO log error
             return None;
         };

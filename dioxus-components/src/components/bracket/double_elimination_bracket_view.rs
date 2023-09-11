@@ -28,7 +28,8 @@ pub(crate) fn View(cx: Scope) -> Element {
         Some(bracket) => bracket.read().clone(),
         None => Bracket::default(),
     };
-    let Ok(dev) = std::convert::TryInto::<DoubleEliminationVariant>::try_into(bracket.clone()) else {
+    let Ok(dev) = std::convert::TryInto::<DoubleEliminationVariant>::try_into(bracket.clone())
+    else {
         log::error!("double elimination variant");
         return None;
     };

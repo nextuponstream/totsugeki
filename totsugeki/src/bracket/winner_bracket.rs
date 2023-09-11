@@ -7,7 +7,7 @@ use crate::{matches::Match, player::Participants};
 /// Partition list of matches into rounds for a winner bracket
 pub(crate) fn winner_bracket(matches: Vec<Match>, participants: &Participants) -> Vec<Vec<Match>> {
     let n = participants.len();
-    let Some(mut npo2) =  n.checked_next_power_of_two() else {
+    let Some(mut npo2) = n.checked_next_power_of_two() else {
         panic!("MATH");
     };
     let byes = npo2 - n;
