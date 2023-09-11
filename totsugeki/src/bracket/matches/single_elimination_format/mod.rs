@@ -104,9 +104,9 @@ impl Progression for Step {
                 && m.get_automatic_loser() == Opponent::Unknown
         }) else {
             return if self.seeding.contains(&player_id) {
-                    Err(Error::ForbiddenDisqualified(player_id))
-                } else {
-                    Err(Error::UnknownPlayer(player_id, self.seeding.clone()))
+                Err(Error::ForbiddenDisqualified(player_id))
+            } else {
+                Err(Error::UnknownPlayer(player_id, self.seeding.clone()))
             };
         };
         let current_match_to_play =
@@ -186,7 +186,7 @@ impl Progression for Step {
             return match last_match.get_winner() {
                 Opponent::Player(p) if p == player_id => Err(Error::NoNextMatch(player_id)),
                 _ => Err(Error::Eliminated(player_id)),
-            }
+            };
         };
 
         let opponent = match &relevant_match.get_players() {
@@ -350,7 +350,7 @@ mod tests {
         let (next_opponent, match_id_1) = matches
             .next_opponent(player_ids[player_1])
             .expect("next opponent");
-        let Opponent::Player(next_opponent) = next_opponent else{
+        let Opponent::Player(next_opponent) = next_opponent else {
             panic!("expected player")
         };
         assert_eq!(next_opponent, player_ids[player_2]);

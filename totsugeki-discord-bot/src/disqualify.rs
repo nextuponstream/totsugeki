@@ -30,7 +30,8 @@ async fn disqualify(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
             Ok((b, new_matches)) => {
                 bracket = b;
                 for m in new_matches {
-                    let [Opponent::Player(player1), Opponent::Player(player2)] = m.get_players() else {
+                    let [Opponent::Player(player1), Opponent::Player(player2)] = m.get_players()
+                    else {
                         panic!("could not parse match players");
                     };
                     new_matches_message =

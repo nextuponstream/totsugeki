@@ -50,7 +50,9 @@ fn add_player(bracket: &UseSharedState<Bracket>, e: Event<FormData>) {
     log::debug!("{e:?}");
     log::debug!("{:?}", e.values);
     log::debug!("{:?}", e.values.get("name"));
-    let Some(name) = e.values.get("name") else {return};
+    let Some(name) = e.values.get("name") else {
+        return;
+    };
     // let Some(name) = name.first() else {return};
     let name = if name.is_empty() {
         let i = bracket.read().get_participants().len() + 1;

@@ -41,8 +41,10 @@ pub fn Form(cx: Scope) -> Element {
 
 /// Update stored bracket with new player using `Form`
 fn add_player(bracket: &UseSharedState<Bracket>, e: Event<FormData>) {
-    let Some(name) = e.values.get("name") else {return};
-    let Some(name) = name.first() else {return};
+    let Some(name) = e.values.get("name") else {
+        return;
+    };
+    let Some(name) = name.first() else { return };
     let name = if name.is_empty() {
         let i = bracket.read().get_participants().len() + 1;
         format!("player {}", i)

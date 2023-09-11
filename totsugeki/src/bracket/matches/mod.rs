@@ -173,7 +173,7 @@ fn update(bracket: &[Match], match_id: MatchId) -> Result<BracketUpdate, Error> 
         let mut iter = bracket.iter().skip(index + 1);
         let seed_of_expected_winner = updated_match.get_seeds()[0];
         let Opponent::Player(winner) = updated_match.get_winner() else {
-              panic!("no winner in updated match");  
+            panic!("no winner in updated match");
         };
         let m = iter
             .find(|m| m.get_seeds().contains(&seed_of_expected_winner))

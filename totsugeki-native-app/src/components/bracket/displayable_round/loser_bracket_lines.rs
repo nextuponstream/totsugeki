@@ -96,7 +96,7 @@ pub(crate) fn lines(rounds: Vec<Vec<MinimalMatch>>) -> Option<Vec<Vec<BoxElement
                     // Taken from winner bracket lines function. Has twice as
                     // many rounds, so gotta adjust it by dividing round_index
                     // by two
-                    let Ok(r_i) =(round_index / 2).try_into() else {
+                    let Ok(r_i) = (round_index / 2).try_into() else {
                         // TODO log error
                         return None;
                     };

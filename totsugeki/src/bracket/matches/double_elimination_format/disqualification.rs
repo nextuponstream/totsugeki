@@ -331,7 +331,7 @@ mod tests {
         assert!(
             l_bracket.iter().any(|m| {
                 let Opponent::Player(auto) = m.get_automatic_loser() else {
-                    return false
+                    return false;
                 };
                 auto == p[7]
             }),
