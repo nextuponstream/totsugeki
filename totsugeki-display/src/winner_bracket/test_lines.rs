@@ -1,5 +1,7 @@
 //! Lines of winner bracket
 
+// TODO add 16+17 players bracket test
+
 #[cfg(test)]
 mod tests {
     use totsugeki::bracket::builder::Builder;

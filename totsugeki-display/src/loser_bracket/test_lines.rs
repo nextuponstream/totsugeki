@@ -1,5 +1,7 @@
 //! test lines to display for loser bracket
 
+// TODO add 16+17 players bracket test
+
 #[cfg(test)]
 mod tests {
     use crate::loser_bracket::lines;

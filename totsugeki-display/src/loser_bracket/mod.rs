@@ -5,6 +5,8 @@ use crate::{BoxElement, MinimalMatch};
 mod test_lines;
 mod test_ordering;
 
+// TODO link back to `totsugeki` library related function
+// TODO rename to explain Tailwind CSS dependency
 /// Give positionnal hints to loser bracket matches
 ///
 /// # Panics
@@ -70,8 +72,8 @@ pub fn reorder(rounds: &mut [Vec<MinimalMatch>]) {
     }
 }
 
+// TODO link back to `totsugeki` library related function
 /// Lines flow from matches of one round to the next round for a loser bracket
-// FIXME add tests in this crate
 // FIXME remove allow macros
 #[must_use]
 #[allow(clippy::needless_pass_by_value)]
