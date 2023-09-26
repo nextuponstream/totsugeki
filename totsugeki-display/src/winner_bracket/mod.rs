@@ -107,7 +107,8 @@ pub fn lines(rounds: &[Vec<MinimalMatch>]) -> Option<Vec<Vec<BoxElement>>> {
     Some(lines)
 }
 
-/// Give positionnal hints to winner bracket matches
+/// Set positionnal hints to winner bracket matches
+// TODO rename to explain Tailwind CSS dependency
 pub fn reorder(rounds: &mut [Vec<MinimalMatch>]) {
     if rounds.len() < 2 {
         return;
@@ -142,7 +143,7 @@ pub fn reorder(rounds: &mut [Vec<MinimalMatch>]) {
             }
         }
 
-        // sort row i+1 so unsorted row i can be sorted next iteration
+        // sort row i so unsorted row i-1 can be sorted next iteration
         // NOTE: for round 1, filler matches are first after sorting
         round.sort_by_key(|m| m.row_hint);
         rounds[i] = round;

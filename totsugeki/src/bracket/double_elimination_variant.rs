@@ -25,6 +25,9 @@ pub enum TryIntoError {
 impl TryFrom<Bracket> for Variant {
     type Error = TryIntoError;
 
+    // TODO try to use type state pattern instead of throwing errors
+    // trying to coerce smth into smth else is a sign that a fallible process
+    // should be made not fallible
     fn try_from(bracket: Bracket) -> Result<Self, Self::Error> {
         if bracket.format != Format::DoubleElimination {
             return Err(TryIntoError::ExpectedDoubleEliminationFormat);
