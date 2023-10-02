@@ -51,49 +51,6 @@ jobs:
       - run: cargo check
         working-directory: ${{ matrix.dir }}
   
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    strategy: 
-      matrix: { 
-        dir: [
-          'examples/totsugeki-discord-bot',
-          'examples/totsugeki-native-app',
-          'examples/web',
-        ]}
-    env:
-      API_ADDR: localhost
-      API_PORT: 3000
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            examples/*/target/
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      # setup
-      - name: update system repos
-        if: ${{ matrix.dir == 'examples/totsugeki-native-app' }}
-        run: sudo apt-get update
-      # https://dioxuslabs.com/docs/0.3/guide/en/getting_started/desktop.html#linux
-      - name: install dioxus system deps
-        if: ${{ matrix.dir == 'examples/totsugeki-native-app' }}
-        run: sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev
-      - run: mkdir resources # totsugeki-native-app+web
-        if: ${{ matrix.dir != 'examples/totsugeki-discord-bot' }}
-        working-directory: ${{ matrix.dir }}
-      - run: touch resources/tailwind.css
-        if: ${{ matrix.dir != 'examples/totsugeki-discord-bot' }}
-        working-directory: ${{ matrix.dir }}
-
-      - run: cargo build
-        working-directory: ${{ matrix.dir }}
-
   test:
     name: test
     runs-on: ubuntu-latest
