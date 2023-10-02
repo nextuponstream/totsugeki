@@ -6,9 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-totsugeki = { path = "../totsugeki" }
-# totsugeki-api = { path = "../totsugeki-api" }
-# totsugeki-api-request = { path = "../totsugeki-api-request" }
+totsugeki = { path = "../../totsugeki" }
 dotenv = "0.15"
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1.0.137", features = ["derive"] }

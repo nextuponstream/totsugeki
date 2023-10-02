@@ -3,10 +3,21 @@ resolver = "2"
 members = [
   "totsugeki",
   "totsugeki-display",
-  "totsugeki-discord-bot",
-  "totsugeki-native-app",
   "dioxus-components",
-  "web",
   "tournament-organiser-api",
   "ui",
 ]
+
+# otherwise cannot build because those crates believes they are in a workspace
+exclude = [
+  "examples/totsugeki-discord-bot",
+  "examples/totsugeki-native-app",
+  "examples/web",
+]
+
+# serde: no examples except in readme
+# chrono: no examples
+# bevy, actual examples, it just fits in one file per example (200-300L)
+# but for special example (ios), you have to cd into the directory
+# so yeah, better have a big README in example folders and mark what is an
+# actual example and what is not
