@@ -23,15 +23,6 @@ jobs:
             tournament-organiser-web/node_modules
             tournament-organiser-web/dist
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      # setup
-      - run: sudo apt-get update
-      # https://dioxuslabs.com/docs/0.3/guide/en/getting_started/desktop.html#linux
-      - run: sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev
-      - run: mkdir totsugeki-native-app/resources
-      - run: touch totsugeki-native-app/resources/tailwind.css
-      - run: mkdir web/resources
-      - run: touch web/resources/tailwind.css
-
       - run: cargo check
   
   # TODO compile tailwindcss using tailwind cli in CI
@@ -56,16 +47,6 @@ jobs:
             tournament-organiser-web/node_modules
             tournament-organiser-web/dist
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-      # setup
-      - run: sudo apt-get update
-      # https://dioxuslabs.com/docs/0.3/guide/en/getting_started/desktop.html#linux
-      - run: sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev
-      - run: mkdir totsugeki-native-app/resources
-      - run: touch totsugeki-native-app/resources/tailwind.css
-      - run: mkdir web/resources
-      - run: touch web/resources/tailwind.css
-
       - run: cargo test -- --include-ignored
 
   lint-rust:
@@ -133,16 +114,6 @@ jobs:
             tournament-organiser-web/node_modules
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - run: rustup component add clippy
-      
-      # setup
-      - run: sudo apt-get update
-      # https://dioxuslabs.com/docs/0.3/guide/en/getting_started/desktop.html#linux
-      - run: sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev
-      - run: mkdir totsugeki-native-app/resources
-      - run: touch totsugeki-native-app/resources/tailwind.css
-      - run: mkdir web/resources
-      - run: touch web/resources/tailwind.css
-
       - run: cargo clippy -- -D warnings
 
   tournament-organiser-cypress-tests:
