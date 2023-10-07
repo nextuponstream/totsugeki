@@ -93,7 +93,10 @@ async fn health() -> impl IntoResponse {
 
 /// Serve tournament organiser application
 async fn serve(app: Router, port: u16) {
-    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    let addr = match std::env::var("DOCKER_BUILD") {
+        Ok(_) => SocketAddr::from(([0, 0, 0, 0], port)),
+        Err(_) => SocketAddr::from(([127, 0, 0, 1], port)),
+    };
     tracing::debug!("listening on {}", addr);
     axum::Server::bind(&addr)
         .serve(app.layer(TraceLayer::new_for_http()).into_make_service())
