@@ -2,22 +2,24 @@
 # build with docker:
 # docker build -t to-app .
 # TODO still 98mb send in docker build context...
-# need slimer image (1.5G)
 
 # docker run -d -p 3000:3000 to-app
 
-FROM rust:1.73.0 as builder
+# build rust binary
+# alpine and slim-bullseye does not work
+FROM rust:1.73.0-bullseye as builder
 COPY . .
 RUN cargo build --release --package tournament-organiser-api 
 
 # ---
-FROM node:18 as static
+FROM node:18-alpine as static
 COPY . .
 RUN npm --prefix tournament-organiser-web install
 RUN npm --prefix tournament-organiser-web run build
 
 # ---
-FROM rust:1.73.0 as runtime
+# size: around 93mb, good enough
+FROM debian:bullseye-slim as runtime
 ENV BUILD_PATH_TOURNAMENT_ORGANISER_WEB dist
 ENV DOCKER_BUILD 1
 COPY --from=static tournament-organiser-web/dist dist
