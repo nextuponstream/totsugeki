@@ -1,0 +1,7 @@
+target
+tournament-organiser-web/node_modules
+tournament-organiser-web/dist
+examples
+totsugeki/fuzz/target
+totsugeki/fuzz/coverage
+.git
