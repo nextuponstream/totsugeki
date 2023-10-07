@@ -66,7 +66,7 @@ function showResultModal(clickedMatchId: string, clickedPlayers: {name: string, 
 async function reportResult(players: {name: string, id: string}[], scoreP1: number, scoreP2: number) {
   try {
       console.log(bracket.value.bracket)
-      let response = await fetch('http://localhost:3000/report-result-for-bracket', {
+      let response = await fetch('https://totsugeki.fly.dev/report-result-for-bracket', {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
