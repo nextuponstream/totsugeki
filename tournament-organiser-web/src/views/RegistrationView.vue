@@ -73,7 +73,8 @@
   
   async function createBracketFromPlayers(){
     try {
-      let response = await fetch('http://localhost:3000/bracket-from-players', {
+      // TODO configurable variable
+      let response = await fetch('https://totsugeki.fly.dev/bracket-from-players', {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
