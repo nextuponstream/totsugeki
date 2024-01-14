@@ -43,7 +43,7 @@ pub(crate) fn lines(rounds: Vec<Vec<MinimalMatch>>) -> Option<Vec<Vec<BoxElement
         let mut left_column_flow_out_of: Vec<BoxElement> = column.clone();
         let mut right_column_flow_into: Vec<BoxElement> = column.clone();
 
-        for (_, m) in round.iter().enumerate() {
+        for m in round {
             if let Some(row) = m.row_hint {
                 let boxes_between_matches_of_same_round = boxes_in_one_column / matches_in_round;
                 let Ok(r_i) = round_index.try_into() else {
