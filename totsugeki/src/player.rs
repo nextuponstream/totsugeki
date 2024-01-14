@@ -132,8 +132,8 @@ impl Participants {
     pub fn get(&self, participant_id: PlayerId) -> Option<Player> {
         self.participants
             .iter()
-            .cloned()
             .find(|p| p.get_id() == participant_id)
+            .cloned()
     }
 
     /// Return participants as a list of players

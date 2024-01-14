@@ -50,7 +50,7 @@ pub fn get_loser_bracket_matches_top_seed_favored(
     let skip_initial_wave_match_generation = losers_by_round[0].len() <= losers_by_round[1].len();
     // generate loser bracket matches
     for losers_for_this_round in losers_by_round {
-        if let ControlFlow::Break(_) = fill_incoming_wave(
+        if let ControlFlow::Break(()) = fill_incoming_wave(
             &mut incoming_players_of_this_wave,
             &losers_for_this_round,
             &mut initial_wave,
