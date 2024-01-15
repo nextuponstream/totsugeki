@@ -3,14 +3,13 @@
     <div class="text-2xl">
       {{ t('playerRegistrationForm.title') }}
     </div>
-    <div class="grid grid-rows-1 grid-flow-col gap-2 align-baseline">
+    <div class="flex gap-2 align-baseline">
       <FormInput
         v-model="name"
         :placeholder="t('playerRegistrationForm.newPlayerPlaceholder')"
         @keydown.enter="submitPlayer"
       />
       <SubmitBtn
-        class="max-w-[100px]"
         :disabled="name.length === 0"
         @click="submitPlayer"
       />
