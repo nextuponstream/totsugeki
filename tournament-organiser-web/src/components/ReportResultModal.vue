@@ -11,7 +11,7 @@
     <h1 class="text-2xl font-semibold">
       Match results
     </h1>
-    <div class="grid grid-cols-4 gap-7">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
       <OtherBtn @click="setScore(2,0)">
         2 - 0
       </OtherBtn>
@@ -25,7 +25,7 @@
         0 - 2
       </OtherBtn>
     </div>
-    <div class="grid grid-cols-6 gap-2">
+    <div class="grid sm:grid-cols-6 gap-2">
       <OtherBtn @click="setScore(3,0)">
         3 - 0
       </OtherBtn>
@@ -45,7 +45,7 @@
         0 - 3
       </OtherBtn>
     </div>
-    <div class="grid grid-cols-3">
+    <div class="grid sm:grid-cols-3">
       <div>{{ players ? players[0].name : '' }}</div>
       <div class="place-self-center">
         <div>{{ scoreP1 }} - {{ scoreP2 }}</div>
