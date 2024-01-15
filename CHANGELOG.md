@@ -1,5 +1,9 @@
 # Changelog
 
+# v0.2.0 - XX.XX.XXXX
+
+* Add signup and authentication
+
 # v0.1.1 - 15.01.2024
 
 * Add responsive design to all pages
