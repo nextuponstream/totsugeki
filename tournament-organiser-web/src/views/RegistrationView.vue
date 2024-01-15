@@ -2,22 +2,25 @@
   <div class="text-xl">
     {{ t('registration.bracketNameLabel') }}: {{ bracketName }}
   </div>
-  <div class="grid grid-cols-2">
-    <div>
+  <div class="sm:grid sm:grid-cols-2 sm:gap-5">
+    <div class="pb-5">
       <player-registration @new-player="addPlayer" />
-      <div class="group mt-5 items-center flex">
-        <submit-btn
-          :disabled="hasMinNumberOfPlayerToStartBracket"
-          @click="createBracketFromPlayers"
-        >
-          {{ t('registration.startBracket') }}
-        </submit-btn>
-        <base-tooltip
-          v-if="hasMinNumberOfPlayerToStartBracket"
-          class="ml-3"
-        >
-          3 players minimum
-        </base-tooltip>
+      <div class="group mt-5 grid grid-cols-1 place-items-center">
+        <div>
+          <submit-btn
+            :disabled="hasMinNumberOfPlayerToStartBracket"
+            @click="createBracketFromPlayers"
+          >
+            {{ t('registration.startBracket') }}
+          </submit-btn>
+          <base-tooltip
+            v-if="hasMinNumberOfPlayerToStartBracket"
+            class="ml-3"
+            style="position: absolute"
+          >
+            3 players minimum
+          </base-tooltip>
+        </div>
       </div>
     </div>
 

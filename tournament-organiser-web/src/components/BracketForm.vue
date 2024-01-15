@@ -1,18 +1,19 @@
 <template>
-  <div>
+  <div class="grid grid-cols-1 gap-2">
     <div class="text-2xl">
       {{ t('bracketForm.title') }}
     </div>
-    <div class="pt-2">
-      <label>{{ t('bracketForm.nameLabel') }}</label>
-      <FormInput
-        v-model="bracketName"
-        :placeholder="t('bracketForm.namePlaceholder')"
-        @keydown.enter="submitNewBracket"
-      />
-    </div>
-    <div class="pt-2">
+    <div class="flex gap-2">
+      <div class="max-w-2">
+        <label>{{ t('bracketForm.nameLabel') }}</label>
+        <FormInput
+          v-model="bracketName"
+          :placeholder="t('bracketForm.namePlaceholder')"
+          @keydown.enter="submitNewBracket"
+        />
+      </div>
       <SubmitBtn
+        class="self-end"
         :disabled="bracketName.length === 0"
         @click="submitNewBracket"
       />

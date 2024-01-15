@@ -1,5 +1,9 @@
 # Changelog
 
+# v0.1.1 - 15.01.2024
+
+* Add responsive design to all pages
+
 # v0.1.0 - 14.01.2024
 
 * Add `totsugeki` library
