@@ -2,7 +2,7 @@
   <input
     :placeholder="placeholder"
     :value="modelValue"
-    class="mt-1 block rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring
+    class="block rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring
         focus:ring-indigo-200 focus:ring-opacity-50 invalid:border-red-500"
     invalid
     @input="$event => $emit('update:modelValue', ($event.target as HTMLInputElement).value)"

@@ -1,19 +1,20 @@
 <template>
-  <div class="text-2xl">
-    {{ t('playerRegistrationForm.title') }}
-  </div>
-  <div>
-    <FormInput
-      v-model="name"
-      :placeholder="t('playerRegistrationForm.newPlayerPlaceholder')"
-      @keydown.enter="submitPlayer"
-    />
-  </div>
-  <div class="pt-2">
-    <SubmitBtn
-      :disabled="name.length === 0"
-      @click="submitPlayer"
-    />
+  <div class="grid grid-cols-1 gap-2">
+    <div class="text-2xl">
+      {{ t('playerRegistrationForm.title') }}
+    </div>
+    <div class="grid grid-rows-1 grid-flow-col gap-2 align-baseline">
+      <FormInput
+        v-model="name"
+        :placeholder="t('playerRegistrationForm.newPlayerPlaceholder')"
+        @keydown.enter="submitPlayer"
+      />
+      <SubmitBtn
+        class="max-w-[100px]"
+        :disabled="name.length === 0"
+        @click="submitPlayer"
+      />
+    </div>
   </div>
 </template>
 <script setup lang="ts">
