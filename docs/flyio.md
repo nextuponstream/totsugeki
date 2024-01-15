@@ -20,10 +20,17 @@ Configure your fly.toml
 hx fly.toml
 ```
 
-Create your dockerfile (see Dockerfile) and upload that dockerfile to flyio
+Create your dockerfile (see Dockerfile) and upload that dockerfile to flyio.
+Use that command only once:
 
 ```bash
 fly launch
 ```
 
 View your app in the browser to see the result.
+
+For all subsequent updates, do:
+
+```bash
+fly deploy
+```
