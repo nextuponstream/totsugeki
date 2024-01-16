@@ -17,3 +17,7 @@ tracing = { version = "0.1" }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 totsugeki = { path = "../totsugeki" }
 totsugeki-display = { path = "../totsugeki-display" }
+# like in the zero2prod book
+# I don't like that sqlx might have a huge breaking change when going 1.0 but
+# that's life
+sqlx = { version = "0.7.3", features = [ "runtime-tokio", "tls-rustls" ] }
