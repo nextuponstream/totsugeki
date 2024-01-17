@@ -1,8 +1,13 @@
 //! tests/health_check.rs
+use http::StatusCode;
+use reqwest::Client;
 use std::net::{SocketAddr, TcpListener};
 use tournament_organiser_api::{app, HealthCheck};
 
-fn spawn_app() -> SocketAddr {
+/// Returns address to connect to new application (with random available port)
+///
+/// Example: http://0.0.0.0:43222
+fn spawn_app() -> String {
     let listener = TcpListener::bind("0.0.0.0:0".parse::<SocketAddr>().unwrap()).unwrap();
     let addr = listener.local_addr().unwrap();
 
@@ -13,7 +18,8 @@ fn spawn_app() -> SocketAddr {
             .await
             .unwrap();
     });
-    addr
+
+    format!("http://{addr}")
 }
 
 // zero to prod is ok but let's follow tokio testing material
@@ -21,23 +27,19 @@ fn spawn_app() -> SocketAddr {
 #[tokio::test]
 async fn health_check() {
     let addr = spawn_app();
-    // We need to bring in `reqwest`
-    // to perform HTTP requests against our application.
-    let client = reqwest::Client::new();
-    // Act
+    let client = Client::new();
+
     let response = client
-        .get(format!("http://{addr}/api/health_check"))
+        .get(format!("{addr}/api/health_check"))
         .send()
         .await
         .expect("Failed to execute request.");
 
-    // Assert
     let status = response.status();
     assert!(
         status.is_success(),
-        "status: {status}, http://{addr}/api/health_check"
+        "status: {status}, {addr}/api/health_check"
     );
-    // let json_response = response.text().await.unwrap();
     let json_response: HealthCheck = response.json().await.unwrap();
     assert!(json_response.ok)
 }
@@ -48,18 +50,14 @@ async fn health_check() {
 #[tokio::test]
 async fn redirect_on_bad_api_url() {
     let addr = spawn_app();
+    let client = Client::new();
 
-    // We need to bring in `reqwest`
-    // to perform HTTP requests against our application.
-    let client = reqwest::Client::new();
-    // Act
     let response = client
-        .get(format!("http://{addr}/api/health_checkkkk"))
+        .get(format!("{addr}/api/health_checkkkk"))
         .send()
         .await
         .expect("Failed to execute request.");
 
-    // Assert
     let status = response.status();
-    assert!(!status.is_success(), "status: {status}, http://{addr}");
+    assert_eq!(status, StatusCode::NOT_FOUND, "status: {status}, {addr}");
 }
