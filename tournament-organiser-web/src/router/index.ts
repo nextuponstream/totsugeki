@@ -27,6 +27,15 @@ const router = createRouter({
       name: 'bracket',
       component: () => import('../views/BracketView.vue')
     },
+    {
+      path: "/404",
+      name: 'notFound',
+      component: () => import('../views/NotFound.vue'),
+    },
+    {
+      path: "/:pathMatch(.*)*",
+      redirect: '/404'
+    },
   ]
 })
 
