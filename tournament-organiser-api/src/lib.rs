@@ -1,4 +1,15 @@
 //! Bracket management and visualiser library for admin dashboard
+#![deny(missing_docs)]
+#![deny(clippy::missing_docs_in_private_items)]
+#![deny(rustdoc::invalid_codeblock_attributes)]
+#![warn(rustdoc::bare_urls)]
+#![deny(rustdoc::broken_intra_doc_links)]
+#![warn(clippy::pedantic)]
+#![allow(clippy::unused_async)]
+#![warn(clippy::unwrap_used)]
+#![forbid(unsafe_code)]
+
+use crate::registration::user_registration;
 use axum::{
     response::IntoResponse,
     routing::{get, post},
@@ -6,6 +17,7 @@ use axum::{
 };
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
+use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use std::net::SocketAddr;
 use totsugeki::bracket::Bracket;
 use totsugeki::{
@@ -24,6 +36,8 @@ use tower_http::{
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+pub mod registration;
+
 /// Name of the app
 static APP: &str = "tournament organiser application";
 /// Port to serve the app
@@ -38,7 +52,7 @@ pub struct HealthCheck {
     pub ok: bool,
 }
 
-/// /health_check endpoint for health check
+/// `/health_check` endpoint for health check
 async fn health_check() -> impl IntoResponse {
     Json(HealthCheck { ok: true })
 }
@@ -70,6 +84,12 @@ pub struct PlayerList {
 }
 
 /// Return a newly instanciated bracket from ordered (=seeded) player names
+///
+/// # Panics
+/// When bracket cannot be converted to double elimination bracket
+///
+/// # Errors
+/// May return 500 error when bracket cannot be parsed
 pub async fn new_bracket_from_players(Json(player_list): Json<PlayerList>) -> impl IntoResponse {
     tracing::debug!("new bracket from players: {:?}", player_list.names);
     let mut bracket = Bracket::default();
@@ -83,42 +103,42 @@ pub async fn new_bracket_from_players(Json(player_list): Json<PlayerList>) -> im
     let dev: DoubleEliminationVariant = bracket.clone().try_into().expect("partition");
 
     // TODO test if tracing shows from which methods it was called
-    let wb_rounds_matches = match dev.partition_winner_bracket() {
+    let winner_bracket_matches = match dev.partition_winner_bracket() {
         Ok(wb) => wb,
         Err(e) => {
             tracing::error!("{e:?}");
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     };
-    let mut wb_rounds = vec![];
-    for r in wb_rounds_matches {
+    let mut winner_bracket_rounds = vec![];
+    for r in winner_bracket_matches {
         let round = r
             .iter()
             .map(|m| from_participants(m, &participants))
             .collect();
-        wb_rounds.push(round);
+        winner_bracket_rounds.push(round);
     }
 
-    reorder_winner_bracket(&mut wb_rounds);
-    let Some(winner_bracket_lines) = winner_bracket_lines(&wb_rounds) else {
+    reorder_winner_bracket(&mut winner_bracket_rounds);
+    let Some(winner_bracket_lines) = winner_bracket_lines(&winner_bracket_rounds) else {
         tracing::error!("winner bracket connecting lines");
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
     };
 
-    let Ok(lb_rounds_matches) = dev.partition_loser_bracket() else {
+    let Ok(lower_bracket_matches) = dev.partition_loser_bracket() else {
         // TODO log error
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
     };
-    let mut lb_rounds: Vec<Vec<MinimalMatch>> = vec![];
-    for r in lb_rounds_matches {
+    let mut loser_bracket_rounds: Vec<Vec<MinimalMatch>> = vec![];
+    for r in lower_bracket_matches {
         let round = r
             .iter()
             .map(|m| from_participants(m, &participants))
             .collect();
-        lb_rounds.push(round);
+        loser_bracket_rounds.push(round);
     }
-    reorder_loser_bracket(&mut lb_rounds);
-    let Some(loser_bracket_lines) = loser_bracket_lines(lb_rounds.clone()) else {
+    reorder_loser_bracket(&mut loser_bracket_rounds);
+    let Some(loser_bracket_lines) = loser_bracket_lines(loser_bracket_rounds.clone()) else {
         tracing::error!("loser bracket connecting lines");
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
     };
@@ -134,9 +154,9 @@ pub async fn new_bracket_from_players(Json(player_list): Json<PlayerList>) -> im
     let gf_reset = from_participants(&gf_reset, &participants);
 
     let bracket = BracketDisplay {
-        winner_bracket: wb_rounds,
+        winner_bracket: winner_bracket_rounds,
         winner_bracket_lines,
-        loser_bracket: lb_rounds,
+        loser_bracket: loser_bracket_rounds,
         loser_bracket_lines,
         grand_finals: gf,
         grand_finals_reset: gf_reset,
@@ -151,9 +171,13 @@ pub async fn new_bracket_from_players(Json(player_list): Json<PlayerList>) -> im
 pub struct ReportResultForBracket {
     /// current state of the bracket
     bracket: Bracket,
+    /// First player
     p1_id: PlayerId,
+    /// Second player
     p2_id: PlayerId,
+    /// player 1 score
     score_p1: i8,
+    /// player 2 score
     score_p2: i8,
 }
 
@@ -161,62 +185,73 @@ pub struct ReportResultForBracket {
 /// obviously limited in that TO can manipulate localStorage to change the
 /// bracket but we are not worried about that right now. For now, the goal is
 /// that it just works for normal use cases
+///
+/// # Panics
+/// May panic if I fucked up
+///
+/// # Errors
+/// Error 500 if a user gets out of sync with the bracket in the database and
+/// the one displayed in the web page
 pub async fn report_result_for_bracket(
     Json(report): Json<ReportResultForBracket>,
 ) -> impl IntoResponse {
     tracing::debug!("new reported result");
     let mut bracket = report.bracket;
 
-    // FIXME deal with error
-    bracket = bracket
-        .tournament_organiser_reports_result(
-            report.p1_id,
-            (report.score_p1, report.score_p2),
-            report.p2_id,
-        )
-        .unwrap()
-        .0;
+    bracket = match bracket.tournament_organiser_reports_result(
+        report.p1_id,
+        (report.score_p1, report.score_p2),
+        report.p2_id,
+    ) {
+        Ok((bracket, _, _)) => bracket,
+        Err(e) => {
+            // TODO deal with corner case where UI shows a bracket that is out
+            // of sync with database state and returns something to user
+            tracing::error!("{e:?}");
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
 
     let participants = bracket.get_participants();
     let dev: DoubleEliminationVariant = bracket.clone().try_into().expect("partition");
 
     // TODO test if tracing shows from which methods it was called
-    let wb_rounds_matches = match dev.partition_winner_bracket() {
+    let winner_bracket_matches = match dev.partition_winner_bracket() {
         Ok(wb) => wb,
         Err(e) => {
             tracing::error!("{e:?}");
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     };
-    let mut wb_rounds = vec![];
-    for r in wb_rounds_matches {
+    let mut winner_bracket_rounds = vec![];
+    for r in winner_bracket_matches {
         let round = r
             .iter()
             .map(|m| from_participants(m, &participants))
             .collect();
-        wb_rounds.push(round);
+        winner_bracket_rounds.push(round);
     }
 
-    reorder_winner_bracket(&mut wb_rounds);
-    let Some(winner_bracket_lines) = winner_bracket_lines(&wb_rounds) else {
+    reorder_winner_bracket(&mut winner_bracket_rounds);
+    let Some(winner_bracket_lines) = winner_bracket_lines(&winner_bracket_rounds) else {
         tracing::error!("winner bracket connecting lines");
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
     };
 
-    let Ok(lb_rounds_matches) = dev.partition_loser_bracket() else {
+    let Ok(lower_bracket_matches) = dev.partition_loser_bracket() else {
         // TODO log error
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
     };
-    let mut lb_rounds: Vec<Vec<MinimalMatch>> = vec![];
-    for r in lb_rounds_matches {
+    let mut lower_bracket_rounds: Vec<Vec<MinimalMatch>> = vec![];
+    for r in lower_bracket_matches {
         let round = r
             .iter()
             .map(|m| from_participants(m, &participants))
             .collect();
-        lb_rounds.push(round);
+        lower_bracket_rounds.push(round);
     }
-    reorder_loser_bracket(&mut lb_rounds);
-    let Some(loser_bracket_lines) = loser_bracket_lines(lb_rounds.clone()) else {
+    reorder_loser_bracket(&mut lower_bracket_rounds);
+    let Some(loser_bracket_lines) = loser_bracket_lines(lower_bracket_rounds.clone()) else {
         tracing::error!("loser bracket connecting lines");
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
     };
@@ -232,9 +267,9 @@ pub async fn report_result_for_bracket(
     let gf_reset = from_participants(&gf_reset, &participants);
 
     let bracket = BracketDisplay {
-        winner_bracket: wb_rounds,
+        winner_bracket: winner_bracket_rounds,
         winner_bracket_lines,
-        loser_bracket: lb_rounds,
+        loser_bracket: lower_bracket_rounds,
         loser_bracket_lines,
         grand_finals: gf,
         grand_finals_reset: gf_reset,
@@ -244,20 +279,24 @@ pub async fn report_result_for_bracket(
     Ok(Json(bracket))
 }
 
-fn api() -> Router {
+/// Router for non-user facing endpoints. Web page makes requests to API (registration,
+/// updating bracket...)
+fn api(pool: Pool<Postgres>) -> Router {
     Router::new()
         .route("/health_check", get(health_check))
+        .route("/register", post(user_registration))
         .route("/bracket-from-players", post(new_bracket_from_players))
         .route(
             "/report-result-for-bracket",
             post(report_result_for_bracket),
         )
         .fallback_service(get(|| async { (StatusCode::NOT_FOUND, "Not found") }))
+        .with_state(pool)
 }
 
 /// Serve web part of the application, using `tournament-organiser-web` build
 /// For development, Cors rule are relaxed
-pub fn app() -> Router {
+pub fn app(pool: Pool<Postgres>) -> Router {
     let web_build_path = match std::env::var("BUILD_PATH_TOURNAMENT_ORGANISER_WEB") {
         Ok(s) => s,
         Err(e) => {
@@ -271,7 +310,7 @@ pub fn app() -> Router {
         .fallback(ServeFile::new(format!("{web_build_path}/index.html")));
 
     Router::new()
-        .nest("/api", api())
+        .nest("/api", api(pool))
         .nest_service("/dist", spa.clone())
         // Show vue app
         .fallback_service(spa)
@@ -294,9 +333,13 @@ async fn serve(app: Router, port: u16) {
     axum::Server::bind(&addr)
         .serve(app.layer(TraceLayer::new_for_http()).into_make_service())
         .await
-        .unwrap()
+        .expect("running http server");
 }
 
+/// Run totsugeki application on `PORT`
+///
+/// # Panics
+/// When database connection credentials are not set
 pub async fn run() {
     tracing_subscriber::registry()
         .with(
@@ -308,7 +351,63 @@ pub async fn run() {
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
+    let db_username = std::env::var("DB_USERNAME").expect("DB_USERNAME environment variable set");
+    let db_password = std::env::var("DB_PASSWORD").expect("DB_PASSWORD");
+    let db_name = std::env::var("DB_NAME").expect("DB_NAME");
+    let pool = PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&format!(
+            "postgres://{db_username}:{db_password}@localhost/{db_name}"
+        ))
+        .await
+        .expect("database connection pool");
 
     tracing::info!("Serving {APP} on http://localhost:{PORT}");
-    serve(app(), PORT).await
+    serve(app(pool), PORT).await;
+}
+
+/// Utility function for integration testing
+/// NOTE: other people also have the same idea, see [link](https://stackoverflow.com/a/59090848)
+pub mod test_utils {
+
+    /// Test app
+    pub struct TestApp {
+        /// http address of test app
+        pub addr: String,
+    }
+
+    use super::*;
+    use std::net::TcpListener;
+    /// Returns address to connect to new application (with random available port)
+    ///
+    /// Example: `http://0.0.0.0:43222`
+    #[must_use]
+    #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
+    pub async fn spawn_app() -> TestApp {
+        let listener = TcpListener::bind("0.0.0.0:0".parse::<SocketAddr>().unwrap()).unwrap();
+        let addr = listener.local_addr().unwrap();
+        let db_username =
+            std::env::var("DB_USERNAME").expect("DB_USERNAME environment variable set");
+        let db_password = std::env::var("DB_PASSWORD").unwrap();
+        let db_name = std::env::var("DB_NAME").unwrap();
+        let pool = PgPoolOptions::new()
+            .max_connections(5)
+            .connect(&format!(
+                "postgres://{db_username}:{db_password}@localhost/{db_name}"
+            ))
+            .await
+            .unwrap();
+
+        tokio::spawn(async move {
+            axum::Server::from_tcp(listener)
+                .unwrap()
+                .serve(app(pool).into_make_service())
+                .await
+                .unwrap();
+        });
+
+        TestApp {
+            addr: format!("http://{addr}"),
+        }
+    }
 }

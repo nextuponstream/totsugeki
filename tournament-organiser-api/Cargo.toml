@@ -20,7 +20,8 @@ totsugeki-display = { path = "../totsugeki-display" }
 # like in the zero2prod book
 # I don't like that sqlx might have a huge breaking change when going 1.0 but
 # that's life
-sqlx = { version = "0.7.3", features = [ "runtime-tokio", "tls-rustls" ] }
+sqlx = { version = "0.7.3", features = [ "runtime-tokio", "tls-rustls", "postgres", "uuid", "chrono" ] }
+chrono = "0.4.31"
 
 [dev-dependencies]
-reqwest = "0.11.23"
+reqwest = { version = "0.11.23", features = ["json"] }
