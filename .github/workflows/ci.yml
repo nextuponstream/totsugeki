@@ -33,6 +33,7 @@ jobs:
     env:
       API_ADDR: localhost
       API_PORT: 3000
+      # will still look for database toa even when not defined in url
       DATABASE_URL: postgres://toa:toa@localhost
     steps:
       - uses: actions/checkout@v3
@@ -55,6 +56,7 @@ jobs:
           pg_isready
           sudo -u postgres createuser -s -d -r toa
           sudo -u postgres psql -c "ALTER USER toa WITH PASSWORD 'toa';"
+          sudo -u postgres psql -c "CREATE DATABASE toa;"
       # avoid connecting to database when building with SQLX_OFFLINE.
       # Otherwise, it will expect that migrations are ran and relations (like a
       # table 'users') are there to check all queries are valid.
