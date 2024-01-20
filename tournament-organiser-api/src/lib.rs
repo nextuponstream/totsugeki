@@ -17,6 +17,7 @@ use axum::{
 };
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
+use sqlx::PgPool;
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use std::net::SocketAddr;
 use totsugeki::bracket::Bracket;
@@ -383,25 +384,14 @@ pub mod test_utils {
     /// Example: `http://0.0.0.0:43222`
     #[must_use]
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
-    pub async fn spawn_app() -> TestApp {
+    pub async fn spawn_app(db: PgPool) -> TestApp {
         let listener = TcpListener::bind("0.0.0.0:0".parse::<SocketAddr>().unwrap()).unwrap();
         let addr = listener.local_addr().unwrap();
-        let db_username =
-            std::env::var("DB_USERNAME").expect("DB_USERNAME environment variable set");
-        let db_password = std::env::var("DB_PASSWORD").unwrap();
-        let db_name = std::env::var("DB_NAME").unwrap();
-        let pool = PgPoolOptions::new()
-            .max_connections(5)
-            .connect(&format!(
-                "postgres://{db_username}:{db_password}@localhost/{db_name}"
-            ))
-            .await
-            .unwrap();
 
         tokio::spawn(async move {
             axum::Server::from_tcp(listener)
                 .unwrap()
-                .serve(app(pool).into_make_service())
+                .serve(app(db).into_make_service())
                 .await
                 .unwrap();
         });

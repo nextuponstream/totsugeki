@@ -33,10 +33,13 @@ postgres user)
 ```bash
 createuser --interactive 
 # Enter name of role to add: toa                     
-# Shall the new role be a superuser? (y/n) n
+# Shall the new role be a superuser? (y/n) y
 # Shall the new role be allowed to create databases? (y/n) n
 # Shall the new role be allowed to create more new roles? (y/n) n
 ```
+
+To run `sqlx::test`, we need our user to have superuser privileges as discussed
+[here](https://github.com/launchbadge/sqlx/discussions/2051).
 
 Create the database associated to that user
 

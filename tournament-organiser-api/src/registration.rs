@@ -38,24 +38,28 @@ pub(crate) async fn user_registration(
     State(pool): State<PgPool>,
     Json(form_input): Json<FormInput>,
 ) -> impl IntoResponse {
-    if sqlx::query_as::<_, User>("SELECT * from users WHERE email = $1")
-        .bind(&form_input.email)
-        // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
-        .fetch_optional(&pool)
-        .await
-        .expect("select first user with matching email")
-        .is_some()
+    if sqlx::query_as!(
+        User,
+        "SELECT * from users WHERE email = $1",
+        &form_input.email,
+    )
+    // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
+    .fetch_optional(&pool)
+    .await
+    .expect("select first user with matching email")
+    .is_some()
     {
         // return error already exist
         todo!("User already exists")
     } else {
-        // FIXME no rows inserted
-        let _r = sqlx::query("INSERT INTO users (name, email) VALUES ($1, $2)")
-            .bind(form_input.name)
-            .bind(form_input.email)
-            .execute(&pool)
-            .await
-            .expect("user insert");
+        let _r = sqlx::query!(
+            "INSERT INTO users (name, email) VALUES ($1, $2)",
+            form_input.name,
+            form_input.email
+        )
+        .execute(&pool)
+        .await
+        .expect("user insert");
         // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
     }
     Json(())
