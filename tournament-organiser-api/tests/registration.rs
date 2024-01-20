@@ -1,6 +1,5 @@
 //! tests/health_check.rs
 use http::StatusCode;
-use serde::Deserialize;
 use sqlx::PgPool;
 use tournament_organiser_api::registration::{ErrorResponse, FormInput};
 use tournament_organiser_api::test_utils::spawn_app;

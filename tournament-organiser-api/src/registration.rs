@@ -30,6 +30,8 @@ pub struct FormInput {
 
 /// User of application
 #[derive(sqlx::FromRow)]
+// reason = will be used later
+#[allow(dead_code)]
 struct User {
     /// Id of user
     pub id: Id,

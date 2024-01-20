@@ -112,3 +112,12 @@ toa=> \dt
  public | users            | table | toa
 (2 rows)
 ```
+
+## Creating a new query
+
+After creating a new `query!`, don't forget to check into version control its
+metadata for CI.
+
+```bash
+cargo sqlx prepare
+```
