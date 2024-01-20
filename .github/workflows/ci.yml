@@ -55,6 +55,7 @@ jobs:
           pg_isready
           sudo -u postgres createuser -s -d -r toa
           sudo -u postgres psql -c "ALTER USER toa WITH PASSWORD 'toa';"
+          sudo -u postgres psql -c "CREATE DATABASE toa;"
       - run: cargo test -- --include-ignored
 
   lint-rust:
@@ -145,6 +146,13 @@ jobs:
             tournament-organiser-web/dist
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - run: cd ui && cargo run > test.ts && mv test.ts ../tournament-organiser-web/
+      - name: Start PostgreSQL
+        run: |
+          sudo systemctl start postgresql.service
+          pg_isready
+          sudo -u postgres createuser -s -d -r toa
+          sudo -u postgres psql -c "ALTER USER toa WITH PASSWORD 'toa';"
+          sudo -u postgres psql -c "CREATE DATABASE toa;"
       - uses: cypress-io/github-action@v5
         with:
           working-directory: tournament-organiser-web
