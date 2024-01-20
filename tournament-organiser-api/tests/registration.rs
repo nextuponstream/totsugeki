@@ -1,7 +1,8 @@
 //! tests/health_check.rs
-use reqwest::Client;
+use http::StatusCode;
+use serde::Deserialize;
 use sqlx::PgPool;
-use tournament_organiser_api::registration::FormInput;
+use tournament_organiser_api::registration::{ErrorResponse, FormInput};
 use tournament_organiser_api::test_utils::spawn_app;
 
 // Use sqlx macro to create (and teardown) database on the fly to enforce test
@@ -11,19 +12,15 @@ use tournament_organiser_api::test_utils::spawn_app;
 #[sqlx::test]
 async fn registration(db: PgPool) {
     let app = spawn_app(db).await;
-    let client = Client::new();
 
-    let response = client
-        .post(format!("{}/api/register", app.addr))
-        .json(&FormInput {
+    let response = app
+        .register(&FormInput {
             name: "jean".into(),
             email: "jean@bon.ch".into(),
             password: "verySecurePassword#123456789?".into(),
             created_at: None,
         })
-        .send()
-        .await
-        .expect("request done");
+        .await;
 
     let status = response.status();
     assert!(
@@ -31,4 +28,36 @@ async fn registration(db: PgPool) {
         "status: {status}, response: \"{}\"",
         response.text().await.unwrap()
     );
+}
+
+#[sqlx::test]
+async fn registration_fails_when_another_user_already_exists(db: PgPool) {
+    let app = spawn_app(db).await;
+    let request = FormInput {
+        name: "jean".into(),
+        email: "jean@bon.ch".into(),
+        password: "verySecurePassword#123456789?".into(),
+        created_at: None,
+    };
+
+    let response = app.register(&request).await;
+
+    let status = response.status();
+    assert!(
+        status.is_success(),
+        "status: {status}, response: \"{}\"",
+        response.text().await.unwrap()
+    );
+
+    let response = app.register(&request).await;
+
+    let status = response.status();
+
+    // why 409: https://stackoverflow.com/a/3826024
+    assert_eq!(status, StatusCode::CONFLICT);
+    let details: ErrorResponse = response.json().await.unwrap();
+    assert_eq!(
+        details.message,
+        "Another user has already registered with provided mail"
+    )
 }

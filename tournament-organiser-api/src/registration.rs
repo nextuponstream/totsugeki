@@ -3,9 +3,17 @@
 use axum::extract::State;
 use axum::response::{IntoResponse, Json};
 use chrono::prelude::*;
+use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPool;
 use totsugeki::player::Id;
+
+/// Standard error message
+#[derive(Serialize, Deserialize)]
+pub struct ErrorResponse {
+    /// user-facing error message
+    pub message: String,
+}
 
 /// User registration form input
 #[derive(Serialize, Deserialize, Debug)]
@@ -49,18 +57,24 @@ pub(crate) async fn user_registration(
     .expect("select first user with matching email")
     .is_some()
     {
-        // return error already exist
-        todo!("User already exists")
-    } else {
-        let _r = sqlx::query!(
-            "INSERT INTO users (name, email) VALUES ($1, $2)",
-            form_input.name,
-            form_input.email
+        return (
+            StatusCode::CONFLICT,
+            Json(ErrorResponse {
+                message: "Another user has already registered with provided mail".to_string(),
+            }),
         )
-        .execute(&pool)
-        .await
-        .expect("user insert");
-        // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
+            .into_response();
     }
-    Json(())
+
+    let _r = sqlx::query!(
+        "INSERT INTO users (name, email) VALUES ($1, $2)",
+        form_input.name,
+        form_input.email
+    )
+    .execute(&pool)
+    .await
+    .expect("user insert");
+    // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
+
+    (StatusCode::OK, Json(())).into_response()
 }

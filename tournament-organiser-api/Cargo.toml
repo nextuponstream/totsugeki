@@ -22,6 +22,4 @@ totsugeki-display = { path = "../totsugeki-display" }
 # that's life
 sqlx = { version = "0.7.3", features = [ "runtime-tokio", "tls-rustls", "postgres", "uuid", "chrono" ] }
 chrono = "0.4.31"
-
-[dev-dependencies]
 reqwest = { version = "0.11.23", features = ["json"] }
