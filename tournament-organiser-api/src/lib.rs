@@ -352,14 +352,19 @@ pub async fn run() {
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
-    let db_username = std::env::var("DB_USERNAME").expect("DB_USERNAME environment variable set");
-    let db_password = std::env::var("DB_PASSWORD").expect("DB_PASSWORD");
-    let db_name = std::env::var("DB_NAME").expect("DB_NAME");
+    let db_url = if let Ok(url) = std::env::var("DATABASE_URL") {
+        url
+    } else {
+        let db_username =
+            std::env::var("DB_USERNAME").expect("DB_USERNAME environment variable set");
+        let db_password = std::env::var("DB_PASSWORD").expect("DB_PASSWORD");
+        let db_name = std::env::var("DB_NAME").expect("DB_NAME");
+
+        format!("postgres://{db_username}:{db_password}@localhost/{db_name}")
+    };
     let pool = PgPoolOptions::new()
         .max_connections(5)
-        .connect(&format!(
-            "postgres://{db_username}:{db_password}@localhost/{db_name}"
-        ))
+        .connect(&db_url)
         .await
         .expect("database connection pool");
 
