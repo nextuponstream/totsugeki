@@ -33,7 +33,7 @@ jobs:
     env:
       API_ADDR: localhost
       API_PORT: 3000
-      DATABASE_URL: postgres://toa:toa@localhost/toa
+      DATABASE_URL: postgres://toa:toa@localhost
     steps:
       - uses: actions/checkout@v3
       - uses: actions/cache@v3
@@ -148,6 +148,7 @@ jobs:
             tournament-organiser-web/dist
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - run: cd ui && cargo run > test.ts && mv test.ts ../tournament-organiser-web/
+      - run: cd tournament-organiser-api && cargo sqlx migrate run
       - name: Start PostgreSQL
         run: |
           sudo systemctl start postgresql.service
@@ -159,7 +160,7 @@ jobs:
         with:
           working-directory: tournament-organiser-web
           install: true
-          build: npm run build:ci && cd ../tournament-organiser-api && cargo sqlx migrate run
+          build: npm run build:ci 
           start: cargo run --package tournament-organiser-api --release
           wait-on: 'http://localhost:3000'
           wait-on-timeout: 30
