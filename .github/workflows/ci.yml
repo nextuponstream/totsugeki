@@ -47,6 +47,13 @@ jobs:
             tournament-organiser-web/node_modules
             tournament-organiser-web/dist
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      # postgres is available by default on ubuntu https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2204-Readme.md#postgresql
+      # https://dev.to/lxxxvi/github-action-using-pre-installed-postgres-5144
+      - name: Start PostgreSQL
+        run: |
+          sudo systemctl start postgresql.service
+          pg_isready
+          sudo -u postgres createuser -s -d -r -w toa
       - run: cargo test -- --include-ignored
 
   lint-rust:
