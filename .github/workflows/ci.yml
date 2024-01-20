@@ -148,7 +148,10 @@ jobs:
             tournament-organiser-web/dist
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - run: cd ui && cargo run > test.ts && mv test.ts ../tournament-organiser-web/
-      - run: cd tournament-organiser-api && cargo sqlx migrate run
+      - run: |
+          cd tournament-organiser-api && \
+          cargo install sqlx-cli --no-default-features --features rustls,postgres \
+          sqlx migrate run
       - name: Start PostgreSQL
         run: |
           sudo systemctl start postgresql.service
