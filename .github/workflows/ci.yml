@@ -33,7 +33,7 @@ jobs:
     env:
       API_ADDR: localhost
       API_PORT: 3000
-      API_DB_TYPES_IN_TESTS: INMEMORY
+      DATABASE_URL: postgres://toa:toa@localhost/toa
     steps:
       - uses: actions/checkout@v3
       - uses: actions/cache@v3
@@ -53,8 +53,9 @@ jobs:
         run: |
           sudo systemctl start postgresql.service
           pg_isready
-          sudo -u postgres createuser -s -d -r -w toa
-      - run: DATABASE_URL=postgres://toa@localhost cargo test -- --include-ignored
+          sudo -u postgres createuser -s -d -r toa
+          sudo -u postgres psql -c "ALTER USER toa WITH PASSWORD 'toa';"
+      - run: cargo test -- --include-ignored
 
   lint-rust:
     name: Rustfmt
@@ -129,6 +130,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CYPRESS_BASE_URL: http://localhost:3000
+      DATABASE_URL: postgres://toa:toa@localhost/toa
     steps:
       - uses: actions/checkout@v3
       - uses: actions/cache@v3
