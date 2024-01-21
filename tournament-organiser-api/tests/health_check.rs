@@ -2,7 +2,7 @@
 use http::StatusCode;
 use reqwest::Client;
 use sqlx::PgPool;
-use tournament_organiser_api::{test_utils::spawn_app, HealthCheck};
+use tournament_organiser_api::{health_check::HealthCheck, test_utils::spawn_app};
 
 // zero to prod is ok but let's follow tokio testing material
 // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/testing/src/main.rs#L133
