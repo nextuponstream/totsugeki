@@ -4,4 +4,5 @@
   </button>
 </template>
 <script setup lang="ts">
+// NOTE sometimes hover effect does not work in development. Then just close the browser and reopen it
 </script>

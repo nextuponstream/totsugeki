@@ -16,17 +16,17 @@
 // However, it's not a big concern
 import { Form } from 'vee-validate';
 import { ref, provide } from 'vue';
-import * as yup from 'yup';
+import { object, string, ref as yupref } from 'yup';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n({});
 // NOTE: how to use i18n with yup https://stackoverflow.com/questions/72062851/problems-with-translations-with-vue-yup-and-i18n
-const schema = yup.object({
-  email: yup.string()
+const schema = object({
+  email: string()
     .email(() => t('error.invalidEmail'))
     .required(() => t('error.required')),
-  password: yup.string().required(() => t('error.required')).min(8, () => t('error.minimum', { min: 8 })),
-  confirmPassword: yup.string().required(() => t('error.required'))
-    .oneOf([yup.ref('password')], () => t('error.passwordMissmatch')),
+  password: string().required(() => t('error.required')).min(8, () => t('error.minimum', { min: 8 })),
+  confirmPassword: string().required(() => t('error.required'))
+    .oneOf([yupref('password')], () => t('error.passwordMissmatch')),
 });
 
 const formErrors = ref({})
