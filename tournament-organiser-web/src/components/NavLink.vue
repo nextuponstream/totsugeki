@@ -1,14 +1,11 @@
 <template>
-  <RouterLink
-    :to="to"
-    class="bg-emerald-400 hover:bg-emerald-500 rounded px-1 py-1"
-  >
-    {{ text }}
+  <RouterLink :to="to" class="bg-emerald-400 hover:bg-emerald-500 rounded px-1 py-1">
+    <slot></slot>
   </RouterLink>
 </template>
 <script setup lang="ts">
-import {ref} from 'vue'
+import { ref } from "vue";
 
-const text = ref('')
-const to = ref('')
+const text = ref("");
+const to = ref("");
 </script>

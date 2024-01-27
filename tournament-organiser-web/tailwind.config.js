@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 
-import {gridSetup, rowSetup, safelist} from './test'
+import { gridSetup, rowSetup, safelist } from './test'
 gridSetup['fixed'] = '200px'
 export default {
   content: [
@@ -21,9 +21,6 @@ export default {
     },
   },
   safelist: [
-      ...safelist
-  ],
-  plugins: [
-    require('@tailwindcss/forms'),
+    ...safelist
   ],
 }

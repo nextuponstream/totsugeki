@@ -1,101 +1,39 @@
 <template>
-  <div class="text-xl">
-    {{ t('registration.bracketNameLabel') }}: {{ bracketName }}
-  </div>
-  <div class="sm:grid sm:grid-cols-2 sm:gap-5">
-    <div class="pb-5">
-      <player-registration @new-player="addPlayer" />
-      <div class="group mt-5 grid grid-cols-1 place-items-center">
-        <div>
-          <submit-btn
-            :disabled="hasMinNumberOfPlayerToStartBracket"
-            @click="createBracketFromPlayers"
-          >
-            {{ t('registration.startBracket') }}
-          </submit-btn>
-          <base-tooltip
-            v-if="hasMinNumberOfPlayerToStartBracket"
-            class="ml-3"
-            style="position: absolute"
-          >
-            3 players minimum
-          </base-tooltip>
-        </div>
-      </div>
-    </div>
-
-    <div>
-      <player-seeder
-        :players="playerList"
-        @remove-player="removePlayer"
-      />
-    </div>
-  </div>
+  <Form class="flex flex-col max-w-xs gap-3" @submit="onSubmit" :validation-schema="schema">
+    <label>{{ $t('generic.email') }}</label>
+    <!-- :submittedOnce="submittedOnce" -->
+    <FormInput name="email" type="email"></FormInput>
+    <SubmitBtn @click="onSubmit"></SubmitBtn>
+  </Form>
 </template>
-  
 <script setup lang="ts">
-  import PlayerSeeder from '@/components/PlayerSeeder.vue'
-  import PlayerRegistration from '@/components/PlayerRegistration.vue'
-  import { computed, ref, onMounted } from 'vue'
-  import type { Ref } from 'vue'
-  import { useI18n } from 'vue-i18n';
-  import { useRouter } from 'vue-router'
-  
-  const {t} = useI18n({})
-  const router = useRouter()
+// passive to aggressive validation has been removed??? https://github.com/logaretm/vee-validate/issues/379
+// FIXME when an error is displayed, locale of errors does not update automatically
+// tried looking online but it's a bad interaction between vee-validate and i18n I guess
+import { Form } from 'vee-validate';
+import { ref, provide } from 'vue';
+import * as yup from 'yup';
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n({});
+const schema = yup.object({
+  email: yup.string()
+    .email(() => t('error.invalidEmail'))
+    .required(() => t('error.required')),
+});
+const submittedOnce = ref(false)
 
-  const bracketName = ref('')
+function onSubmit(values: any) {
+  submittedOnce.value = true
+  // FIXME only observ
+  console.debug('hello')
+  console.debug(JSON.stringify(values, null, 2));
+}
 
-  onMounted(() => {
-    bracketName.value = localStorage.getItem('bracketName') ?? ''
-  }) 
-  
-  const playerList : Ref<{name: string, index: number}[]>= ref([])
-  
-  const dragging = ref(false)
-  const enabled = ref(true)
-  const counter = ref(0)
-  
-  function addPlayer(name: string): void {
-    // index is used as vue key. Because it must be unique, then we tie it to some independent counter
-    // rather than playerList size (which varies when removing player)
-    counter.value = counter.value + 1
-    playerList.value.push({name: name, index: counter.value})
-  }
+provide('submittedOnce', submittedOnce)
 
-  function removePlayer(index: number): void {
-      let player = playerList.value.findIndex(p => p.index = index)
-      if (player > -1) {
-        playerList.value.splice(player, 1)
-      }
-  }
-  
-  const hasMinNumberOfPlayerToStartBracket = computed(() => {
-    return playerList.value.length < 3
-  })
-  
-  async function createBracketFromPlayers(){
-    try {
-      // TODO configurable variable
-      let response = await fetch('https://totsugeki.fly.dev/bracket-from-players', {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({names: playerList.value.map(p => p.name)}),
-        // can't send json without cors... https://stackoverflow.com/a/45655314
-        // documentation: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch#supplying_request_options
-      })
-      let bracket = await response.json()
-      localStorage.setItem('bracket', JSON.stringify(bracket))
-    } catch (e) {
-      console.error(e)
-    }
+// TODO USE THIS FOR WITH PASSIVE VALIDATION https://vee-validate.logaretm.com/v4/examples/dynamic-validation-triggers/
 
-    router.push({
-     name: 'bracket',
-    })
-  }
-  </script>
-  
+// TODO apply confirmed from https://vee-validate.logaretm.com/v4/guide/global-validators
+
+// NOTE people dissatisfied with vee-validate 4 https://github.com/logaretm/vee-validate/issues/3088
+</script>
