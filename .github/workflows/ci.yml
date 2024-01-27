@@ -6,6 +6,7 @@ name: CI
 jobs:
   check:
     name: Check
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     env:
       API_ADDR: localhost
@@ -29,6 +30,7 @@ jobs:
 
   test:
     name: Test Suite
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     env:
       API_ADDR: localhost
@@ -64,6 +66,7 @@ jobs:
 
   lint-rust:
     name: Rustfmt
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     env:
       API_ADDR: localhost
@@ -86,6 +89,7 @@ jobs:
 
   lint-typescript:
     name: eslint
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     env:
       API_ADDR: localhost
@@ -110,6 +114,7 @@ jobs:
 
   clippy:
     name: Clippy
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     env:
       API_ADDR: localhost
@@ -131,6 +136,7 @@ jobs:
 
   tournament-organiser-cypress-tests:
     name: tournament organiser cypress tests
+    if: github.event.pull_request.draft == false
     # rust, node and npm are installed https://github.com/actions/runner-images/blob/main/images/linux/Ubuntu2204-Readme.md#rust-tools
     runs-on: ubuntu-latest
     env:

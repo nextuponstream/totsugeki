@@ -1,5 +1,7 @@
 on: [pull_request]
 
+# NOTE avoid running on draft PR branches withi https://stackoverflow.com/questions/68349031/only-run-actions-on-non-draft-pull-request
+
 name: Fuzzing
 
 defaults:
@@ -12,6 +14,7 @@ defaults:
 jobs:
   bracket:
     name: bracket
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -35,6 +38,7 @@ jobs:
       - run: cargo +nightly fuzz run bracket -- -max_total_time=60
   randomly_ordered_events:
     name: randomly ordered events
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -58,6 +62,7 @@ jobs:
       - run: cargo +nightly fuzz run randomly_ordered_events -- -max_total_time=60
   big_brackets:
     name: big brackets
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -81,6 +86,7 @@ jobs:
       - run: cargo +nightly fuzz run big_brackets -- -max_total_time=60
   big_brackets_de:
     name: big brackets double elimination
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -104,6 +110,7 @@ jobs:
       - run: cargo +nightly fuzz run big_brackets_de -- -max_total_time=60
   very_big_brackets_de:
     name: very big brackets double elimination
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

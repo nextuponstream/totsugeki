@@ -10,6 +10,7 @@ name: CI abandonned experiments
 jobs:
   check:
     name: Check
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     strategy: 
       matrix: { 
@@ -53,6 +54,7 @@ jobs:
   
   test:
     name: test
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     strategy: 
       matrix: { 
@@ -95,6 +97,7 @@ jobs:
 
   lint-rust:
     name: Rustfmt
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     strategy: 
       matrix: { 
@@ -126,6 +129,7 @@ jobs:
 
   clippy:
     name: Clippy
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     strategy: 
       matrix: { 
