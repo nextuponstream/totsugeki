@@ -17,7 +17,10 @@
     @end="dragging = false"
   >
     <template #item="{ element }">
-      <div class="list-group-item" :class="{ 'not-draggable': !enabled }">
+      <div
+        class="list-group-item"
+        :class="{ 'not-draggable': !enabled }"
+      >
         <div class="flex py-1 justify-between w-64">
           <div>{{ element.name }}</div>
           <i

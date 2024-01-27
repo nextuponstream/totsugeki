@@ -1,13 +1,26 @@
 <template>
-  <Form class="flex flex-col max-w-xs gap-3" :on-submit="onSubmit" :on-invalid-submit="onInvalidSubmit"
-    :validation-schema="schema">
+  <Form
+    class="flex flex-col max-w-xs gap-3"
+    :on-submit="onSubmit"
+    :on-invalid-submit="onInvalidSubmit"
+    :validation-schema="schema"
+  >
     <label>{{ $t('generic.email') }}</label>
-    <FormInput name="email" type="email"></FormInput>
+    <FormInput
+      name="email"
+      type="email"
+    />
     <label>{{ $t('generic.password') }}</label>
-    <FormInput name="password" type="password"></FormInput>
+    <FormInput
+      name="password"
+      type="password"
+    />
     <label>{{ $t('generic.confirmPassword') }}</label>
-    <FormInput name="confirmPassword" type="password"></FormInput>
-    <SubmitBtn></SubmitBtn>
+    <FormInput
+      name="confirmPassword"
+      type="password"
+    />
+    <SubmitBtn>{{ $t('generic.register') }}</SubmitBtn>
   </Form>
 </template>
 <script setup lang="ts">

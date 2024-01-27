@@ -8,20 +8,42 @@
     class="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-auto bg-white rounded-md px-8 py-6 space-y-5 drop-shadow-lg"
     :class="isHidden"
   >
-    <h1 class="text-2xl font-semibold">Match results</h1>
+    <h1 class="text-2xl font-semibold">
+      Match results
+    </h1>
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-      <OtherBtn @click="setScore(2, 0)"> 2 - 0 </OtherBtn>
-      <OtherBtn @click="setScore(2, 1)"> 2 - 1 </OtherBtn>
-      <OtherBtn @click="setScore(1, 2)"> 1 - 2 </OtherBtn>
-      <OtherBtn @click="setScore(0, 2)"> 0 - 2 </OtherBtn>
+      <OtherBtn @click="setScore(2, 0)">
+        2 - 0
+      </OtherBtn>
+      <OtherBtn @click="setScore(2, 1)">
+        2 - 1
+      </OtherBtn>
+      <OtherBtn @click="setScore(1, 2)">
+        1 - 2
+      </OtherBtn>
+      <OtherBtn @click="setScore(0, 2)">
+        0 - 2
+      </OtherBtn>
     </div>
     <div class="grid sm:grid-cols-6 gap-2">
-      <OtherBtn @click="setScore(3, 0)"> 3 - 0 </OtherBtn>
-      <OtherBtn @click="setScore(3, 1)"> 3 - 1 </OtherBtn>
-      <OtherBtn @click="setScore(3, 2)"> 3 - 2 </OtherBtn>
-      <OtherBtn @click="setScore(2, 3)"> 2 - 3 </OtherBtn>
-      <OtherBtn @click="setScore(1, 3)"> 1 - 3 </OtherBtn>
-      <OtherBtn @click="setScore(0, 3)"> 0 - 3 </OtherBtn>
+      <OtherBtn @click="setScore(3, 0)">
+        3 - 0
+      </OtherBtn>
+      <OtherBtn @click="setScore(3, 1)">
+        3 - 1
+      </OtherBtn>
+      <OtherBtn @click="setScore(3, 2)">
+        3 - 2
+      </OtherBtn>
+      <OtherBtn @click="setScore(2, 3)">
+        2 - 3
+      </OtherBtn>
+      <OtherBtn @click="setScore(1, 3)">
+        1 - 3
+      </OtherBtn>
+      <OtherBtn @click="setScore(0, 3)">
+        0 - 3
+      </OtherBtn>
     </div>
     <div class="grid sm:grid-cols-3">
       <div>{{ players ? players[0].name : "" }}</div>
@@ -33,7 +55,10 @@
       </div>
     </div>
     <div class="flex gap-1">
-      <SubmitBtn :disabled="isSubmitDisabled" @click="submit" />
+      <SubmitBtn
+        :disabled="isSubmitDisabled"
+        @click="submit"
+      />
       <CancelBtn @click="hideModal" />
     </div>
   </div>

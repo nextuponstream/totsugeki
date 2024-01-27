@@ -14,6 +14,7 @@ export default {
     username: "Username",
     password: "Password",
     confirmPassword: "Confirm password",
+    register: "Register",
   },
   error: {
     invalidEmail: 'This field must be a valid email',
@@ -24,6 +25,7 @@ export default {
   playerRegistrationForm: {
     title: "Register players",
     newPlayerPlaceholder: "Player name",
+    minimum: '{min} players minimum',
   },
   registration: {
     bracketNameLabel: "Bracket",

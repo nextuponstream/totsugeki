@@ -18,14 +18,17 @@
             class="ml-3"
             style="position: absolute"
           >
-            3 players minimum
+            {{ $t('playerRegistrationForm.minimum', { min: 3 }) }}
           </base-tooltip>
         </div>
       </div>
     </div>
 
     <div>
-      <player-seeder :players="playerList" @remove-player="removePlayer" />
+      <player-seeder
+        :players="playerList"
+        @remove-player="removePlayer"
+      />
     </div>
   </div>
 </template>

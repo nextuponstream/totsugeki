@@ -3,11 +3,18 @@
     <div class="text-2xl">
       {{ t("bracketForm.title") }}
     </div>
-    <Form :on-submit="onSubmit" :on-invalid-submit="onInvalidSubmit" :validation-schema="schema"
-      class="flex flex-col gap-2 max-w-xs">
+    <Form
+      :on-submit="onSubmit"
+      :on-invalid-submit="onInvalidSubmit"
+      :validation-schema="schema"
+      class="flex flex-col gap-2 max-w-xs"
+    >
       <div>
         <label>{{ t("bracketForm.nameLabel") }}</label>
-        <FormInput name="bracket" :placeholder="t('bracketForm.namePlaceholder')" />
+        <FormInput
+          name="bracket"
+          :placeholder="t('bracketForm.namePlaceholder')"
+        />
       </div>
       <SubmitBtn />
     </Form>

@@ -53,7 +53,10 @@
         "
       />
     </div>
-    <div v-if="grandFinals" class="grid grid-cols-[50px_50px] flex-shrink-0">
+    <div
+      v-if="grandFinals"
+      class="grid grid-cols-[50px_50px] flex-shrink-0"
+    >
       <div class="my-auto">
         <div class="border-b" />
         <div class="" />

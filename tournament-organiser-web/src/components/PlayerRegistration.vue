@@ -3,9 +3,16 @@
     <div class="text-2xl">
       {{ t("playerRegistrationForm.title") }}
     </div>
-    <form class="flex gap-2 align-baseline" @submit="submitForm">
-      <FormInput v-model="name" v-bind="nameAttrs" name="name"
-        :placeholder="$t('playerRegistrationForm.newPlayerPlaceholder')" />
+    <form
+      class="flex gap-2 align-baseline"
+      @submit="submitForm"
+    >
+      <FormInput
+        v-model="name"
+        v-bind="nameAttrs"
+        name="name"
+        :placeholder="$t('playerRegistrationForm.newPlayerPlaceholder')"
+      />
       <SubmitBtn />
     </form>
   </div>

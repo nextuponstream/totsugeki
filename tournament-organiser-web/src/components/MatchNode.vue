@@ -1,6 +1,12 @@
 <template>
-  <div class="py-2 flex flex-col" :class="rowClass">
-    <div class="grid grid-rows-2 flex-col my-auto" :class="matchClass">
+  <div
+    class="py-2 flex flex-col"
+    :class="rowClass"
+  >
+    <div
+      class="grid grid-rows-2 flex-col my-auto"
+      :class="matchClass"
+    >
       <div class="grid grid-cols-7">
         <div
           class="text-xs text-center py-1"
@@ -23,10 +29,16 @@
         />
       </div>
       <div class="grid grid-cols-7">
-        <div class="text-xs text-center py-1" :class="verticalSeparator">
+        <div
+          class="text-xs text-center py-1"
+          :class="verticalSeparator"
+        >
           {{ !isPaddingMatch ? showSeed(match?.seeds[1]) : "&#8205;" }}
         </div>
-        <div class="col-span-5 text-xs py-1 px-1" :class="verticalSeparator">
+        <div
+          class="col-span-5 text-xs py-1 px-1"
+          :class="verticalSeparator"
+        >
           {{ match?.players[1].name }}
         </div>
         <MatchScore

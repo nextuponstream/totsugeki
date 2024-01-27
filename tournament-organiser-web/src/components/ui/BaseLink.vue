@@ -1,7 +1,7 @@
 <template>
-    <a :href="href">
-        <slot></slot>
-    </a>
+  <a :href="href">
+    <slot />
+  </a>
 </template>
 <script setup lang="ts">
 import { ref } from 'vue';

@@ -14,6 +14,7 @@ export default {
     username: "Nom d'utilisateur",
     password: "Mot de passe",
     confirmPassword: "Confirmer le mot de passe",
+    register: "S'inscrire",
   },
   error: {
     invalidEmail: 'Email invalide',
@@ -24,10 +25,11 @@ export default {
   playerRegistrationForm: {
     title: "Enregistrer un nouveau joueur",
     newPlayerPlaceholder: "Nom du joueur",
+    minimum: '{min} joueurs minimum',
   },
   registration: {
     bracketNameLabel: "Bracket",
-    startBracket: "Commencer le tournoi",
+    startBracket: "Démarrer",
   },
   playerSeeder: {
     title: "Seeding",

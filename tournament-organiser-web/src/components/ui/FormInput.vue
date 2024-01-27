@@ -1,8 +1,17 @@
 <template>
   <div class="flex flex-col gap-1">
-    <input :type="type" :placeholder="placeholder" :value="value" v-on="handlers" :class="validClasses"
-      class="p-2 rounded-md border-solid" />
-    <ErrorMessage :name="name" class="inputErrorMessage" />
+    <input
+      :type="type"
+      :placeholder="placeholder"
+      :value="value"
+      :class="validClasses"
+      class="p-2 rounded-md border-solid"
+      v-on="handlers"
+    >
+    <ErrorMessage
+      :name="name"
+      class="inputErrorMessage"
+    />
   </div>
 </template>
 <script setup lang="ts">

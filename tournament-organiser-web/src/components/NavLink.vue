@@ -1,6 +1,9 @@
 <template>
-  <RouterLink :to="to" class="bg-emerald-400 hover:bg-emerald-500 rounded px-1 py-1">
-    <slot></slot>
+  <RouterLink
+    :to="to"
+    class="bg-emerald-400 hover:bg-emerald-500 rounded px-1 py-1"
+  >
+    <slot />
   </RouterLink>
 </template>
 <script setup lang="ts">
