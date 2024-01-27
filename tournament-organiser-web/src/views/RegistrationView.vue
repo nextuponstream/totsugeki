@@ -28,19 +28,20 @@ const schema = yup.object({
   confirmPassword: yup.string().required(() => t('error.required'))
     .oneOf([yup.ref('password')], () => t('error.passwordMissmatch')),
 });
-const submittedOnce = ref({})
+
+const formErrors = ref({})
+provide('formErrors', formErrors)
 
 function onInvalidSubmit({ values, errors, results }: any) {
-  submittedOnce.value = { ...errors }
+  formErrors.value = { ...errors }
   console.error('invalid form data')
 }
 /**
  * @param values validated form data
  */
 function onSubmit(values: any) {
-  submittedOnce.value = {}
+  formErrors.value = {}
   console.info('TODO submit', JSON.stringify(values))
 }
 
-provide('submittedOnce', submittedOnce)
 </script>

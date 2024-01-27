@@ -1,7 +1,9 @@
 <template>
-  <input :type="type" :placeholder="placeholder" :value="value" v-on="handlers" :class="validClasses"
-    class="p-2 rounded-md border-solid" />
-  <ErrorMessage :name="name" class="inputError" />
+  <div class="flex flex-col gap-1">
+    <input :type="type" :placeholder="placeholder" :value="value" v-on="handlers" :class="validClasses"
+      class="p-2 rounded-md border-solid" />
+    <ErrorMessage :name="name" class="inputErrorMessage" />
+  </div>
 </template>
 <script setup lang="ts">
 import { computed, inject, toRef, watchEffect, type Ref } from 'vue';
@@ -28,11 +30,14 @@ const props = defineProps({
     required: false,
   }
 });
-const submittedOnce = inject<Ref>('submittedOnce')
+/**
+ * All errors from parent form. Used to update visual state of the input
+ */
+const formErrors = inject<Ref>('formErrors')
 
 watchEffect(() => {
   // NOTE: uncomment to watch changes in reactive injected keys here
-  // if (submittedOnce) {
+  // if (formErrors) {
 
   // }
 })
@@ -43,8 +48,8 @@ watchEffect(() => {
  */
 const validClasses = computed(() => {
   const propertyName = props.name
-  if (submittedOnce) {
-    const errors = submittedOnce?.value
+  if (formErrors) {
+    const errors = formErrors?.value
     if (propertyName in errors) {
       console.debug(`${propertyName} has error ${errors[propertyName]}`)
       return 'border border-red-500'
@@ -125,7 +130,7 @@ const handlers = computed(() => {
 });
 </script>
 <style scoped>
-.inputError {
+.inputErrorMessage {
   color: red;
   font-size: small;
 }
