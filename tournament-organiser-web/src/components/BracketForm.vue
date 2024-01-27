@@ -5,24 +5,19 @@
     </div>
     <div class="flex gap-2">
       <div class="max-w-2">
-        <label>{{ t("bracketForm.nameLabel") }}</label>
-        <FormInput
-          v-model="bracketName"
-          :placeholder="t('bracketForm.namePlaceholder')"
-          @keydown.enter="submitNewBracket"
-        />
+        <Form>
+          <label>{{ t("bracketForm.nameLabel") }}</label>
+          <FormInput name="bracket" :placeholder="t('bracketForm.namePlaceholder')" @keydown.enter="submitNewBracket" />
+        </Form>
       </div>
-      <SubmitBtn
-        class="self-end"
-        :disabled="bracketName.length === 0"
-        @click="submitNewBracket"
-      />
+      <SubmitBtn class="self-end" :disabled="bracketName.length === 0" @click="submitNewBracket" />
     </div>
   </div>
 </template>
 <script setup lang="ts">
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { Form } from 'vee-validate';
 
 const { t } = useI18n({});
 

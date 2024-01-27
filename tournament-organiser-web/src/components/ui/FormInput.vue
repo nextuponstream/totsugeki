@@ -1,10 +1,10 @@
 <template>
-  <input :type="type" :value="value" v-on="handlers" :class="invalidClasses"
-    class="p-2 rounded-md border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
-  <ErrorMessage :name="name" style="color:red;" />
+  <input :type="type" :placeholder="placeholder" :value="value" v-on="handlers" :class="validClasses"
+    class="p-2 rounded-md border-solid" />
+  <ErrorMessage :name="name" class="inputError" />
 </template>
 <script setup lang="ts">
-import { computed, inject, ref, toRef, toRefs, watch, watchEffect, type Ref } from 'vue';
+import { computed, inject, toRef, watchEffect, type Ref } from 'vue';
 import type { FieldContext } from 'vee-validate';
 import { useField, ErrorMessage } from 'vee-validate';
 
@@ -20,64 +20,89 @@ const props = defineProps({
   },
   type: {
     type: String,
-    default: 'text'
+    default: 'text',
   },
+  placeholder: {
+    type: String,
+    default: '',
+    required: false,
+  }
 });
-const submittedOnce = inject<Ref<boolean>>('submittedOnce')
+const submittedOnce = inject<Ref>('submittedOnce')
 
 watchEffect(() => {
-  if (submittedOnce) {
-    console.debug('new provided submittedOnce', submittedOnce.value)
-  }
+  // NOTE: uncomment to watch changes in reactive injected keys here
+  // if (submittedOnce) {
+
+  // }
 })
 
 /**
- * Sets invalid class only after submitting
- * FIXME red border not visible when empty
+ * Adds (in-)valid classes to the html input
+ * NOTE: tailwind invalid prefix only apply to basic html input validation and not yup validation
  */
-const invalidClasses = computed(() => {
-  // console.log('change')
-  return submittedOnce?.value ? 'invalid:border invalid:border-red-500' : ''
+const validClasses = computed(() => {
+  const propertyName = props.name
+  if (submittedOnce) {
+    const errors = submittedOnce?.value
+    if (propertyName in errors) {
+      console.debug(`${propertyName} has error ${errors[propertyName]}`)
+      return 'border border-red-500'
+    }
+  }
+
+  // NOTE outline-none is the blue border thingy when focusing
+  return 'border border-gray-300 focus:ring focus:ring-indigo-300 outline-none focus:ring-opacity-50'
 })
 // use `toRef` to create reactive references to `name` prop which is passed to `useField`
 // this is important because vee-validte needs to know if the field name changes
 // https://vee-validate.logaretm.com/v4/guide/composition-api/caveats
-const { meta, value, errorMessage, handleChange, handleBlur } = useField(
-  // toRef(props.name)
-  // FIXME remove type error from code example
-  toRef(props, 'name'),
-);
+const { meta, value, errorMessage, handleChange, handleBlur } = useField(toRef(props, 'name'));
+/**
+ * Only validate when submitting the form. This should be the default to prevent fatigue
+ */
 const passive: InteractionEventGetter = () => [];
+/**
+ * Show error after leaving the input
+ * @param param0 
+ */
+const lazy: InteractionEventGetter = ({ meta, errorMessage }) => {
+  return ['change'];
+};
+/**
+ * Show error while filling the input (and maybe smth?)
+ */
+const aggressive: InteractionEventGetter = () => ['input'];
+/**
+ * Starts lazy, then turns aggressive after leaving the input in an invalid state, 
+ * then turns back to lazy after it becomes valid
+ * From: https://dev.to/vponamariov/validate-it-ultimate-guide-41d1#trigger-eager
+ * @param param0 
+ */
+const eager: InteractionEventGetter = ({ meta, errorMessage }) => {
+  if (errorMessage.value) {
+    return ['input'];
+  }
 
-// const lazy: InteractionEventGetter = ({ meta, errorMessage }) => {
-//   return ['change'];
-// };
-
-// const aggressive: InteractionEventGetter = () => ['input'];
-
-// const eager: InteractionEventGetter = ({ meta, errorMessage }) => {
-//   if (errorMessage.value) {
-//     return ['input'];
-//   }
-
-//   return ['change'];
-// };
-// FIXME remove any type from example code
+  return ['change'];
+};
+// Validation modes official code example https://vee-validate.logaretm.com/v4/examples/dynamic-validation-triggers/
+// TODO remove any type from example code
 const modes: any = {
   passive,
-  // lazy,
-  // aggressive,
-  // eager,
+  lazy,
+  aggressive,
+  eager,
 };
 
-// // generates the listeners
+// generates the listeners
 const handlers = computed(() => {
-  // FIXME remove any type from example code
+  // TODO remove any type from example code
   const on: any = {
     blur: handleBlur,
     // default input event to sync the value
     // the `false` here prevents validation
-    // FIXME remove any type from example code
+    // TODO remove any type from example code
     input: [(e: any) => handleChange(e, false)],
   };
 
@@ -99,4 +124,9 @@ const handlers = computed(() => {
   return on;
 });
 </script>
-<style scoped></style>
+<style scoped>
+.inputError {
+  color: red;
+  font-size: small;
+}
+</style>

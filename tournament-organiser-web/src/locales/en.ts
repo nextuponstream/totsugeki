@@ -18,6 +18,8 @@ export default {
   error: {
     invalidEmail: 'This field must be a valid email',
     required: 'This field is required',
+    passwordMissmatch: 'Passwords must match',
+    minimum: 'At least {min} characters are required',
   },
   playerRegistrationForm: {
     title: "Register players",
