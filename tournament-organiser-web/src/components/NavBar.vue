@@ -34,13 +34,13 @@
       </NavLink>
     </div>
   </div>
-  <UserRegistrationModal v-model="registrationModal" />
+  <UserLoginModal v-model="registrationModal" />
 </template>
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
 import NavLink from "./NavLink.vue";
 import { ref } from "vue";
-import UserRegistrationModal from "./UserRegistrationModal.vue";
+import UserLoginModal from "./UserLoginModal.vue";
 
 const supportedLocales = ["en", "fr"];
 

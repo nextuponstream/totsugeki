@@ -100,7 +100,7 @@ npm run test:unit
 npm run test:e2e
 ```
 
-or interactive version with
+or interactive version with (while `npm run dev` runs in the background)
 
 ```bash
 npm run test:e2e:open

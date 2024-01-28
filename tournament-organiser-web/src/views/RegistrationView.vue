@@ -4,6 +4,8 @@
     :on-submit="onSubmit"
     :on-invalid-submit="onInvalidSubmit"
     :validation-schema="schema"
+    autocomplete
+    name="user-registration"
   >
     <label>{{ $t("generic.email") }}</label>
     <FormInput
