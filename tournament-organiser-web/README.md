@@ -112,6 +112,12 @@ Launch interactive e2e cypress tests
 npm run test:e2e
 ```
 
+NOTE: I have not found a way to use `npm run dev` while the API runs on the same
+port during cypress testing. This would be nice because you would benefit from hot-reloading rather than rebuilding the app completely during testing.
+Currently, telling cypress to target something else than the API (API on 3000, 
+dev on 5173) fails because registration test has a CORS problem (not same 
+origin).
+
 ### Lint with [ESLint](https://eslint.org/)
 
 ```sh
