@@ -10,7 +10,7 @@
     <label>{{ $t('generic.email') }}</label>
     <FormInput name="email" type="email" />
     <label>{{ $t('generic.username') }}</label>
-    <FormInput name="username" type="text" />
+    <FormInput name="name" type="text" />
     <label>{{ $t('generic.password') }}</label>
     <FormInput name="password" type="password" />
     <label>{{ $t('generic.confirmPassword') }}</label>
@@ -26,13 +26,14 @@ import { Form } from 'vee-validate'
 import { ref, provide } from 'vue'
 import { object, string, ref as yupref } from 'yup'
 import { useI18n } from 'vue-i18n'
+import router from '@/router'
 const { t } = useI18n({})
 // NOTE: how to use i18n with yup https://stackoverflow.com/questions/72062851/problems-with-translations-with-vue-yup-and-i18n
 const schema = object({
   email: string()
     .email(() => t('error.invalidEmail'))
     .required(() => t('error.required')),
-  username: string().required(() => t('error.required')),
+  name: string().required(() => t('error.required')),
   password: string()
     .required(() => t('error.required'))
     .min(8, () => t('error.minimum', { min: 8 })),
@@ -51,8 +52,27 @@ function onInvalidSubmit({ values, errors, results }: any) {
 /**
  * @param values validated form data
  */
-function onSubmit(values: any) {
+async function onSubmit(values: any) {
   formErrors.value = {}
-  console.info('TODO submit', JSON.stringify(values))
+  try {
+    let response = await fetch(`${import.meta.env.VITE_API_URL}/api/register`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ...values }),
+    })
+    if (response.ok) {
+      console.info('successful login')
+      router.push({
+        name: 'create-bracket',
+      })
+    } else {
+      throw new Error('non-200 response for /api/report-result-for-bracket')
+    }
+  } catch (e) {
+    console.error(e)
+  }
 }
 </script>

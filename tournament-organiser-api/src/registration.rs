@@ -48,6 +48,7 @@ pub(crate) async fn user_registration(
     State(pool): State<PgPool>,
     Json(form_input): Json<FormInput>,
 ) -> impl IntoResponse {
+    tracing::debug!("new user registration");
     if sqlx::query_as!(
         User,
         "SELECT * from users WHERE email = $1",
@@ -59,13 +60,9 @@ pub(crate) async fn user_registration(
     .expect("select first user with matching email")
     .is_some()
     {
-        return (
-            StatusCode::CONFLICT,
-            Json(ErrorResponse {
-                message: "Another user has already registered with provided mail".to_string(),
-            }),
-        )
-            .into_response();
+        let message = "Another user has already registered with provided mail".to_string();
+        tracing::warn!(message);
+        return (StatusCode::CONFLICT, Json(ErrorResponse { message })).into_response();
     }
 
     let _r = sqlx::query!(
@@ -77,6 +74,7 @@ pub(crate) async fn user_registration(
     .await
     .expect("user insert");
     // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
+    tracing::info!("new user {}", form_input.email);
 
     (StatusCode::OK, Json(())).into_response()
 }

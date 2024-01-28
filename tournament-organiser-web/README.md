@@ -79,7 +79,8 @@ Then connect to http://localhost:5173
 In the background, run an instance of the API:
 
 ```bash
-DB_USERNAME=toa DB_PASSWORD=toa DB_NAME=toa cargo watch -w tournament-organiser-api -s "cd tournament-organiser-api && cargo run"
+DB_USERNAME=toa DB_PASSWORD=toa DB_NAME=toa cargo watch \
+-w tournament-organiser-api -s "cd tournament-organiser-api && cargo run"
 ```
 
 ### Type-Check, Compile and Minify for Production
@@ -96,20 +97,20 @@ npm run test:unit
 
 ### Run End-to-End Tests with [Cypress](https://www.cypress.io/)
 
-```sh
-npm run test:e2e
-```
-
-or interactive version with (while `npm run dev` runs in the background)
+First, run the application in the background
 
 ```bash
-npm run test:e2e:open
+BUILD_PATH_TOURNAMENT_ORGANISER_WEB=tournament-organiser-web/dist \
+DB_USERNAME=toa DB_PASSWORD=toa DB_NAME=toa \
+cargo watch -w tournament-organiser-web -w tournament-organiser-api \
+-s "npm --prefix tournament-organiser-web run build && cargo run --package tournament-organiser-api"
 ```
 
-This runs the end-to-end tests against the Vite development server.
-It is much faster than the production build.
+Launch interactive e2e cypress tests
 
-NOTE: e2e testing configuration is different in CI
+```bash
+npm run test:e2e
+```
 
 ### Lint with [ESLint](https://eslint.org/)
 
