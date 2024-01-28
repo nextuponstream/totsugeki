@@ -6,7 +6,7 @@
     @click="hideModal"
   />
   <div
-    class="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-auto bg-white rounded-md px-8 py-6 space-y-5 drop-shadow-lg"
+    class="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-auto max-w-sm bg-white rounded-md px-8 py-6 space-y-5 drop-shadow-lg"
     :class="isHidden"
     data-test-id="modal"
   >
@@ -34,7 +34,7 @@ const props = defineProps<{
 }>();
 
 function hideModal() {
-  emits('hide')
+  emits("hide");
 }
 
 const isHidden = computed(() => {

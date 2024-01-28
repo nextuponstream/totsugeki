@@ -18,7 +18,7 @@
             class="ml-3"
             style="position: absolute"
           >
-            {{ $t('playerRegistrationForm.minimum', { min: 3 }) }}
+            {{ $t("playerRegistrationForm.minimum", { min: 3 }) }}
           </base-tooltip>
         </div>
       </div>
@@ -51,7 +51,6 @@ onMounted(() => {
 });
 
 const playerList: Ref<{ name: string; index: number }[]> = ref([]);
-
 const dragging = ref(false);
 const enabled = ref(true);
 const counter = ref(0);
@@ -78,7 +77,7 @@ async function createBracketFromPlayers() {
   try {
     // TODO configurable variable
     let response = await fetch(
-      "https://totsugeki.fly.dev/bracket-from-players",
+      `${import.meta.env.VITE_API_URL}/api/bracket-from-players`,
       {
         method: "POST",
         headers: {
@@ -90,14 +89,21 @@ async function createBracketFromPlayers() {
         // documentation: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch#supplying_request_options
       }
     );
-    let bracket = await response.json();
-    localStorage.setItem("bracket", JSON.stringify(bracket));
+    if (response.ok) {
+      let bracket = await response.json();
+      localStorage.setItem("bracket", JSON.stringify(bracket));
+      router.push({
+        name: "bracket",
+      });
+    } else {
+      throw new Error(
+        `response (${
+          response.status
+        }) \"${await response.text()}\" from /bracket-from-players`
+      );
+    }
   } catch (e) {
     console.error(e);
   }
-
-  router.push({
-    name: "bracket",
-  });
 }
 </script>

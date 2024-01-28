@@ -17,15 +17,15 @@ export default {
     register: "Register",
   },
   error: {
-    invalidEmail: 'This field must be a valid email',
-    required: 'This field is required',
-    passwordMissmatch: 'Passwords must match',
-    minimum: 'At least {min} characters are required',
+    invalidEmail: "This field must be a valid email",
+    required: "This field is required",
+    passwordMissmatch: "Passwords must match",
+    minimum: "At least {min} characters are required",
   },
   playerRegistrationForm: {
     title: "Register players",
     newPlayerPlaceholder: "Player name",
-    minimum: '{min} players minimum',
+    minimum: "{min} players minimum",
   },
   registration: {
     bracketNameLabel: "Bracket",
@@ -42,7 +42,7 @@ export default {
     hint: "Click on matches to enter results",
   },
   loginModal: {
-    title: 'Login',
+    title: "Login",
     text1: "Don't have an account yet?",
     text2: "Register now!",
   },

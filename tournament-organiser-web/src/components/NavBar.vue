@@ -1,5 +1,7 @@
 <template>
-  <div class="flex flex-wrap items-center justify-between px-2 py-2 bg-emerald-700 mb-3">
+  <div
+    class="flex flex-wrap items-center justify-between px-2 py-2 bg-emerald-700 mb-3"
+  >
     <NavLink
       to="/"
       text="Home"
@@ -37,20 +39,20 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
 import NavLink from "./NavLink.vue";
-import { ref } from 'vue';
+import { ref } from "vue";
 import UserRegistrationModal from "./UserRegistrationModal.vue";
 
 const supportedLocales = ["en", "fr"];
 
 const { locale } = useI18n({});
-const registrationModal = ref(false)
+const registrationModal = ref(false);
 
 function changeLocale(value: any) {
   locale.value = value.target.value;
 }
 
 function showRegistrationModal() {
-  console.debug('TODO show')
-  registrationModal.value = true
+  console.debug("TODO show");
+  registrationModal.value = true;
 }
 </script>

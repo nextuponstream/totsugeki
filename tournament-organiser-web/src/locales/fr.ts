@@ -17,15 +17,15 @@ export default {
     register: "S'inscrire",
   },
   error: {
-    invalidEmail: 'Email invalide',
-    required: 'Le champs est requis',
-    passwordMissmatch: 'Les mots de passe ne correspondent pas',
-    minimum: 'Le champ doit comporter au minimum {min} caractères',
+    invalidEmail: "Email invalide",
+    required: "Le champs est requis",
+    passwordMissmatch: "Les mots de passe ne correspondent pas",
+    minimum: "Le champ doit comporter au minimum {min} caractères",
   },
   playerRegistrationForm: {
     title: "Enregistrer un nouveau joueur",
     newPlayerPlaceholder: "Nom du joueur",
-    minimum: '{min} joueurs minimum',
+    minimum: "{min} joueurs minimum",
   },
   registration: {
     bracketNameLabel: "Bracket",
@@ -42,11 +42,11 @@ export default {
     hint: "Veuillez cliquer un match pour entrer un résultat",
   },
   loginModal: {
-    title: 'Connection',
+    title: "Connection",
     text1: "Vous n'avez pas encore de compte ?",
     text2: "Inscrivez-vous maintenant!",
   },
   signup: {
     register: "S'inscrire",
-  }
+  },
 };

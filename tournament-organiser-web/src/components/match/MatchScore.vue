@@ -21,7 +21,7 @@ function scoreClass(
   index: number,
   otherIndex: number
 ) {
-  if (scores?.length == 2 && scores[index] > scores[otherIndex]) {
+  if (scores?.length === 2 && scores[index] > scores[otherIndex]) {
     return "text-white bg-green-600";
   } else {
     return "";

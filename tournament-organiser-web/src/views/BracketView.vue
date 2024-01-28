@@ -74,7 +74,7 @@ async function reportResult(
   try {
     console.log(bracket.value.bracket);
     let response = await fetch(
-      "https://totsugeki.fly.dev/report-result-for-bracket",
+      `${import.meta.env.VITE_API_URL}/api/report-result-for-bracket`,
       {
         method: "POST",
         headers: {
@@ -90,7 +90,7 @@ async function reportResult(
         }),
       }
     );
-    let newBracket = await response.json();
+     let newBracket = await response.json();
     localStorage.setItem("bracket", JSON.stringify(bracket));
     bracket.value = newBracket;
   } catch (e) {

@@ -71,7 +71,7 @@ const props = defineProps<{
 }>();
 
 const isPaddingMatch = computed(() => {
-  return props.match?.row_hint == null && props.match?.seeds[0] == 0;
+  return props.match?.row_hint === null && props.match?.seeds[0] === 0;
 });
 
 const matchClass = computed(() => {
@@ -109,9 +109,8 @@ const rowDivider = computed(() => {
 const totalPlayers = 3;
 
 const rowClass = computed(() => {
-  return `${
-    props.match?.row_hint != null ? `row-start-${props.match.row_hint + 1}` : ""
-  }`;
+  return `${props.match?.row_hint !== null ? `row-start-${props.match.row_hint + 1}` : ""
+    }`;
 });
 
 /**
