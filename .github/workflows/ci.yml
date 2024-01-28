@@ -162,6 +162,7 @@ jobs:
           sudo -u postgres createuser -s -d -r toa
           sudo -u postgres psql -c "ALTER USER toa WITH PASSWORD 'toa';"
           sudo -u postgres psql -c "CREATE DATABASE toa;"
+      - run: cp tournament-organiser-web/.env.ci tournament-organiser-web/.env
       - run: cd ui && cargo run > test.ts && mv test.ts ../tournament-organiser-web/
       - run: |
           cd tournament-organiser-api && \
