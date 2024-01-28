@@ -8,87 +8,84 @@
       :class="validClasses"
       class="p-2 rounded-md border-solid"
       v-on="handlers"
-    >
-    <ErrorMessage
-      :name="name"
-      class="inputErrorMessage"
     />
+    <ErrorMessage :name="name" class="inputErrorMessage" />
   </div>
 </template>
 <script setup lang="ts">
-import { computed, inject, toRef, watchEffect, type Ref } from "vue";
-import type { FieldContext } from "vee-validate";
-import { useField, ErrorMessage } from "vee-validate";
+import { computed, inject, toRef, watchEffect, type Ref } from 'vue'
+import type { FieldContext } from 'vee-validate'
+import { useField, ErrorMessage } from 'vee-validate'
 
-type InteractionEventGetter = (ctx: FieldContext) => string[];
+type InteractionEventGetter = (ctx: FieldContext) => string[]
 const props = defineProps({
   name: {
     type: String,
-    default: "",
+    default: '',
   },
   mode: {
     type: String,
-    default: "passive",
+    default: 'passive',
   },
   type: {
     type: String,
-    default: "text",
+    default: 'text',
   },
   placeholder: {
     type: String,
-    default: "",
+    default: '',
     required: false,
   },
-});
+})
 /**
  * All errors from parent form. Used to update visual state of the input
  */
-const formErrors = inject<Ref>("formErrors");
+const formErrors = inject<Ref>('formErrors')
 
 watchEffect(() => {
   // NOTE: uncomment to watch changes in reactive injected keys here
   // if (formErrors) {
   // }
-});
+})
 
 /**
  * Adds (in-)valid classes to the html input
  * NOTE: tailwind invalid prefix only apply to basic html input validation and not yup validation
  */
 const validClasses = computed(() => {
-  const propertyName = props.name;
+  const propertyName = props.name
   if (formErrors) {
-    const errors = formErrors?.value;
+    const errors = formErrors?.value
     if (propertyName in errors) {
-      console.debug(`${propertyName} has error ${errors[propertyName]}`);
-      return "border border-red-500";
+      console.debug(`${propertyName} has error ${errors[propertyName]}`)
+      return 'border border-red-500'
     }
   }
 
   // NOTE outline-none is the blue border thingy when focusing
-  return "border border-gray-300 focus:ring focus:ring-indigo-300 outline-none focus:ring-opacity-50";
-});
+  return 'border border-gray-300 focus:ring focus:ring-indigo-300 outline-none focus:ring-opacity-50'
+})
 // use `toRef` to create reactive references to `name` prop which is passed to `useField`
 // this is important because vee-validte needs to know if the field name changes
 // https://vee-validate.logaretm.com/v4/guide/composition-api/caveats
 const { meta, value, errorMessage, handleChange, handleBlur } = useField(
-  toRef(props, "name")
-);
+  toRef(props, 'name')
+)
 /**
  * Only validate when submitting the form. This should be the default to prevent fatigue
  */
-const passive: InteractionEventGetter = () => [];
+const passive: InteractionEventGetter = () => []
 /**
  * Show error after leaving the input
  * @param param0
  */
 const lazy: InteractionEventGetter = ({ meta, errorMessage }) => {
-  return ["change"];
-};
+  return ['change']
+}
 /**
  * Show error while filling the input (and maybe smth?)
  */
-const aggressive: InteractionEventGetter = () => ["input"];
+const aggressive: InteractionEventGetter = () => ['input']
 /**
  * Starts lazy, then turns aggressive after leaving the input in an invalid state,
  * then turns back to lazy after it becomes valid
@@ -97,11 +94,11 @@ const aggressive: InteractionEventGetter = () => ["input"];
  */
 const eager: InteractionEventGetter = ({ meta, errorMessage }) => {
   if (errorMessage.value) {
-    return ["input"];
+    return ['input']
   }
 
-  return ["change"];
-};
+  return ['change']
+}
 // Validation modes official code example https://vee-validate.logaretm.com/v4/examples/dynamic-validation-triggers/
 // TODO remove any type from example code
 const modes: any = {
@@ -109,7 +106,7 @@ const modes: any = {
   lazy,
   aggressive,
   eager,
-};
+}
 
 // generates the listeners
 const handlers = computed(() => {
@@ -120,25 +117,25 @@ const handlers = computed(() => {
     // the `false` here prevents validation
     // TODO remove any type from example code
     input: [(e: any) => handleChange(e, false)],
-  };
+  }
 
   // Get list of validation events based on the current mode
   const triggers = modes[props.mode]({
     errorMessage,
     meta,
-  });
+  })
 
   // add them to the "on" handlers object
   triggers.forEach((t: any) => {
     if (Array.isArray(on[t])) {
-      on[t].push(handleChange);
+      on[t].push(handleChange)
     } else {
-      on[t] = handleChange;
+      on[t] = handleChange
     }
-  });
+  })
 
-  return on;
-});
+  return on
+})
 </script>
 <style scoped>
 .inputErrorMessage {

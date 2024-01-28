@@ -1,9 +1,9 @@
 <template>
   <div class="text-2xl">
-    {{ t("playerSeeder.title") }}
+    {{ t('playerSeeder.title') }}
   </div>
   <div class="text-gray-400">
-    {{ t("playerSeeder.hint") }}
+    {{ t('playerSeeder.hint') }}
   </div>
 
   <draggable
@@ -17,10 +17,7 @@
     @end="dragging = false"
   >
     <template #item="{ element }">
-      <div
-        class="list-group-item"
-        :class="{ 'not-draggable': !enabled }"
-      >
+      <div class="list-group-item" :class="{ 'not-draggable': !enabled }">
         <div class="flex py-1 justify-between w-64">
           <div>{{ element.name }}</div>
           <i
@@ -32,21 +29,21 @@
     </template>
   </draggable>
   <div v-else>
-    <div>{{ t("playerSeeder.empty") }}</div>
+    <div>{{ t('playerSeeder.empty') }}</div>
   </div>
 </template>
 
 <script setup lang="ts">
-import draggable from "vuedraggable";
-import { type PropType } from "vue";
-import { ref } from "vue";
-import { useI18n } from "vue-i18n";
+import draggable from 'vuedraggable'
+import { type PropType } from 'vue'
+import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n({});
+const { t } = useI18n({})
 
 interface Player {
-  name: string;
-  index: number;
+  name: string
+  index: number
 }
 
 const props = defineProps({
@@ -54,17 +51,17 @@ const props = defineProps({
     type: Array as PropType<Player[]>,
     required: false,
     default: () => {
-      return [];
+      return []
     },
   },
-});
+})
 
-const emit = defineEmits(["removePlayer"]);
+const emit = defineEmits(['removePlayer'])
 
-const dragging = ref(false);
-const enabled = ref(true);
+const dragging = ref(false)
+const enabled = ref(true)
 
 function removePlayer(index: number) {
-  emit("removePlayer", index);
+  emit('removePlayer', index)
 }
 </script>

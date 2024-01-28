@@ -24,24 +24,24 @@
   </div>
 </template>
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed } from 'vue'
 
-const emits = defineEmits(["update:modelValue", "hide"]);
+const emits = defineEmits(['update:modelValue', 'hide'])
 
 const props = defineProps<{
-  modelValue: boolean;
-  title: string;
-}>();
+  modelValue: boolean
+  title: string
+}>()
 
 function hideModal() {
-  emits("hide");
+  emits('hide')
 }
 
 const isHidden = computed(() => {
   if (props.modelValue) {
-    return null;
+    return null
   } else {
-    return "hidden";
+    return 'hidden'
   }
-});
+})
 </script>

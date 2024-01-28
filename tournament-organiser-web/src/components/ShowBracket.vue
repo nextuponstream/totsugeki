@@ -53,10 +53,7 @@
         "
       />
     </div>
-    <div
-      v-if="grandFinals"
-      class="grid grid-cols-[50px_50px] flex-shrink-0"
-    >
+    <div v-if="grandFinals" class="grid grid-cols-[50px_50px] flex-shrink-0">
       <div class="my-auto">
         <div class="border-b" />
         <div class="" />
@@ -100,73 +97,73 @@
   </div>
 </template>
 <script setup lang="ts">
-import { type PropType, computed } from "vue";
-import MatchNode from "@/components/MatchNode.vue";
+import { type PropType, computed } from 'vue'
+import MatchNode from '@/components/MatchNode.vue'
 
 const props = defineProps({
   bracket: {
     type: Array as PropType<Match[][]>,
     default: () => {
-      return [];
+      return []
     },
   },
   lines: {
     type: Array as PropType<Lines[][]>,
     default: () => {
-      return [];
+      return []
     },
   },
   grandFinals: {
     type: Object as PropType<Match | undefined>,
     default: () => {
-      return undefined;
+      return undefined
     },
   },
   grandFinalsReset: {
     type: Object as PropType<Match | undefined>,
     default: () => {
-      return undefined;
+      return undefined
     },
   },
-});
+})
 
-const emits = defineEmits(["showResultModal"]);
+const emits = defineEmits(['showResultModal'])
 
 const mix = computed(() => {
-  let lines = props.lines;
-  lines.push([]);
-  let r = [];
+  let lines = props.lines
+  lines.push([])
+  let r = []
   for (let i = 0; i < props.bracket.length - 1; i++) {
     let o = {
       match: props.bracket[i],
       lines: lines[i],
-    };
-    r.push(o);
+    }
+    r.push(o)
   }
 
-  return r;
-});
+  return r
+})
 
 const bracketFinalMatch = computed(() => {
-  let bracket = props.bracket;
+  let bracket = props.bracket
   if (bracket.length > 0) {
-    return bracket[bracket.length - 1][0];
+    return bracket[bracket.length - 1][0]
   } else {
-    return undefined;
+    return undefined
   }
-});
+})
 
-const gridClassSetup = computed(() => `grid-cols-${props.bracket.length - 1}`);
+const gridClassSetup = computed(() => `grid-cols-${props.bracket.length - 1}`)
 
 function show(l: Lines) {
   if (l.bottom_border && l.left_border) {
-    return "border-l border-b";
+    return 'border-l border-b'
   } else if (l.bottom_border) {
-    return "border-b";
+    return 'border-b'
   } else if (l.left_border) {
-    return "border-l";
+    return 'border-l'
   } else {
-    return "";
+    return ''
   }
 }
 
@@ -174,6 +171,6 @@ function showResultModal(
   matchId: string,
   players: { name: string; id: string }[]
 ) {
-  emits("showResultModal", matchId, players);
+  emits('showResultModal', matchId, players)
 }
 </script>

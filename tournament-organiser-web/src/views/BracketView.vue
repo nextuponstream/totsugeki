@@ -7,7 +7,7 @@
   />
 
   <div class="pb-5 text-gray-400">
-    {{ t("bracketView.hint") }}
+    {{ t('bracketView.hint') }}
   </div>
   <div>
     <ShowBracket
@@ -17,7 +17,7 @@
       :grand-finals-reset="bracket.grand_finals_reset"
       @show-result-modal="showResultModal"
     >
-      {{ t("bracketView.winnerBracket") }}
+      {{ t('bracketView.winnerBracket') }}
     </ShowBracket>
   </div>
   <div class="pt-6">
@@ -26,18 +26,18 @@
       :lines="bracket.loser_bracket_lines"
       @show-result-modal="showResultModal"
     >
-      {{ t("bracketView.loserBracket") }}
+      {{ t('bracketView.loserBracket') }}
     </ShowBracket>
   </div>
 </template>
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
-import type { Ref } from "vue";
-import ShowBracket from "@/components/ShowBracket.vue";
-import { useI18n } from "vue-i18n";
-import ReportResultModal from "@/components/ReportResultModal.vue";
+import { ref, onMounted } from 'vue'
+import type { Ref } from 'vue'
+import ShowBracket from '@/components/ShowBracket.vue'
+import { useI18n } from 'vue-i18n'
+import ReportResultModal from '@/components/ReportResultModal.vue'
 
-const { t } = useI18n({});
+const { t } = useI18n({})
 
 const bracket: Ref<Bracket> = ref({
   winner_bracket: [],
@@ -47,23 +47,23 @@ const bracket: Ref<Bracket> = ref({
   grand_finals: undefined as Match | undefined,
   grand_finals_reset: undefined as Match | undefined,
   bracket: undefined,
-});
+})
 
 onMounted(() => {
-  bracket.value = JSON.parse(localStorage.getItem("bracket")!);
-});
+  bracket.value = JSON.parse(localStorage.getItem('bracket')!)
+})
 
-const matchId = ref<string | null>(null);
-const players = ref<{ name: string; id: string }[] | null>(null);
-const show = ref(false);
+const matchId = ref<string | null>(null)
+const players = ref<{ name: string; id: string }[] | null>(null)
+const show = ref(false)
 
 function showResultModal(
   clickedMatchId: string,
   clickedPlayers: { name: string; id: string }[]
 ) {
-  matchId.value = clickedMatchId;
-  players.value = clickedPlayers;
-  show.value = true;
+  matchId.value = clickedMatchId
+  players.value = clickedPlayers
+  show.value = true
 }
 
 async function reportResult(
@@ -72,14 +72,14 @@ async function reportResult(
   scoreP2: number
 ) {
   try {
-    console.log(bracket.value.bracket);
+    console.log(bracket.value.bracket)
     let response = await fetch(
       `${import.meta.env.VITE_API_URL}/api/report-result-for-bracket`,
       {
-        method: "POST",
+        method: 'POST',
         headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           bracket: bracket.value.bracket,
@@ -89,12 +89,16 @@ async function reportResult(
           score_p2: scoreP2,
         }),
       }
-    );
-     let newBracket = await response.json();
-    localStorage.setItem("bracket", JSON.stringify(bracket));
-    bracket.value = newBracket;
+    )
+    if (response.ok) {
+      let newBracket = await response.json()
+      localStorage.setItem('bracket', JSON.stringify(bracket))
+      bracket.value = newBracket
+    } else {
+      throw new Error('non-200 response for /api/report-result-for-bracket')
+    }
   } catch (e) {
-    console.error(e);
+    console.error(e)
   }
 }
 </script>

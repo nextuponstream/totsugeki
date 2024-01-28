@@ -3,15 +3,15 @@
 </template>
 
 <script setup lang="ts">
-import BracketForm from "@/components/BracketForm.vue";
-import { useRouter } from "vue-router";
+import BracketForm from '@/components/BracketForm.vue'
+import { useRouter } from 'vue-router'
 
-const router = useRouter();
+const router = useRouter()
 
 function createBracket(name: string) {
-  localStorage.setItem("bracketName", name);
+  localStorage.setItem('bracketName', name)
   router.push({
-    name: "bracketRegistration",
-  });
+    name: 'bracketRegistration',
+  })
 }
 </script>

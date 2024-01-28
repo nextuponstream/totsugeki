@@ -3,13 +3,10 @@
 import { gridSetup, rowSetup, safelist } from './test'
 gridSetup['fixed'] = '200px'
 export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx,vue}",
-  ],
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx,vue}'],
   theme: {
     fontFamily: {
-      'roboto': ['Roboto', 'sans-serif'],
+      roboto: ['Roboto', 'sans-serif'],
     },
     extend: {
       gridRow: {
@@ -20,7 +17,5 @@ export default {
       gridRowStart: rowSetup,
     },
   },
-  safelist: [
-    ...safelist
-  ],
+  safelist: [...safelist],
 }
