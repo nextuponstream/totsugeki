@@ -11,11 +11,13 @@
 
 mod bracket;
 pub mod health_check;
+pub mod login;
 pub mod registration;
 pub mod test_utils;
 
 use crate::health_check::health_check;
-use crate::registration::user_registration;
+use crate::registration::registration;
+use crate::login::login;
 use axum::{
     routing::{get, post},
     Router,
@@ -44,7 +46,8 @@ static PORT: u16 = 3000;
 fn api(pool: Pool<Postgres>) -> Router {
     Router::new()
         .route("/health_check", get(health_check))
-        .route("/register", post(user_registration))
+        .route("/register", post(registration))
+        .route("/login", post(login))
         .route("/bracket-from-players", post(new_bracket_from_players))
         .route("/report-result-for-bracket", post(report_result))
         .fallback_service(get(|| async { (StatusCode::NOT_FOUND, "Not found") }))

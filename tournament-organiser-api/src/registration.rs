@@ -1,12 +1,17 @@
 //! registration
 
+use argon2::password_hash::SaltString;
+use argon2::Argon2;
+use argon2::PasswordHasher;
 use axum::extract::State;
 use axum::response::{IntoResponse, Json};
 use chrono::prelude::*;
 use http::StatusCode;
+use secrecy::{ExposeSecret, Secret};
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPool;
 use totsugeki::player::Id;
+use tracing::instrument;
 
 /// Standard error message
 #[derive(Serialize, Deserialize)]
@@ -15,15 +20,16 @@ pub struct ErrorResponse {
     pub message: String,
 }
 
-/// User registration form input
-#[derive(Serialize, Deserialize, Debug)]
+/// User registration form input with secret input to avoid it being exposed
+/// through logs
+#[derive(Deserialize, Debug)]
 pub struct FormInput {
     /// user name
     pub name: String,
     /// user email address
     pub email: String,
     /// user provided password
-    pub password: String,
+    pub password: Secret<String>,
     /// user id
     pub created_at: Option<String>,
 }
@@ -39,16 +45,18 @@ struct User {
     pub name: String,
     /// user email address
     pub email: String,
+    /// user password
+    pub password: Secret<String>,
     /// user id
     pub created_at: Option<DateTime<Utc>>,
 }
 
 /// `/register` endpoint for health check
-pub(crate) async fn user_registration(
+#[instrument(name = "user_registration", skip(pool))]
+pub(crate) async fn registration(
     State(pool): State<PgPool>,
     Json(form_input): Json<FormInput>,
 ) -> impl IntoResponse {
-    tracing::debug!("new user registration");
     if sqlx::query_as!(
         User,
         "SELECT * from users WHERE email = $1",
@@ -57,7 +65,7 @@ pub(crate) async fn user_registration(
     // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
     .fetch_optional(&pool)
     .await
-    .expect("select first user with matching email")
+    .expect("user with matching email")
     .is_some()
     {
         let message = "Another user has already registered with provided mail".to_string();
@@ -65,10 +73,18 @@ pub(crate) async fn user_registration(
         return (StatusCode::CONFLICT, Json(ErrorResponse { message })).into_response();
     }
 
+    // Copied from zero2prod book
+    let salt = SaltString::generate(&mut rand::thread_rng());
+    let password_hash = Argon2::default()
+        .hash_password(form_input.password.expose_secret().as_bytes(), &salt)
+        .expect("password in PHC format")
+        .to_string();
+
     let _r = sqlx::query!(
-        "INSERT INTO users (name, email) VALUES ($1, $2)",
+        "INSERT INTO users (name, email, password) VALUES ($1, $2, $3)",
         form_input.name,
-        form_input.email
+        form_input.email,
+        password_hash,
     )
     .execute(&pool)
     .await

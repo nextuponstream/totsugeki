@@ -1,8 +1,9 @@
-//! tests/health_check.rs
+//! registration tests
+
 use http::StatusCode;
 use sqlx::PgPool;
-use tournament_organiser_api::registration::{ErrorResponse, FormInput};
-use tournament_organiser_api::test_utils::spawn_app;
+use tournament_organiser_api::registration::ErrorResponse;
+use tournament_organiser_api::test_utils::{spawn_app, FormUserInput};
 
 // Use sqlx macro to create (and teardown) database on the fly to enforce test
 // isolation
@@ -13,11 +14,10 @@ async fn registration(db: PgPool) {
     let app = spawn_app(db).await;
 
     let response = app
-        .register(&FormInput {
+        .register(&FormUserInput {
             name: "jean".into(),
             email: "jean@bon.ch".into(),
             password: "verySecurePassword#123456789?".into(),
-            created_at: None,
         })
         .await;
 
@@ -32,11 +32,10 @@ async fn registration(db: PgPool) {
 #[sqlx::test]
 async fn registration_fails_when_another_user_already_exists(db: PgPool) {
     let app = spawn_app(db).await;
-    let request = FormInput {
+    let request = FormUserInput {
         name: "jean".into(),
         email: "jean@bon.ch".into(),
         password: "verySecurePassword#123456789?".into(),
-        created_at: None,
     };
 
     let response = app.register(&request).await;

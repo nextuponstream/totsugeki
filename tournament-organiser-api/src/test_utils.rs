@@ -9,10 +9,9 @@ pub struct TestApp {
     pub addr: String,
 }
 
-use crate::registration::FormInput;
-use reqwest::{Client, Response};
-
 use super::*;
+use reqwest::{Client, Response};
+use serde::Serialize;
 use std::net::TcpListener;
 /// Returns address to connect to new application (with random available port)
 ///
@@ -36,14 +35,47 @@ pub async fn spawn_app(db: PgPool) -> TestApp {
     }
 }
 
+/// User registration form input
+#[derive(Serialize, Debug)]
+pub struct FormUserInput {
+    /// user name
+    pub name: String,
+    /// user email address
+    pub email: String,
+    /// user provided password
+    pub password: String,
+}
+
+/// User registration form input
+#[derive(Serialize, Debug)]
+pub struct LoginForm {
+    /// user email
+    pub email: String,
+    /// user provided password
+    pub password: String,
+}
+
 impl TestApp {
     /// register user through `/api/register` endpoint with a POST request
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
-    pub async fn register(&self, request: &FormInput) -> Response {
+    pub async fn register(&self, request: &FormUserInput) -> Response {
         let client = Client::new();
         client
             .post(format!("{}/api/register", self.addr))
             .json(request)
+            .send()
+            .await
+            .expect("request done")
+    }
+
+    /// login user through `/api/login` endpoint with a POST request
+    #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
+    pub async fn login(&self, request: &LoginForm) -> Response {
+        // FIXME use Bearer token
+        let client = Client::new();
+        client
+            .post(format!("{}/api/login", self.addr))
+            .basic_auth(&request.email, Some(&request.password))
             .send()
             .await
             .expect("request done")
