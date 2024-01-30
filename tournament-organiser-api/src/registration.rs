@@ -1,5 +1,6 @@
 //! registration
 
+use crate::ErrorResponse;
 use argon2::password_hash::SaltString;
 use argon2::Argon2;
 use argon2::PasswordHasher;
@@ -8,17 +9,11 @@ use axum::response::{IntoResponse, Json};
 use chrono::prelude::*;
 use http::StatusCode;
 use secrecy::{ExposeSecret, Secret};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use sqlx::postgres::PgPool;
 use totsugeki::player::Id;
 use tracing::instrument;
-
-/// Standard error message
-#[derive(Serialize, Deserialize)]
-pub struct ErrorResponse {
-    /// user-facing error message
-    pub message: String,
-}
+use zxcvbn::zxcvbn;
 
 /// User registration form input with secret input to avoid it being exposed
 /// through logs
@@ -73,10 +68,43 @@ pub(crate) async fn registration(
         return (StatusCode::CONFLICT, Json(ErrorResponse { message })).into_response();
     }
 
+    let raw_password = form_input.password.expose_secret();
+
+    let estimate =
+        zxcvbn(raw_password, &[&form_input.name, &form_input.email]).expect("password analysis");
+    if let Some(feedback) = estimate.feedback() {
+        if let Some(warning) = feedback.warning() {
+            tracing::warn!(
+                "user provided weak password with the following warning: {}",
+                warning
+            );
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(ErrorResponse {
+                    #[allow(clippy::uninlined_format_args)]
+                    message: format!("weak_password: {}", warning),
+                }),
+            )
+                .into_response();
+        }
+
+        tracing::warn!(
+            "user provided weak password with the following suggestions: {:?}",
+            feedback.suggestions()
+        );
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse {
+                message: "weak_password".into(),
+            }),
+        )
+            .into_response();
+    };
+
     // Copied from zero2prod book
     let salt = SaltString::generate(&mut rand::thread_rng());
     let password_hash = Argon2::default()
-        .hash_password(form_input.password.expose_secret().as_bytes(), &salt)
+        .hash_password(raw_password.as_bytes(), &salt)
         .expect("password in PHC format")
         .to_string();
 

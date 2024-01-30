@@ -21,6 +21,8 @@ export default {
     required: 'This field is required',
     passwordMissmatch: 'Passwords must match',
     minimum: 'At least {min} characters are required',
+    weakPassword:
+      'Provided password is too weak. Please provide a stronger password',
   },
   playerRegistrationForm: {
     title: 'Register players',

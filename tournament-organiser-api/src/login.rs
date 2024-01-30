@@ -33,19 +33,34 @@ struct SuccessfulLogin {
 /// `/register` endpoint for health check
 #[instrument(name = "login", skip(pool))]
 pub(crate) async fn login(State(pool): State<PgPool>, request: Request<Body>) -> impl IntoResponse {
-    let Some(authorization_header) = request.headers().get(AUTHORIZATION) else {
-        panic!("Missing AUTHORIZATION header")
-    };
+    // NOTE tons of expectation. If someone uses the app differently than with
+    // the webpage, then that's not an expected usecase and better crash to
+    // understand why this user is doing it differently.
+    let authorization_header = request
+        .headers()
+        .get(AUTHORIZATION)
+        .expect("Missing AUTHORIZATION header");
     let base64encoded_segment = authorization_header
         .to_str()
-        .unwrap()
+        .expect("Parsed authorization header")
         .strip_prefix("Basic ")
-        .unwrap();
-    let decoded_bytes = base64::engine::general_purpose::STANDARD.decode(base64encoded_segment);
-    let decoded_credentials = String::from_utf8(decoded_bytes.unwrap()).unwrap();
+        .expect("Basic authentication with authorization header");
+    let decoded_bytes = base64::engine::general_purpose::STANDARD
+        .decode(base64encoded_segment)
+        .expect("decoded authorization header");
+    let decoded_credentials =
+        String::from_utf8(decoded_bytes).expect("Authorization header utf8 parsing");
     let mut credentials = decoded_credentials.splitn(2, ':');
-    let email = credentials.next().unwrap().to_string();
-    let password = Secret::new(credentials.next().unwrap().to_string());
+    let email = credentials
+        .next()
+        .expect("email in authorization header payload")
+        .to_string();
+    let password = Secret::new(
+        credentials
+            .next()
+            .expect("password in authorization payload")
+            .to_string(),
+    );
     let credentials = Credentials { email, password };
     let row = sqlx::query!(
         "SELECT id, password from users WHERE email = $1",

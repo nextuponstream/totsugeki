@@ -16,14 +16,15 @@ pub mod registration;
 pub mod test_utils;
 
 use crate::health_check::health_check;
-use crate::registration::registration;
 use crate::login::login;
+use crate::registration::registration;
 use axum::{
     routing::{get, post},
     Router,
 };
 use bracket::{new_bracket_from_players, report_result};
 use http::StatusCode;
+use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use std::net::SocketAddr;
@@ -133,4 +134,11 @@ pub async fn run() {
 
     tracing::info!("Serving {APP} on http://localhost:{PORT}");
     serve(app(pool), PORT).await;
+}
+
+/// Standard error message
+#[derive(Serialize, Deserialize)]
+pub struct ErrorResponse {
+    /// user-facing error message
+    pub message: String,
 }

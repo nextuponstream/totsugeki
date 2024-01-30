@@ -77,3 +77,39 @@ describe('login flow', () => {
     })
   })
 })
+
+it('weak password gets rejected', () => {
+  let username = `jean-${Date.now()}@bon.ch`
+  let weakPassword = '12341234'
+  cy.visit('/')
+
+  cy.get('[data-test-id=modal]').should('not.be.visible')
+  cy.contains('Register').click()
+  cy.get('[data-test-id=modal]').should('be.visible')
+  cy.contains('Register now!').click()
+
+  cy.url().should('contain', '/register')
+  cy.contains('Email')
+  cy.contains('Username')
+  cy.contains('Password')
+  cy.contains('Confirm password')
+
+  cy.intercept('POST', '/api/register').as('registration')
+
+  cy.get('[name=user-registration]').within(() => {
+    cy.get('[name=name]').type('jean')
+    // easy unique name ID https://stackoverflow.com/a/75183565
+    // this way, no need to reset the database
+    cy.get('[name=email]').type(username)
+    cy.get('[name=password]').type(weakPassword)
+    cy.get('[name=confirmPassword]').type(weakPassword)
+    cy.get('button').click()
+  })
+
+  cy.wait('@registration').then((interception) => {
+    assert.isNotNull(interception.response, 'response')
+    assert.equal(interception.response?.statusCode, 400)
+  })
+
+  cy.contains('Provided password is too weak')
+})

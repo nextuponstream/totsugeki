@@ -21,6 +21,8 @@ export default {
     required: 'Le champs est requis',
     passwordMissmatch: 'Les mots de passe ne correspondent pas',
     minimum: 'Le champ doit comporter au minimum {min} caractères',
+    weakPassword:
+      'Le mot de passe fourni est trop faible. Veuillez fournir un mot de passe fort.',
   },
   playerRegistrationForm: {
     title: 'Enregistrer un nouveau joueur',

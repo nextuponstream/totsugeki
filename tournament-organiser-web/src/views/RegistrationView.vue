@@ -1,28 +1,36 @@
 <template>
-  <Form
+  <form
     class="flex flex-col max-w-xs gap-3"
-    :on-submit="onSubmit"
-    :on-invalid-submit="onInvalidSubmit"
-    :validation-schema="schema"
-    autocomplete
+    autocomplete="new-password"
     name="user-registration"
+    @submit="submitForm"
   >
     <label>{{ $t('generic.email') }}</label>
-    <FormInput name="email" type="email" />
+    <FormInput v-model="email" name="email" type="email" v-bind="emailAttrs" />
     <label>{{ $t('generic.username') }}</label>
-    <FormInput name="name" type="text" />
+    <FormInput v-model="name" name="name" type="text" v-bind="nameAttrs" />
     <label>{{ $t('generic.password') }}</label>
-    <FormInput name="password" type="password" />
+    <FormInput
+      v-model="password"
+      name="password"
+      type="password"
+      v-bind="passwordAttrs"
+    />
     <label>{{ $t('generic.confirmPassword') }}</label>
-    <FormInput name="confirmPassword" type="password" />
+    <FormInput
+      v-model="confirmPassword"
+      name="confirmPassword"
+      type="password"
+      v-bind="confirmPasswordAttrs"
+    />
     <SubmitBtn>{{ $t('generic.register') }}</SubmitBtn>
-  </Form>
+  </form>
 </template>
 <script setup lang="ts">
 // TODO when an error is displayed, locale of errors does not update automatically on locale change
 // tried looking online but it's a bad interaction between vee-validate and i18n I guess.
 // However, it's not a big concern
-import { Form } from 'vee-validate'
+import { useForm } from 'vee-validate'
 import { ref, provide } from 'vue'
 import { object, string, ref as yupref } from 'yup'
 import { useI18n } from 'vue-i18n'
@@ -42,6 +50,15 @@ const schema = object({
     .required(() => t('error.required'))
     .oneOf([yupref('password')], () => t('error.passwordMissmatch')),
 })
+
+const { resetForm, defineField, handleSubmit, setFieldError } = useForm({
+  validationSchema: schema,
+})
+
+const [email, emailAttrs] = defineField('email')
+const [name, nameAttrs] = defineField('name')
+const [password, passwordAttrs] = defineField('password')
+const [confirmPassword, confirmPasswordAttrs] = defineField('confirmPassword')
 
 const formErrors = ref({})
 provide('formErrors', formErrors)
@@ -69,6 +86,13 @@ async function onSubmit(values: any) {
       router.push({
         name: 'create-bracket',
       })
+    } else if (response.status === 400) {
+      let errorMessage: { message: string } = await response.json()
+      if (errorMessage.message.includes('weak_password')) {
+        setFieldError('password', t('error.weakPassword'))
+      } else {
+        throw new Error('non-200 response for /api/login')
+      }
     } else {
       throw new Error('non-200 response for /api/report-result-for-bracket')
     }
@@ -76,4 +100,8 @@ async function onSubmit(values: any) {
     console.error(e)
   }
 }
+
+const submitForm = handleSubmit((values: any) => {
+  onSubmit(values)
+}, onInvalidSubmit)
 </script>

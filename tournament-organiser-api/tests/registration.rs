@@ -2,8 +2,8 @@
 
 use http::StatusCode;
 use sqlx::PgPool;
-use tournament_organiser_api::registration::ErrorResponse;
 use tournament_organiser_api::test_utils::{spawn_app, FormUserInput};
+use tournament_organiser_api::ErrorResponse;
 
 // Use sqlx macro to create (and teardown) database on the fly to enforce test
 // isolation
@@ -58,4 +58,28 @@ async fn registration_fails_when_another_user_already_exists(db: PgPool) {
         details.message,
         "Another user has already registered with provided mail"
     )
+}
+
+#[sqlx::test]
+async fn weak_password_ask_for_stronger_password(db: PgPool) {
+    let app = spawn_app(db).await;
+
+    let response = app
+        .register(&FormUserInput {
+            name: "jean".into(),
+            email: "jean@bon.ch".into(),
+            password: "weakpw".into(),
+        })
+        .await;
+
+    let status = response.status();
+    assert_eq!(
+        status,
+        StatusCode::BAD_REQUEST,
+        "status: {status}, response: \"{}\"",
+        response.text().await.unwrap()
+    );
+
+    let json: ErrorResponse = response.json().await.unwrap();
+    assert!(json.message.contains("weak_password"));
 }

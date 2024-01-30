@@ -37,6 +37,7 @@ async fn login(db: PgPool) {
         response.text().await.unwrap()
     );
 }
+
 #[sqlx::test]
 async fn bad_login(db: PgPool) {
     let app = spawn_app(db).await;
