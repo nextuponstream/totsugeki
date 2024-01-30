@@ -22,6 +22,11 @@
         "ordinal": 3,
         "name": "created_at",
         "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "password",
+        "type_info": "Text"
       }
     ],
     "parameters": {
@@ -30,6 +35,7 @@
       ]
     },
     "nullable": [
+      false,
       false,
       false,
       false,
