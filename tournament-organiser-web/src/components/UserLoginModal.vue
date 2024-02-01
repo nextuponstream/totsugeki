@@ -80,6 +80,7 @@ async function onSubmit(values: any) {
         'Content-Type': 'application/json',
         Authorization: 'Basic ' + btoa(`${values.email}:${values.password}`),
       },
+      credentials: 'same-origin',
       body: JSON.stringify({ ...values }),
     })
     if (response.ok) {
@@ -90,6 +91,24 @@ async function onSubmit(values: any) {
       // })
     } else {
       throw new Error('non-200 response for /api/login')
+    }
+  } catch (e) {
+    console.error(e)
+  }
+
+  // TODO remove after assessing if can get info from using cookie
+  try {
+    let response = await fetch(`${import.meta.env.VITE_API_URL}/api/user`, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+    })
+    if (response.ok) {
+      console.info('get infos?')
+    } else {
+      throw new Error('non-200 response for /api/user')
     }
   } catch (e) {
     console.error(e)

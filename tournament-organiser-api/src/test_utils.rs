@@ -23,9 +23,15 @@ pub async fn spawn_app(db: PgPool) -> TestApp {
         .await
         .unwrap();
     let addr = listener.local_addr().unwrap();
+    let session_store = PostgresStore::new(db.clone());
+    session_store.migrate().await.unwrap();
+
+    let session_layer = SessionManagerLayer::new(session_store.clone())
+        .with_secure(false)
+        .with_expiry(Expiry::OnInactivity(Duration::hours(1)));
 
     tokio::spawn(async move {
-        axum::serve(listener, app(db).into_make_service())
+        axum::serve(listener, app(db).layer(session_layer).into_make_service())
             .await
             .unwrap();
     });

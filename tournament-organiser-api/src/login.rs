@@ -12,6 +12,7 @@ use secrecy::{ExposeSecret, Secret};
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPool;
 use totsugeki::player::Id as UserId;
+use tower_sessions::Session;
 use tracing::instrument;
 
 /// Credentials used by user
@@ -31,8 +32,12 @@ struct SuccessfulLogin {
 }
 
 /// `/login` endpoint
-#[instrument(name = "login", skip(pool))]
-pub(crate) async fn login(State(pool): State<PgPool>, request: Request<Body>) -> impl IntoResponse {
+#[instrument(name = "login", skip(pool, session, request))]
+pub(crate) async fn login(
+    State(pool): State<PgPool>,
+    session: Session,
+    request: Request<Body>,
+) -> impl IntoResponse {
     // NOTE tons of expectation. If someone uses the app differently than with
     // the webpage, then that's not an expected usecase and better crash to
     // understand why this user is doing it differently.
@@ -83,6 +88,8 @@ pub(crate) async fn login(State(pool): State<PgPool>, request: Request<Body>) ->
     ) else {
         return (StatusCode::UNAUTHORIZED).into_response();
     };
+    session.insert("user_id", user_id).await.unwrap();
+    session.save().await.unwrap();
     tracing::info!("successful login");
     (StatusCode::OK, Json(SuccessfulLogin { user_id })).into_response()
 }

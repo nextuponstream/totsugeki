@@ -14,10 +14,12 @@ pub mod health_check;
 pub mod login;
 pub mod registration;
 pub mod test_utils;
+pub mod user;
 
 use crate::health_check::health_check;
 use crate::login::login;
 use crate::registration::registration;
+use crate::user::profile;
 use axum::{
     routing::{get, post},
     Router,
@@ -28,11 +30,15 @@ use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use std::net::SocketAddr;
+use time::Duration;
 use tokio::net::TcpListener;
+use tokio::{signal, task::AbortHandle};
 use tower_http::{
     services::{ServeDir, ServeFile},
     trace::TraceLayer,
 };
+use tower_sessions::{session_store::ExpiredDeletion, Expiry, Session, SessionManagerLayer};
+use tower_sessions_sqlx_store::PostgresStore;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 /// Name of the app
@@ -49,6 +55,7 @@ fn api(pool: Pool<Postgres>) -> Router {
         .route("/health_check", get(health_check))
         .route("/register", post(registration))
         .route("/login", post(login))
+        .route("/user", get(profile))
         .route("/bracket-from-players", post(new_bracket_from_players))
         .route("/report-result-for-bracket", post(report_result))
         .fallback_service(get(|| async { (StatusCode::NOT_FOUND, "Not found") }))
@@ -69,7 +76,6 @@ pub fn app(pool: Pool<Postgres>) -> Router {
     let spa = ServeDir::new(web_build_path.clone())
         // .not_found_service will throw 404, which makes cypress test fail
         .fallback(ServeFile::new(format!("{web_build_path}/index.html")));
-
     Router::new()
         .nest("/api", api(pool))
         .nest_service("/dist", spa.clone())
@@ -130,9 +136,21 @@ pub async fn run() {
         .connect(&db_url)
         .await
         .expect("database connection pool");
+    let session_store = PostgresStore::new(pool.clone());
+    session_store.migrate().await.unwrap();
+
+    let deletion_task = tokio::task::spawn(
+        session_store
+            .clone()
+            .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
+    );
+
+    let session_layer = SessionManagerLayer::new(session_store)
+        .with_secure(false)
+        .with_expiry(Expiry::OnInactivity(Duration::seconds(10)));
 
     tracing::info!("Serving {APP} on http://localhost:{PORT}");
-    serve(app(pool), PORT).await;
+    serve(app(pool).layer(session_layer), PORT).await;
 }
 
 /// Standard error message
