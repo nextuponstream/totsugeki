@@ -23,16 +23,12 @@ use axum::{
     Router,
 };
 use bracket::{new_bracket_from_players, report_result};
-use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use std::net::SocketAddr;
-use tower_http::cors::CorsLayer;
-use tower_http::{
-    services::{ServeDir, ServeFile},
-    trace::TraceLayer,
-};
+use tokio::net::TcpListener;
+use tower_http::{services::ServeDir, trace::TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 /// Name of the app
@@ -51,7 +47,7 @@ fn api(pool: Pool<Postgres>) -> Router {
         .route("/login", post(login))
         .route("/bracket-from-players", post(new_bracket_from_players))
         .route("/report-result-for-bracket", post(report_result))
-        .fallback_service(get(|| async { (StatusCode::NOT_FOUND, "Not found") }))
+        // .fallback_service(get(|| async { (StatusCode::NOT_FOUND, "Not found") }))
         .with_state(pool)
 }
 
@@ -66,22 +62,18 @@ pub fn app(pool: Pool<Postgres>) -> Router {
         }
     };
 
-    let spa = ServeDir::new(web_build_path.clone())
-        // .not_found_service will throw 404, which makes cypress test fail
-        .fallback(ServeFile::new(format!("{web_build_path}/index.html")));
+    let spa = ServeDir::new(web_build_path.clone());
+    // .not_found_service will throw 404, which makes cypress test fail
+    // .fallback(ServeFile::new(format!("{web_build_path}/index.html")));
 
     Router::new()
         .nest("/api", api(pool))
         .nest_service("/dist", spa.clone())
         // Show vue app
         .fallback_service(spa)
-        // CORS after route declaration https://github.com/tokio-rs/axum/issues/1330#issue-1351827022
-        // this allows npm run dev from localhost:5173 to work with api at
-        // localhost:3000
-        .layer(
-            // FIXME remove after end of development
-            CorsLayer::very_permissive(),
-        )
+    // CORS after route declaration https://github.com/tokio-rs/axum/issues/1330#issue-1351827022
+    // this allows npm run dev from localhost:5173 to work with api at
+    // localhost:3000
 }
 
 /// Serve tournament organiser application. Listening address is:
@@ -92,11 +84,14 @@ async fn serve(app: Router, port: u16) {
         Ok(_) => SocketAddr::from(([0, 0, 0, 0], port)),
         Err(_) => SocketAddr::from(([127, 0, 0, 1], port)),
     };
+    let listener = TcpListener::bind(addr).await.expect("address to listen to");
     tracing::debug!("listening on {}", addr);
-    axum::Server::bind(&addr)
-        .serve(app.layer(TraceLayer::new_for_http()).into_make_service())
-        .await
-        .expect("running http server");
+    axum::serve(
+        listener,
+        app.layer(TraceLayer::new_for_http()).into_make_service(),
+    )
+    .await
+    .expect("running http server");
 }
 
 /// Run totsugeki application on `PORT`. Set up tracing and database connection

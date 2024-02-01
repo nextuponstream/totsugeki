@@ -12,20 +12,20 @@ pub struct TestApp {
 use super::*;
 use reqwest::{Client, Response};
 use serde::Serialize;
-use std::net::TcpListener;
+use tokio::net::TcpListener;
 /// Returns address to connect to new application (with random available port)
 ///
 /// Example: `http://0.0.0.0:43222`
 #[must_use]
 #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
 pub async fn spawn_app(db: PgPool) -> TestApp {
-    let listener = TcpListener::bind("0.0.0.0:0".parse::<SocketAddr>().unwrap()).unwrap();
+    let listener = TcpListener::bind("0.0.0.0:0".parse::<SocketAddr>().unwrap())
+        .await
+        .unwrap();
     let addr = listener.local_addr().unwrap();
 
     tokio::spawn(async move {
-        axum::Server::from_tcp(listener)
-            .unwrap()
-            .serve(app(db).into_make_service())
+        axum::serve(listener, app(db).into_make_service())
             .await
             .unwrap();
     });

@@ -1,6 +1,6 @@
 //! registration tests
 
-use http::StatusCode;
+use reqwest::StatusCode;
 use sqlx::PgPool;
 use tournament_organiser_api::test_utils::{spawn_app, FormUserInput};
 use tournament_organiser_api::ErrorResponse;

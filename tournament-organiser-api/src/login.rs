@@ -30,7 +30,7 @@ struct SuccessfulLogin {
     user_id: UserId,
 }
 
-/// `/register` endpoint for health check
+/// `/login` endpoint
 #[instrument(name = "login", skip(pool))]
 pub(crate) async fn login(State(pool): State<PgPool>, request: Request<Body>) -> impl IntoResponse {
     // NOTE tons of expectation. If someone uses the app differently than with

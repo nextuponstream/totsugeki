@@ -1,6 +1,6 @@
 //! tests/health_check.rs
-use http::StatusCode;
 use reqwest::Client;
+use reqwest::StatusCode;
 use sqlx::PgPool;
 use tournament_organiser_api::{health_check::HealthCheck, test_utils::spawn_app};
 
