@@ -71,7 +71,7 @@ pub(crate) async fn login(State(pool): State<PgPool>, request: Request<Body>) ->
     .expect("potential user");
     let (user_id, password) = match row {
         Some(r) => (r.id, r.password),
-        None => todo!(),
+        None => return (StatusCode::NOT_FOUND).into_response(),
     };
     // FIXME use fixed params with new constructor rather than rely on defaults
     // that may change

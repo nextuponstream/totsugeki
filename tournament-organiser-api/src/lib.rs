@@ -23,12 +23,16 @@ use axum::{
     Router,
 };
 use bracket::{new_bracket_from_players, report_result};
+use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
-use tower_http::{services::ServeDir, trace::TraceLayer};
+use tower_http::{
+    services::{ServeDir, ServeFile},
+    trace::TraceLayer,
+};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 /// Name of the app
@@ -47,7 +51,7 @@ fn api(pool: Pool<Postgres>) -> Router {
         .route("/login", post(login))
         .route("/bracket-from-players", post(new_bracket_from_players))
         .route("/report-result-for-bracket", post(report_result))
-        // .fallback_service(get(|| async { (StatusCode::NOT_FOUND, "Not found") }))
+        .fallback_service(get(|| async { (StatusCode::NOT_FOUND, "Not found") }))
         .with_state(pool)
 }
 
@@ -62,9 +66,9 @@ pub fn app(pool: Pool<Postgres>) -> Router {
         }
     };
 
-    let spa = ServeDir::new(web_build_path.clone());
-    // .not_found_service will throw 404, which makes cypress test fail
-    // .fallback(ServeFile::new(format!("{web_build_path}/index.html")));
+    let spa = ServeDir::new(web_build_path.clone())
+        // .not_found_service will throw 404, which makes cypress test fail
+        .fallback(ServeFile::new(format!("{web_build_path}/index.html")));
 
     Router::new()
         .nest("/api", api(pool))
