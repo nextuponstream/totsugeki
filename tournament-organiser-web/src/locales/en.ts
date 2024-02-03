@@ -15,6 +15,8 @@ export default {
     password: 'Password',
     confirmPassword: 'Confirm password',
     register: 'Register',
+    profile: 'Profile',
+    logout: 'Logout',
   },
   error: {
     invalidEmail: 'This field must be a valid email',

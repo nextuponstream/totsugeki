@@ -33,7 +33,7 @@ pub struct FormInput {
 #[derive(sqlx::FromRow)]
 // reason = will be used later
 #[allow(dead_code)]
-struct User {
+pub(crate) struct User {
     /// Id of user
     pub id: Id,
     /// user name

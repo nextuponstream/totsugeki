@@ -67,6 +67,7 @@ function onInvalidSubmit({ values, errors, results }: any) {
   formErrors.value = { ...errors }
   console.error('invalid form data')
 }
+
 /**
  * @param values validated form data
  */
@@ -84,7 +85,7 @@ async function onSubmit(values: any) {
     if (response.ok) {
       console.info('successful login')
       router.push({
-        name: 'create-bracket',
+        name: 'createBracket',
       })
     } else if (response.status === 400) {
       let errorMessage: { message: string } = await response.json()

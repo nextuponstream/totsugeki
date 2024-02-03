@@ -19,31 +19,78 @@
       <NavLink to="/about" data-test-id="about">
         {{ $t('generic.about') }}
       </NavLink>
-      <NavLink data-test-id="register" @click="showRegistrationModal">
+      <NavLink v-if="isLogged" to="/user/dashboard">{{
+        $t('generic.profile')
+      }}</NavLink>
+      <NavLink v-if="isLogged" @click="logout">{{
+        $t('generic.logout')
+      }}</NavLink>
+      <NavLink v-else data-test-id="register" @click="showRegistrationModal">
         {{ $t('generic.registerLogin') }}
         <i class="pi pi-user" />
       </NavLink>
     </div>
   </div>
-  <UserLoginModal v-model="registrationModal" />
+  <UserLoginModal v-model="registrationModal" @login="login" />
 </template>
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import NavLink from './NavLink.vue'
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import UserLoginModal from './UserLoginModal.vue'
+import router from '@/router'
 
 const supportedLocales = ['en', 'fr']
 
 const { locale } = useI18n({})
 const registrationModal = ref(false)
 
+const isLogged = ref(false)
+
+onMounted(() => {
+  refresh()
+})
+
+function refresh() {
+  let userId = localStorage.getItem('user_id')
+  isLogged.value = userId !== null
+}
+
 function changeLocale(value: any) {
   locale.value = value.target.value
 }
 
 function showRegistrationModal() {
-  console.debug('TODO show')
   registrationModal.value = true
+}
+
+function login() {
+  registrationModal.value = false
+  refresh()
+}
+
+async function logout() {
+  try {
+    let response = await fetch(`${import.meta.env.VITE_API_URL}/api/logout`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      credentials: 'same-origin',
+    })
+    if (response.ok) {
+      console.info('successful logout')
+      localStorage.removeItem('user_id')
+      refresh()
+      router.push({
+        name: 'createBracket',
+      })
+    } else {
+      throw new Error('non-200 response for /api/logout')
+    }
+  } catch (e) {
+    console.error(e)
+  }
 }
 </script>

@@ -5,8 +5,9 @@
       :type="type"
       :placeholder="placeholder"
       :value="value"
-      :class="validClasses"
+      :class="inputClasses"
       class="p-2 rounded-md border-solid"
+      :disabled="disabled"
       v-on="handlers"
     />
     <ErrorMessage :name="name" class="inputErrorMessage" />
@@ -34,6 +35,11 @@ const props = defineProps({
   placeholder: {
     type: String,
     default: '',
+    required: false,
+  },
+  disabled: {
+    type: Boolean,
+    default: false,
     required: false,
   },
 })
@@ -64,6 +70,18 @@ const validClasses = computed(() => {
 
   // NOTE outline-none is the blue border thingy when focusing
   return 'border border-gray-300 focus:ring focus:ring-indigo-300 outline-none focus:ring-opacity-50'
+})
+
+const disabledClasses = computed(() => {
+  if (props.disabled) {
+    return 'text-gray-500'
+  } else {
+    return ''
+  }
+})
+
+const inputClasses = computed(() => {
+  return `${disabledClasses.value} ${validClasses.value}`
 })
 // use `toRef` to create reactive references to `name` prop which is passed to `useField`
 // this is important because vee-validte needs to know if the field name changes

@@ -12,12 +12,14 @@
 mod bracket;
 pub mod health_check;
 pub mod login;
+pub mod logout;
 pub mod registration;
 pub mod test_utils;
 pub mod user;
 
 use crate::health_check::health_check;
 use crate::login::login;
+use crate::logout::logout;
 use crate::registration::registration;
 use crate::user::profile;
 use axum::{
@@ -32,12 +34,11 @@ use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use std::net::SocketAddr;
 use time::Duration;
 use tokio::net::TcpListener;
-use tokio::{signal, task::AbortHandle};
 use tower_http::{
     services::{ServeDir, ServeFile},
     trace::TraceLayer,
 };
-use tower_sessions::{session_store::ExpiredDeletion, Expiry, Session, SessionManagerLayer};
+use tower_sessions::{session_store::ExpiredDeletion, Expiry, SessionManagerLayer};
 use tower_sessions_sqlx_store::PostgresStore;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -55,6 +56,7 @@ fn api(pool: Pool<Postgres>) -> Router {
         .route("/health_check", get(health_check))
         .route("/register", post(registration))
         .route("/login", post(login))
+        .route("/logout", post(logout))
         .route("/user", get(profile))
         .route("/bracket-from-players", post(new_bracket_from_players))
         .route("/report-result-for-bracket", post(report_result))
@@ -137,9 +139,9 @@ pub async fn run() {
         .await
         .expect("database connection pool");
     let session_store = PostgresStore::new(pool.clone());
-    session_store.migrate().await.unwrap();
+    session_store.migrate().await.expect("session store");
 
-    let deletion_task = tokio::task::spawn(
+    let _deletion_task = tokio::task::spawn(
         session_store
             .clone()
             .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
@@ -147,7 +149,7 @@ pub async fn run() {
 
     let session_layer = SessionManagerLayer::new(session_store)
         .with_secure(false)
-        .with_expiry(Expiry::OnInactivity(Duration::seconds(10)));
+        .with_expiry(Expiry::OnInactivity(Duration::hours(1)));
 
     tracing::info!("Serving {APP} on http://localhost:{PORT}");
     serve(app(pool).layer(session_layer), PORT).await;

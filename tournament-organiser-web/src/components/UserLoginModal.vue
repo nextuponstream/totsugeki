@@ -49,7 +49,7 @@ const schema = object({
     .required(() => t('error.required'))
     .min(8, () => t('error.minimum', { min: 8 })),
 })
-const emits = defineEmits(['update:modelValue'])
+const emits = defineEmits(['update:modelValue', 'login'])
 
 const formErrors = ref({})
 provide('formErrors', formErrors)
@@ -85,30 +85,19 @@ async function onSubmit(values: any) {
     })
     if (response.ok) {
       console.info('successful login')
-      // TODO redirect to logged in view
-      // router.push({
-      //   name: 'create-bracket',
-      // })
+      if (response.body) {
+        let body = await response.json()
+        // store user ID and prefer logged in view from now on
+        localStorage.setItem('user_id', body.user_id)
+        router.push({
+          name: 'userDashboard',
+        })
+        emits('login')
+      } else {
+        throw new Error('expected json response')
+      }
     } else {
       throw new Error('non-200 response for /api/login')
-    }
-  } catch (e) {
-    console.error(e)
-  }
-
-  // TODO remove after assessing if can get info from using cookie
-  try {
-    let response = await fetch(`${import.meta.env.VITE_API_URL}/api/user`, {
-      method: 'GET',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-    })
-    if (response.ok) {
-      console.info('get infos?')
-    } else {
-      throw new Error('non-200 response for /api/user')
     }
   } catch (e) {
     console.error(e)

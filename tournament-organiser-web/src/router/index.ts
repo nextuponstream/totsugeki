@@ -6,7 +6,7 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'create-bracket',
+      name: 'createBracket',
       component: CreateBracket,
     },
     {
@@ -38,10 +38,27 @@ const router = createRouter({
       component: () => import('../views/RegistrationView.vue'),
     },
     {
+      path: '/user/dashboard',
+      name: 'userDashboard',
+      meta: { requiresAuth: true },
+      component: () => import('../views/UserDashboard.vue'),
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: '/404',
     },
   ],
+})
+
+router.beforeEach((to, from, next) => {
+  // TODO use pinia instead of localstorage
+  let userId = localStorage.getItem('user_id')
+  if (userId === null && to.meta.requiresAuth) {
+    console.warn('unauthenticated, redirecting to homepage...')
+    next({ name: 'createBracket' })
+  } else {
+    next()
+  }
 })
 
 export default router

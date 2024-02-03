@@ -88,8 +88,11 @@ pub(crate) async fn login(
     ) else {
         return (StatusCode::UNAUTHORIZED).into_response();
     };
-    session.insert("user_id", user_id).await.unwrap();
-    session.save().await.unwrap();
+    session
+        .insert("user_id", user_id)
+        .await
+        .expect("user_id key insert in session");
+    session.save().await.expect("updated session");
     tracing::info!("successful login");
     (StatusCode::OK, Json(SuccessfulLogin { user_id })).into_response()
 }

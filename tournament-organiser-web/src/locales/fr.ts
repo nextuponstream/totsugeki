@@ -15,6 +15,8 @@ export default {
     password: 'Mot de passe',
     confirmPassword: 'Confirmer le mot de passe',
     register: "S'inscrire",
+    profile: 'Profil',
+    logout: 'Déconnextion',
   },
   error: {
     invalidEmail: 'Email invalide',
