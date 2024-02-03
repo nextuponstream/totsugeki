@@ -168,6 +168,8 @@ jobs:
           cd tournament-organiser-api && \
           cargo install sqlx-cli --no-default-features --features rustls,postgres && \
           sqlx migrate run
+      - name: seeder
+        run: sudo -u postgres psql --dbname=toa < tournament-organiser-web/e2eSeeder.sql
       - uses: cypress-io/github-action@v5
         with:
           working-directory: tournament-organiser-web
