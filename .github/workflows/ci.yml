@@ -12,8 +12,8 @@ jobs:
       API_ADDR: localhost
       API_PORT: 3000
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/cache@v3
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/bin/
@@ -38,8 +38,8 @@ jobs:
       # will still look for database toa even when not defined in url
       DATABASE_URL: postgres://toa:toa@localhost
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/cache@v3
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/bin/
@@ -72,8 +72,8 @@ jobs:
       API_ADDR: localhost
       API_PORT: 3000
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/cache@v3
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/bin/
@@ -95,8 +95,8 @@ jobs:
       API_ADDR: localhost
       API_PORT: 3000
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/cache@v3
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/bin/
@@ -120,8 +120,8 @@ jobs:
       API_ADDR: localhost
       API_PORT: 3000
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/cache@v3
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/bin/
@@ -143,8 +143,8 @@ jobs:
       CYPRESS_BASE_URL: http://localhost:3000
       DATABASE_URL: postgres://toa:toa@localhost/toa
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/cache@v3
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/bin/
