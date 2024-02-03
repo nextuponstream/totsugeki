@@ -25,6 +25,7 @@ export default {
     minimum: 'Le champ doit comporter au minimum {min} caractères',
     weakPassword:
       'Le mot de passe fourni est trop faible. Veuillez fournir un mot de passe fort.',
+    unknownEmail: 'Email inconnu',
   },
   playerRegistrationForm: {
     title: 'Enregistrer un nouveau joueur',

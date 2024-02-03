@@ -25,6 +25,7 @@ export default {
     minimum: 'At least {min} characters are required',
     weakPassword:
       'Provided password is too weak. Please provide a stronger password',
+    unknownEmail: 'Unknown email',
   },
   playerRegistrationForm: {
     title: 'Register players',

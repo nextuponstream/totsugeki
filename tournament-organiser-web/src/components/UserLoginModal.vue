@@ -4,13 +4,12 @@
     :title="$t('loginModal.title')"
     @hide="hideModal"
   >
-    <Form
+    <form
       class="flex flex-col gap-2"
-      :on-invalid-submit="onInvalidSubmit"
-      :on-submit="onSubmit"
       :validation-schema="schema"
-      autocomplete
+      autocomplete="on"
       name="login"
+      @submit="submitForm"
     >
       <label>{{ $t('generic.email') }}</label>
       <FormInput name="email" type="email" />
@@ -23,12 +22,12 @@
         </BaseLink>
       </div>
       <SubmitBtn class="self-end" />
-    </Form>
+    </form>
   </BaseModal>
 </template>
 <script setup lang="ts">
 // NOTE submit button on the left for forms, right for modals (recommendation https://ux.stackexchange.com/a/13539)
-import { Form } from 'vee-validate'
+import { useForm } from 'vee-validate'
 import { ref, watchEffect, provide } from 'vue'
 import BaseModal from './ui/BaseModal.vue'
 import router from '@/router'
@@ -61,6 +60,13 @@ watchEffect(() => {
 function hideModal() {
   emits('update:modelValue', false)
 }
+
+const { resetForm, defineField, handleSubmit, setFieldError } = useForm({
+  validationSchema: schema,
+})
+
+const [email, emailAttrs] = defineField('email')
+const [password, passwordAttrs] = defineField('password')
 
 // TODO submit login to API
 function onInvalidSubmit({ values, errors, results }: any) {
@@ -96,6 +102,9 @@ async function onSubmit(values: any) {
       } else {
         throw new Error('expected json response')
       }
+    } else if (response.status === 404) {
+      console.warn('unknown email')
+      setFieldError('email', t('error.unknownEmail'))
     } else {
       throw new Error('non-200 response for /api/login')
     }
@@ -103,4 +112,8 @@ async function onSubmit(values: any) {
     console.error(e)
   }
 }
+
+const submitForm = handleSubmit((values: any) => {
+  onSubmit(values)
+}, onInvalidSubmit)
 </script>
