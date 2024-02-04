@@ -1,5 +1,7 @@
 <template>
-  <h1>{{ $t('generic.profile') }}</h1>
+  <div class="text-2xl">
+    <h1>{{ $t('generic.profile') }}</h1>
+  </div>
   <form
     class="flex flex-col max-w-xs gap-3"
     autocomplete="new-password"
