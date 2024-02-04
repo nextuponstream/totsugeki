@@ -170,7 +170,7 @@ jobs:
           sqlx migrate run
       - name: seeder
         run: sudo -u postgres psql --dbname=toa < tournament-organiser-web/e2eSeeder.sql
-      - uses: cypress-io/github-action@v5
+      - uses: cypress-io/github-action@v6
         with:
           working-directory: tournament-organiser-web
           install: true
