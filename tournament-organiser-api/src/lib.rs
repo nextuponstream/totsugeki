@@ -123,6 +123,7 @@ pub async fn run() {
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
+    tracing::debug!("setting up database...");
     let db_url = if let Ok(url) = std::env::var("DATABASE_URL") {
         url
     } else {
@@ -133,11 +134,24 @@ pub async fn run() {
 
         format!("postgres://{db_username}:{db_password}@localhost/{db_name}")
     };
-    let pool = PgPoolOptions::new()
+    // FIXME make db url connection optionnal, otherwise first time deploy
+    // might be painful (like not provisionning right away a db deletes the
+    // app from the hosting site for reason because it's stuck in crash loop)
+    let pool = match PgPoolOptions::new()
         .max_connections(5)
         .connect(&db_url)
         .await
-        .expect("database connection pool");
+    {
+        Ok(p) => p,
+        Err(e) => {
+            tracing::error!("Database is unreachable: {e}");
+            panic!("Database is unreachable: {e}");
+        }
+    };
+
+    // If you want to test if any migrations were run, try to login and see if
+    // any panic were logged
+
     let session_store = PostgresStore::new(pool.clone());
     session_store.migrate().await.expect("session store");
 
@@ -151,8 +165,14 @@ pub async fn run() {
         .with_secure(false)
         .with_expiry(Expiry::OnInactivity(Duration::hours(1)));
 
-    tracing::info!("Serving {APP} on http://localhost:{PORT}");
-    serve(app(pool).layer(session_layer), PORT).await;
+    let port = if let Ok(port) = std::env::var("PORT") {
+        port.parse().expect("port")
+    } else {
+        tracing::warn!("PORT not set or error, defaulting to {PORT}");
+        PORT
+    };
+    tracing::info!("Serving {APP} on http://localhost:{port}");
+    serve(app(pool).layer(session_layer), port).await;
 }
 
 /// Standard error message

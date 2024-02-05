@@ -8,11 +8,14 @@
 # build rust binary
 # alpine and slim-bullseye does not work
 FROM rust:1.73.0-bullseye as builder
+ENV SQLX_OFFLINE=true
 COPY . .
 RUN cargo build --release --package tournament-organiser-api 
 
 # ---
 FROM node:18-alpine as static
+# TODO make it configurable
+ENV VITE_API_URL https://totsugekitest.fly.dev
 COPY . .
 RUN npm --prefix tournament-organiser-web install
 RUN npm --prefix tournament-organiser-web run build

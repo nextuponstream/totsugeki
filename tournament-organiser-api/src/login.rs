@@ -67,13 +67,21 @@ pub(crate) async fn login(
             .to_string(),
     );
     let credentials = Credentials { email, password };
-    let row = sqlx::query!(
+    // Only time we try to log a query error rather than expect so we can do a
+    // sanity check that migrations were ran
+    let row = match sqlx::query!(
         "SELECT id, password from users WHERE email = $1",
         credentials.email,
     )
     .fetch_optional(&pool)
     .await
-    .expect("potential user");
+    {
+        Ok(r) => r,
+        Err(e) => {
+            tracing::error!("user row: {e}");
+            panic!("user row: {e}");
+        }
+    };
     let (user_id, password) = match row {
         Some(r) => (r.id, r.password),
         None => return (StatusCode::NOT_FOUND).into_response(),
