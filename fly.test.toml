@@ -12,8 +12,10 @@ primary_region = 'cdg'
   BUILD_PATH_TOURNAMENT_ORGANISER_WEB = 'dist'
   DOCKER_BUILD = '1'
   PORT = '8080'
-  RUST_LOG = 'debug'
   VITE_API_URL = 'https://totsugekitest.fly.dev'
+  # TODO try fly secrets for env vars you may need to update while not needing
+  # to rebuild the entire app https://github.com/superfly/flyctl/issues/293
+  RUST_LOG = 'warn'
 
 [http_service]
   internal_port = 8080

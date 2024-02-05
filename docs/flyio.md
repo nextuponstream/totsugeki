@@ -74,7 +74,7 @@ View your app in the browser to see the result.
 For all subsequent updates, do:
 
 ```bash
-fly deploy
+fly deploy --config fly.test.toml
 ```
 
 ## Troubleshooting
