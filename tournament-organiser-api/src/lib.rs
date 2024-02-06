@@ -44,8 +44,9 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 /// Name of the app
 static APP: &str = "tournament organiser application";
-/// Port to serve the app
-static PORT: u16 = 3000;
+/// Port to serve the app. By default, we set what flyio is expecting as
+// default listening port
+static PORT: u16 = 8080;
 
 // FIXME do not panic when submitting score for match with missing player
 

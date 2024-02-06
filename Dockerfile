@@ -3,7 +3,7 @@
 # docker build -t to-app .
 # TODO still 98mb send in docker build context...
 
-# docker run -d -p 3000:3000 to-app
+# docker run -d -p 8080:8080 to-app
 
 # build rust binary
 # alpine and slim-bullseye does not work

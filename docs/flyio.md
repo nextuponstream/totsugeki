@@ -31,7 +31,7 @@ fly launch -e BUILD_PATH_TOURNAMENT_ORGANISER_WEB=dist -e DOCKER_BUILD=1 \
 For test, edit settings with
 
 * name: totsugekitest
-* port: 3000:
+* port: 8080:
 * memory: 256MB
 * postgres: development
 

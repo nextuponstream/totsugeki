@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       API_ADDR: localhost
-      API_PORT: 3000
+      API_PORT: 8080
     steps:
       - uses: actions/checkout@v4
       - uses: actions/cache@v4
@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       API_ADDR: localhost
-      API_PORT: 3000
+      API_PORT: 8080
       # will still look for database toa even when not defined in url
       DATABASE_URL: postgres://toa:toa@localhost
     steps:
@@ -70,7 +70,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       API_ADDR: localhost
-      API_PORT: 3000
+      API_PORT: 8080
     steps:
       - uses: actions/checkout@v4
       - uses: actions/cache@v4
@@ -93,7 +93,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       API_ADDR: localhost
-      API_PORT: 3000
+      API_PORT: 8080
     steps:
       - uses: actions/checkout@v4
       - uses: actions/cache@v4
@@ -118,7 +118,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       API_ADDR: localhost
-      API_PORT: 3000
+      API_PORT: 8080
     steps:
       - uses: actions/checkout@v4
       - uses: actions/cache@v4
@@ -140,7 +140,7 @@ jobs:
     # rust, node and npm are installed https://github.com/actions/runner-images/blob/main/images/linux/Ubuntu2204-Readme.md#rust-tools
     runs-on: ubuntu-latest
     env:
-      CYPRESS_BASE_URL: http://localhost:3000
+      CYPRESS_BASE_URL: http://localhost:8080
       DATABASE_URL: postgres://toa:toa@localhost/toa
     steps:
       - uses: actions/checkout@v4
@@ -176,7 +176,7 @@ jobs:
           install: true
           build: npm run build:ci 
           start: cargo run --package tournament-organiser-api --release
-          wait-on: 'http://localhost:3000'
+          wait-on: 'http://localhost:8080'
           wait-on-timeout: 30
           browser: chrome
       - uses: actions/upload-artifact@v3
