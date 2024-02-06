@@ -68,7 +68,6 @@ const { resetForm, defineField, handleSubmit, setFieldError } = useForm({
 const [email, emailAttrs] = defineField('email')
 const [password, passwordAttrs] = defineField('password')
 
-// TODO submit login to API
 function onInvalidSubmit({ values, errors, results }: any) {
   formErrors.value = { ...errors }
   console.error('invalid form data')
@@ -106,9 +105,11 @@ async function onSubmit(values: any) {
       console.warn('unknown email')
       setFieldError('email', t('error.unknownEmail'))
     } else {
+      setFieldError('email', t('error.communication'))
       throw new Error('non-200 response for /api/login')
     }
   } catch (e) {
+    setFieldError('email', t('error.communication'))
     console.error(e)
   }
 }

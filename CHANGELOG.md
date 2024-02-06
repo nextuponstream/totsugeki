@@ -1,8 +1,8 @@
 # Changelog
 
-# v0.2.0 - XX.XX.XXXX
+# v0.1.2 - XX.XX.XXXX
 
-* Add signup and authentication
+* Add signup and authentication with mail confirmation
 
 # v0.1.1 - 15.01.2024
 

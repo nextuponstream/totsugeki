@@ -25,6 +25,10 @@
       :disabled="true"
     />
   </form>
+  <div class="text-2xl">
+    <h1>{{ $t('user.dashboard.deleteAccount') }}</h1>
+  </div>
+  <OtherBtn>{{ $t('user.dashboard.deleteMyAccount') }}</OtherBtn>
 </template>
 <script setup lang="ts">
 import { onMounted, provide, ref } from 'vue'

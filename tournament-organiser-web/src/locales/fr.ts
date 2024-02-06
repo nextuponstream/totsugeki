@@ -17,6 +17,7 @@ export default {
     register: "S'inscrire",
     profile: 'Profil',
     logout: 'Déconnextion',
+    delete: 'Supprimer',
   },
   error: {
     invalidEmail: 'Email invalide',
@@ -26,6 +27,8 @@ export default {
     weakPassword:
       'Le mot de passe fourni est trop faible. Veuillez fournir un mot de passe fort.',
     unknownEmail: 'Email inconnu',
+    communication:
+      'Une erreur de communication est survenue. Veuillez faire une nouvelle tentative',
   },
   playerRegistrationForm: {
     title: 'Enregistrer un nouveau joueur',
@@ -53,5 +56,10 @@ export default {
   },
   signup: {
     register: "S'inscrire",
+  },
+  user: {
+    dashboard: {
+      deleteAccount: 'Supprimer le compte',
+    },
   },
 }

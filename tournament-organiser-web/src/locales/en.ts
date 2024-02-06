@@ -17,6 +17,7 @@ export default {
     register: 'Register',
     profile: 'Profile',
     logout: 'Logout',
+    delete: 'Delete',
   },
   error: {
     invalidEmail: 'This field must be a valid email',
@@ -26,6 +27,7 @@ export default {
     weakPassword:
       'Provided password is too weak. Please provide a stronger password',
     unknownEmail: 'Unknown email',
+    communication: 'An internal error happened. Please try again.',
   },
   playerRegistrationForm: {
     title: 'Register players',
@@ -50,5 +52,11 @@ export default {
     title: 'Login',
     text1: "Don't have an account yet?",
     text2: 'Register now!',
+  },
+  user: {
+    dashboard: {
+      deleteAccount: 'Supprimer le compte',
+      deleteMyAccount: 'Supprimer mon compte',
+    },
   },
 }
