@@ -14,12 +14,6 @@ Sign in, enter your credit card info, yadda yadda
 fly auth signup
 ```
 
-Configure your fly.toml
-
-```bash
-hx fly.toml
-```
-
 Create your dockerfile (see Dockerfile) and upload that dockerfile to flyio.
 Use that command only once:
 
@@ -34,6 +28,13 @@ For test, edit settings with
 * port: 8080:
 * memory: 256MB
 * postgres: development
+
+Launching will create a default `fly.toml`, save that configuration:
+
+```bash
+# test configuration
+mv fly.toml fly.test.toml
+```
 
 ## Migrations
 

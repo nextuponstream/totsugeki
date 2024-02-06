@@ -1,34 +1,42 @@
 <template>
-  <div class="text-2xl">
-    <h1>{{ $t('generic.profile') }}</h1>
+  <div class="flex flex-col gap-8">
+    <div>
+      <div class="text-2xl">
+        <h1>{{ $t('generic.profile') }}</h1>
+      </div>
+      <form
+        class="flex flex-col max-w-xs gap-3"
+        autocomplete="new-password"
+        name="user-registration"
+        @submit="submitForm"
+      >
+        <label>{{ $t('generic.email') }}</label>
+        <FormInput
+          v-model="email"
+          name="email"
+          type="email"
+          v-bind="emailAttrs"
+          :disabled="true"
+        />
+        <label>{{ $t('generic.username') }}</label>
+        <FormInput
+          v-model="name"
+          name="name"
+          type="text"
+          v-bind="nameAttrs"
+          :disabled="true"
+        />
+      </form>
+    </div>
+    <div class="flex flex-col max-w-xs gap-3">
+      <div class="text-2xl text-red-700">
+        <h1>{{ $t('user.dashboard.deleteAccount') }}</h1>
+      </div>
+      <DangerBtn @click="showDeleteModal">{{
+        $t('user.dashboard.deleteMyAccount')
+      }}</DangerBtn>
+    </div>
   </div>
-  <form
-    class="flex flex-col max-w-xs gap-3"
-    autocomplete="new-password"
-    name="user-registration"
-    @submit="submitForm"
-  >
-    <label>{{ $t('generic.email') }}</label>
-    <FormInput
-      v-model="email"
-      name="email"
-      type="email"
-      v-bind="emailAttrs"
-      :disabled="true"
-    />
-    <label>{{ $t('generic.username') }}</label>
-    <FormInput
-      v-model="name"
-      name="name"
-      type="text"
-      v-bind="nameAttrs"
-      :disabled="true"
-    />
-  </form>
-  <div class="text-2xl">
-    <h1>{{ $t('user.dashboard.deleteAccount') }}</h1>
-  </div>
-  <OtherBtn>{{ $t('user.dashboard.deleteMyAccount') }}</OtherBtn>
 </template>
 <script setup lang="ts">
 import { onMounted, provide, ref } from 'vue'
@@ -110,6 +118,10 @@ async function onSubmit(values: any) {
   //   } catch (e) {
   //     console.error(e)
   //   }
+}
+
+function showDeleteModal() {
+  // TODO
 }
 
 const submitForm = handleSubmit((values: any) => {

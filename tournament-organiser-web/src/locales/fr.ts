@@ -60,6 +60,7 @@ export default {
   user: {
     dashboard: {
       deleteAccount: 'Supprimer le compte',
+      deleteMyAccount: 'Supprimer mon compte',
     },
   },
 }

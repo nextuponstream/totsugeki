@@ -15,6 +15,7 @@ import BaseTooltip from './components/ui/BaseTooltip.vue'
 import CancelBtnVue from './components/ui/CancelBtn.vue'
 import OtherBtnVue from './components/ui/OtherBtn.vue'
 import BaseLink from './components/ui/BaseLink.vue'
+import DangerBtnVue from './components/ui/DangerBtn.vue'
 
 const app = createApp(App)
 
@@ -32,6 +33,7 @@ app.use(router)
 app.component('SubmitBtn', SubmitBtnVue)
 app.component('CancelBtn', CancelBtnVue)
 app.component('OtherBtn', OtherBtnVue)
+app.component('DangerBtn', DangerBtnVue)
 app.component('FormInput', FormInputVue)
 app.component('BaseTooltip', BaseTooltip)
 app.component('BaseLink', BaseLink)
