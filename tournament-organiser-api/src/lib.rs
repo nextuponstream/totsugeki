@@ -86,9 +86,6 @@ pub fn app(pool: Pool<Postgres>) -> Router {
         .nest_service("/dist", spa.clone())
         // Show vue app
         .fallback_service(spa)
-    // CORS after route declaration https://github.com/tokio-rs/axum/issues/1330#issue-1351827022
-    // this allows npm run dev from localhost:5173 to work with api at
-    // localhost:3000
 }
 
 /// Serve tournament organiser application. Listening address is:

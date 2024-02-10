@@ -4,8 +4,8 @@ use reqwest::StatusCode;
 use sqlx::PgPool;
 use tournament_organiser_api::{health_check::HealthCheck, test_utils::spawn_app};
 
-// zero to prod is ok but let's follow tokio testing material
-// https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/testing/src/main.rs#L133
+// NOTE: zero2prod uses tokio stuff but let's use sqlx to assert db state
+
 #[sqlx::test]
 async fn health_check(db: PgPool) {
     let app = spawn_app(db).await;
@@ -26,9 +26,6 @@ async fn health_check(db: PgPool) {
     let json_response: HealthCheck = response.json().await.unwrap();
     assert!(json_response.ok)
 }
-
-// TODO Add cypress test to test redirecting to 404 page when it's a unknown
-// url not nested in /api
 
 #[sqlx::test]
 async fn redirect_on_bad_api_url(db: PgPool) {
