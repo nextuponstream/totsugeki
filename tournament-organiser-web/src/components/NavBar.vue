@@ -19,12 +19,10 @@
       <NavLink to="/about" data-test-id="about">
         {{ $t('generic.about') }}
       </NavLink>
-      <NavLink v-if="isLogged" to="/user/dashboard">{{
+      <NavLink v-if="model" to="/user/dashboard">{{
         $t('generic.profile')
       }}</NavLink>
-      <NavLink v-if="isLogged" @click="logout">{{
-        $t('generic.logout')
-      }}</NavLink>
+      <NavLink v-if="model" @click="logout">{{ $t('generic.logout') }}</NavLink>
       <NavLink v-else data-test-id="register" @click="showRegistrationModal">
         {{ $t('generic.registerLogin') }}
         <i class="pi pi-user" />
@@ -45,7 +43,7 @@ const supportedLocales = ['en', 'fr']
 const { locale } = useI18n({})
 const registrationModal = ref(false)
 
-const isLogged = ref(false)
+const model = defineModel()
 
 onMounted(() => {
   refresh()
@@ -53,7 +51,7 @@ onMounted(() => {
 
 function refresh() {
   let userId = localStorage.getItem('user_id')
-  isLogged.value = userId !== null
+  model.value = userId !== null
 }
 
 function changeLocale(value: any) {

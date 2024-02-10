@@ -86,7 +86,7 @@ pub(crate) async fn login(
         Some(r) => (r.id, r.password),
         None => return (StatusCode::NOT_FOUND).into_response(),
     };
-    // FIXME use fixed params with new constructor rather than rely on defaults
+    // Not use fixed params with new constructor rather than rely on defaults
     // that may change
     let hasher = argon2::Argon2::default();
     let expected_hash = PasswordHash::new(&password).expect("password in PHC format");
@@ -96,6 +96,7 @@ pub(crate) async fn login(
     ) else {
         return (StatusCode::UNAUTHORIZED).into_response();
     };
+
     session
         .insert("user_id", user_id)
         .await

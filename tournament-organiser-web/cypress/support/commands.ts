@@ -12,7 +12,18 @@
 //
 // -- This is a parent command --
 Cypress.Commands.add('login', (email: string, password: string) => {
-  throw new Error('implement')
+  cy.visit('/')
+  cy.contains('Register / Login').click()
+  cy.get('[name=email]').type(email)
+  cy.get('[name=password]').type(password)
+
+  cy.intercept('POST', '/api/login').as('login')
+  cy.contains('Submit').click()
+  cy.wait('@login').then((interception) => {
+    assert.isNotNull(interception.response, 'response')
+    assert.equal(interception.response?.statusCode, 200)
+    // TODO body contains user_id
+  })
 })
 Cypress.Commands.add(
   'register',
@@ -62,7 +73,6 @@ Cypress.Commands.add('testUserLogin', () => {
     cy.wait('@login').then((interception) => {
       assert.isNotNull(interception.response, 'response')
       assert.equal(interception.response?.statusCode, 200)
-      // TODO body contains user_id
     })
   })
 })

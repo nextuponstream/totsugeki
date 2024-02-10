@@ -7,8 +7,7 @@
       <form
         class="flex flex-col max-w-xs gap-3"
         autocomplete="new-password"
-        name="user-registration"
-        @submit="submitForm"
+        name="user-edit"
       >
         <label>{{ $t('generic.email') }}</label>
         <FormInput
@@ -36,33 +35,66 @@
         $t('user.dashboard.deleteMyAccount')
       }}</DangerBtn>
     </div>
+    <BaseModal
+      v-model="showModal"
+      :title="$t('deleteModal.title')"
+      @hide="hideModal"
+    >
+      <form
+        class="flex flex-col gap-2"
+        :validation-schema="deleteSchema"
+        autocomplete="off"
+        name="login"
+        @submit="onDeleteAccountFormSubmit"
+      >
+        <div>{{ $t('deleteModal.confirmWithMail', { email }) }}</div>
+        <label>{{ $t('generic.email') }}</label>
+        <FormInput
+          name="deleteEmail"
+          type="email"
+          autocomplete="off"
+          v-bind="deleteEmailAttrs"
+        />
+        <DangerBtn class="self-end">{{
+          $t('user.dashboard.deleteAccount')
+        }}</DangerBtn>
+      </form>
+    </BaseModal>
   </div>
 </template>
 <script setup lang="ts">
 import { onMounted, provide, ref } from 'vue'
 import { useForm } from 'vee-validate'
-// import { useI18n } from 'vue-i18n'
-import { object, string, ref as yupref } from 'yup'
+import { useI18n } from 'vue-i18n'
+import { object, string } from 'yup'
+import router from '@/router'
 
-// const { t } = useI18n({})
-const schema = object({
-  //   email: string()
-  //     .email(() => t('error.invalidEmail'))
-  //     .required(() => t('error.required')),
-  //   name: string().required(() => t('error.required')),
+const emits = defineEmits(['logout'])
+
+const { t } = useI18n({})
+
+const editForm = useForm({})
+const deleteSchema = object({
+  deleteEmail: string()
+    .email(() => t('error.invalidEmail'))
+    .required(() => t('error.required')),
+})
+const deleteForm = useForm({
+  validationSchema: deleteSchema,
 })
 
-const { resetForm, defineField, handleSubmit, setFieldError } = useForm({
-  validationSchema: schema,
-})
+// User info form
+const [email, emailAttrs] = editForm.defineField('email')
+const [name, nameAttrs] = editForm.defineField('name')
 
-const [email, emailAttrs] = defineField('email')
-const [name, nameAttrs] = defineField('name')
+// deleteModal
+const [deleteEmail, deleteEmailAttrs] = deleteForm.defineField('deleteEmail')
 
-const formErrors = ref({})
-provide('formErrors', formErrors)
+const deleteFormErrors = ref({})
+provide('formErrors', deleteFormErrors)
 
-// TODO remove after assessing if can get info from using cookie
+const showModal = ref(false)
+
 onMounted(async () => {
   try {
     let response = await fetch(`${import.meta.env.VITE_API_URL}/api/user`, {
@@ -85,51 +117,42 @@ onMounted(async () => {
   }
 })
 
-/**
- * @param values validated form data
- */
-async function onSubmit(values: any) {
-  // Do nothing, uncomment if you actually want to edit user settings
-  //   formErrors.value = {}
-  //   try {
-  //     let response = await fetch(`${import.meta.env.VITE_API_URL}/api/register`, {
-  //       method: 'POST',
-  //       headers: {
-  //         Accept: 'application/json',
-  //         'Content-Type': 'application/json',
-  //       },
-  //       body: JSON.stringify({ ...values }),
-  //     })
-  //     if (response.ok) {
-  //       console.info('successful login')
-  //       router.push({
-  //         name: 'createBracket',
-  //       })
-  //     } else if (response.status === 400) {
-  //       let errorMessage: { message: string } = await response.json()
-  //       if (errorMessage.message.includes('weak_password')) {
-  //         setFieldError('password', t('error.weakPassword'))
-  //       } else {
-  //         throw new Error('non-200 response for /api/login')
-  //       }
-  //     } else {
-  //       throw new Error('non-200 response for /api/report-result-for-bracket')
-  //     }
-  //   } catch (e) {
-  //     console.error(e)
-  //   }
-}
-
 function showDeleteModal() {
-  // TODO
+  showModal.value = true
 }
 
-const submitForm = handleSubmit((values: any) => {
-  onSubmit(values)
-}, onInvalidSubmit)
+function hideModal() {
+  showModal.value = false
+}
 
-function onInvalidSubmit({ values, errors, results }: any) {
-  formErrors.value = { ...errors }
-  console.error('invalid form data')
+const onDeleteAccountFormSubmit = deleteForm.handleSubmit(
+  deleteAccountFormSubmit
+)
+
+async function deleteAccountFormSubmit(values: any) {
+  // special validation
+  if (values.deleteEmail !== email.value) {
+    console.error('missmatch')
+    console.debug(`${values.deleteEmail} !== ${email.value}`)
+    deleteForm.setFieldError('deleteEmail', t('deleteModal.matchError'))
+    return
+  }
+
+  // all ok
+  try {
+    let response = await fetch(`${import.meta.env.VITE_API_URL}/api/user`, {
+      method: 'DELETE',
+    })
+    if (response.ok) {
+      console.info('successful account deletion')
+      localStorage.removeItem('user_id')
+      emits('logout')
+      router.push({
+        name: 'createBracket',
+      })
+    }
+  } catch (e) {
+    console.error(e)
+  }
 }
 </script>

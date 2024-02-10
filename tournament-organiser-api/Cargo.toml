@@ -22,7 +22,7 @@ totsugeki-display = { path = "../totsugeki-display" }
 # that's life
 sqlx = { version = "0.7.3", features = [ "runtime-tokio", "tls-rustls", "postgres", "uuid", "chrono" ] }
 chrono = "0.4.31"
-reqwest = { version = "0.11.24", features = ["json"] }
+reqwest = { version = "0.11.24", features = ["json", "cookies"] }
 secrecy = { version = "0.8.0", features = ["serde"] }
 argon2 = { version = "0.5.3", features = ["std"] }
 rand = "0.8.5"

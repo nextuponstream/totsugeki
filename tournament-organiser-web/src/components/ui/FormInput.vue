@@ -8,6 +8,7 @@
       :class="inputClasses"
       class="p-2 rounded-md border-solid"
       :disabled="disabled"
+      :autocomplete="autocomplete"
       v-on="handlers"
     />
     <ErrorMessage :name="name" class="inputErrorMessage" />
@@ -40,6 +41,11 @@ const props = defineProps({
   disabled: {
     type: Boolean,
     default: false,
+    required: false,
+  },
+  autocomplete: {
+    type: String,
+    default: 'on',
     required: false,
   },
 })

@@ -10,7 +10,8 @@ use tournament_organiser_api::ErrorResponse;
 // https://docs.rs/sqlx/latest/sqlx/attr.test.html
 // https://github.com/launchbadge/sqlx/blob/31e541ac7a9c7d18ee2b3b91c58349e77eac28f7/examples/postgres/axum-social-with-tests/tests/post.rs#L17
 #[sqlx::test]
-async fn registration(db: PgPool) {
+async fn registration(db: PgPool) -> sqlx::Result<()> {
+    let mut conn = db.acquire().await?;
     let app = spawn_app(db).await;
 
     let response = app
@@ -27,6 +28,16 @@ async fn registration(db: PgPool) {
         "status: {status}, response: \"{}\"",
         response.text().await.unwrap()
     );
+
+    let records = sqlx::query("SELECT * FROM users")
+        // wtf dereference?
+        .fetch_all(&mut *conn)
+        .await
+        .unwrap();
+
+    assert_eq!(records.len(), 1);
+
+    Ok(())
 }
 
 #[sqlx::test]

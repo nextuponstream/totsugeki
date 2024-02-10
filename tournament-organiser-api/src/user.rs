@@ -17,7 +17,7 @@ pub struct Infos {
     pub name: String,
 }
 
-/// `/api/user/profile` to check user informations
+/// `/api/user/profile` GET to check user informations
 pub(crate) async fn profile(session: Session, State(pool): State<PgPool>) -> impl IntoResponse {
     let Some(Some(user_id)): Option<Option<Id>> = session
         .get("user_id")
@@ -41,4 +41,38 @@ pub(crate) async fn profile(session: Session, State(pool): State<PgPool>) -> imp
         name: u.name,
     })
     .into_response()
+}
+
+/// `/api/user` DELETE
+pub(crate) async fn delete_user(session: Session, State(pool): State<PgPool>) -> impl IntoResponse {
+    let Some(Some(user_id)): Option<Option<Id>> = session
+        .get("user_id")
+        .await
+        .expect("session store maybe value")
+    else {
+        tracing::warn!("missing session");
+        return (StatusCode::UNAUTHORIZED).into_response();
+    };
+
+    let Ok(r) = sqlx::query!("DELETE from users WHERE id = $1", user_id)
+        // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
+        .execute(&pool)
+        .await
+    else {
+        tracing::error!("User {} could not delete their account", user_id);
+        return (StatusCode::NOT_FOUND).into_response();
+    };
+
+    if r.rows_affected() != 1 {
+        #[allow(clippy::uninlined_format_args)]
+        let err_msg = format!(
+            "{} User deleted more than one user when deleting their account",
+            user_id
+        );
+        tracing::error!(err_msg);
+        unreachable!("{err_msg}")
+    }
+    session.delete().await.expect("deleted session");
+
+    (StatusCode::OK).into_response()
 }

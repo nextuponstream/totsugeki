@@ -63,4 +63,9 @@ export default {
       deleteMyAccount: 'Supprimer mon compte',
     },
   },
+  deleteModal: {
+    title: 'Supprimer le compte?',
+    confirmWithMail: 'Veuillez tapez {email} pour continuer.',
+    matchError: "L'email fourni n'est pas correspond pas à votre email",
+  },
 }

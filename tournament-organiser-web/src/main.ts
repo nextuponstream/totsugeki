@@ -16,6 +16,7 @@ import CancelBtnVue from './components/ui/CancelBtn.vue'
 import OtherBtnVue from './components/ui/OtherBtn.vue'
 import BaseLink from './components/ui/BaseLink.vue'
 import DangerBtnVue from './components/ui/DangerBtn.vue'
+import BaseModalVue from './components/ui/BaseModal.vue'
 
 const app = createApp(App)
 
@@ -37,5 +38,6 @@ app.component('DangerBtn', DangerBtnVue)
 app.component('FormInput', FormInputVue)
 app.component('BaseTooltip', BaseTooltip)
 app.component('BaseLink', BaseLink)
+app.component('BaseModal', BaseModalVue)
 
 app.mount('#app')

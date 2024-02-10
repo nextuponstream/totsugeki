@@ -74,10 +74,7 @@ pub(crate) async fn registration(
         zxcvbn(raw_password, &[&form_input.name, &form_input.email]).expect("password analysis");
     if let Some(feedback) = estimate.feedback() {
         if let Some(warning) = feedback.warning() {
-            tracing::warn!(
-                "user provided weak password with the following warning: {}",
-                warning
-            );
+            // NOTE: might contain password attempt if you log feedback
             return (
                 StatusCode::BAD_REQUEST,
                 Json(ErrorResponse {
@@ -88,10 +85,6 @@ pub(crate) async fn registration(
                 .into_response();
         }
 
-        tracing::warn!(
-            "user provided weak password with the following suggestions: {:?}",
-            feedback.suggestions()
-        );
         return (
             StatusCode::BAD_REQUEST,
             Json(ErrorResponse {

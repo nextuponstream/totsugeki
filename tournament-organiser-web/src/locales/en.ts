@@ -59,4 +59,9 @@ export default {
       deleteMyAccount: 'Delete my account',
     },
   },
+  deleteModal: {
+    title: 'Delete account?',
+    confirmWithMail: 'Please type {email} to continue.',
+    matchError: 'Email must match your email',
+  },
 }

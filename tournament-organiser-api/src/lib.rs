@@ -23,7 +23,7 @@ use crate::logout::logout;
 use crate::registration::registration;
 use crate::user::profile;
 use axum::{
-    routing::{get, post},
+    routing::{delete, get, post},
     Router,
 };
 use bracket::{new_bracket_from_players, report_result};
@@ -41,6 +41,7 @@ use tower_http::{
 use tower_sessions::{session_store::ExpiredDeletion, Expiry, SessionManagerLayer};
 use tower_sessions_sqlx_store::PostgresStore;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use user::delete_user;
 
 /// Name of the app
 static APP: &str = "tournament organiser application";
@@ -59,6 +60,7 @@ fn api(pool: Pool<Postgres>) -> Router {
         .route("/login", post(login))
         .route("/logout", post(logout))
         .route("/user", get(profile))
+        .route("/user", delete(delete_user))
         .route("/bracket-from-players", post(new_bracket_from_players))
         .route("/report-result-for-bracket", post(report_result))
         .fallback_service(get(|| async { (StatusCode::NOT_FOUND, "Not found") }))
