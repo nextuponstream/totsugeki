@@ -4,28 +4,7 @@
       <div class="text-2xl">
         <h1>{{ $t('generic.profile') }}</h1>
       </div>
-      <form
-        class="flex flex-col max-w-xs gap-3"
-        autocomplete="new-password"
-        name="user-edit"
-      >
-        <label>{{ $t('generic.email') }}</label>
-        <FormInput
-          v-model="email"
-          name="email"
-          type="email"
-          v-bind="emailAttrs"
-          :disabled="true"
-        />
-        <label>{{ $t('generic.username') }}</label>
-        <FormInput
-          v-model="name"
-          name="name"
-          type="text"
-          v-bind="nameAttrs"
-          :disabled="true"
-        />
-      </form>
+      <EditUser ref="editUser"></EditUser>
     </div>
     <div class="flex flex-col max-w-xs gap-3">
       <div class="text-2xl text-red-700">
@@ -47,7 +26,9 @@
         name="login"
         @submit="onDeleteAccountFormSubmit"
       >
-        <div>{{ $t('deleteModal.confirmWithMail', { email }) }}</div>
+        <div>
+          {{ $t('deleteModal.confirmWithMail', { email: infos.email }) }}
+        </div>
         <label>{{ $t('generic.email') }}</label>
         <FormInput
           name="deleteEmail"
@@ -63,17 +44,16 @@
   </div>
 </template>
 <script setup lang="ts">
-import { onMounted, provide, ref } from 'vue'
+import { onMounted, provide, reactive, ref, watch } from 'vue'
 import { useForm } from 'vee-validate'
 import { useI18n } from 'vue-i18n'
 import { object, string } from 'yup'
 import router from '@/router'
+import EditUser from '@/components/EditUser.vue'
 
 const emits = defineEmits(['logout'])
-
 const { t } = useI18n({})
-
-const editForm = useForm({})
+const editUser = ref<InstanceType<typeof EditUser> | null>(null)
 const deleteSchema = object({
   deleteEmail: string()
     .email(() => t('error.invalidEmail'))
@@ -82,10 +62,11 @@ const deleteSchema = object({
 const deleteForm = useForm({
   validationSchema: deleteSchema,
 })
-
-// User info form
-const [email, emailAttrs] = editForm.defineField('email')
-const [name, nameAttrs] = editForm.defineField('name')
+interface UserInfos {
+  email: string
+  name: string
+}
+const infos: UserInfos = reactive({ email: '', name: '' })
 
 // deleteModal
 const [deleteEmail, deleteEmailAttrs] = deleteForm.defineField('deleteEmail')
@@ -105,16 +86,20 @@ onMounted(async () => {
       },
     })
     if (response.ok) {
-      let infos = await response.json()
-      console.debug(JSON.stringify(infos))
-      name.value = infos.name
-      email.value = infos.email
+      let userInfos: { email: string; name: string } = await response.json()
+      console.debug(JSON.stringify(userInfos))
+      infos.email = userInfos.email
+      infos.name = userInfos.name
     } else {
       throw new Error('non-200 response for /api/user')
     }
   } catch (e) {
     console.error(e)
   }
+})
+watch(infos, (first, second) => {
+  console.debug('update edit form with', JSON.stringify(second))
+  editUser.value?.setValues(infos)
 })
 
 function showDeleteModal() {
@@ -131,9 +116,9 @@ const onDeleteAccountFormSubmit = deleteForm.handleSubmit(
 
 async function deleteAccountFormSubmit(values: any) {
   // special validation
-  if (values.deleteEmail !== email.value) {
+  if (values.deleteEmail !== infos.email) {
     console.error('missmatch')
-    console.debug(`${values.deleteEmail} !== ${email.value}`)
+    console.debug(`${values.deleteEmail} !== ${infos.email}`)
     deleteForm.setFieldError('deleteEmail', t('deleteModal.matchError'))
     return
   }
