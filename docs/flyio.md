@@ -80,7 +80,9 @@ fly deploy --config fly.test.toml
 
 ## Troubleshooting
 
+```txt
 WARN Failed to start remote builder heartbeat: failed building options: failed probing "personal": context deadline exceeded
 
 Error: failed to fetch an image or build from source: error connecting to docker: failed building options: failed probing "personal": context deadline exceeded
 ➜  totsugeki git:(59-signup) ✗ fly wireguard reset
+```

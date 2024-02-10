@@ -12,6 +12,7 @@ use totsugeki_display::loser_bracket::reorder as reorder_loser_bracket;
 use totsugeki_display::winner_bracket::lines as winner_bracket_lines;
 use totsugeki_display::winner_bracket::reorder as reorder_winner_bracket;
 use totsugeki_display::{from_participants, BoxElement, MinimalMatch};
+use tracing::instrument;
 
 /// List of players from which a bracket can be created
 #[derive(Deserialize)]
@@ -48,7 +49,7 @@ struct BracketDisplay {
 }
 
 /// List of players from which a bracket can be created
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct PlayerList {
     /// player names
     names: Vec<String>,
@@ -61,6 +62,7 @@ pub struct PlayerList {
 ///
 /// # Errors
 /// May return 500 error when bracket cannot be parsed
+#[instrument(name = "new_bracket")]
 pub async fn new_bracket_from_players(Json(player_list): Json<PlayerList>) -> impl IntoResponse {
     tracing::debug!("new bracket from players: {:?}", player_list.names);
     let mut bracket = Bracket::default();
@@ -133,7 +135,8 @@ pub async fn new_bracket_from_players(Json(player_list): Json<PlayerList>) -> im
         grand_finals_reset: gf_reset,
         bracket,
     };
-    tracing::debug!("updated bracket {:?}", bracket);
+    tracing::info!("new bracket {}", bracket.bracket.get_id());
+    tracing::debug!("new bracket {:?}", bracket);
     Ok(Json(bracket))
 }
 
@@ -148,6 +151,7 @@ pub async fn new_bracket_from_players(Json(player_list): Json<PlayerList>) -> im
 /// # Errors
 /// Error 500 if a user gets out of sync with the bracket in the database and
 /// the one displayed in the web page
+#[instrument(name = "report_result", skip(report))]
 pub async fn report_result(Json(report): Json<ReportResultInput>) -> impl IntoResponse {
     tracing::debug!("new reported result");
     let mut bracket = report.bracket;
@@ -192,9 +196,12 @@ pub async fn report_result(Json(report): Json<ReportResultInput>) -> impl IntoRe
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
     };
 
-    let Ok(lower_bracket_matches) = dev.partition_loser_bracket() else {
-        // TODO log error
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
+    let lower_bracket_matches = match dev.partition_loser_bracket() {
+        Ok(m) => m,
+        Err(e) => {
+            tracing::error!("{e:?}");
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
     };
     let mut lower_bracket_rounds: Vec<Vec<MinimalMatch>> = vec![];
     for r in lower_bracket_matches {
@@ -229,6 +236,7 @@ pub async fn report_result(Json(report): Json<ReportResultInput>) -> impl IntoRe
         grand_finals_reset: gf_reset,
         bracket,
     };
-    tracing::debug!("created bracket {:?}", bracket);
+    tracing::info!("updated bracket {}", bracket.bracket.get_id());
+    tracing::debug!("updated bracket {:?}", bracket);
     Ok(Json(bracket))
 }
