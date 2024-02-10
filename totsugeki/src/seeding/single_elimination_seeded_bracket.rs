@@ -118,9 +118,9 @@ mod tests {
             players.push(Player::new(format!("player{i}")));
         });
         let players_copy = players.clone();
-        let diego = players.get(0).expect("diego");
-        let pink = players.get(1).expect("pink");
-        let cute_cat = players.get(2).expect("cute_cat");
+        let diego = players.remove(0);
+        let pink = players.remove(0);
+        let cute_cat = players.remove(0);
 
         let players = Participants::try_from(players_copy).expect("players");
         let matches = get_balanced_round_matches_top_seed_favored(
@@ -169,10 +169,10 @@ mod tests {
             players.push(Player::new(format!("player{i}")));
         });
         let players_copy = players.clone();
-        let diego = players.get(0).expect("diego");
-        let pink = players.get(1).expect("pink");
-        let guy = players.get(2).expect("guy");
-        let cute_cat = players.get(3).expect("cute_cat");
+        let diego = players.remove(0);
+        let pink = players.remove(0);
+        let guy = players.remove(0);
+        let cute_cat = players.remove(0);
 
         let players = Participants::try_from(players_copy).expect("players");
         let matches = get_balanced_round_matches_top_seed_favored(
@@ -232,11 +232,11 @@ mod tests {
             players.push(Player::new(format!("player{i}")));
         });
         let players_copy = players.clone();
-        let diego = players.get(0).expect("diego");
-        let pink = players.get(1).expect("pink");
-        let average_player = players.get(2).expect("pink");
-        let guy = players.get(3).expect("guy");
-        let cute_cat = players.get(4).expect("cute_cat");
+        let diego = players.remove(0);
+        let pink = players.remove(0);
+        let average_player = players.remove(0);
+        let guy = players.remove(0);
+        let cute_cat = players.remove(0);
 
         let players = Participants::try_from(players_copy).expect("players");
         let matches = get_balanced_round_matches_top_seed_favored(
@@ -304,12 +304,12 @@ mod tests {
             players.push(Player::new(format!("player{i}")));
         });
         let players_copy = players.clone();
-        let diego = players.get(0).expect("diego");
-        let pink = players.get(1).expect("pink");
-        let pink_nemesis = players.get(2).expect("pink_nemesis");
-        let average_player = players.get(3).expect("pink");
-        let guy = players.get(4).expect("guy");
-        let cute_cat = players.get(5).expect("cute_cat");
+        let diego = players.remove(0);
+        let pink = players.remove(0);
+        let pink_nemesis = players.remove(0);
+        let average_player = players.remove(0);
+        let guy = players.remove(0);
+        let cute_cat = players.remove(0);
 
         let players = Participants::try_from(players_copy).expect("players");
         let matches = get_balanced_round_matches_top_seed_favored(
@@ -385,13 +385,13 @@ mod tests {
             players.push(Player::new(format!("player{i}")));
         });
         let players_copy = players.clone();
-        let diego = players.get(0).expect("diego");
-        let pink = players.get(1).expect("pink");
-        let pink_nemesis = players.get(2).expect("pink_nemesis");
-        let average_player = players.get(3).expect("pink");
-        let guy = players.get(4).expect("guy");
-        let fg_enjoyer = players.get(5).expect("fg_enjoyer");
-        let cute_cat = players.get(6).expect("cute_cat");
+        let diego = players.remove(0);
+        let pink = players.remove(0);
+        let pink_nemesis = players.remove(0);
+        let average_player = players.remove(0);
+        let guy = players.remove(0);
+        let fg_enjoyer = players.remove(0);
+        let cute_cat = players.remove(0);
 
         let players = Participants::try_from(players_copy).expect("players");
         let matches = get_balanced_round_matches_top_seed_favored(
@@ -479,14 +479,14 @@ mod tests {
             players.push(Player::new(format!("player{i}")));
         });
         let players_copy = players.clone();
-        let diego = players.get(0).expect("diego");
-        let pink = players.get(1).expect("pink");
-        let pink_nemesis = players.get(2).expect("pink_nemesis");
-        let big_body_enjoyer = players.get(3).expect("big_body_enjoyer");
-        let average_player = players.get(4).expect("pink");
-        let guy = players.get(5).expect("guy");
-        let fg_enjoyer = players.get(6).expect("fg_enjoyer");
-        let cute_cat = players.get(7).expect("cute_cat");
+        let diego = players.remove(0);
+        let pink = players.remove(0);
+        let pink_nemesis = players.remove(0);
+        let big_body_enjoyer = players.remove(0);
+        let average_player = players.remove(0);
+        let guy = players.remove(0);
+        let fg_enjoyer = players.remove(0);
+        let cute_cat = players.remove(0);
 
         let players = Participants::try_from(players_copy).expect("players");
         let matches = get_balanced_round_matches_top_seed_favored(

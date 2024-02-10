@@ -1,0 +1,31 @@
+# fly.toml app configuration file generated for totsugekitest on 2024-02-05T06:00:50+01:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'totsugekitest'
+primary_region = 'cdg'
+
+[build]
+
+[env]
+  BUILD_PATH_TOURNAMENT_ORGANISER_WEB = 'dist'
+  DOCKER_BUILD = '1'
+  PORT = '8080'
+  VITE_API_URL = 'https://totsugekitest.fly.dev'
+  # TODO try fly secrets for env vars you may need to update while not needing
+  # to rebuild the entire app https://github.com/superfly/flyctl/issues/293
+  RUST_LOG = 'warn'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[vm]]
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 256

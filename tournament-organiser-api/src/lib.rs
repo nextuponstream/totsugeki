@@ -1,217 +1,183 @@
 //! Bracket management and visualiser library for admin dashboard
-use axum::{response::IntoResponse, Json};
+#![deny(missing_docs)]
+#![deny(clippy::missing_docs_in_private_items)]
+#![deny(rustdoc::invalid_codeblock_attributes)]
+#![warn(rustdoc::bare_urls)]
+#![deny(rustdoc::broken_intra_doc_links)]
+#![warn(clippy::pedantic)]
+#![allow(clippy::unused_async)]
+#![warn(clippy::unwrap_used)]
+#![forbid(unsafe_code)]
+
+mod bracket;
+pub mod health_check;
+pub mod login;
+pub mod logout;
+pub mod registration;
+pub mod test_utils;
+pub mod user;
+
+use crate::health_check::health_check;
+use crate::login::login;
+use crate::logout::logout;
+use crate::registration::registration;
+use crate::user::profile;
+use axum::{
+    routing::{delete, get, post},
+    Router,
+};
+use bracket::{new_bracket_from_players, report_result};
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
-use totsugeki::bracket::Bracket;
-use totsugeki::{
-    bracket::double_elimination_variant::Variant as DoubleEliminationVariant,
-    player::Id as PlayerId,
+use sqlx::PgPool;
+use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
+use std::net::SocketAddr;
+use time::Duration;
+use tokio::net::TcpListener;
+use tower_http::{
+    services::{ServeDir, ServeFile},
+    trace::TraceLayer,
 };
-use totsugeki_display::loser_bracket::lines as loser_bracket_lines;
-use totsugeki_display::loser_bracket::reorder as reorder_loser_bracket;
-use totsugeki_display::winner_bracket::lines as winner_bracket_lines;
-use totsugeki_display::winner_bracket::reorder as reorder_winner_bracket;
-use totsugeki_display::{from_participants, BoxElement, MinimalMatch};
+use tower_sessions::{session_store::ExpiredDeletion, Expiry, SessionManagerLayer};
+use tower_sessions_sqlx_store::PostgresStore;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use user::delete_user;
+
+/// Name of the app
+static APP: &str = "tournament organiser application";
+/// Port to serve the app. By default, we set what flyio is expecting as
+// default listening port
+static PORT: u16 = 8080;
 
 // FIXME do not panic when submitting score for match with missing player
 
-/// Bracket to display
-#[derive(Serialize, Debug)]
-struct BracketDisplay {
-    /// Winner bracket matches and lines to draw
-    winner_bracket: Vec<Vec<MinimalMatch>>,
-    /// Lines to draw between winner bracket matches
-    winner_bracket_lines: Vec<Vec<BoxElement>>,
-    /// Loser bracket matches and lines to draw
-    loser_bracket: Vec<Vec<MinimalMatch>>,
-    /// Lines to draw between loser bracket matches
-    loser_bracket_lines: Vec<Vec<BoxElement>>,
-    /// Grand finals
-    grand_finals: MinimalMatch,
-    /// Grand finals reset
-    grand_finals_reset: MinimalMatch,
-    /// Bracket object to update
-    bracket: Bracket,
+/// Router for non-user facing endpoints. Web page makes requests to API
+/// (registration, updating bracket...)
+fn api(pool: Pool<Postgres>) -> Router {
+    Router::new()
+        .route("/health_check", get(health_check))
+        .route("/register", post(registration))
+        .route("/login", post(login))
+        .route("/logout", post(logout))
+        .route("/user", get(profile))
+        .route("/user", delete(delete_user))
+        .route("/bracket-from-players", post(new_bracket_from_players))
+        .route("/report-result-for-bracket", post(report_result))
+        .fallback_service(get(|| async { (StatusCode::NOT_FOUND, "Not found") }))
+        .with_state(pool)
 }
 
-/// List of players from which a bracket can be created
-#[derive(Deserialize)]
-pub struct PlayerList {
-    /// player names
-    names: Vec<String>,
-}
-
-/// Return a newly instanciated bracket from ordered (=seeded) player names
-pub async fn new_bracket_from_players(Json(player_list): Json<PlayerList>) -> impl IntoResponse {
-    tracing::debug!("new bracket from players: {:?}", player_list.names);
-    let mut bracket = Bracket::default();
-    for name in player_list.names {
-        let Ok(tmp) = bracket.add_participant(name.as_str()) else {
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        };
-        bracket = tmp;
-    }
-    let participants = bracket.get_participants();
-    let dev: DoubleEliminationVariant = bracket.clone().try_into().expect("partition");
-
-    // TODO test if tracing shows from which methods it was called
-    let wb_rounds_matches = match dev.partition_winner_bracket() {
-        Ok(wb) => wb,
+/// Serve web part of the application, using `tournament-organiser-web` build
+/// For development, Cors rule are relaxed
+pub fn app(pool: Pool<Postgres>) -> Router {
+    let web_build_path = match std::env::var("BUILD_PATH_TOURNAMENT_ORGANISER_WEB") {
+        Ok(s) => s,
         Err(e) => {
-            tracing::error!("{e:?}");
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            tracing::info!("BUILD_PATH_TOURNAMENT_ORGANISER_WEB could not be parsed. Defaulting to relative path: {e}");
+            "../tournament-organiser-web/dist".into()
         }
     };
-    let mut wb_rounds = vec![];
-    for r in wb_rounds_matches {
-        let round = r
-            .iter()
-            .map(|m| from_participants(m, &participants))
-            .collect();
-        wb_rounds.push(round);
-    }
 
-    reorder_winner_bracket(&mut wb_rounds);
-    let Some(winner_bracket_lines) = winner_bracket_lines(&wb_rounds) else {
-        tracing::error!("winner bracket connecting lines");
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
-    };
-
-    let Ok(lb_rounds_matches) = dev.partition_loser_bracket() else {
-        // TODO log error
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
-    };
-    let mut lb_rounds: Vec<Vec<MinimalMatch>> = vec![];
-    for r in lb_rounds_matches {
-        let round = r
-            .iter()
-            .map(|m| from_participants(m, &participants))
-            .collect();
-        lb_rounds.push(round);
-    }
-    reorder_loser_bracket(&mut lb_rounds);
-    let Some(loser_bracket_lines) = loser_bracket_lines(lb_rounds.clone()) else {
-        tracing::error!("loser bracket connecting lines");
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
-    };
-
-    let (gf, gf_reset) = match dev.grand_finals_and_reset() {
-        Ok((gf, bracket_reset)) => (gf, bracket_reset),
-        Err(e) => {
-            tracing::error!("{e:?}");
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
-    let gf = from_participants(&gf, &participants);
-    let gf_reset = from_participants(&gf_reset, &participants);
-
-    let bracket = BracketDisplay {
-        winner_bracket: wb_rounds,
-        winner_bracket_lines,
-        loser_bracket: lb_rounds,
-        loser_bracket_lines,
-        grand_finals: gf,
-        grand_finals_reset: gf_reset,
-        bracket,
-    };
-    tracing::debug!("updated bracket {:?}", bracket);
-    Ok(Json(bracket))
+    let spa = ServeDir::new(web_build_path.clone())
+        // .not_found_service will throw 404, which makes cypress test fail
+        .fallback(ServeFile::new(format!("{web_build_path}/index.html")));
+    Router::new()
+        .nest("/api", api(pool))
+        .nest_service("/dist", spa.clone())
+        // Show vue app
+        .fallback_service(spa)
 }
 
-/// List of players from which a bracket can be created
-#[derive(Deserialize)]
-pub struct ReportResultForBracket {
-    /// current state of the bracket
-    bracket: Bracket,
-    p1_id: PlayerId,
-    p2_id: PlayerId,
-    score_p1: i8,
-    score_p2: i8,
+/// Serve tournament organiser application. Listening address is:
+/// * Developpement: 127.0.0.1:<PORT>
+/// * Docker image : 0.0.0.0:<PORT>
+async fn serve(app: Router, port: u16) {
+    let addr = match std::env::var("DOCKER_BUILD") {
+        Ok(_) => SocketAddr::from(([0, 0, 0, 0], port)),
+        Err(_) => SocketAddr::from(([127, 0, 0, 1], port)),
+    };
+    let listener = TcpListener::bind(addr).await.expect("address to listen to");
+    tracing::debug!("listening on {}", addr);
+    axum::serve(
+        listener,
+        app.layer(TraceLayer::new_for_http()).into_make_service(),
+    )
+    .await
+    .expect("running http server");
 }
 
-/// Returns updated bracket with result. Because there is no persistence, it's
-/// obviously limited in that TO can manipulate localStorage to change the
-/// bracket but we are not worried about that right now. For now, the goal is
-/// that it just works for normal use cases
-pub async fn report_result_for_bracket(
-    Json(report): Json<ReportResultForBracket>,
-) -> impl IntoResponse {
-    tracing::debug!("new reported result");
-    let mut bracket = report.bracket;
-
-    // FIXME deal with error
-    bracket = bracket
-        .tournament_organiser_reports_result(
-            report.p1_id,
-            (report.score_p1, report.score_p2),
-            report.p2_id,
+/// Run totsugeki application on `PORT`. Set up tracing and database connection
+/// url (either from `DATABASE_URL` or `DB_USERNAME` + `DB_PASSWORD` +
+/// `DB_NAME`)
+///
+/// # Panics
+/// When database connection credentials are not set
+pub async fn run() {
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                // example_static_file_server=debug,tower_http=debug
+                // you can append this tower_http=debug to see more details
+                // .unwrap_or_else(|_| "INFO,tower_http=debug".into()),
+                .unwrap_or_else(|_| "INFO".into()),
         )
-        .unwrap()
-        .0;
+        .with(tracing_subscriber::fmt::layer())
+        .init();
+    tracing::debug!("setting up database...");
+    let db_url = if let Ok(url) = std::env::var("DATABASE_URL") {
+        url
+    } else {
+        let db_username =
+            std::env::var("DB_USERNAME").expect("DB_USERNAME environment variable set");
+        let db_password = std::env::var("DB_PASSWORD").expect("DB_PASSWORD");
+        let db_name = std::env::var("DB_NAME").expect("DB_NAME");
 
-    let participants = bracket.get_participants();
-    let dev: DoubleEliminationVariant = bracket.clone().try_into().expect("partition");
-
-    // TODO test if tracing shows from which methods it was called
-    let wb_rounds_matches = match dev.partition_winner_bracket() {
-        Ok(wb) => wb,
+        format!("postgres://{db_username}:{db_password}@localhost/{db_name}")
+    };
+    // FIXME make db url connection optionnal, otherwise first time deploy
+    // might be painful (like not provisionning right away a db deletes the
+    // app from the hosting site for reason because it's stuck in crash loop)
+    let pool = match PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&db_url)
+        .await
+    {
+        Ok(p) => p,
         Err(e) => {
-            tracing::error!("{e:?}");
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            tracing::error!("Database is unreachable: {e}");
+            panic!("Database is unreachable: {e}");
         }
     };
-    let mut wb_rounds = vec![];
-    for r in wb_rounds_matches {
-        let round = r
-            .iter()
-            .map(|m| from_participants(m, &participants))
-            .collect();
-        wb_rounds.push(round);
-    }
 
-    reorder_winner_bracket(&mut wb_rounds);
-    let Some(winner_bracket_lines) = winner_bracket_lines(&wb_rounds) else {
-        tracing::error!("winner bracket connecting lines");
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
-    };
+    // If you want to test if any migrations were run, try to login and see if
+    // any panic were logged
 
-    let Ok(lb_rounds_matches) = dev.partition_loser_bracket() else {
-        // TODO log error
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
-    };
-    let mut lb_rounds: Vec<Vec<MinimalMatch>> = vec![];
-    for r in lb_rounds_matches {
-        let round = r
-            .iter()
-            .map(|m| from_participants(m, &participants))
-            .collect();
-        lb_rounds.push(round);
-    }
-    reorder_loser_bracket(&mut lb_rounds);
-    let Some(loser_bracket_lines) = loser_bracket_lines(lb_rounds.clone()) else {
-        tracing::error!("loser bracket connecting lines");
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
-    };
+    let session_store = PostgresStore::new(pool.clone());
+    session_store.migrate().await.expect("session store");
 
-    let (gf, gf_reset) = match dev.grand_finals_and_reset() {
-        Ok((gf, bracket_reset)) => (gf, bracket_reset),
-        Err(e) => {
-            tracing::error!("{e:?}");
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
-    let gf = from_participants(&gf, &participants);
-    let gf_reset = from_participants(&gf_reset, &participants);
+    let _deletion_task = tokio::task::spawn(
+        session_store
+            .clone()
+            .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
+    );
 
-    let bracket = BracketDisplay {
-        winner_bracket: wb_rounds,
-        winner_bracket_lines,
-        loser_bracket: lb_rounds,
-        loser_bracket_lines,
-        grand_finals: gf,
-        grand_finals_reset: gf_reset,
-        bracket,
+    let session_layer = SessionManagerLayer::new(session_store)
+        .with_secure(false)
+        .with_expiry(Expiry::OnInactivity(Duration::hours(1)));
+
+    let port = if let Ok(port) = std::env::var("PORT") {
+        port.parse().expect("port")
+    } else {
+        tracing::warn!("PORT not set or error, defaulting to {PORT}");
+        PORT
     };
-    tracing::debug!("created bracket {:?}", bracket);
-    Ok(Json(bracket))
+    tracing::info!("Serving {APP} on http://localhost:{port}");
+    serve(app(pool).layer(session_layer), port).await;
+}
+
+/// Standard error message
+#[derive(Serialize, Deserialize)]
+pub struct ErrorResponse {
+    /// user-facing error message
+    pub message: String,
 }

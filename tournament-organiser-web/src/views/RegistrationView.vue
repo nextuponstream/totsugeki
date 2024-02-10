@@ -1,101 +1,108 @@
 <template>
-  <div class="text-xl">
-    {{ t('registration.bracketNameLabel') }}: {{ bracketName }}
-  </div>
-  <div class="sm:grid sm:grid-cols-2 sm:gap-5">
-    <div class="pb-5">
-      <player-registration @new-player="addPlayer" />
-      <div class="group mt-5 grid grid-cols-1 place-items-center">
-        <div>
-          <submit-btn
-            :disabled="hasMinNumberOfPlayerToStartBracket"
-            @click="createBracketFromPlayers"
-          >
-            {{ t('registration.startBracket') }}
-          </submit-btn>
-          <base-tooltip
-            v-if="hasMinNumberOfPlayerToStartBracket"
-            class="ml-3"
-            style="position: absolute"
-          >
-            3 players minimum
-          </base-tooltip>
-        </div>
-      </div>
-    </div>
-
-    <div>
-      <player-seeder
-        :players="playerList"
-        @remove-player="removePlayer"
-      />
-    </div>
-  </div>
+  <form
+    class="flex flex-col max-w-xs gap-3"
+    autocomplete="new-password"
+    name="user-registration"
+    @submit="submitForm"
+  >
+    <label>{{ $t('generic.email') }}</label>
+    <FormInput v-model="email" name="email" type="email" v-bind="emailAttrs" />
+    <label>{{ $t('generic.username') }}</label>
+    <FormInput v-model="name" name="name" type="text" v-bind="nameAttrs" />
+    <label>{{ $t('generic.password') }}</label>
+    <FormInput
+      v-model="password"
+      name="password"
+      type="password"
+      v-bind="passwordAttrs"
+    />
+    <label>{{ $t('generic.confirmPassword') }}</label>
+    <FormInput
+      v-model="confirmPassword"
+      name="confirmPassword"
+      type="password"
+      v-bind="confirmPasswordAttrs"
+    />
+    <SubmitBtn>{{ $t('generic.register') }}</SubmitBtn>
+  </form>
 </template>
-  
 <script setup lang="ts">
-  import PlayerSeeder from '@/components/PlayerSeeder.vue'
-  import PlayerRegistration from '@/components/PlayerRegistration.vue'
-  import { computed, ref, onMounted } from 'vue'
-  import type { Ref } from 'vue'
-  import { useI18n } from 'vue-i18n';
-  import { useRouter } from 'vue-router'
-  
-  const {t} = useI18n({})
-  const router = useRouter()
+// TODO when an error is displayed, locale of errors does not update automatically on locale change
+// tried looking online but it's a bad interaction between vee-validate and i18n I guess.
+// However, it's not a big concern
+import { useForm } from 'vee-validate'
+import { ref, provide } from 'vue'
+import { object, string, ref as yupref } from 'yup'
+import { useI18n } from 'vue-i18n'
+import router from '@/router'
 
-  const bracketName = ref('')
+const { t } = useI18n({})
+// NOTE: how to use i18n with yup https://stackoverflow.com/questions/72062851/problems-with-translations-with-vue-yup-and-i18n
+const schema = object({
+  email: string()
+    .email(() => t('error.invalidEmail'))
+    .required(() => t('error.required')),
+  name: string().required(() => t('error.required')),
+  password: string()
+    .required(() => t('error.required'))
+    .min(8, () => t('error.minimum', { min: 8 })),
+  confirmPassword: string()
+    .required(() => t('error.required'))
+    .oneOf([yupref('password')], () => t('error.passwordMissmatch')),
+})
 
-  onMounted(() => {
-    bracketName.value = localStorage.getItem('bracketName') ?? ''
-  }) 
-  
-  const playerList : Ref<{name: string, index: number}[]>= ref([])
-  
-  const dragging = ref(false)
-  const enabled = ref(true)
-  const counter = ref(0)
-  
-  function addPlayer(name: string): void {
-    // index is used as vue key. Because it must be unique, then we tie it to some independent counter
-    // rather than playerList size (which varies when removing player)
-    counter.value = counter.value + 1
-    playerList.value.push({name: name, index: counter.value})
-  }
+const { resetForm, defineField, handleSubmit, setFieldError } = useForm({
+  validationSchema: schema,
+})
 
-  function removePlayer(index: number): void {
-      let player = playerList.value.findIndex(p => p.index = index)
-      if (player > -1) {
-        playerList.value.splice(player, 1)
-      }
-  }
-  
-  const hasMinNumberOfPlayerToStartBracket = computed(() => {
-    return playerList.value.length < 3
-  })
-  
-  async function createBracketFromPlayers(){
-    try {
-      // TODO configurable variable
-      let response = await fetch('https://totsugeki.fly.dev/bracket-from-players', {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({names: playerList.value.map(p => p.name)}),
-        // can't send json without cors... https://stackoverflow.com/a/45655314
-        // documentation: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch#supplying_request_options
-      })
-      let bracket = await response.json()
-      localStorage.setItem('bracket', JSON.stringify(bracket))
-    } catch (e) {
-      console.error(e)
-    }
+const [email, emailAttrs] = defineField('email')
+const [name, nameAttrs] = defineField('name')
+const [password, passwordAttrs] = defineField('password')
+const [confirmPassword, confirmPasswordAttrs] = defineField('confirmPassword')
 
-    router.push({
-     name: 'bracket',
+const formErrors = ref({})
+provide('formErrors', formErrors)
+
+function onInvalidSubmit({ values, errors, results }: any) {
+  formErrors.value = { ...errors }
+  console.error('invalid form data')
+}
+
+/**
+ * @param values validated form data
+ */
+async function onSubmit(values: any) {
+  formErrors.value = {}
+  try {
+    let response = await fetch(`${import.meta.env.VITE_API_URL}/api/register`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ...values }),
     })
+    if (response.ok) {
+      console.info('successful login')
+      router.push({
+        name: 'createBracket',
+      })
+    } else if (response.status === 400) {
+      let errorMessage: { message: string } = await response.json()
+      if (errorMessage.message.includes('weak_password')) {
+        setFieldError('password', t('error.weakPassword'))
+      } else {
+        throw new Error('non-200 response for /api/login')
+      }
+    } else {
+      throw new Error('non-200 response for /api/report-result-for-bracket')
+    }
+  } catch (e) {
+    console.error(e)
   }
-  </script>
-  
+}
+
+const submitForm = handleSubmit((values: any) => {
+  onSubmit(values)
+}, onInvalidSubmit)
+</script>

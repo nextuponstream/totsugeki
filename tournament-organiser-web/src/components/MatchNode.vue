@@ -1,14 +1,8 @@
 <template>
-  <div
-    class="py-2 flex flex-col"   
-    :class="rowClass" 
-  >
-    <div
-      class="grid grid-rows-2 flex-col my-auto"
-      :class="matchClass"
-    >
+  <div class="py-2 flex flex-col" :class="rowClass">
+    <div class="grid grid-rows-2 flex-col my-auto" :class="matchClass">
       <div class="grid grid-cols-7">
-        <div 
+        <div
           class="text-xs text-center py-1"
           :class="rowDividerAndVerticalSeparator"
         >
@@ -29,16 +23,10 @@
         />
       </div>
       <div class="grid grid-cols-7">
-        <div 
-          class="text-xs text-center py-1"
-          :class="verticalSeparator"
-        >
+        <div class="text-xs text-center py-1" :class="verticalSeparator">
           {{ !isPaddingMatch ? showSeed(match?.seeds[1]) : '&#8205;' }}
-        </div>    
-        <div
-          class="col-span-5 text-xs py-1 px-1"
-          :class="verticalSeparator"
-        >
+        </div>
+        <div class="col-span-5 text-xs py-1 px-1" :class="verticalSeparator">
           {{ match?.players[1].name }}
         </div>
         <MatchScore
@@ -52,30 +40,30 @@
   </div>
 </template>
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed } from 'vue'
 import MatchScore from './match/MatchScore.vue'
 
 // TODO hover only for matches for which you can submit scores
 // FIXME nitpick lines do not flow pixel perfectly into/out of matches https://github.com/nextuponstream/totsugeki/issues/38
 
 interface Match {
-  id: string,
-  players: {name: string, id: string}[],
-  seeds: number[],
-  score: number[],
-  row_hint: number | null,
+  id: string
+  players: { name: string; id: string }[]
+  seeds: number[]
+  score: number[]
+  row_hint: number | null
 }
 
 const props = defineProps<{
-    match: Match,
+  match: Match
 }>()
 
 const isPaddingMatch = computed(() => {
-  return props.match?.row_hint == null && props.match?.seeds[0] == 0
+  return props.match?.row_hint === null && props.match?.seeds[0] === 0
 })
 
 const matchClass = computed(() => {
-   if (isPaddingMatch.value) {
+  if (isPaddingMatch.value) {
     return null
   } else {
     return 'flex flex-col border-box border hover:bg-gray-300'
@@ -109,12 +97,16 @@ const rowDivider = computed(() => {
 const totalPlayers = 3
 
 const rowClass = computed(() => {
-  return `${props.match?.row_hint != null ? `row-start-${props.match.row_hint + 1}` : ''}`
+  return `${
+    props.match?.row_hint !== null
+      ? `row-start-${props.match.row_hint + 1}`
+      : ''
+  }`
 })
 
 /**
  * Pad seed with white spaces
- * @param seed 
+ * @param seed
  */
 function showSeed(seed: number) {
   let s = seed.toString()

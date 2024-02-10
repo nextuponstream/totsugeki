@@ -5,10 +5,10 @@
   <div class="text-gray-400">
     {{ t('playerSeeder.hint') }}
   </div>
-  
-  <draggable 
+
+  <draggable
     v-if="players.length > 0"
-    :list="players" 
+    :list="players"
     :disabled="!enabled"
     item-key="index"
     class="list-group"
@@ -16,11 +16,8 @@
     @start="dragging = true"
     @end="dragging = false"
   >
-    <template #item="{element}">
-      <div
-        class="list-group-item"
-        :class="{ 'not-draggable': !enabled }"
-      >
+    <template #item="{ element }">
+      <div class="list-group-item" :class="{ 'not-draggable': !enabled }">
         <div class="flex py-1 justify-between w-64">
           <div>{{ element.name }}</div>
           <i
@@ -35,32 +32,36 @@
     <div>{{ t('playerSeeder.empty') }}</div>
   </div>
 </template>
-  
-  <script setup lang="ts">
-  import draggable from 'vuedraggable'
-  import { type PropType } from 'vue'
-  import { ref } from 'vue'
-  import { useI18n } from 'vue-i18n';
 
-  const {t} = useI18n({})
+<script setup lang="ts">
+import draggable from 'vuedraggable'
+import { type PropType } from 'vue'
+import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-  interface Player {
-    name: string,
-    index: number,
-  }
-  
-  const props = defineProps({
-    players: { type: Array as PropType<Player[]>, required: false, default: () => {return []} }
-  })
+const { t } = useI18n({})
 
-  const emit = defineEmits(['removePlayer'])
-  
-  const dragging = ref(false)
-  const enabled = ref(true)
+interface Player {
+  name: string
+  index: number
+}
 
-  function removePlayer(index: number) {
-    emit('removePlayer', index)
-  }
-  
-  </script>
-  
+const props = defineProps({
+  players: {
+    type: Array as PropType<Player[]>,
+    required: false,
+    default: () => {
+      return []
+    },
+  },
+})
+
+const emit = defineEmits(['removePlayer'])
+
+const dragging = ref(false)
+const enabled = ref(true)
+
+function removePlayer(index: number) {
+  emit('removePlayer', index)
+}
+</script>

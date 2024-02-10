@@ -12,9 +12,7 @@
         :key="indexCol"
         class="grid grid-cols-[200px_50px_50px] w-[300px]"
       >
-        <div
-          class="grid grid-cols-1 w-[200px]"
-        >
+        <div class="grid grid-cols-1 w-[200px]">
           <MatchNode
             v-for="match in element.match"
             :key="match.id"
@@ -22,20 +20,22 @@
             @click="showResultModal(match.id, match.players)"
           />
         </div>
-        <div
-          class="grid grid-cols-1 w-[50px]"
-        >
+        <div class="grid grid-cols-1 w-[50px]">
           <div
-            v-for="(line, index) in element.lines.slice(0, element.lines.length/2)"
+            v-for="(line, index) in element.lines.slice(
+              0,
+              element.lines.length / 2
+            )"
             :key="index"
             :class="show(line)"
           />
         </div>
-        <div
-          class="grid grid-cols-1 w-[50px]"
-        >
+        <div class="grid grid-cols-1 w-[50px]">
           <div
-            v-for="(line, index) in element.lines.slice(element.lines.length/2, element.lines.length)"
+            v-for="(line, index) in element.lines.slice(
+              element.lines.length / 2,
+              element.lines.length
+            )"
             :key="index"
             :class="show(line)"
           />
@@ -48,13 +48,12 @@
     >
       <MatchNode
         :match="bracketFinalMatch"
-        @click="showResultModal(bracketFinalMatch.id, bracketFinalMatch.players)"
+        @click="
+          showResultModal(bracketFinalMatch.id, bracketFinalMatch.players)
+        "
       />
     </div>
-    <div
-      v-if="grandFinals"
-      class="grid grid-cols-[50px_50px] flex-shrink-0"
-    >
+    <div v-if="grandFinals" class="grid grid-cols-[50px_50px] flex-shrink-0">
       <div class="my-auto">
         <div class="border-b" />
         <div class="" />
@@ -98,14 +97,34 @@
   </div>
 </template>
 <script setup lang="ts">
-import { type PropType, computed } from 'vue';
-import MatchNode from '@/components/MatchNode.vue';
+import { type PropType, computed } from 'vue'
+import MatchNode from '@/components/MatchNode.vue'
 
 const props = defineProps({
-    bracket: { type: Array as PropType<Match[][]>, default: () => {return []} },
-    lines: { type: Array as PropType<Lines[][]>, default: () => {return []} },
-    grandFinals: { type: Object as PropType<Match | undefined>, default: () => {return undefined} },
-    grandFinalsReset: { type: Object as PropType<Match | undefined>, default: () => {return undefined} },
+  bracket: {
+    type: Array as PropType<Match[][]>,
+    default: () => {
+      return []
+    },
+  },
+  lines: {
+    type: Array as PropType<Lines[][]>,
+    default: () => {
+      return []
+    },
+  },
+  grandFinals: {
+    type: Object as PropType<Match | undefined>,
+    default: () => {
+      return undefined
+    },
+  },
+  grandFinalsReset: {
+    type: Object as PropType<Match | undefined>,
+    default: () => {
+      return undefined
+    },
+  },
 })
 
 const emits = defineEmits(['showResultModal'])
@@ -123,7 +142,7 @@ const mix = computed(() => {
   }
 
   return r
-});
+})
 
 const bracketFinalMatch = computed(() => {
   let bracket = props.bracket
@@ -148,8 +167,10 @@ function show(l: Lines) {
   }
 }
 
-function showResultModal(matchId: string, players: {name: string, id: string}[]){
+function showResultModal(
+  matchId: string,
+  players: { name: string; id: string }[]
+) {
   emits('showResultModal', matchId, players)
 }
-
 </script>

@@ -6,13 +6,14 @@ name: CI
 jobs:
   check:
     name: Check
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     env:
       API_ADDR: localhost
-      API_PORT: 3000
+      API_PORT: 8080
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/cache@v3
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/bin/
@@ -29,14 +30,16 @@ jobs:
 
   test:
     name: Test Suite
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     env:
       API_ADDR: localhost
-      API_PORT: 3000
-      API_DB_TYPES_IN_TESTS: INMEMORY
+      API_PORT: 8080
+      # will still look for database toa even when not defined in url
+      DATABASE_URL: postgres://toa:toa@localhost
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/cache@v3
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/bin/
@@ -47,17 +50,30 @@ jobs:
             tournament-organiser-web/node_modules
             tournament-organiser-web/dist
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - run: cargo test -- --include-ignored
+      # postgres is available by default on ubuntu https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2204-Readme.md#postgresql
+      # https://dev.to/lxxxvi/github-action-using-pre-installed-postgres-5144
+      - name: Start PostgreSQL
+        run: |
+          sudo systemctl start postgresql.service
+          pg_isready
+          sudo -u postgres createuser -s -d -r toa
+          sudo -u postgres psql -c "ALTER USER toa WITH PASSWORD 'toa';"
+          sudo -u postgres psql -c "CREATE DATABASE toa;"
+      # avoid connecting to database when building with SQLX_OFFLINE.
+      # Otherwise, it will expect that migrations are ran and relations (like a
+      # table 'users') are there to check all queries are valid.
+      - run: SQLX_OFFLINE=true cargo test -- --include-ignored
 
   lint-rust:
     name: Rustfmt
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     env:
       API_ADDR: localhost
-      API_PORT: 3000
+      API_PORT: 8080
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/cache@v3
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/bin/
@@ -73,13 +89,14 @@ jobs:
 
   lint-typescript:
     name: eslint
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     env:
       API_ADDR: localhost
-      API_PORT: 3000
+      API_PORT: 8080
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/cache@v3
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/bin/
@@ -92,18 +109,19 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - run: npm install
         working-directory: tournament-organiser-web
-      - run: npm run lint-check:ci
+      - run: npm run lint-check
         working-directory: tournament-organiser-web
 
   clippy:
     name: Clippy
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     env:
       API_ADDR: localhost
-      API_PORT: 3000
+      API_PORT: 8080
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/cache@v3
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/bin/
@@ -118,13 +136,15 @@ jobs:
 
   tournament-organiser-cypress-tests:
     name: tournament organiser cypress tests
+    if: github.event.pull_request.draft == false
     # rust, node and npm are installed https://github.com/actions/runner-images/blob/main/images/linux/Ubuntu2204-Readme.md#rust-tools
     runs-on: ubuntu-latest
     env:
-      CYPRESS_BASE_URL: http://localhost:3000
+      CYPRESS_BASE_URL: http://localhost:8080
+      DATABASE_URL: postgres://toa:toa@localhost/toa
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/cache@v3
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/bin/
@@ -135,17 +155,31 @@ jobs:
             tournament-organiser-web/node_modules
             tournament-organiser-web/dist
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Start PostgreSQL
+        run: |
+          sudo systemctl start postgresql.service
+          pg_isready
+          sudo -u postgres createuser -s -d -r toa
+          sudo -u postgres psql -c "ALTER USER toa WITH PASSWORD 'toa';"
+          sudo -u postgres psql -c "CREATE DATABASE toa;"
+      - run: cp tournament-organiser-web/.env.ci tournament-organiser-web/.env
       - run: cd ui && cargo run > test.ts && mv test.ts ../tournament-organiser-web/
-      - uses: cypress-io/github-action@v5
+      - run: |
+          cd tournament-organiser-api && \
+          cargo install sqlx-cli --no-default-features --features rustls,postgres && \
+          sqlx migrate run
+      - name: seeder
+        run: sudo -u postgres psql --dbname=toa < tournament-organiser-web/e2eSeeder.sql
+      - uses: cypress-io/github-action@v6
         with:
           working-directory: tournament-organiser-web
           install: true
-          build: npm run build:ci
+          build: npm run build:ci 
           start: cargo run --package tournament-organiser-api --release
-          wait-on: 'http://localhost:3000'
+          wait-on: 'http://localhost:8080'
           wait-on-timeout: 30
           browser: chrome
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: cypress-screenshots
