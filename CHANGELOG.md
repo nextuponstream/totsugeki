@@ -3,6 +3,7 @@
 # v0.1.2 - XX.XX.XXXX
 
 * Add signup and authentication with mail confirmation
+* Add account deletion
 
 # v0.1.1 - 15.01.2024
 

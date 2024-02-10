@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPool;
 use totsugeki::player::Id;
 use tower_sessions::Session;
+use tracing::instrument;
 
 /// User retrieving his infos
 #[derive(Serialize, Deserialize, Debug)]
@@ -18,6 +19,7 @@ pub struct Infos {
 }
 
 /// `/api/user/profile` GET to check user informations
+#[instrument(name = "user_dashboard", skip(pool, session))]
 pub(crate) async fn profile(session: Session, State(pool): State<PgPool>) -> impl IntoResponse {
     let Some(Some(user_id)): Option<Option<Id>> = session
         .get("user_id")
@@ -44,6 +46,7 @@ pub(crate) async fn profile(session: Session, State(pool): State<PgPool>) -> imp
 }
 
 /// `/api/user` DELETE
+#[instrument(name = "user_account_deletion", skip(pool, session))]
 pub(crate) async fn delete_user(session: Session, State(pool): State<PgPool>) -> impl IntoResponse {
     let Some(Some(user_id)): Option<Option<Id>> = session
         .get("user_id")
@@ -52,6 +55,20 @@ pub(crate) async fn delete_user(session: Session, State(pool): State<PgPool>) ->
     else {
         tracing::warn!("missing session");
         return (StatusCode::UNAUTHORIZED).into_response();
+    };
+    let row = match sqlx::query!("SELECT email from users WHERE id = $1", user_id,)
+        .fetch_optional(&pool)
+        .await
+    {
+        Ok(r) => r,
+        Err(e) => {
+            tracing::error!("user row: {e}");
+            panic!("user row: {e}");
+        }
+    };
+    let email = match row {
+        Some(r) => r.email,
+        None => return (StatusCode::NOT_FOUND).into_response(),
     };
 
     let Ok(r) = sqlx::query!("DELETE from users WHERE id = $1", user_id)
@@ -73,6 +90,7 @@ pub(crate) async fn delete_user(session: Session, State(pool): State<PgPool>) ->
         unreachable!("{err_msg}")
     }
     session.delete().await.expect("deleted session");
+    tracing::info!("{} deleted their account ({})", email, user_id);
 
     (StatusCode::OK).into_response()
 }

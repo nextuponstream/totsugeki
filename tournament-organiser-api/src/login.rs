@@ -32,7 +32,7 @@ struct SuccessfulLogin {
 }
 
 /// `/login` endpoint
-#[instrument(name = "login", skip(pool, session, request))]
+#[instrument(name = "user_login", skip(pool, session, request))]
 pub(crate) async fn login(
     State(pool): State<PgPool>,
     session: Session,
@@ -66,7 +66,10 @@ pub(crate) async fn login(
             .expect("password in authorization payload")
             .to_string(),
     );
-    let credentials = Credentials { email, password };
+    let credentials = Credentials {
+        email: email.clone(),
+        password,
+    };
     // Only time we try to log a query error rather than expect so we can do a
     // sanity check that migrations were ran
     let row = match sqlx::query!(
@@ -102,6 +105,6 @@ pub(crate) async fn login(
         .await
         .expect("user_id key insert in session");
     session.save().await.expect("updated session");
-    tracing::info!("successful login");
+    tracing::info!("successful login {} ({})", email, user_id);
     (StatusCode::OK, Json(SuccessfulLogin { user_id })).into_response()
 }
