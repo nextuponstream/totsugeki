@@ -21,6 +21,7 @@ pub struct Infos {
 /// `/api/user/profile` GET to check user informations
 #[instrument(name = "user_dashboard", skip(pool, session))]
 pub(crate) async fn profile(session: Session, State(pool): State<PgPool>) -> impl IntoResponse {
+    // TODO refactor away with axum login
     let Some(Some(user_id)): Option<Option<Id>> = session
         .get("user_id")
         .await
@@ -48,6 +49,7 @@ pub(crate) async fn profile(session: Session, State(pool): State<PgPool>) -> imp
 /// `/api/user` DELETE
 #[instrument(name = "user_account_deletion", skip(pool, session))]
 pub(crate) async fn delete_user(session: Session, State(pool): State<PgPool>) -> impl IntoResponse {
+    // TODO refactor away with axum login
     let Some(Some(user_id)): Option<Option<Id>> = session
         .get("user_id")
         .await

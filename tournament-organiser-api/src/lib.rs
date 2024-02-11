@@ -9,7 +9,7 @@
 #![warn(clippy::unwrap_used)]
 #![forbid(unsafe_code)]
 
-mod bracket;
+pub mod bracket;
 pub mod health_check;
 pub mod login;
 pub mod logout;
@@ -26,7 +26,7 @@ use axum::{
     routing::{delete, get, post},
     Router,
 };
-use bracket::{new_bracket_from_players, report_result};
+use bracket::{create_bracket, new_bracket_from_players, report_result};
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -54,15 +54,24 @@ static PORT: u16 = 8080;
 /// Router for non-user facing endpoints. Web page makes requests to API
 /// (registration, updating bracket...)
 fn api(pool: Pool<Postgres>) -> Router {
+    let user_routes = Router::new().nest(
+        "/user",
+        Router::new()
+            .route("/", get(profile))
+            .route("/", delete(delete_user)),
+    );
+    let bracket_routes =
+        Router::new().nest("/bracket", Router::new().route("/", post(create_bracket)));
+    // TODO require auth middleware with axum_login
+    let protected_routes = Router::new().merge(user_routes).merge(bracket_routes);
     Router::new()
         .route("/health_check", get(health_check))
         .route("/register", post(registration))
         .route("/login", post(login))
         .route("/logout", post(logout))
-        .route("/user", get(profile))
-        .route("/user", delete(delete_user))
         .route("/bracket-from-players", post(new_bracket_from_players))
         .route("/report-result-for-bracket", post(report_result))
+        .merge(protected_routes)
         .fallback_service(get(|| async { (StatusCode::NOT_FOUND, "Not found") }))
         .with_state(pool)
 }

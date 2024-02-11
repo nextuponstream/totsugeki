@@ -12,9 +12,11 @@ pub struct TestApp {
 }
 
 use super::*;
+use crate::bracket::PlayerList;
 use reqwest::{Client, Response};
 use serde::Serialize;
 use tokio::net::TcpListener;
+
 /// Returns address to connect to new application (with random available port)
 ///
 /// Example: `http://0.0.0.0:43222`
@@ -102,6 +104,51 @@ impl TestApp {
     pub async fn delete_user(&self) -> Response {
         self.http_client
             .delete(format!("{}/api/user", self.addr))
+            .send()
+            .await
+            .expect("request done")
+    }
+
+    /// Chains user registration and user login for a new user.
+    #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
+    pub async fn login_as_test_user(&self) {
+        let response = self
+            .register(&FormUserInput {
+                name: "jean".into(),
+                email: "jean@bon.ch".into(),
+                password: "verySecurePassword#123456789?".into(),
+            })
+            .await;
+
+        let status = response.status();
+        assert!(
+            status.is_success(),
+            "status: {status}, response: \"{}\"",
+            response.text().await.unwrap()
+        );
+
+        let response = self
+            .login(&LoginForm {
+                email: "jean@bon.ch".into(),
+                password: "verySecurePassword#123456789?".into(),
+            })
+            .await;
+
+        let status = response.status();
+        assert!(
+            status.is_success(),
+            "status: {status}, response: \"{}\"",
+            response.text().await.unwrap()
+        );
+    }
+
+    /// `/api/bracket` POST
+    #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
+    pub async fn create_bracket(&self, players: Vec<String>) -> Response {
+        let request = PlayerList { names: players };
+        self.http_client
+            .post(format!("{}/api/bracket", self.addr))
+            .json(&request)
             .send()
             .await
             .expect("request done")

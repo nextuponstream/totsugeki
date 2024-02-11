@@ -4,7 +4,7 @@ use axum::{response::IntoResponse, Json};
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use totsugeki::bracket::{
-    double_elimination_variant::Variant as DoubleEliminationVariant, Bracket,
+    double_elimination_variant::Variant as DoubleEliminationVariant, Bracket, Id,
 };
 use totsugeki::player::Id as PlayerId;
 use totsugeki_display::loser_bracket::lines as loser_bracket_lines;
@@ -49,10 +49,10 @@ struct BracketDisplay {
 }
 
 /// List of players from which a bracket can be created
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct PlayerList {
     /// player names
-    names: Vec<String>,
+    pub names: Vec<String>,
 }
 
 /// Return a newly instanciated bracket from ordered (=seeded) player names
@@ -239,4 +239,37 @@ pub async fn report_result(Json(report): Json<ReportResultInput>) -> impl IntoRe
     tracing::info!("updated bracket {}", bracket.bracket.get_id());
     tracing::debug!("updated bracket {:?}", bracket);
     Ok(Json(bracket))
+}
+
+#[derive(Serialize, Deserialize)]
+/// 201 response
+pub struct GenericResourceCreated {
+    /// Resource ID
+    id: Id,
+}
+
+/// Return a newly instanciated bracket from ordered (=seeded) player names
+#[instrument(name = "create_bracket")]
+pub async fn create_bracket(Json(player_list): Json<PlayerList>) -> impl IntoResponse {
+    tracing::debug!("new bracket from players: {:?}", player_list.names);
+
+    let mut bracket = Bracket::default();
+    for name in player_list.names {
+        let Ok(tmp) = bracket.add_participant(name.as_str()) else {
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        };
+        bracket = tmp;
+    }
+
+    // TODO save in db
+
+    tracing::info!("new bracket {}", bracket.get_id());
+    tracing::debug!("new bracket {:?}", bracket);
+    Ok((
+        StatusCode::CREATED,
+        Json(GenericResourceCreated {
+            id: bracket.get_id(),
+        }),
+    )
+        .into_response())
 }
