@@ -35,9 +35,14 @@ pub async fn spawn_app(db: PgPool) -> TestApp {
         .with_expiry(Expiry::OnInactivity(Duration::hours(1)));
 
     tokio::spawn(async move {
-        axum::serve(listener, app(db).layer(session_layer).into_make_service())
-            .await
-            .unwrap();
+        axum::serve(
+            listener,
+            app(db, session_store)
+                .layer(session_layer)
+                .into_make_service(),
+        )
+        .await
+        .unwrap();
     });
 
     TestApp::new(format!("http://{addr}"))

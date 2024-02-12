@@ -21,15 +21,11 @@ pub struct Infos {
 /// `/api/user/profile` GET to check user informations
 #[instrument(name = "user_dashboard", skip(pool, session))]
 pub(crate) async fn profile(session: Session, State(pool): State<PgPool>) -> impl IntoResponse {
-    // TODO refactor away with axum login
-    let Some(Some(user_id)): Option<Option<Id>> = session
+    let user_id: Id = session
         .get("user_id")
         .await
         .expect("session store maybe value")
-    else {
-        tracing::warn!("profile was not displayed because user is not logged in");
-        return (StatusCode::UNAUTHORIZED).into_response();
-    };
+        .expect("value checked by middleware");
     tracing::debug!("{:?}", user_id);
     let Some(u) = sqlx::query_as!(User, "SELECT * from users WHERE id = $1", user_id,)
         // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
@@ -49,15 +45,11 @@ pub(crate) async fn profile(session: Session, State(pool): State<PgPool>) -> imp
 /// `/api/user` DELETE
 #[instrument(name = "user_account_deletion", skip(pool, session))]
 pub(crate) async fn delete_user(session: Session, State(pool): State<PgPool>) -> impl IntoResponse {
-    // TODO refactor away with axum login
-    let Some(Some(user_id)): Option<Option<Id>> = session
+    let user_id: Id = session
         .get("user_id")
         .await
         .expect("session store maybe value")
-    else {
-        tracing::warn!("missing session");
-        return (StatusCode::UNAUTHORIZED).into_response();
-    };
+        .expect("value checked by auth middleware");
     let row = match sqlx::query!("SELECT email from users WHERE id = $1", user_id,)
         .fetch_optional(&pool)
         .await

@@ -22,6 +22,9 @@ use crate::login::login;
 use crate::logout::logout;
 use crate::registration::registration;
 use crate::user::profile;
+use axum::extract::Request;
+use axum::middleware::Next;
+use axum::response::{IntoResponse, Response};
 use axum::{
     routing::{delete, get, post},
     Router,
@@ -34,11 +37,13 @@ use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use std::net::SocketAddr;
 use time::Duration;
 use tokio::net::TcpListener;
+use totsugeki::player::Id;
 use tower_http::{
     services::{ServeDir, ServeFile},
     trace::TraceLayer,
 };
-use tower_sessions::{session_store::ExpiredDeletion, Expiry, SessionManagerLayer};
+use tower_sessions::Session;
+use tower_sessions::{ExpiredDeletion, Expiry, SessionManagerLayer};
 use tower_sessions_sqlx_store::PostgresStore;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use user::delete_user;
@@ -51,19 +56,51 @@ static PORT: u16 = 8080;
 
 // FIXME do not panic when submitting score for match with missing player
 
+/// Auth layer checking for presence of key `user_id` in session, set by login
+/// endpoint.
+///
+/// NOTE: if you need multi auth layer, reach out for `axum_login` crate. Until
+///       then, relying on a key being present in session is enough.
+async fn auth_layer(
+    // State(state): State<AppState>,
+    session: Session,
+    // you can add more extractors here but the last
+    // extractor must implement `FromRequest` which
+    // `Request` does
+    request: Request,
+    next: Next,
+) -> Response {
+    let v: Option<Id> = session.get("user_id").await.expect("value from store");
+    if v.is_none() {
+        tracing::warn!("unauthenticated request against protected route");
+        return (StatusCode::UNAUTHORIZED).into_response();
+    };
+    // do something with `request`...
+
+    // do something with `response`...
+
+    next.run(request).await
+}
+
 /// Router for non-user facing endpoints. Web page makes requests to API
 /// (registration, updating bracket...)
-fn api(pool: Pool<Postgres>) -> Router {
+fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router {
     let user_routes = Router::new().nest(
         "/user",
         Router::new()
             .route("/", get(profile))
             .route("/", delete(delete_user)),
     );
+
     let bracket_routes =
         Router::new().nest("/bracket", Router::new().route("/", post(create_bracket)));
-    // TODO require auth middleware with axum_login
-    let protected_routes = Router::new().merge(user_routes).merge(bracket_routes);
+    let protected_routes = Router::new()
+        .merge(user_routes)
+        .merge(bracket_routes)
+        .layer(axum::middleware::from_fn_with_state(
+            session_store,
+            auth_layer,
+        ));
     Router::new()
         .route("/health_check", get(health_check))
         .route("/register", post(registration))
@@ -78,7 +115,7 @@ fn api(pool: Pool<Postgres>) -> Router {
 
 /// Serve web part of the application, using `tournament-organiser-web` build
 /// For development, Cors rule are relaxed
-pub fn app(pool: Pool<Postgres>) -> Router {
+pub fn app(pool: Pool<Postgres>, session_store: PostgresStore) -> Router {
     let web_build_path = match std::env::var("BUILD_PATH_TOURNAMENT_ORGANISER_WEB") {
         Ok(s) => s,
         Err(e) => {
@@ -91,7 +128,7 @@ pub fn app(pool: Pool<Postgres>) -> Router {
         // .not_found_service will throw 404, which makes cypress test fail
         .fallback(ServeFile::new(format!("{web_build_path}/index.html")));
     Router::new()
-        .nest("/api", api(pool))
+        .nest("/api", api(pool, session_store))
         .nest_service("/dist", spa.clone())
         // Show vue app
         .fallback_service(spa)
@@ -170,7 +207,7 @@ pub async fn run() {
             .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
     );
 
-    let session_layer = SessionManagerLayer::new(session_store)
+    let session_layer = SessionManagerLayer::new(session_store.clone())
         .with_secure(false)
         .with_expiry(Expiry::OnInactivity(Duration::hours(1)));
 
@@ -181,7 +218,7 @@ pub async fn run() {
         PORT
     };
     tracing::info!("Serving {APP} on http://localhost:{port}");
-    serve(app(pool).layer(session_layer), port).await;
+    serve(app(pool, session_store).layer(session_layer), port).await;
 }
 
 /// Standard error message
