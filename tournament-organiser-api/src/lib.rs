@@ -72,7 +72,11 @@ async fn auth_layer(
 ) -> Response {
     let v: Option<Id> = session.get("user_id").await.expect("value from store");
     if v.is_none() {
-        tracing::warn!("unauthenticated request against protected route");
+        tracing::warn!(
+            "unauthenticated request against protected route /api{} {}",
+            request.uri(),
+            request.method()
+        );
         return (StatusCode::UNAUTHORIZED).into_response();
     };
     // do something with `request`...
