@@ -42,7 +42,7 @@ pub enum Error {
 }
 
 /// Seeds of players
-type Seeds = [usize; 2];
+pub type Seeds = [usize; 2];
 
 /// A match result is a score. For example, I win 2-0
 pub type MatchReportedResult = [(i8, i8); 2];

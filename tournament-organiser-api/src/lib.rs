@@ -9,19 +9,19 @@
 #![warn(clippy::unwrap_used)]
 #![forbid(unsafe_code)]
 
-pub mod bracket;
+pub mod brackets;
 pub mod health_check;
 pub mod login;
 pub mod logout;
 pub mod registration;
 pub mod test_utils;
-pub mod user;
+pub mod users;
 
 use crate::health_check::health_check;
 use crate::login::login;
 use crate::logout::logout;
 use crate::registration::registration;
-use crate::user::profile;
+use crate::users::profile;
 use axum::extract::Request;
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
@@ -29,7 +29,7 @@ use axum::{
     routing::{delete, get, post},
     Router,
 };
-use bracket::{create_bracket, new_bracket_from_players, report_result};
+use brackets::{create_bracket, get_bracket, new_bracket_from_players, report_result};
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -46,7 +46,7 @@ use tower_sessions::Session;
 use tower_sessions::{ExpiredDeletion, Expiry, SessionManagerLayer};
 use tower_sessions_sqlx_store::PostgresStore;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-use user::delete_user;
+use users::delete_user;
 
 /// Name of the app
 static APP: &str = "tournament organiser application";
@@ -90,14 +90,18 @@ async fn auth_layer(
 /// (registration, updating bracket...)
 fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router {
     let user_routes = Router::new().nest(
-        "/user",
+        "/users",
         Router::new()
             .route("/", get(profile))
             .route("/", delete(delete_user)),
     );
 
-    let bracket_routes =
-        Router::new().nest("/bracket", Router::new().route("/", post(create_bracket)));
+    let bracket_routes = Router::new().nest(
+        "/brackets",
+        Router::new()
+            .route("/", post(create_bracket))
+            .route("/:bracket_id", get(get_bracket)),
+    );
     let protected_routes = Router::new()
         .merge(user_routes)
         .merge(bracket_routes)

@@ -12,7 +12,7 @@ pub struct TestApp {
 }
 
 use super::*;
-use crate::bracket::PlayerList;
+use crate::brackets::PlayerList;
 use reqwest::{Client, Response};
 use serde::Serialize;
 use tokio::net::TcpListener;
@@ -108,7 +108,7 @@ impl TestApp {
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
     pub async fn delete_user(&self) -> Response {
         self.http_client
-            .delete(format!("{}/api/user", self.addr))
+            .delete(format!("{}/api/users", self.addr))
             .send()
             .await
             .expect("request done")
@@ -152,8 +152,18 @@ impl TestApp {
     pub async fn create_bracket(&self, players: Vec<String>) -> Response {
         let request = PlayerList { names: players };
         self.http_client
-            .post(format!("{}/api/bracket", self.addr))
+            .post(format!("{}/api/brackets", self.addr))
             .json(&request)
+            .send()
+            .await
+            .expect("request done")
+    }
+
+    /// `/api/bracket/:id` GET
+    #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
+    pub async fn get_bracket(&self, id: Id) -> Response {
+        self.http_client
+            .get(format!("{}/api/brackets/{id}", self.addr))
             .send()
             .await
             .expect("request done")

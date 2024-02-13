@@ -1,11 +1,16 @@
 //! bracket management
 
-use axum::{response::IntoResponse, Json};
+use axum::extract::{Path, State};
+use axum::{debug_handler, response::IntoResponse, Json as AxumJson};
+use chrono::prelude::*;
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
+use sqlx::types::Json as SqlxJson;
+use sqlx::PgPool;
 use totsugeki::bracket::{
     double_elimination_variant::Variant as DoubleEliminationVariant, Bracket, Id,
 };
+use totsugeki::matches::Match;
 use totsugeki::player::Id as PlayerId;
 use totsugeki_display::loser_bracket::lines as loser_bracket_lines;
 use totsugeki_display::loser_bracket::reorder as reorder_loser_bracket;
@@ -63,7 +68,9 @@ pub struct PlayerList {
 /// # Errors
 /// May return 500 error when bracket cannot be parsed
 #[instrument(name = "new_bracket")]
-pub async fn new_bracket_from_players(Json(player_list): Json<PlayerList>) -> impl IntoResponse {
+pub async fn new_bracket_from_players(
+    AxumJson(player_list): AxumJson<PlayerList>,
+) -> impl IntoResponse {
     tracing::debug!("new bracket from players: {:?}", player_list.names);
     let mut bracket = Bracket::default();
     for name in player_list.names {
@@ -137,7 +144,7 @@ pub async fn new_bracket_from_players(Json(player_list): Json<PlayerList>) -> im
     };
     tracing::info!("new bracket {}", bracket.bracket.get_id());
     tracing::debug!("new bracket {:?}", bracket);
-    Ok(Json(bracket))
+    Ok(AxumJson(bracket))
 }
 
 /// Returns updated bracket with result. Because there is no persistence, it's
@@ -152,7 +159,7 @@ pub async fn new_bracket_from_players(Json(player_list): Json<PlayerList>) -> im
 /// Error 500 if a user gets out of sync with the bracket in the database and
 /// the one displayed in the web page
 #[instrument(name = "report_result", skip(report))]
-pub async fn report_result(Json(report): Json<ReportResultInput>) -> impl IntoResponse {
+pub async fn report_result(AxumJson(report): AxumJson<ReportResultInput>) -> impl IntoResponse {
     tracing::debug!("new reported result");
     let mut bracket = report.bracket;
 
@@ -238,19 +245,41 @@ pub async fn report_result(Json(report): Json<ReportResultInput>) -> impl IntoRe
     };
     tracing::info!("updated bracket {}", bracket.bracket.get_id());
     tracing::debug!("updated bracket {:?}", bracket);
-    Ok(Json(bracket))
+    Ok(AxumJson(bracket))
 }
 
 #[derive(Serialize, Deserialize)]
 /// 201 response
 pub struct GenericResourceCreated {
     /// Resource ID
-    id: Id,
+    pub id: Id,
+}
+
+/// Matches raw value
+#[derive(Deserialize, Serialize)]
+pub struct MatchesRaw(pub Vec<Match>);
+
+// impl From<SqlxJson> for MatchesRaw {}
+
+/// Bracket in database
+#[derive(Serialize, Deserialize, sqlx::FromRow)]
+pub struct BracketRecord {
+    /// bracket ID
+    pub id: Id,
+    /// name
+    pub name: String,
+    /// creation date
+    pub created_at: DateTime<Utc>,
+    /// matches
+    pub matches: SqlxJson<MatchesRaw>,
 }
 
 /// Return a newly instanciated bracket from ordered (=seeded) player names
 #[instrument(name = "create_bracket")]
-pub async fn create_bracket(Json(player_list): Json<PlayerList>) -> impl IntoResponse {
+pub async fn create_bracket(
+    State(pool): State<PgPool>,
+    AxumJson(player_list): AxumJson<PlayerList>,
+) -> impl IntoResponse {
     tracing::debug!("new bracket from players: {:?}", player_list.names);
 
     let mut bracket = Bracket::default();
@@ -261,15 +290,48 @@ pub async fn create_bracket(Json(player_list): Json<PlayerList>) -> impl IntoRes
         bracket = tmp;
     }
 
-    // TODO save in db
+    let r = sqlx::query!(
+        "INSERT INTO brackets (name, matches) VALUES ($1, $2) RETURNING id",
+        bracket.get_name(),
+        SqlxJson(bracket.get_matches()) as _,
+    )
+    .fetch_one(&pool)
+    .await
+    .expect("user insert");
+    // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
+    tracing::info!("new bracket {}", r.id);
 
     tracing::info!("new bracket {}", bracket.get_id());
     tracing::debug!("new bracket {:?}", bracket);
     Ok((
         StatusCode::CREATED,
-        Json(GenericResourceCreated {
-            id: bracket.get_id(),
-        }),
+        AxumJson(GenericResourceCreated { id: r.id }),
     )
         .into_response())
+}
+
+/// Return a newly instanciated bracket from ordered (=seeded) player names
+#[instrument(name = "get_bracket", skip(pool))]
+#[debug_handler]
+pub async fn get_bracket(
+    Path(bracket_id): Path<Id>,
+    State(pool): State<PgPool>,
+) -> impl IntoResponse {
+    tracing::debug!("bracket {bracket_id}");
+
+    let Some(b) = sqlx::query_as!(
+        BracketRecord,
+        r#"SELECT id, name, matches as "matches: SqlxJson<MatchesRaw>", created_at  from brackets WHERE id = $1"#,
+        bracket_id,
+    )
+    // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
+    .fetch_optional(&pool)
+    .await
+    .expect("fetch result") else {
+        return (StatusCode::NOT_FOUND).into_response();
+    };
+
+    (StatusCode::OK, AxumJson(b)).into_response()
+
+    // todo!()
 }
