@@ -103,7 +103,7 @@ impl TestApp {
             .expect("request done")
     }
 
-    /// `/api/user DELETE` Delete user if logged in. User deleted is logged in
+    /// `/api/users DELETE` Delete user if logged in. User deleted is logged in
     /// user. You must login for this request to succeed.
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
     pub async fn delete_user(&self) -> Response {
@@ -147,7 +147,7 @@ impl TestApp {
         );
     }
 
-    /// `/api/bracket` POST
+    /// `/api/brackets` POST
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
     pub async fn create_bracket(&self, players: Vec<String>) -> Response {
         let request = PlayerList { names: players };
@@ -159,11 +159,24 @@ impl TestApp {
             .expect("request done")
     }
 
-    /// `/api/bracket/:id` GET
+    /// `/api/brackets/:id` GET
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
     pub async fn get_bracket(&self, id: Id) -> Response {
         self.http_client
             .get(format!("{}/api/brackets/{id}", self.addr))
+            .send()
+            .await
+            .expect("request done")
+    }
+
+    /// `/api/brackets` GET
+    #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
+    pub async fn list_brackets(&self, limit: u32, offset: u32) -> Response {
+        self.http_client
+            .get(format!(
+                "{}/api/brackets?limit={}&offset={}",
+                self.addr, limit, offset
+            ))
             .send()
             .await
             .expect("request done")

@@ -1,5 +1,6 @@
 //! bracket management
 
+use crate::resources::{GenericResource, GenericResourcesList, Pagination, ValidatedQueryParams};
 use axum::extract::{Path, State};
 use axum::{debug_handler, response::IntoResponse, Json as AxumJson};
 use chrono::prelude::*;
@@ -259,8 +260,6 @@ pub struct GenericResourceCreated {
 #[derive(Deserialize, Serialize)]
 pub struct MatchesRaw(pub Vec<Match>);
 
-// impl From<SqlxJson> for MatchesRaw {}
-
 /// Bracket in database
 #[derive(Serialize, Deserialize, sqlx::FromRow)]
 pub struct BracketRecord {
@@ -332,6 +331,32 @@ pub async fn get_bracket(
     };
 
     (StatusCode::OK, AxumJson(b)).into_response()
+}
 
-    // todo!()
+/// Return a newly instanciated bracket from ordered (=seeded) player names
+#[instrument(name = "list_brackets", skip(pool))]
+#[debug_handler]
+pub async fn list_brackets(
+    // NOTE pool before validated query params for some reason???
+    State(pool): State<PgPool>,
+    ValidatedQueryParams(pagination): ValidatedQueryParams<Pagination>,
+) -> impl IntoResponse {
+    tracing::debug!("bracket {pagination:?}");
+    let limit: i64 = pagination.limit.try_into().expect("ok");
+    let offset: i64 = pagination.offset.try_into().expect("ok");
+
+    let brackets = sqlx::query_as!(
+        GenericResource,
+        r#"SELECT id, name, created_at from brackets LIMIT $1 OFFSET $2"#,
+        limit,
+        offset
+    )
+    // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
+    .fetch_all(&pool)
+    .await
+    .expect("fetch result");
+
+    let list = GenericResourcesList(brackets);
+
+    (StatusCode::OK, AxumJson(list)).into_response()
 }

@@ -14,6 +14,7 @@ pub mod health_check;
 pub mod login;
 pub mod logout;
 pub mod registration;
+pub mod resources;
 pub mod test_utils;
 pub mod users;
 
@@ -29,7 +30,9 @@ use axum::{
     routing::{delete, get, post},
     Router,
 };
-use brackets::{create_bracket, get_bracket, new_bracket_from_players, report_result};
+use brackets::{
+    create_bracket, get_bracket, list_brackets, new_bracket_from_players, report_result,
+};
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -100,6 +103,7 @@ fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router {
         "/brackets",
         Router::new()
             .route("/", post(create_bracket))
+            .route("/", get(list_brackets))
             .route("/:bracket_id", get(get_bracket)),
     );
     let protected_routes = Router::new()

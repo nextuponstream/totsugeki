@@ -4,6 +4,7 @@ use reqwest::StatusCode;
 use sqlx::PgPool;
 use totsugeki::matches::Match;
 use tournament_organiser_api::brackets::{BracketRecord, GenericResourceCreated};
+use tournament_organiser_api::resources::GenericResource;
 use tournament_organiser_api::test_utils::spawn_app;
 
 #[sqlx::test]
@@ -75,4 +76,28 @@ async fn get_bracket(db: PgPool) {
     assert_eq!(bracket.name, "");
     let matches: Vec<Match> = bracket.matches.0 .0;
     assert!(matches.is_empty());
+}
+
+#[sqlx::test(fixtures("brackets"))]
+async fn list_brackets(db: PgPool) {
+    let app = spawn_app(db).await;
+    app.login_as_test_user().await;
+
+    let response = app.list_brackets(10, 0).await;
+
+    let status = response.status();
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "status: {status}, response: \"{}\"",
+        response.text().await.unwrap(),
+    );
+
+    let response = app.list_brackets(100, 100).await;
+
+    let status = response.status();
+    assert_eq!(status, StatusCode::OK);
+
+    let brackets: Vec<GenericResource> = response.json().await.unwrap();
+    assert_eq!(brackets.len(), 100);
 }
