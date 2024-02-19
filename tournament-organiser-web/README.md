@@ -106,6 +106,12 @@ cargo watch -w tournament-organiser-web -w tournament-organiser-api \
 -s "npm --prefix tournament-organiser-web run build && cargo run --package tournament-organiser-api"
 ```
 
+Seed the database:
+
+```bash
+sudo -u toa psql --dbname=toa < e2eSeeder.sql
+```
+
 Launch interactive e2e cypress tests
 
 ```bash

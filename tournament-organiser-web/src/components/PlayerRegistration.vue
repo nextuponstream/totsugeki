@@ -10,7 +10,7 @@
         name="name"
         :placeholder="$t('playerRegistrationForm.newPlayerPlaceholder')"
       />
-      <SubmitBtn />
+      <SubmitBtn data-test-id="add-player" />
     </form>
   </div>
 </template>

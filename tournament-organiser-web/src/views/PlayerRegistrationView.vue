@@ -8,6 +8,7 @@
       <div class="group mt-5 grid grid-cols-1 place-items-center">
         <div>
           <submit-btn
+            data-test-id="start-bracket"
             :disabled="hasMinNumberOfPlayerToStartBracket"
             @click="createBracketFromPlayers"
           >

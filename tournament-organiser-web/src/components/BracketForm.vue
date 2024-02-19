@@ -16,7 +16,7 @@
           :placeholder="t('bracketForm.namePlaceholder')"
         />
       </div>
-      <SubmitBtn />
+      <SubmitBtn data-test-id="next-form" />
     </Form>
   </div>
 </template>
