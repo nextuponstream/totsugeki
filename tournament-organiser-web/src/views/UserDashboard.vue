@@ -78,7 +78,7 @@ const showModal = ref(false)
 
 onMounted(async () => {
   try {
-    let response = await fetch(`${import.meta.env.VITE_API_URL}/api/user`, {
+    let response = await fetch(`${import.meta.env.VITE_API_URL}/api/users`, {
       method: 'GET',
       headers: {
         Accept: 'application/json',
@@ -125,7 +125,7 @@ async function deleteAccountFormSubmit(values: any) {
 
   // all ok
   try {
-    let response = await fetch(`${import.meta.env.VITE_API_URL}/api/user`, {
+    let response = await fetch(`${import.meta.env.VITE_API_URL}/api/users`, {
       method: 'DELETE',
     })
     if (response.ok) {

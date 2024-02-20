@@ -34,7 +34,7 @@ impl Bracket {
     ) -> Result<(Bracket, Vec<Match>), Error> {
         if !self.accept_match_results {
             return Err(Error::NotStarted(
-                self.bracket_id,
+                self.id,
                 ". Cannot disqualify at this time.".into(),
             ));
         }
@@ -82,7 +82,7 @@ mod tests {
         let players = bracket.get_participants().get_players_list();
         let p1_id = players[0].get_id();
 
-        let bracket_id = bracket.bracket_id;
+        let bracket_id = bracket.id;
         match bracket.disqualify_participant(p1_id) {
             Err(Error::NotStarted(id, _)) => assert_eq!(id, bracket_id),
             Err(e) => panic!("Expected Started error, got {e}"),

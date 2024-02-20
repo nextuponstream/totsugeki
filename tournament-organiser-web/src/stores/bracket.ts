@@ -74,7 +74,7 @@ export const useBracketStore = defineStore('bracket', () => {
   async function getDisplayableBracket() {
     try {
       let response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/brackets/${id.value}/show`,
+        `${import.meta.env.VITE_API_URL}/api/brackets/${id.value}/display`,
         {
           method: 'GET',
           headers: {
@@ -91,7 +91,9 @@ export const useBracketStore = defineStore('bracket', () => {
         throw new Error(
           `response (${
             response.status
-          }) \"${await response.text()}\" from /api/brackets/${id.value}`
+          }) \"${await response.text()}\" from /api/brackets/${
+            id.value
+          }/display`
         )
       }
     } catch (e) {

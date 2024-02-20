@@ -97,7 +97,7 @@ impl Bracket {
     pub fn remove_participant(self, participant_id: PlayerId) -> Result<Self, Error> {
         if self.accept_match_results {
             return Err(Error::Started(
-                self.bracket_id,
+                self.id,
                 ". As a player, you can quit the bracket by forfeiting or ask an admin to disqualify you."
                     .into(),
             ));

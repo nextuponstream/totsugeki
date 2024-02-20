@@ -37,12 +37,20 @@ import ShowBracket from '@/components/ShowBracket.vue'
 import { useI18n } from 'vue-i18n'
 import ReportResultModal from '@/components/ReportResultModal.vue'
 import { useBracketStore } from '@/stores/bracket'
-
+import { useRoute } from 'vue-router'
 const bracketStore = useBracketStore()
+
+const route = useRoute()
 
 const { t } = useI18n({})
 
 onMounted(async () => {
+  let id = route.params.bracketId
+  if (typeof id === 'string') {
+    bracketStore.setBracketId(id)
+  } else {
+    throw new Error('multiple bracketId')
+  }
   await bracketStore.getDisplayableBracket()
 })
 

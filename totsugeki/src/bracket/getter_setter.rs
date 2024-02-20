@@ -25,7 +25,7 @@ impl Bracket {
     /// Get id of bracket
     #[must_use]
     pub fn get_id(&self) -> Id {
-        self.bracket_id
+        self.id
     }
 
     /// Returns matches
@@ -37,7 +37,7 @@ impl Bracket {
     /// Get name of bracket
     #[must_use]
     pub fn get_name(&self) -> String {
-        self.bracket_name.clone()
+        self.name.clone()
     }
 
     /// Get participants of bracket

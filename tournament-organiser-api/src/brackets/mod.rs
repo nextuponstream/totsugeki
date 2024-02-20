@@ -12,7 +12,7 @@ use totsugeki::bracket::{
     double_elimination_variant::Variant as DoubleEliminationVariant, Bracket, Id,
 };
 use totsugeki::matches::Match;
-use totsugeki::player::Id as PlayerId;
+use totsugeki::player::{Id as PlayerId, Participants};
 use totsugeki_display::loser_bracket::lines as loser_bracket_lines;
 use totsugeki_display::loser_bracket::reorder as reorder_loser_bracket;
 use totsugeki_display::winner_bracket::lines as winner_bracket_lines;
@@ -77,7 +77,7 @@ pub async fn get_bracket_display(
 
     let Some(b) = sqlx::query_as!(
         BracketRecord,
-        r#"SELECT id, name, matches as "matches: SqlxJson<MatchesRaw>", created_at  from brackets WHERE id = $1"#,
+        r#"SELECT id, name, matches as "matches: SqlxJson<MatchesRaw>", created_at, participants as "participants: SqlxJson<Participants>"  from brackets WHERE id = $1"#,
         bracket_id,
     )
     // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
@@ -86,73 +86,72 @@ pub async fn get_bracket_display(
     .expect("fetch result") else {
         return (StatusCode::NOT_FOUND).into_response();
     };
-    todo!();
-    // let bracket: Bracket = b.into();
-    // let dev: DoubleEliminationVariant = bracket.clone().try_into().expect("partition");
+    let bracket = Bracket::assemble(b.id, b.name, b.participants.0, b.matches.0 .0);
+    let dev: DoubleEliminationVariant = bracket.clone().try_into().expect("partition");
 
-    // // TODO test if tracing shows from which methods it was called
-    // let winner_bracket_matches = match dev.partition_winner_bracket() {
-    //     Ok(wb) => wb,
-    //     Err(e) => {
-    //         tracing::error!("{e:?}");
-    //         return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
-    //     }
-    // };
-    // let mut winner_bracket_rounds = vec![];
-    // for r in winner_bracket_matches {
-    //     let round = r
-    //         .iter()
-    //         .map(|m| from_participants(m, &participants))
-    //         .collect();
-    //     winner_bracket_rounds.push(round);
-    // }
+    // TODO test if tracing shows from which methods it was called
+    let winner_bracket_matches = match dev.partition_winner_bracket() {
+        Ok(wb) => wb,
+        Err(e) => {
+            tracing::error!("{e:?}");
+            return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
+        }
+    };
+    let mut winner_bracket_rounds = vec![];
+    for r in winner_bracket_matches {
+        let round = r
+            .iter()
+            .map(|m| from_participants(m, &bracket.get_participants()))
+            .collect();
+        winner_bracket_rounds.push(round);
+    }
 
-    // reorder_winner_bracket(&mut winner_bracket_rounds);
-    // let Some(winner_bracket_lines) = winner_bracket_lines(&winner_bracket_rounds) else {
-    //     tracing::error!("winner bracket connecting lines");
-    //     return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
-    // };
+    reorder_winner_bracket(&mut winner_bracket_rounds);
+    let Some(winner_bracket_lines) = winner_bracket_lines(&winner_bracket_rounds) else {
+        tracing::error!("winner bracket connecting lines");
+        return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
+    };
 
-    // let Ok(lower_bracket_matches) = dev.partition_loser_bracket() else {
-    //     // TODO log error
-    //     return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
-    // };
-    // let mut loser_bracket_rounds: Vec<Vec<MinimalMatch>> = vec![];
-    // for r in lower_bracket_matches {
-    //     let round = r
-    //         .iter()
-    //         .map(|m| from_participants(m, &participants))
-    //         .collect();
-    //     loser_bracket_rounds.push(round);
-    // }
-    // reorder_loser_bracket(&mut loser_bracket_rounds);
-    // let Some(loser_bracket_lines) = loser_bracket_lines(loser_bracket_rounds.clone()) else {
-    //     tracing::error!("loser bracket connecting lines");
-    //     return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
-    // };
+    let Ok(lower_bracket_matches) = dev.partition_loser_bracket() else {
+        // TODO log error
+        return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
+    };
+    let mut loser_bracket_rounds: Vec<Vec<MinimalMatch>> = vec![];
+    for r in lower_bracket_matches {
+        let round = r
+            .iter()
+            .map(|m| from_participants(m, &bracket.get_participants()))
+            .collect();
+        loser_bracket_rounds.push(round);
+    }
+    reorder_loser_bracket(&mut loser_bracket_rounds);
+    let Some(loser_bracket_lines) = loser_bracket_lines(loser_bracket_rounds.clone()) else {
+        tracing::error!("loser bracket connecting lines");
+        return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
+    };
 
-    // let (gf, gf_reset) = match dev.grand_finals_and_reset() {
-    //     Ok((gf, bracket_reset)) => (gf, bracket_reset),
-    //     Err(e) => {
-    //         tracing::error!("{e:?}");
-    //         return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
-    //     }
-    // };
-    // let gf = from_participants(&gf, &participants);
-    // let gf_reset = from_participants(&gf_reset, &participants);
+    let (gf, gf_reset) = match dev.grand_finals_and_reset() {
+        Ok((gf, bracket_reset)) => (gf, bracket_reset),
+        Err(e) => {
+            tracing::error!("{e:?}");
+            return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
+        }
+    };
+    let gf = from_participants(&gf, &bracket.get_participants());
+    let gf_reset = from_participants(&gf_reset, &bracket.get_participants());
 
-    // let bracket = BracketDisplay {
-    //     winner_bracket: winner_bracket_rounds,
-    //     winner_bracket_lines,
-    //     loser_bracket: loser_bracket_rounds,
-    //     loser_bracket_lines,
-    //     grand_finals: gf,
-    //     grand_finals_reset: gf_reset,
-    //     bracket,
-    // };
-    // tracing::info!("new bracket {}", bracket.bracket.get_id());
-    // tracing::debug!("new bracket {:?}", bracket);
-    // (StatusCode::OK, AxumJson(bracket)).into_response()
+    let bracket = BracketDisplay {
+        winner_bracket: winner_bracket_rounds,
+        winner_bracket_lines,
+        loser_bracket: loser_bracket_rounds,
+        loser_bracket_lines,
+        grand_finals: gf,
+        grand_finals_reset: gf_reset,
+        bracket,
+    };
+    tracing::info!("displaying bracket {}", bracket.bracket.get_id());
+    tracing::debug!("displaying bracket {:?}", bracket);
+    (StatusCode::OK, AxumJson(bracket)).into_response()
 }
 
 /// Returns updated bracket with result. Because there is no persistence, it's
@@ -278,6 +277,8 @@ pub struct BracketRecord {
     pub created_at: DateTime<Utc>,
     /// matches
     pub matches: SqlxJson<MatchesRaw>,
+    /// participants
+    pub participants: SqlxJson<Participants>,
 }
 
 /// Return a newly instanciated bracket from ordered (=seeded) player names
@@ -297,9 +298,10 @@ pub async fn create_bracket(
     }
 
     let r = sqlx::query!(
-        "INSERT INTO brackets (name, matches) VALUES ($1, $2) RETURNING id",
+        "INSERT INTO brackets (name, matches, participants) VALUES ($1, $2, $3) RETURNING id",
         bracket.get_name(),
         SqlxJson(bracket.get_matches()) as _,
+        SqlxJson(bracket.get_participants()) as _,
     )
     .fetch_one(&pool)
     .await
@@ -327,7 +329,7 @@ pub async fn get_bracket(
 
     let Some(b) = sqlx::query_as!(
         BracketRecord,
-        r#"SELECT id, name, matches as "matches: SqlxJson<MatchesRaw>", created_at  from brackets WHERE id = $1"#,
+        r#"SELECT id, name, matches as "matches: SqlxJson<MatchesRaw>", created_at, participants as "participants: SqlxJson<Participants>"  from brackets WHERE id = $1"#,
         bracket_id,
     )
     // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71

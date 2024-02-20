@@ -14,7 +14,7 @@ impl Bracket {
     /// thrown when provided players do not match current players in bracket
     pub fn update_seeding(self, players: &[PlayerId]) -> Result<Self, Error> {
         if self.accept_match_results {
-            return Err(Error::Started(self.bracket_id, String::new()));
+            return Err(Error::Started(self.id, String::new()));
         }
 
         let mut player_group = Participants::default();
@@ -24,7 +24,7 @@ impl Bracket {
                 return Err(Error::UnknownPlayer(
                     *sorted_player,
                     self.participants.clone(),
-                    self.bracket_id,
+                    self.id,
                 ));
             };
             player_group = player_group.add_participant(player.clone())?;
@@ -63,7 +63,7 @@ mod tests {
             .set_new_players(3)
             .build()
             .expect("bracket");
-        let bracket_id = bracket.bracket_id;
+        let bracket_id = bracket.id;
         let players = bracket.get_participants().get_players_list();
         let p1_id = players[0].get_id();
         let p2_id = players[1].get_id();
@@ -93,7 +93,7 @@ mod tests {
         // Unknown player
         let seeding = vec![p3_id, p2_id, unknown_player];
         let expected_participants = bracket.get_participants();
-        let expected_bracket_id = bracket.bracket_id;
+        let expected_bracket_id = bracket.id;
         let (id, p, bracket_id) = match bracket.clone().update_seeding(&seeding) {
             Err(Error::UnknownPlayer(id, p, bracket_id)) => (id, p, bracket_id),
             Err(e) => panic!("Expected Players error, got {e}"),

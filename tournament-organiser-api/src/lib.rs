@@ -102,8 +102,7 @@ fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router {
         Router::new()
             .route("/", post(create_bracket))
             .route("/", get(list_brackets))
-            .route("/:bracket_id", get(get_bracket))
-            .route("/:bracket_id/display", get(get_bracket_display)),
+            .route("/:bracket_id", get(get_bracket)),
     );
     let protected_routes = Router::new()
         .merge(user_routes)
@@ -112,12 +111,19 @@ fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router {
             session_store,
             auth_layer,
         ));
-    Router::new()
+    let unprotected_bracket_routes = Router::new()
         .route("/health_check", get(health_check))
         .route("/register", post(registration))
         .route("/login", post(login))
         .route("/logout", post(logout))
         .route("/report-result-for-bracket", post(report_result))
+        .nest(
+            "/brackets",
+            Router::new().route("/:bracket_id/display", get(get_bracket_display)),
+        );
+    let unprotected_routes = Router::new().merge(unprotected_bracket_routes);
+    Router::new()
+        .merge(unprotected_routes)
         .merge(protected_routes)
         .fallback_service(get(|| async { (StatusCode::NOT_FOUND, "Not found") }))
         .with_state(pool)
