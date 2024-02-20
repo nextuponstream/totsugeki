@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO brackets (name, matches) VALUES ($1, $2) RETURNING id",
+  "query": "INSERT INTO brackets (name, matches, participants) VALUES ($1, $2, $3) RETURNING id",
   "describe": {
     "columns": [
       {
@@ -12,6 +12,7 @@
     "parameters": {
       "Left": [
         "Text",
+        "Jsonb",
         "Jsonb"
       ]
     },
@@ -19,5 +20,5 @@
       false
     ]
   },
-  "hash": "b42b654887a3562ddcbf62b80f56c4aa5bdaa10ba9b47478a49b21c25c48a296"
+  "hash": "fb7d4f4f0d7ba0b7ddd3cc4cccb140113738504de6eb7cb209168bebf156a638"
 }

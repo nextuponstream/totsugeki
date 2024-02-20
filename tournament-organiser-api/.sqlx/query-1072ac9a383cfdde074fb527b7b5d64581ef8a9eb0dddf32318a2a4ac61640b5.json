@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, name, matches as \"matches: SqlxJson<MatchesRaw>\", created_at  from brackets WHERE id = $1",
+  "query": "SELECT id, name, matches as \"matches: SqlxJson<MatchesRaw>\", created_at, participants as \"participants: SqlxJson<Participants>\"  from brackets WHERE id = $1",
   "describe": {
     "columns": [
       {
@@ -22,6 +22,11 @@
         "ordinal": 3,
         "name": "created_at",
         "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "participants: SqlxJson<Participants>",
+        "type_info": "Jsonb"
       }
     ],
     "parameters": {
@@ -33,8 +38,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "59fb7c4af8e6b66b6f8d00cbf912239172283d79884be378f162354e6027f34e"
+  "hash": "1072ac9a383cfdde074fb527b7b5d64581ef8a9eb0dddf32318a2a4ac61640b5"
 }
