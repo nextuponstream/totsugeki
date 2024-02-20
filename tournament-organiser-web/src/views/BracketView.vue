@@ -11,10 +11,10 @@
   </div>
   <div>
     <ShowBracket
-      :bracket="bracket.winner_bracket"
-      :lines="bracket.winner_bracket_lines"
-      :grand-finals="bracket.grand_finals"
-      :grand-finals-reset="bracket.grand_finals_reset"
+      :bracket="bracketStore.bracket?.winner_bracket"
+      :lines="bracketStore.bracket?.winner_bracket_lines"
+      :grand-finals="bracketStore.bracket?.grand_finals"
+      :grand-finals-reset="bracketStore.bracket?.grand_finals_reset"
       @show-result-modal="showResultModal"
     >
       {{ t('bracketView.winnerBracket') }}
@@ -22,8 +22,8 @@
   </div>
   <div class="pt-6">
     <ShowBracket
-      :bracket="bracket.loser_bracket"
-      :lines="bracket.loser_bracket_lines"
+      :bracket="bracketStore.bracket?.loser_bracket"
+      :lines="bracketStore.bracket?.loser_bracket_lines"
       @show-result-modal="showResultModal"
     >
       {{ t('bracketView.loserBracket') }}
@@ -36,21 +36,14 @@ import type { Ref } from 'vue'
 import ShowBracket from '@/components/ShowBracket.vue'
 import { useI18n } from 'vue-i18n'
 import ReportResultModal from '@/components/ReportResultModal.vue'
+import { useBracketStore } from '@/stores/bracket'
+
+const bracketStore = useBracketStore()
 
 const { t } = useI18n({})
 
-const bracket: Ref<Bracket> = ref({
-  winner_bracket: [],
-  winner_bracket_lines: [],
-  loser_bracket: [],
-  loser_bracket_lines: [],
-  grand_finals: undefined as Match | undefined,
-  grand_finals_reset: undefined as Match | undefined,
-  bracket: undefined,
-})
-
-onMounted(() => {
-  bracket.value = JSON.parse(localStorage.getItem('bracket')!)
+onMounted(async () => {
+  await bracketStore.getDisplayableBracket()
 })
 
 const matchId = ref<string | null>(null)
@@ -72,31 +65,31 @@ async function reportResult(
   scoreP2: number
 ) {
   try {
-    console.log(bracket.value.bracket)
-    let response = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/report-result-for-bracket`,
-      {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          bracket: bracket.value.bracket,
-          p1_id: players[0].id,
-          p2_id: players[1].id,
-          score_p1: scoreP1,
-          score_p2: scoreP2,
-        }),
-      }
-    )
-    if (response.ok) {
-      let newBracket = await response.json()
-      localStorage.setItem('bracket', JSON.stringify(bracket))
-      bracket.value = newBracket
-    } else {
-      throw new Error('non-200 response for /api/report-result-for-bracket')
-    }
+    // console.log(bracketStore.bracket.bracket)
+    // let response = await fetch(
+    //   `${import.meta.env.VITE_API_URL}/api/report-result-for-bracket`,
+    //   {
+    //     method: 'POST',
+    //     headers: {
+    //       Accept: 'application/json',
+    //       'Content-Type': 'application/json',
+    //     },
+    //     body: JSON.stringify({
+    //       bracket: bracket.value.bracket,
+    //       p1_id: players[0].id,
+    //       p2_id: players[1].id,
+    //       score_p1: scoreP1,
+    //       score_p2: scoreP2,
+    //     }),
+    //   }
+    // )
+    // if (response.ok) {
+    //   let newBracket = await response.json()
+    //   localStorage.setItem('bracket', JSON.stringify(bracket))
+    //   bracket.value = newBracket
+    // } else {
+    //   throw new Error('non-200 response for /api/report-result-for-bracket')
+    // }
   } catch (e) {
     console.error(e)
   }

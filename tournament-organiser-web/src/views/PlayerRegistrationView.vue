@@ -38,11 +38,13 @@ import { computed, ref, onMounted } from 'vue'
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import { useBracketStore } from '@/stores/bracket'
 
 const { t } = useI18n({})
 const router = useRouter()
 
 const bracketName = ref('')
+const bracketStore = useBracketStore()
 
 onMounted(() => {
   bracketName.value = localStorage.getItem('bracketName') ?? ''
@@ -73,35 +75,8 @@ const hasMinNumberOfPlayerToStartBracket = computed(() => {
 
 async function createBracketFromPlayers() {
   try {
-    // TODO configurable variable
-    let response = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/bracket-from-players`,
-      {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          names: playerList.value.map((p) => p.name),
-        }),
-        // can't send json without cors... https://stackoverflow.com/a/45655314
-        // documentation: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch#supplying_request_options
-      }
-    )
-    if (response.ok) {
-      let bracket = await response.json()
-      localStorage.setItem('bracket', JSON.stringify(bracket))
-      router.push({
-        name: 'bracket',
-      })
-    } else {
-      throw new Error(
-        `response (${
-          response.status
-        }) \"${await response.text()}\" from /bracket-from-players`
-      )
-    }
+    await bracketStore.createBracket(playerList.value)
+    router.push({ name: 'bracket', params: { bracketId: bracketStore.id } })
   } catch (e) {
     console.error(e)
   }

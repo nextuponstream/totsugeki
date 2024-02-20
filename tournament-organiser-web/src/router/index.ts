@@ -23,7 +23,7 @@ const router = createRouter({
       component: () => import('../views/PlayerRegistrationView.vue'),
     },
     {
-      path: '/bracket',
+      path: '/bracket/:bracketId',
       name: 'bracket',
       component: () => import('../views/BracketView.vue'),
     },

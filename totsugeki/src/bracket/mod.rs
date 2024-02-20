@@ -21,11 +21,9 @@ use crate::{
     seeding::{
         Error as SeedingError, Method as SeedingMethod, ParsingError as SeedingParsingError,
     },
-    DiscussionChannelId,
 };
 use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -89,12 +87,6 @@ pub enum Error {
 
 /// Bracket identifier
 pub type Id = Uuid;
-
-/// Active brackets
-pub type ActiveBrackets = HashMap<DiscussionChannelId, Id>;
-
-/// Finalized brackets
-pub type FinalizedBrackets = HashSet<Id>;
 
 /// Add/remove players to the bracket. Then use methods to make the bracket
 /// progress.
@@ -355,42 +347,6 @@ pub enum ParsingError {
 impl std::fmt::Display for Bracket {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} ({})", self.bracket_name, self.bracket_id)
-    }
-}
-
-/// Parameters to create a bracket
-pub struct CreateRequest<'b> {
-    /// Automatically validate match if both players agree
-    pub automatic_match_validation: bool,
-    /// requested bracket format
-    pub bracket_format: &'b str,
-    /// requested bracket name
-    pub bracket_name: &'b str,
-    /// Id of internal channel
-    pub internal_channel_id: &'b str,
-    /// Organiser id of requested bracket while using service
-    pub internal_organiser_id: &'b str,
-    /// Organiser name of requested bracket
-    pub organiser_name: &'b str,
-    /// seeding method of requested bracket
-    pub seeding_method: &'b str,
-    /// Type of service used to make request
-    pub service: &'b str,
-    /// Advertised start time
-    pub start_time: &'b str,
-}
-
-impl TryFrom<CreateRequest<'_>> for Bracket {
-    type Error = ParsingError;
-
-    fn try_from(br: CreateRequest) -> Result<Self, Self::Error> {
-        Ok(Bracket::new(
-            br.bracket_name,
-            br.bracket_format.parse()?,
-            br.seeding_method.parse()?,
-            br.start_time.parse()?,
-            br.automatic_match_validation,
-        ))
     }
 }
 

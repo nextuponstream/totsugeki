@@ -13,7 +13,13 @@ describe('creating brackets as a registered user', () => {
 
     cy.get('[data-test-id=start-bracket]').click()
 
+    cy.intercept('POST', '/api/brackets').as('createBracket')
+
     cy.url().should('contain', '/3c3ebe96-c051-4d7c-bace-a8ddf5924cf8/bracket/')
+
+    cy.wait('@createBracket').then((interception) => {
+      assert.equal(interception.response?.statusCode, 302)
+    })
 
     cy.contains('p1')
     cy.contains('p2')

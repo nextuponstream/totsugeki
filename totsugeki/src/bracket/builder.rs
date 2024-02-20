@@ -1,10 +1,10 @@
 //! Builer pattern for brackets
 
 use crate::bracket::Bracket;
+use crate::matches::Match;
 use crate::{format::Format, player::Participants};
 
 /// Initialize a new bracket with participants and format (but not matches)
-// FIXME use code somewhere
 #[allow(dead_code)]
 #[derive(Default)]
 pub struct Builder {

@@ -30,9 +30,7 @@ use axum::{
     routing::{delete, get, post},
     Router,
 };
-use brackets::{
-    create_bracket, get_bracket, list_brackets, new_bracket_from_players, report_result,
-};
+use brackets::{create_bracket, get_bracket, get_bracket_display, list_brackets, report_result};
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -104,7 +102,8 @@ fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router {
         Router::new()
             .route("/", post(create_bracket))
             .route("/", get(list_brackets))
-            .route("/:bracket_id", get(get_bracket)),
+            .route("/:bracket_id", get(get_bracket))
+            .route("/:bracket_id/display", get(get_bracket_display)),
     );
     let protected_routes = Router::new()
         .merge(user_routes)
@@ -118,7 +117,6 @@ fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router {
         .route("/register", post(registration))
         .route("/login", post(login))
         .route("/logout", post(logout))
-        .route("/bracket-from-players", post(new_bracket_from_players))
         .route("/report-result-for-bracket", post(report_result))
         .merge(protected_routes)
         .fallback_service(get(|| async { (StatusCode::NOT_FOUND, "Not found") }))

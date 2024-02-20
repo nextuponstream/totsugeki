@@ -68,84 +68,91 @@ pub struct PlayerList {
 ///
 /// # Errors
 /// May return 500 error when bracket cannot be parsed
-#[instrument(name = "new_bracket")]
-pub async fn new_bracket_from_players(
-    AxumJson(player_list): AxumJson<PlayerList>,
+#[instrument(name = "get_bracket_display")]
+pub async fn get_bracket_display(
+    Path(bracket_id): Path<Id>,
+    State(pool): State<PgPool>,
 ) -> impl IntoResponse {
-    tracing::debug!("new bracket from players: {:?}", player_list.names);
-    let mut bracket = Bracket::default();
-    for name in player_list.names {
-        let Ok(tmp) = bracket.add_participant(name.as_str()) else {
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        };
-        bracket = tmp;
-    }
-    let participants = bracket.get_participants();
-    let dev: DoubleEliminationVariant = bracket.clone().try_into().expect("partition");
+    tracing::debug!("bracket {bracket_id}");
 
-    // TODO test if tracing shows from which methods it was called
-    let winner_bracket_matches = match dev.partition_winner_bracket() {
-        Ok(wb) => wb,
-        Err(e) => {
-            tracing::error!("{e:?}");
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
+    let Some(b) = sqlx::query_as!(
+        BracketRecord,
+        r#"SELECT id, name, matches as "matches: SqlxJson<MatchesRaw>", created_at  from brackets WHERE id = $1"#,
+        bracket_id,
+    )
+    // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
+    .fetch_optional(&pool)
+    .await
+    .expect("fetch result") else {
+        return (StatusCode::NOT_FOUND).into_response();
     };
-    let mut winner_bracket_rounds = vec![];
-    for r in winner_bracket_matches {
-        let round = r
-            .iter()
-            .map(|m| from_participants(m, &participants))
-            .collect();
-        winner_bracket_rounds.push(round);
-    }
+    todo!();
+    // let bracket: Bracket = b.into();
+    // let dev: DoubleEliminationVariant = bracket.clone().try_into().expect("partition");
 
-    reorder_winner_bracket(&mut winner_bracket_rounds);
-    let Some(winner_bracket_lines) = winner_bracket_lines(&winner_bracket_rounds) else {
-        tracing::error!("winner bracket connecting lines");
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
-    };
+    // // TODO test if tracing shows from which methods it was called
+    // let winner_bracket_matches = match dev.partition_winner_bracket() {
+    //     Ok(wb) => wb,
+    //     Err(e) => {
+    //         tracing::error!("{e:?}");
+    //         return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
+    //     }
+    // };
+    // let mut winner_bracket_rounds = vec![];
+    // for r in winner_bracket_matches {
+    //     let round = r
+    //         .iter()
+    //         .map(|m| from_participants(m, &participants))
+    //         .collect();
+    //     winner_bracket_rounds.push(round);
+    // }
 
-    let Ok(lower_bracket_matches) = dev.partition_loser_bracket() else {
-        // TODO log error
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
-    };
-    let mut loser_bracket_rounds: Vec<Vec<MinimalMatch>> = vec![];
-    for r in lower_bracket_matches {
-        let round = r
-            .iter()
-            .map(|m| from_participants(m, &participants))
-            .collect();
-        loser_bracket_rounds.push(round);
-    }
-    reorder_loser_bracket(&mut loser_bracket_rounds);
-    let Some(loser_bracket_lines) = loser_bracket_lines(loser_bracket_rounds.clone()) else {
-        tracing::error!("loser bracket connecting lines");
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
-    };
+    // reorder_winner_bracket(&mut winner_bracket_rounds);
+    // let Some(winner_bracket_lines) = winner_bracket_lines(&winner_bracket_rounds) else {
+    //     tracing::error!("winner bracket connecting lines");
+    //     return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
+    // };
 
-    let (gf, gf_reset) = match dev.grand_finals_and_reset() {
-        Ok((gf, bracket_reset)) => (gf, bracket_reset),
-        Err(e) => {
-            tracing::error!("{e:?}");
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
-    let gf = from_participants(&gf, &participants);
-    let gf_reset = from_participants(&gf_reset, &participants);
+    // let Ok(lower_bracket_matches) = dev.partition_loser_bracket() else {
+    //     // TODO log error
+    //     return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
+    // };
+    // let mut loser_bracket_rounds: Vec<Vec<MinimalMatch>> = vec![];
+    // for r in lower_bracket_matches {
+    //     let round = r
+    //         .iter()
+    //         .map(|m| from_participants(m, &participants))
+    //         .collect();
+    //     loser_bracket_rounds.push(round);
+    // }
+    // reorder_loser_bracket(&mut loser_bracket_rounds);
+    // let Some(loser_bracket_lines) = loser_bracket_lines(loser_bracket_rounds.clone()) else {
+    //     tracing::error!("loser bracket connecting lines");
+    //     return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
+    // };
 
-    let bracket = BracketDisplay {
-        winner_bracket: winner_bracket_rounds,
-        winner_bracket_lines,
-        loser_bracket: loser_bracket_rounds,
-        loser_bracket_lines,
-        grand_finals: gf,
-        grand_finals_reset: gf_reset,
-        bracket,
-    };
-    tracing::info!("new bracket {}", bracket.bracket.get_id());
-    tracing::debug!("new bracket {:?}", bracket);
-    Ok(AxumJson(bracket))
+    // let (gf, gf_reset) = match dev.grand_finals_and_reset() {
+    //     Ok((gf, bracket_reset)) => (gf, bracket_reset),
+    //     Err(e) => {
+    //         tracing::error!("{e:?}");
+    //         return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
+    //     }
+    // };
+    // let gf = from_participants(&gf, &participants);
+    // let gf_reset = from_participants(&gf_reset, &participants);
+
+    // let bracket = BracketDisplay {
+    //     winner_bracket: winner_bracket_rounds,
+    //     winner_bracket_lines,
+    //     loser_bracket: loser_bracket_rounds,
+    //     loser_bracket_lines,
+    //     grand_finals: gf,
+    //     grand_finals_reset: gf_reset,
+    //     bracket,
+    // };
+    // tracing::info!("new bracket {}", bracket.bracket.get_id());
+    // tracing::debug!("new bracket {:?}", bracket);
+    // (StatusCode::OK, AxumJson(bracket)).into_response()
 }
 
 /// Returns updated bracket with result. Because there is no persistence, it's
