@@ -6,6 +6,7 @@ type Player = { name: string; index: number }
 export const useBracketStore = defineStore('bracket', () => {
   const id: Ref<string | undefined> = ref(undefined)
   const bracket: Ref<Bracket | undefined> = ref(undefined)
+
   function setBracketId(newId: string) {
     id.value = newId
   }

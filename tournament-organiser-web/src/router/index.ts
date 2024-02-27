@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import CreateBracket from '../views/CreateBracketView.vue'
+import { useUserStore } from '@/stores/user'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -51,9 +52,10 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-  // TODO use pinia instead of localstorage
-  let userId = localStorage.getItem('user_id')
-  if (userId === null && to.meta.requiresAuth) {
+  const userStore = useUserStore()
+  userStore.setUserId()
+
+  if (userStore.id === null && to.meta.requiresAuth) {
     console.warn('unauthenticated, redirecting to homepage...')
     next({ name: 'createBracket' })
   } else {

@@ -50,8 +50,9 @@ import { useI18n } from 'vue-i18n'
 import { object, string } from 'yup'
 import router from '@/router'
 import EditUser from '@/components/EditUser.vue'
+import { useUserStore } from '@/stores/user'
 
-const emits = defineEmits(['logout'])
+const userStore = useUserStore()
 const { t } = useI18n({})
 const editUser = ref<InstanceType<typeof EditUser> | null>(null)
 const deleteSchema = object({
@@ -124,20 +125,11 @@ async function deleteAccountFormSubmit(values: any) {
   }
 
   // all ok
-  try {
-    let response = await fetch(`${import.meta.env.VITE_API_URL}/api/users`, {
-      method: 'DELETE',
+  let deleted = await userStore.deleteAccount()
+  if (deleted) {
+    router.push({
+      name: 'createBracket',
     })
-    if (response.ok) {
-      console.info('successful account deletion')
-      localStorage.removeItem('user_id')
-      emits('logout')
-      router.push({
-        name: 'createBracket',
-      })
-    }
-  } catch (e) {
-    console.error(e)
   }
 }
 </script>

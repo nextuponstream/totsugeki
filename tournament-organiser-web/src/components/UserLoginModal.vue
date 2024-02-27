@@ -33,8 +33,10 @@ import BaseModal from './ui/BaseModal.vue'
 import router from '@/router'
 import { useI18n } from 'vue-i18n'
 import { object, string, ref as yupref } from 'yup'
+import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n({})
+const userStore = useUserStore()
 
 const props = defineProps<{
   modelValue: boolean
@@ -77,40 +79,23 @@ function onInvalidSubmit({ values, errors, results }: any) {
  */
 async function onSubmit(values: any) {
   formErrors.value = {}
-  try {
-    let response = await fetch(`${import.meta.env.VITE_API_URL}/api/login`, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        Authorization: 'Basic ' + btoa(`${values.email}:${values.password}`),
-      },
-      credentials: 'same-origin',
-      body: JSON.stringify({ ...values }),
-    })
-    if (response.ok) {
-      console.info('successful login')
-      if (response.body) {
-        let body = await response.json()
-        // store user ID and prefer logged in view from now on
-        localStorage.setItem('user_id', body.user_id)
-        router.push({
-          name: 'userDashboard',
-        })
-        emits('login')
-      } else {
-        throw new Error('expected json response')
-      }
-    } else if (response.status === 404) {
+  let response = await userStore.login(values)
+  switch (response) {
+    case 200:
+      emits('login')
+      router.push({
+        name: 'userDashboard',
+      })
+      break
+    case 404:
       console.warn('unknown email')
       setFieldError('email', t('error.unknownEmail'))
-    } else {
+      break
+    case 500:
       setFieldError('email', t('error.communication'))
-      throw new Error('non-200 response for /api/login')
-    }
-  } catch (e) {
-    setFieldError('email', t('error.communication'))
-    console.error(e)
+    default:
+      console.error('unreachable')
+      break
   }
 }
 

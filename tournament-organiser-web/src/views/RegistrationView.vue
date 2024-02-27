@@ -35,6 +35,9 @@ import { ref, provide } from 'vue'
 import { object, string, ref as yupref } from 'yup'
 import { useI18n } from 'vue-i18n'
 import router from '@/router'
+import { useUserStore } from '@/stores/user'
+
+const userStore = useUserStore()
 
 const { t } = useI18n({})
 // NOTE: how to use i18n with yup https://stackoverflow.com/questions/72062851/problems-with-translations-with-vue-yup-and-i18n
@@ -51,7 +54,7 @@ const schema = object({
     .oneOf([yupref('password')], () => t('error.passwordMissmatch')),
 })
 
-const { resetForm, defineField, handleSubmit, setFieldError } = useForm({
+const { defineField, handleSubmit, setFieldError } = useForm({
   validationSchema: schema,
 })
 
@@ -73,32 +76,21 @@ function onInvalidSubmit({ values, errors, results }: any) {
  */
 async function onSubmit(values: any) {
   formErrors.value = {}
-  try {
-    let response = await fetch(`${import.meta.env.VITE_API_URL}/api/register`, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ ...values }),
-    })
-    if (response.ok) {
-      console.info('successful login')
+  const response = await userStore.registration(values)
+  switch (response) {
+    case 200:
       router.push({
         name: 'createBracket',
       })
-    } else if (response.status === 400) {
-      let errorMessage: { message: string } = await response.json()
-      if (errorMessage.message.includes('weak_password')) {
+      break
+    case 500:
+      break
+    default:
+      if (response.includes('weak_password')) {
         setFieldError('password', t('error.weakPassword'))
       } else {
         throw new Error('non-200 response for /api/login')
       }
-    } else {
-      throw new Error('non-200 response for /api/report-result-for-bracket')
-    }
-  } catch (e) {
-    console.error(e)
   }
 }
 
