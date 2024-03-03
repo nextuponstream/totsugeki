@@ -49,6 +49,7 @@
     >
       <MatchNode
         :match="bracketFinalMatch"
+        :test-id-prefix="testIdPrefix"
         @click="
           showResultModal(bracketFinalMatch.id, bracketFinalMatch.players)
         "
@@ -70,6 +71,7 @@
     >
       <MatchNode
         :match="grandFinals"
+        test-id-prefix="grand-finals"
         @click="showResultModal(grandFinals.id, grandFinals.players)"
       />
     </div>
@@ -92,6 +94,7 @@
     >
       <MatchNode
         :match="grandFinalsReset"
+        test-id-prefix="grand-finals-reset"
         @click="showResultModal(grandFinalsReset.id, grandFinalsReset.players)"
       />
     </div>

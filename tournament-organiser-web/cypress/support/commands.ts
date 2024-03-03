@@ -76,6 +76,33 @@ Cypress.Commands.add('testUserLogin', () => {
     })
   })
 })
+
+type Bracket = 'winner' | 'loser' | 'grand-finals' | 'grand-finals-reset'
+
+Cypress.Commands.add(
+  'submitResult',
+  (
+    firstSeed: number,
+    secondSeed: number,
+    scoreP1: number,
+    scoreP2: number,
+    bracket: Bracket
+  ) => {
+    cy.get(`[data-test-id=${bracket}-${firstSeed}-${secondSeed}]`).click()
+    cy.contains(`${scoreP1} - ${scoreP2}`).click()
+
+    cy.intercept('POST', '/api/report-result-for-bracket').as(
+      'reportFirstMatch'
+    )
+
+    cy.get('[data-test-id=submit-match-result]').click()
+
+    cy.wait('@reportFirstMatch').then((interception) => {
+      assert.equal(interception.response?.statusCode, 200)
+    })
+  }
+)
+
 //
 //
 // -- This is a child command --
@@ -99,6 +126,13 @@ declare global {
         password: string
       ): Chainable<void>
       testUserLogin(): Chainable<void>
+      submitResult(
+        firstSeed: number,
+        secondSeed: number,
+        scoreP1: number,
+        scoreP2: number,
+        bracket: Bracket
+      ): Chainable<void>
 
       //   drag(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
       //   dismiss(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
