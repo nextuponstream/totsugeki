@@ -11,27 +11,38 @@ export const useBracketStore = defineStore('bracket', () => {
     id.value = newId
   }
 
-  async function createBracket(playerList: Player[]) {
+  /**
+   * when logged in, updates bracket id. Otherwise, gets bracket details
+   * @param playerList
+   */
+  async function createBracket(playerList: Player[], loggedIn: boolean) {
+    console.debug(`creating bracket with ${loggedIn ? 'user' : 'guest'}`)
     try {
-      let response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/brackets`,
-        {
-          method: 'POST',
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            names: playerList.map((p) => p.name),
-          }),
-          // can't send json without cors... https://stackoverflow.com/a/45655314
-          // documentation: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch#supplying_request_options
-        }
-      )
+      let url = `${import.meta.env.VITE_API_URL}/api/${
+        loggedIn ? '' : 'guest/'
+      }brackets`
+      let response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          names: playerList.map((p) => p.name),
+        }),
+        // can't send json without cors... https://stackoverflow.com/a/45655314
+        // documentation: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch#supplying_request_options
+      })
       if (response.ok) {
         let r = await response.json()
         console.debug(r)
-        id.value = r.id
+        if (loggedIn) {
+          id.value = r.id
+          bracket.value = undefined
+        } else {
+          id.value = undefined
+          bracket.value = r
+        }
       } else {
         throw new Error(
           `response (${

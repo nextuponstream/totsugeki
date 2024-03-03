@@ -39,12 +39,14 @@ import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useBracketStore } from '@/stores/bracket'
+import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n({})
 const router = useRouter()
 
 const bracketName = ref('')
 const bracketStore = useBracketStore()
+const userStore = useUserStore()
 
 onMounted(() => {
   bracketName.value = localStorage.getItem('bracketName') ?? ''
@@ -74,9 +76,14 @@ const hasMinNumberOfPlayerToStartBracket = computed(() => {
 })
 
 async function createBracketFromPlayers() {
+  let loggedIn: boolean = userStore.id !== null
   try {
-    await bracketStore.createBracket(playerList.value)
-    router.push({ name: 'bracket', params: { bracketId: bracketStore.id } })
+    await bracketStore.createBracket(playerList.value, loggedIn)
+    if (loggedIn) {
+      router.push({ name: 'bracket', params: { bracketId: bracketStore.id } })
+    } else {
+      router.push({ name: 'bracket-guest' })
+    }
   } catch (e) {
     console.error(e)
   }

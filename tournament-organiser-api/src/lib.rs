@@ -30,7 +30,9 @@ use axum::{
     routing::{delete, get, post},
     Router,
 };
-use brackets::{create_bracket, get_bracket, get_bracket_display, list_brackets, report_result};
+use brackets::{
+    create_bracket, get_bracket, get_bracket_display, list_brackets, new_bracket, report_result,
+};
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -117,6 +119,10 @@ fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router {
         .route("/login", post(login))
         .route("/logout", post(logout))
         .route("/report-result-for-bracket", post(report_result))
+        .nest(
+            "/guest",
+            Router::new().route("/brackets", post(new_bracket)),
+        )
         .nest(
             "/brackets",
             Router::new().route("/:bracket_id/display", get(get_bracket_display)),

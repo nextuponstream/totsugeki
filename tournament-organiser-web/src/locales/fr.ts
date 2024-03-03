@@ -48,6 +48,8 @@ export default {
     winnerBracket: 'Winner bracket',
     loserBracket: 'Loser bracket',
     hint: 'Veuillez cliquer un match pour entrer un résultat',
+    unsavedWarning:
+      'Ce tournoi ne sera pas sauvé. Veuillez vous connectez pour sauver le tournoi.',
   },
   loginModal: {
     title: 'Connection',

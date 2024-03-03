@@ -9,6 +9,9 @@
   <div class="pb-5 text-gray-400">
     {{ t('bracketView.hint') }}
   </div>
+  <div v-if="userStore.id === null">
+    {{ t('bracketView.unsavedWarning') }}
+  </div>
   <div>
     <ShowBracket
       :bracket="bracketStore.bracket?.winner_bracket"
@@ -38,7 +41,9 @@ import { useI18n } from 'vue-i18n'
 import ReportResultModal from '@/components/ReportResultModal.vue'
 import { useBracketStore } from '@/stores/bracket'
 import { useRoute } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 const bracketStore = useBracketStore()
+const userStore = useUserStore()
 
 const route = useRoute()
 
@@ -48,10 +53,15 @@ onMounted(async () => {
   let id = route.params.bracketId
   if (typeof id === 'string') {
     bracketStore.setBracketId(id)
+    await bracketStore.getDisplayableBracket()
+  } else if (userStore.id === null && bracketStore.bracket) {
+    // guest view, nothing to do
   } else {
-    throw new Error('multiple bracketId')
+    console.debug(typeof id)
+    throw new Error(
+      'neither logged in view, nor guest view could load properly'
+    )
   }
-  await bracketStore.getDisplayableBracket()
 })
 
 const matchId = ref<string | null>(null)

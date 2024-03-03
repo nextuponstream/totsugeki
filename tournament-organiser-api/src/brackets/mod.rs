@@ -61,7 +61,30 @@ pub struct PlayerList {
     pub names: Vec<String>,
 }
 
-/// Return a newly instanciated bracket from ordered (=seeded) player names
+/// Return a newly instanciated bracket from ordered (=seeded) player names for
+/// display purposes
+///
+/// # Panics
+/// When bracket cannot be converted to double elimination bracket
+///
+/// # Errors
+/// May return 500 error when bracket cannot be parsed
+#[instrument(name = "new_bracket")]
+pub async fn new_bracket(AxumJson(player_list): AxumJson<PlayerList>) -> impl IntoResponse {
+    tracing::debug!("new bracket");
+
+    let mut bracket = Bracket::default();
+    for name in player_list.names {
+        let Ok(tmp) = bracket.add_participant(name.as_str()) else {
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        };
+        bracket = tmp;
+    }
+
+    Ok(breakdown_bracket(bracket).into_response())
+}
+
+/// Returns existing bracket for display purposes
 ///
 /// # Panics
 /// When bracket cannot be converted to double elimination bracket
@@ -87,6 +110,12 @@ pub async fn get_bracket_display(
         return (StatusCode::NOT_FOUND).into_response();
     };
     let bracket = Bracket::assemble(b.id, b.name, b.participants.0, b.matches.0 .0);
+
+    breakdown_bracket(bracket).into_response()
+}
+
+/// Breaks down bracket in small parts to be presented by UI
+fn breakdown_bracket(bracket: Bracket) -> impl IntoResponse {
     let dev: DoubleEliminationVariant = bracket.clone().try_into().expect("partition");
 
     // TODO test if tracing shows from which methods it was called
