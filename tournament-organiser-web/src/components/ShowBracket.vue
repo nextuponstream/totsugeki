@@ -17,6 +17,7 @@
             v-for="match in element.match"
             :key="match.id"
             :match="match"
+            :test-id-prefix="testIdPrefix"
             @click="showResultModal(match.id, match.players)"
           />
         </div>
@@ -101,6 +102,12 @@ import { type PropType, computed } from 'vue'
 import MatchNode from '@/components/MatchNode.vue'
 
 const props = defineProps({
+  testIdPrefix: {
+    type: String,
+    default: () => {
+      return undefined
+    },
+  },
   bracket: {
     type: Array as PropType<Match[][]>,
     default: () => {

@@ -33,12 +33,17 @@
       </div>
     </div>
     <div class="flex gap-1">
-      <SubmitBtn :disabled="isSubmitDisabled" @click="submit" />
+      <SubmitBtn
+        data-test-id="submit-match-result"
+        :disabled="isSubmitDisabled"
+        @click="submit"
+      />
       <CancelBtn @click="hideModal" />
     </div>
   </div>
 </template>
 <script setup lang="ts">
+import { useBracketStore } from '@/stores/bracket'
 import { ref, computed, onUpdated } from 'vue'
 
 const props = defineProps<{
@@ -50,7 +55,8 @@ const props = defineProps<{
 const hide = ref(false)
 const scoreP1 = ref(0)
 const scoreP2 = ref(0)
-const emits = defineEmits(['update:modelValue', 'newResult'])
+const emits = defineEmits(['update:modelValue'])
+const bracketStore = useBracketStore()
 
 onUpdated(() => {
   if (!props.modelValue) {
@@ -69,9 +75,13 @@ function setScore(p1: number, p2: number) {
   scoreP2.value = p2
 }
 
-function submit() {
-  emits('newResult', props.players, scoreP1.value, scoreP2.value)
-  hideModal()
+async function submit() {
+  if (props.players) {
+    await bracketStore.reportResult(props.players, scoreP1.value, scoreP2.value)
+    hideModal()
+  } else {
+    throw new Error('missing players in modal, cannot report result')
+  }
 }
 
 const isHidden = computed(() => {

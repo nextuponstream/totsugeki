@@ -113,12 +113,49 @@ export const useBracketStore = defineStore('bracket', () => {
     }
   }
 
+  async function reportResult(
+    players: { name: string; id: string }[],
+    scoreP1: number,
+    scoreP2: number
+  ) {
+    try {
+      console.debug(`submitting result for bracket...`)
+      let response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/report-result-for-bracket`,
+        {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            bracket: bracket.value,
+            p1_id: players[0].id,
+            p2_id: players[1].id,
+            score_p1: scoreP1,
+            score_p2: scoreP2,
+          }),
+        }
+      )
+      if (response.ok) {
+        let newBracket = await response.json()
+        localStorage.setItem('bracket', JSON.stringify(bracket))
+        bracket.value = newBracket
+      } else {
+        throw new Error('non-200 response for /api/report-result-for-bracket')
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
   return {
     id,
     setBracketId,
     getBracket,
     createBracket,
     getDisplayableBracket,
+    reportResult,
     bracket,
   }
 })
