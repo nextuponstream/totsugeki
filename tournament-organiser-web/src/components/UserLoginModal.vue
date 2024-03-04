@@ -30,13 +30,15 @@
 import { useForm } from 'vee-validate'
 import { ref, watchEffect, provide } from 'vue'
 import BaseModal from './ui/BaseModal.vue'
-import router from '@/router'
+import router, { RouteNames } from '@/router'
 import { useI18n } from 'vue-i18n'
 import { object, string, ref as yupref } from 'yup'
 import { useUserStore } from '@/stores/user'
+import { useBracketStore } from '@/stores/bracket'
 
 const { t } = useI18n({})
 const userStore = useUserStore()
+const bracketStore = useBracketStore()
 
 const props = defineProps<{
   modelValue: boolean
@@ -83,9 +85,16 @@ async function onSubmit(values: any) {
   switch (response) {
     case 200:
       emits('login')
-      router.push({
-        name: 'userDashboard',
-      })
+      if (bracketStore.isSaved) {
+        router.push({
+          name: RouteNames.user.dashboard,
+        })
+      } else {
+        router.push({
+          name: RouteNames.bracket.guest,
+        })
+      }
+
       break
     case 404:
       console.warn('unknown email')

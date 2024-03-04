@@ -32,21 +32,26 @@
     </div>
   </div>
   <UserLoginModal v-model="registrationModal" @login="login" />
+  <UnsavedBracketModal v-model="unsavedBracketModal"></UnsavedBracketModal>
 </template>
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import NavLink from './NavLink.vue'
 import { ref } from 'vue'
 import UserLoginModal from './UserLoginModal.vue'
+import UnsavedBracketModal from './UnsavedBracketModal.vue'
 import { useUserStore } from '@/stores/user'
 import router from '@/router'
+import { useBracketStore } from '@/stores/bracket'
 
 const userStore = useUserStore()
+const bracketStore = useBracketStore()
 
 const supportedLocales = ['en', 'fr']
 
 const { locale } = useI18n({})
 const registrationModal = ref(false)
+const unsavedBracketModal = ref(false)
 
 function changeLocale(value: any) {
   locale.value = value.target.value

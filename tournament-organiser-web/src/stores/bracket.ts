@@ -8,6 +8,7 @@ export const useBracketStore = defineStore(
   () => {
     const id: Ref<string | undefined> = ref(undefined)
     const bracket: Ref<Bracket | undefined> = ref(undefined)
+    const isSaved: Ref<boolean> = ref(true)
 
     function setBracketId(newId: string) {
       id.value = newId
@@ -41,9 +42,11 @@ export const useBracketStore = defineStore(
           if (loggedIn) {
             id.value = r.id
             bracket.value = undefined
+            isSaved.value = true
           } else {
             id.value = undefined
             bracket.value = r
+            isSaved.value = false
           }
         } else {
           throw new Error(
@@ -166,6 +169,7 @@ export const useBracketStore = defineStore(
       getDisplayableBracket,
       reportResult,
       bracket,
+      isSaved,
     }
   },
   {

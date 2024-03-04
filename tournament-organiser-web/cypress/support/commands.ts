@@ -103,6 +103,40 @@ Cypress.Commands.add(
   }
 )
 
+Cypress.Commands.add('guestSession', (weeklyName: string, email: string) => {
+  cy.session(['guest', weeklyName, email], () => {
+    cy.visit('/')
+
+    cy.get('[name=bracket]').type(weeklyName)
+    cy.get('[data-test-id=next-form]').click()
+
+    cy.get('[name=name]').type('p1{enter}')
+    cy.get('[name=name]').type('p2{enter}')
+    cy.get('[name=name]').type('p3{enter}')
+
+    cy.intercept('POST', '/api/guest/brackets').as('createBracket')
+
+    cy.get('[data-test-id=start-bracket]').click()
+
+    cy.wait('@createBracket').then((interception) => {
+      assert.equal(interception.response?.statusCode, 200)
+    })
+
+    cy.url().should('contain', '/brackets/')
+
+    cy.contains('p1')
+    cy.contains('p2')
+    cy.contains('p3')
+    cy.contains('This bracket is currently unsaved')
+
+    cy.submitResult(2, 3, 2, 1, 'winner')
+    cy.submitResult(1, 2, 0, 2, 'winner')
+    cy.submitResult(2, 3, 2, 0, 'loser')
+    cy.submitResult(1, 2, 0, 2, 'grand-finals')
+    cy.submitResult(1, 2, 2, 0, 'grand-finals-reset')
+  })
+})
+
 //
 //
 // -- This is a child command --
@@ -133,6 +167,7 @@ declare global {
         scoreP2: number,
         bracket: Bracket
       ): Chainable<void>
+      guestSession(weeklyName: string, email: string): Chainable<void>
 
       //   drag(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
       //   dismiss(subject: string, options?: Partial<TypeOptions>): Chainable<Element>

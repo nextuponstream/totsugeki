@@ -4,7 +4,10 @@
   <div class="pb-5 text-gray-400">
     {{ t('bracketView.hint') }}
   </div>
-  <div v-if="userStore.id === null">
+  <div v-if="unsavedBracketCanBeSaved">
+    <SubmitBtn>Save bracket!!!</SubmitBtn>
+  </div>
+  <div v-else-if="userStore.id === null">
     {{ t('bracketView.unsavedWarning') }}
   </div>
   <div>
@@ -31,19 +34,24 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import ShowBracket from '@/components/ShowBracket.vue'
 import { useI18n } from 'vue-i18n'
 import ReportResultModal from '@/components/ReportResultModal.vue'
 import { useBracketStore } from '@/stores/bracket'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import SubmitBtn from '@/components/ui/SubmitBtn.vue'
 const bracketStore = useBracketStore()
 const userStore = useUserStore()
 
 const route = useRoute()
 
 const { t } = useI18n({})
+
+const unsavedBracketCanBeSaved = computed(() => {
+  return userStore.id && !bracketStore.isSaved
+})
 
 onMounted(async () => {
   let id = route.params.bracketId
@@ -52,6 +60,8 @@ onMounted(async () => {
     await bracketStore.getDisplayableBracket()
   } else if (userStore.id === null && bracketStore.bracket) {
     // guest view, nothing to do
+  } else if (unsavedBracketCanBeSaved.value) {
+    // guest just registered, they need to save that bracket
   } else {
     console.debug(typeof id)
     throw new Error(
