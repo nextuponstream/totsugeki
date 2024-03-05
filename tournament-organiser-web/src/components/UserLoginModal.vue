@@ -88,7 +88,7 @@ async function onSubmit(values: any) {
   switch (response) {
     case 200:
       emits('login')
-      toastStore.success('Successful login')
+      toastStore.success(t('login'))
       if (bracketStore.isSaved) {
         router.push({
           name: RouteNames.user.dashboard,

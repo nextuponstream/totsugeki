@@ -19,7 +19,6 @@
       <NavLink to="/about" data-test-id="about">
         {{ $t('generic.about') }}
       </NavLink>
-      {{ toastStore.toasts.length }}
       <!-- <NavLink @click="test"> succ {{ toastStore.toasts.length }} </NavLink>
       <NavLink @click="test2"> err {{ toastStore.toasts.length }} </NavLink> -->
       <NavLink v-if="userStore.id" to="/user/dashboard">{{
@@ -46,7 +45,7 @@ import UnsavedBracketModal from './UnsavedBracketModal.vue'
 import { useUserStore } from '@/stores/user'
 import router from '@/router'
 import { useToastStore } from '@/stores/toast'
-
+const { t } = useI18n({})
 const userStore = useUserStore()
 
 const supportedLocales = ['en', 'fr']
@@ -69,6 +68,7 @@ function login() {
 
 async function logout() {
   await userStore.logout()
+  toastStore.success(t('logout'))
   router.push({
     name: 'createBracket',
   })

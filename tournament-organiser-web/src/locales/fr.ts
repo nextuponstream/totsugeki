@@ -16,7 +16,7 @@ export default {
     confirmPassword: 'Confirmer le mot de passe',
     register: "S'inscrire",
     profile: 'Profil',
-    logout: 'Déconnextion',
+    logout: 'Déconnexion',
     delete: 'Supprimer',
   },
   error: {
@@ -70,4 +70,6 @@ export default {
     confirmWithMail: 'Veuillez tapez {email} pour continuer.',
     matchError: "L'email fourni n'est pas correspond pas à votre email",
   },
+  login: 'Vous êtes maintenant connecté',
+  logout: 'Déconnexion réussie',
 }

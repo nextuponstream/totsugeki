@@ -65,4 +65,6 @@ export default {
     confirmWithMail: 'Please type {email} to continue.',
     matchError: 'Email must match your email',
   },
+  login: 'Successful login',
+  logout: 'Successful logout',
 }
