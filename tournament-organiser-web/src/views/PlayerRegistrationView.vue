@@ -49,6 +49,7 @@ const bracketStore = useBracketStore()
 const userStore = useUserStore()
 
 onMounted(() => {
+  // FIXME stop using localstorage and rely on store
   bracketName.value = localStorage.getItem('bracketName') ?? ''
 })
 

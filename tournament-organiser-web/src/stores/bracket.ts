@@ -145,7 +145,6 @@ export const useBracketStore = defineStore(
           )
           if (response.ok) {
             let newBracket = await response.json()
-            localStorage.setItem('bracket', JSON.stringify(bracket))
             bracket.value = newBracket
           } else {
             console.debug(await response.text())

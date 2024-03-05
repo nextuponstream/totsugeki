@@ -6,7 +6,7 @@ export type LoginAttempt = 200 | 404 | 500
 export const useUserStore = defineStore(
   'user',
   () => {
-    const KEY = 'userId'
+    const KEY = 'user'
 
     /**
      * ID of user if logged in
@@ -42,13 +42,6 @@ export const useUserStore = defineStore(
     }
 
     /**
-     * Rely on localstorage to persist some state in between page reload
-     */
-    function setUserId() {
-      id.value = localStorage.getItem(KEY)
-    }
-
-    /**
      * Update user ID in store
      * @param values form values
      * @returns status code response
@@ -75,7 +68,6 @@ export const useUserStore = defineStore(
             let body = await response.json()
             // store user ID and prefer logged in view from now on
             id.value = body.user_id
-            localStorage.setItem(KEY, body.user_id)
             return 200
           } else {
             throw new Error('expected json response')
@@ -109,7 +101,6 @@ export const useUserStore = defineStore(
         if (response.ok) {
           console.info('successful logout')
           id.value = null
-          localStorage.removeItem(KEY)
         } else {
           throw new Error('non-200 response for /api/logout')
         }
@@ -128,7 +119,6 @@ export const useUserStore = defineStore(
         )
         if (response.ok) {
           console.info('successful account deletion')
-          localStorage.removeItem(KEY)
           id.value = null
 
           return true
@@ -143,7 +133,6 @@ export const useUserStore = defineStore(
     return {
       registration,
       id,
-      setUserId,
       login,
       logout,
       deleteAccount,

@@ -35,6 +35,7 @@ import { useI18n } from 'vue-i18n'
 import { object, string, ref as yupref } from 'yup'
 import { useUserStore } from '@/stores/user'
 import { useBracketStore } from '@/stores/bracket'
+import { useToastStore } from '@/stores/toast'
 
 const { t } = useI18n({})
 const userStore = useUserStore()
@@ -76,6 +77,8 @@ function onInvalidSubmit({ values, errors, results }: any) {
   formErrors.value = { ...errors }
   console.error('invalid form data')
 }
+
+const toastStore = useToastStore()
 /**
  * @param values validated form data
  */
@@ -85,6 +88,7 @@ async function onSubmit(values: any) {
   switch (response) {
     case 200:
       emits('login')
+      toastStore.success('Successful login')
       if (bracketStore.isSaved) {
         router.push({
           name: RouteNames.user.dashboard,
@@ -102,6 +106,7 @@ async function onSubmit(values: any) {
       break
     case 500:
       setFieldError('email', t('error.communication'))
+      break
     default:
       console.error('unreachable')
       break

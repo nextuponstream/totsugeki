@@ -73,7 +73,6 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
-  userStore.setUserId()
 
   if (userStore.id === null && to.meta.requiresAuth) {
     console.warn('unauthenticated, redirecting to homepage...')
