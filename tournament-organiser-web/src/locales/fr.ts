@@ -43,6 +43,7 @@ export default {
     title: 'Seeding',
     hint: 'Déplacer les joueurs pour mettre à jour le seeding',
     empty: "Aucun joueur n'a été enregistré...",
+    removeAllPlayers: 'Enlever tous les joueurs',
   },
   bracketView: {
     winnerBracket: 'Winner bracket',

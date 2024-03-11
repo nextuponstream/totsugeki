@@ -25,12 +25,14 @@ import { Form } from 'vee-validate'
 import { ref, provide } from 'vue'
 import * as yup from 'yup'
 import { useI18n } from 'vue-i18n'
+import { useBracketStore } from '@/stores/bracket'
 const { t } = useI18n({})
+const bracketStore = useBracketStore()
 // NOTE: how to use i18n with yup https://stackoverflow.com/questions/72062851/problems-with-translations-with-vue-yup-and-i18n
 const schema = yup.object({
   bracket: yup.string().required(() => t('error.required')),
 })
-
+const emits = defineEmits(['newBracket'])
 const formErrors = ref({})
 provide('formErrors', formErrors)
 
@@ -43,9 +45,7 @@ function onInvalidSubmit({ values, errors, results }: any) {
  */
 function onSubmit(values: any) {
   formErrors.value = {}
-  console.info('TODO submit', JSON.stringify(values))
-  emit('newBracket', values.bracket)
+  bracketStore.formCreate.name = values.bracket
+  emits('newBracket')
 }
-
-const emit = defineEmits(['newBracket'])
 </script>

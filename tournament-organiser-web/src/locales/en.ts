@@ -42,6 +42,7 @@ export default {
     title: 'Seeding',
     hint: 'Drag and drop players to update the seeding',
     empty: 'No players registered...',
+    removeAllPlayers: 'Remove all players',
   },
   bracketView: {
     winnerBracket: 'Winner bracket',

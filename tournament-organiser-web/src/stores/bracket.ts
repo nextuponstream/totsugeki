@@ -4,7 +4,7 @@ import { ref, type Ref } from 'vue'
 type Player = { name: string; index: number }
 
 interface BracketCreationForm {
-  name?: string
+  name: string
   playerList: Player[]
 }
 
@@ -14,17 +14,39 @@ export const useBracketStore = defineStore(
     const id: Ref<string | undefined> = ref(undefined)
     const bracket: Ref<Bracket | undefined> = ref(undefined)
     const isSaved: Ref<boolean> = ref(true)
-    const formCreate: Ref<BracketCreationForm> = ref({ playerList: [] })
+    const formCreate: Ref<BracketCreationForm> = ref({
+      playerList: [],
+      name: '',
+    })
+    const counter = ref(0)
 
     function setBracketId(newId: string) {
       id.value = newId
+    }
+
+    function addPlayerInForm(name: string): void {
+      counter.value = counter.value + 1
+      formCreate.value.playerList.push({ name: name, index: counter.value })
+    }
+
+    function removePlayerInForm(index: number): void {
+      let player = formCreate.value.playerList.findIndex(
+        (p) => p.index === index
+      )
+      if (player > -1) {
+        formCreate.value.playerList.splice(player, 1)
+      }
+    }
+
+    function removeAllPlayersInForm(): void {
+      formCreate.value.playerList = []
     }
 
     /**
      * when logged in, updates bracket id. Otherwise, gets bracket details
      * @param playerList
      */
-    async function createBracket(playerList: Player[], loggedIn: boolean) {
+    async function createBracket(loggedIn: boolean) {
       console.debug(`creating bracket with ${loggedIn ? 'user' : 'guest'}`)
       try {
         let url = `${import.meta.env.VITE_API_URL}/api/${
@@ -38,7 +60,7 @@ export const useBracketStore = defineStore(
           },
           body: JSON.stringify({
             bracket_name: formCreate.value.name,
-            names: playerList.map((p) => p.name),
+            names: formCreate.value.playerList.map((p) => p.name),
           }),
           // can't send json without cors... https://stackoverflow.com/a/45655314
           // documentation: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch#supplying_request_options
@@ -55,6 +77,7 @@ export const useBracketStore = defineStore(
             bracket.value = r
             isSaved.value = false
           }
+          formCreate.value = { playerList: [], name: '' }
         } else {
           throw new Error(
             `response (${
@@ -174,6 +197,9 @@ export const useBracketStore = defineStore(
       createBracket,
       getDisplayableBracket,
       reportResult,
+      addPlayerInForm,
+      removePlayerInForm,
+      removeAllPlayersInForm,
       bracket,
       isSaved,
       formCreate,
