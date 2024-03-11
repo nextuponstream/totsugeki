@@ -12,7 +12,7 @@ pub struct TestApp {
 }
 
 use super::*;
-use crate::brackets::PlayerList;
+use crate::brackets::CreateBracketForm;
 use reqwest::{Client, Response};
 use serde::Serialize;
 use tokio::net::TcpListener;
@@ -150,7 +150,10 @@ impl TestApp {
     /// `/api/brackets` POST
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
     pub async fn create_bracket(&self, players: Vec<String>) -> Response {
-        let request = PlayerList { names: players };
+        let request = CreateBracketForm {
+            bracket_name: "placeholder".into(),
+            player_names: players,
+        };
         self.http_client
             .post(format!("{}/api/brackets", self.addr))
             .json(&request)

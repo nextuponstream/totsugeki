@@ -1,6 +1,7 @@
 <template>
   <div class="text-xl">
-    {{ t('registration.bracketNameLabel') }}: {{ bracketStore.formCreate.name }}
+    {{ t('registration.bracketNameLabel') }}:
+    {{ bracketStore.formCreate.bracket_name }}
   </div>
   <div class="sm:grid sm:grid-cols-2 sm:gap-5">
     <div class="pb-5">
@@ -47,7 +48,7 @@ const bracketStore = useBracketStore()
 const userStore = useUserStore()
 
 const hasMinNumberOfPlayerToStartBracket = computed(() => {
-  return bracketStore.formCreate.playerList.length < 3
+  return bracketStore.formCreate.player_names.length < 3
 })
 
 async function createBracketFromPlayers() {

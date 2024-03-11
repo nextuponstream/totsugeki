@@ -14,8 +14,8 @@
   </div>
 
   <draggable
-    v-if="bracketStore.formCreate.playerList.length > 0"
-    :list="bracketStore.formCreate.playerList"
+    v-if="bracketStore.formCreate.player_names.length > 0"
+    :list="bracketStore.formCreate.player_names"
     :disabled="!enabled"
     item-key="index"
     class="list-group"
@@ -52,6 +52,6 @@ const bracketStore = useBracketStore()
 const dragging = ref(false)
 const enabled = ref(true)
 const noPlayers = computed(() => {
-  return bracketStore.formCreate.playerList.length === 0
+  return bracketStore.formCreate.player_names.length === 0
 })
 </script>

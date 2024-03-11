@@ -56,9 +56,11 @@ struct BracketDisplay {
 
 /// List of players from which a bracket can be created
 #[derive(Deserialize, Serialize, Debug)]
-pub struct PlayerList {
+pub struct CreateBracketForm {
+    /// bracket names
+    pub bracket_name: String,
     /// player names
-    pub names: Vec<String>,
+    pub player_names: Vec<String>,
 }
 
 /// Return a newly instanciated bracket from ordered (=seeded) player names for
@@ -70,11 +72,12 @@ pub struct PlayerList {
 /// # Errors
 /// May return 500 error when bracket cannot be parsed
 #[instrument(name = "new_bracket")]
-pub async fn new_bracket(AxumJson(player_list): AxumJson<PlayerList>) -> impl IntoResponse {
+pub async fn new_bracket(AxumJson(form): AxumJson<CreateBracketForm>) -> impl IntoResponse {
     tracing::debug!("new bracket");
 
     let mut bracket = Bracket::default();
-    for name in player_list.names {
+    bracket = bracket.update_name(form.bracket_name);
+    for name in form.player_names {
         let Ok(tmp) = bracket.add_participant(name.as_str()) else {
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         };
@@ -314,12 +317,12 @@ pub struct BracketRecord {
 #[instrument(name = "create_bracket")]
 pub async fn create_bracket(
     State(pool): State<PgPool>,
-    AxumJson(player_list): AxumJson<PlayerList>,
+    AxumJson(player_list): AxumJson<CreateBracketForm>,
 ) -> impl IntoResponse {
-    tracing::debug!("new bracket from players: {:?}", player_list.names);
+    tracing::debug!("new bracket from players: {:?}", player_list.player_names);
 
     let mut bracket = Bracket::default();
-    for name in player_list.names {
+    for name in player_list.player_names {
         let Ok(tmp) = bracket.add_participant(name.as_str()) else {
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         };

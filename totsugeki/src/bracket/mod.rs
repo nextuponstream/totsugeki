@@ -143,6 +143,11 @@ impl Bracket {
         }
     }
 
+    /// Update name of bracket
+    #[must_use]
+    pub fn update_name(self, name: String) -> Bracket {
+        Self { name, ..self }
+    }
     /// Add participant to bracket
     ///
     /// # Errors

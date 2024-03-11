@@ -4,8 +4,8 @@ import { ref, type Ref } from 'vue'
 type Player = { name: string; index: number }
 
 interface BracketCreationForm {
-  name: string
-  playerList: Player[]
+  bracket_name: string
+  player_names: Player[]
 }
 
 export const useBracketStore = defineStore(
@@ -15,8 +15,8 @@ export const useBracketStore = defineStore(
     const bracket: Ref<Bracket | undefined> = ref(undefined)
     const isSaved: Ref<boolean> = ref(true)
     const formCreate: Ref<BracketCreationForm> = ref({
-      playerList: [],
-      name: '',
+      player_names: [],
+      bracket_name: '',
     })
     const counter = ref(0)
 
@@ -26,20 +26,20 @@ export const useBracketStore = defineStore(
 
     function addPlayerInForm(name: string): void {
       counter.value = counter.value + 1
-      formCreate.value.playerList.push({ name: name, index: counter.value })
+      formCreate.value.player_names.push({ name: name, index: counter.value })
     }
 
     function removePlayerInForm(index: number): void {
-      let player = formCreate.value.playerList.findIndex(
+      let player = formCreate.value.player_names.findIndex(
         (p) => p.index === index
       )
       if (player > -1) {
-        formCreate.value.playerList.splice(player, 1)
+        formCreate.value.player_names.splice(player, 1)
       }
     }
 
     function removeAllPlayersInForm(): void {
-      formCreate.value.playerList = []
+      formCreate.value.player_names = []
     }
 
     /**
@@ -59,8 +59,8 @@ export const useBracketStore = defineStore(
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            bracket_name: formCreate.value.name,
-            names: formCreate.value.playerList.map((p) => p.name),
+            bracket_name: formCreate.value.bracket_name,
+            player_names: formCreate.value.player_names.map((p) => p.name),
           }),
           // can't send json without cors... https://stackoverflow.com/a/45655314
           // documentation: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch#supplying_request_options
@@ -77,7 +77,7 @@ export const useBracketStore = defineStore(
             bracket.value = r
             isSaved.value = false
           }
-          formCreate.value = { playerList: [], name: '' }
+          formCreate.value = { player_names: [], bracket_name: '' }
         } else {
           throw new Error(
             `response (${
