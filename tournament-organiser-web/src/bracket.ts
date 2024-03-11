@@ -11,6 +11,10 @@ interface Lines {
   bottom_border: boolean
 }
 
+interface RawBracket {
+  name?: string
+}
+
 interface Bracket {
   winner_bracket: Match[][]
   winner_bracket_lines: Lines[][]
@@ -18,5 +22,5 @@ interface Bracket {
   loser_bracket_lines: Lines[][]
   grand_finals: Match | undefined
   grand_finals_reset: Match | undefined
-  bracket: Object | undefined
+  bracket: RawBracket | undefined
 }

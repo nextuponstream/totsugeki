@@ -40,7 +40,6 @@ export const useToastStore = defineStore('toast', () => {
   }
 
   function success(content: string, timeout?: number, title?: string) {
-    // FIXME does not show up on login
     makeToast(content, 'success', timeout, title)
   }
 

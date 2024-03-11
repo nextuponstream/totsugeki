@@ -3,12 +3,18 @@ import { ref, type Ref } from 'vue'
 
 type Player = { name: string; index: number }
 
+interface BracketCreationForm {
+  name?: string
+  playerList: Player[]
+}
+
 export const useBracketStore = defineStore(
   'bracket',
   () => {
     const id: Ref<string | undefined> = ref(undefined)
     const bracket: Ref<Bracket | undefined> = ref(undefined)
     const isSaved: Ref<boolean> = ref(true)
+    const formCreate: Ref<BracketCreationForm> = ref({ playerList: [] })
 
     function setBracketId(newId: string) {
       id.value = newId
@@ -31,6 +37,7 @@ export const useBracketStore = defineStore(
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
+            bracket_name: formCreate.value.name,
             names: playerList.map((p) => p.name),
           }),
           // can't send json without cors... https://stackoverflow.com/a/45655314
@@ -169,6 +176,7 @@ export const useBracketStore = defineStore(
       reportResult,
       bracket,
       isSaved,
+      formCreate,
     }
   },
   {

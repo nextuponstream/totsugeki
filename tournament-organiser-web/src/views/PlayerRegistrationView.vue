@@ -1,6 +1,6 @@
 <template>
   <div class="text-xl">
-    {{ t('registration.bracketNameLabel') }}: {{ bracketName }}
+    {{ t('registration.bracketNameLabel') }}: {{ bracketStore.formCreate.name }}
   </div>
   <div class="sm:grid sm:grid-cols-2 sm:gap-5">
     <div class="pb-5">
@@ -44,14 +44,8 @@ import { useUserStore } from '@/stores/user'
 const { t } = useI18n({})
 const router = useRouter()
 
-const bracketName = ref('')
 const bracketStore = useBracketStore()
 const userStore = useUserStore()
-
-onMounted(() => {
-  // FIXME stop using localstorage and rely on store
-  bracketName.value = localStorage.getItem('bracketName') ?? ''
-})
 
 const playerList: Ref<{ name: string; index: number }[]> = ref([])
 const dragging = ref(false)

@@ -1,6 +1,7 @@
 <template>
   <ReportResultModal v-model="show" :match-id="matchId" :players="players" />
 
+  <div>{{ JSON.stringify(bracketStore.bracket?.bracket!.name) }}</div>
   <div class="pb-5 text-gray-400">
     {{ t('bracketView.hint') }}
   </div>
