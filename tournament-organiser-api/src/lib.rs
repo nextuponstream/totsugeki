@@ -32,6 +32,7 @@ use axum::{
 };
 use brackets::{
     create_bracket, get_bracket, get_bracket_display, list_brackets, new_bracket, report_result,
+    save_bracket,
 };
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
@@ -104,6 +105,7 @@ fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router {
         Router::new()
             .route("/", post(create_bracket))
             .route("/", get(list_brackets))
+            .route("/save", post(save_bracket))
             .route("/:bracket_id", get(get_bracket)),
     );
     let protected_routes = Router::new()

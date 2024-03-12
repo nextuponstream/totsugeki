@@ -6,7 +6,9 @@
     {{ t('bracketView.hint') }}
   </div>
   <div v-if="unsavedBracketCanBeSaved">
-    <SubmitBtn>Save bracket!!!</SubmitBtn>
+    <SubmitBtn @click="bracketStore.saveBracket">{{
+      t('bracketView.saveBracket')
+    }}</SubmitBtn>
   </div>
   <div v-else-if="userStore.id === null">
     {{ t('bracketView.unsavedWarning') }}

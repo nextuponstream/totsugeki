@@ -63,6 +63,30 @@ pub struct CreateBracketForm {
     pub player_names: Vec<String>,
 }
 
+/// Result reported by player
+///
+/// FIXME there probably is a less computive intensive way to save steps of
+/// match, like only saving relevant match ID to update. But it's not there.
+/// Then this will do.
+#[derive(Deserialize, Serialize, Debug)]
+pub struct PlayerMatchResultReport {
+    /// player reporting
+    player_id: PlayerId,
+    /// match report player is involed in
+    report: (i8, i8),
+}
+
+/// List of players from which a bracket can be created
+#[derive(Deserialize, Serialize, Debug)]
+pub struct BracketState {
+    /// bracket names
+    pub bracket_name: String,
+    /// player names
+    pub player_names: Vec<String>,
+    /// results in order of replay
+    pub results: Vec<PlayerMatchResultReport>,
+}
+
 /// Return a newly instanciated bracket from ordered (=seeded) player names for
 /// display purposes
 ///
@@ -84,7 +108,57 @@ pub async fn new_bracket(AxumJson(form): AxumJson<CreateBracketForm>) -> impl In
         bracket = tmp;
     }
 
-    Ok(breakdown_bracket(bracket).into_response())
+    Ok(breakdown(bracket).into_response())
+}
+
+/// Save bracket replayed from player reports so in the event a guest actually
+/// wants to save the resulting bracket, they can.
+///
+/// The server will not accept a JSON of a bracket just because it can be
+/// parsed as that may lead to a malformed bracket. Then we do something a
+/// little more intense computation wise that always yields a correct bracket.
+#[instrument(name = "save_bracket")]
+pub async fn save_bracket(
+    State(pool): State<PgPool>,
+    AxumJson(bracket_state): AxumJson<BracketState>,
+) -> impl IntoResponse {
+    // NOTE: always pool before arguments. Otherwise:
+    // error[E0277]: the trait bound `fn(axum::Json<BracketState>,
+    // State<Pool<Postgres>>) -> impl std::future::Future<Output = impl
+    // IntoResponse> {save_bracket}: Handler<_, _>` is not satisfied
+    tracing::debug!("new bracket replayed from steps");
+
+    let mut bracket = Bracket::default();
+    bracket = bracket.update_name(bracket_state.bracket_name);
+    for name in bracket_state.player_names {
+        let Ok(tmp) = bracket.add_participant(name.as_str()) else {
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        };
+        bracket = tmp;
+    }
+    for r in bracket_state.results {
+        let Ok(b) = bracket.report_result(r.player_id, r.report) else {
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        };
+        bracket = b.0;
+    }
+
+    let r = sqlx::query!(
+        "INSERT INTO brackets (name, matches, participants) VALUES ($1, $2, $3) RETURNING id",
+        bracket.get_name(),
+        SqlxJson(bracket.get_matches()) as _,
+        SqlxJson(bracket.get_participants()) as _,
+    )
+    .fetch_one(&pool)
+    .await
+    .expect("user insert");
+    // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
+    tracing::info!("new bracket replayed from steps {}", r.id);
+
+    tracing::info!("new bracket replayed from steps {}", bracket.get_id());
+    tracing::debug!("new bracket replayed from steps {:?}", bracket);
+
+    Ok(breakdown(bracket).into_response())
 }
 
 /// Returns existing bracket for display purposes
@@ -114,11 +188,11 @@ pub async fn get_bracket_display(
     };
     let bracket = Bracket::assemble(b.id, b.name, b.participants.0, b.matches.0 .0);
 
-    breakdown_bracket(bracket).into_response()
+    breakdown(bracket).into_response()
 }
 
 /// Breaks down bracket in small parts to be presented by UI
-fn breakdown_bracket(bracket: Bracket) -> impl IntoResponse {
+fn breakdown(bracket: Bracket) -> impl IntoResponse {
     let dev: DoubleEliminationVariant = bracket.clone().try_into().expect("partition");
 
     // TODO test if tracing shows from which methods it was called

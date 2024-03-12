@@ -19,6 +19,7 @@ export const useBracketStore = defineStore(
       bracket_name: '',
     })
     const counter = ref(0)
+    const bracketHistory = ref([])
 
     function setBracketId(newId: string) {
       id.value = newId
@@ -190,6 +191,16 @@ export const useBracketStore = defineStore(
       }
     }
 
+    /**
+     * Someone did a bracket: "Oh no, I kinda want to save that actually"
+     * Then store all the steps done and replay them server-side to ensure it's
+     * actually a valid bracket.
+     */
+    function saveBracket() {
+      // use /brackets/save endpoint
+      throw Error('implement')
+    }
+
     return {
       id,
       setBracketId,
@@ -200,6 +211,7 @@ export const useBracketStore = defineStore(
       addPlayerInForm,
       removePlayerInForm,
       removeAllPlayersInForm,
+      saveBracket,
       bracket,
       isSaved,
       formCreate,

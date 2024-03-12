@@ -51,6 +51,7 @@ export default {
     hint: 'Veuillez cliquer un match pour entrer un résultat',
     unsavedWarning:
       'Ce tournoi ne sera pas sauvé. Veuillez vous connectez pour sauver le tournoi.',
+    saveBracket: 'Sauvegarder la bracket!',
   },
   loginModal: {
     title: 'Connection',

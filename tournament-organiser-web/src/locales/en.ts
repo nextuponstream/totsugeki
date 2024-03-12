@@ -49,6 +49,7 @@ export default {
     loserBracket: 'Loser bracket',
     hint: 'Click on matches to enter results',
     unsavedWarning: 'This bracket is currently unsaved. Please log in to save.',
+    saveBracket: 'Save bracket!',
   },
   loginModal: {
     title: 'Login',
