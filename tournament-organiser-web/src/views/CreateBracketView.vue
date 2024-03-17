@@ -8,7 +8,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-function createBracket(name: string) {
+function createBracket() {
   router.push({
     name: 'bracketRegistration',
   })

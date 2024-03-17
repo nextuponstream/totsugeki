@@ -226,6 +226,7 @@ export const useBracketStore = defineStore(
           )
           if (response.ok) {
             reportedResults.value = []
+            isSaved.value = true
           } else {
             console.debug(await response.text())
             throw new Error('non-200 response for /api/brackets/save')

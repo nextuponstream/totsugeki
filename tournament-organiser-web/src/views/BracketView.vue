@@ -6,7 +6,7 @@
     {{ t('bracketView.hint') }}
   </div>
   <div v-if="unsavedBracketCanBeSaved">
-    <SubmitBtn @click="bracketStore.saveBracket">{{
+    <SubmitBtn @click="saveAndRedirectToNewBracketPage">{{
       t('bracketView.saveBracket')
     }}</SubmitBtn>
   </div>
@@ -42,13 +42,15 @@ import ShowBracket from '@/components/ShowBracket.vue'
 import { useI18n } from 'vue-i18n'
 import ReportResultModal from '@/components/ReportResultModal.vue'
 import { useBracketStore } from '@/stores/bracket'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import SubmitBtn from '@/components/ui/SubmitBtn.vue'
+import { RouteNames } from '@/router'
 const bracketStore = useBracketStore()
 const userStore = useUserStore()
 
 const route = useRoute()
+const router = useRouter()
 
 const { t } = useI18n({})
 
@@ -84,6 +86,18 @@ function showResultModal(
   matchId.value = clickedMatchId
   players.value = clickedPlayers
   show.value = true
+}
+
+async function saveAndRedirectToNewBracketPage() {
+  await bracketStore.saveBracket()
+  if (bracketStore.bracket?.bracket?.id) {
+    await router.push({
+      name: RouteNames.bracket.show,
+      params: { bracketId: bracketStore.bracket?.bracket.id },
+    })
+  } else {
+    throw new Error('missing bracket id to redirect')
+  }
 }
 </script>
 <style scoped>

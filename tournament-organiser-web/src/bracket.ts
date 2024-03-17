@@ -17,6 +17,7 @@ interface Player {
 }
 
 interface RawBracket {
+  id?: string
   name?: string
   participants?: Player[]
 }
