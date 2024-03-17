@@ -66,6 +66,7 @@ impl Player {
 /// Player identifier
 pub type Id = Uuid;
 
+// FIXME you can use anonymous structure instead
 /// Participants of bracket
 ///
 /// Participants are ordered by seeding position from strongest to weakest
