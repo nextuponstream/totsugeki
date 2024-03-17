@@ -11,8 +11,14 @@ interface Lines {
   bottom_border: boolean
 }
 
+interface Player {
+  id: string
+  name: string
+}
+
 interface RawBracket {
   name?: string
+  participants?: Player[]
 }
 
 interface Bracket {

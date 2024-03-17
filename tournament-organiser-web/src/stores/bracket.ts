@@ -8,6 +8,12 @@ interface BracketCreationForm {
   player_names: Player[]
 }
 
+interface MatchResult {
+  players: { name: string; id: string }[]
+  scoreP1: number
+  scoreP2: number
+}
+
 export const useBracketStore = defineStore(
   'bracket',
   () => {
@@ -19,7 +25,7 @@ export const useBracketStore = defineStore(
       bracket_name: '',
     })
     const counter = ref(0)
-    const bracketHistory = ref([])
+    const reportedResults: Ref<MatchResult[]> = ref([])
 
     function setBracketId(newId: string) {
       id.value = newId
@@ -45,7 +51,7 @@ export const useBracketStore = defineStore(
 
     /**
      * when logged in, updates bracket id. Otherwise, gets bracket details
-     * @param playerList
+     * @param loggedIn
      */
     async function createBracket(loggedIn: boolean) {
       console.debug(`creating bracket with ${loggedIn ? 'user' : 'guest'}`)
@@ -175,8 +181,7 @@ export const useBracketStore = defineStore(
             }
           )
           if (response.ok) {
-            let newBracket = await response.json()
-            bracket.value = newBracket
+            bracket.value = await response.json()
           } else {
             console.debug(await response.text())
             throw new Error(
@@ -196,9 +201,41 @@ export const useBracketStore = defineStore(
      * Then store all the steps done and replay them server-side to ensure it's
      * actually a valid bracket.
      */
-    function saveBracket() {
+    async function saveBracket() {
       // use /brackets/save endpoint
-      throw Error('implement')
+      if (reportedResults.value && bracket.value?.bracket?.participants) {
+        try {
+          console.debug(`submitting result for bracket...`)
+          let player_names = bracket.value.bracket.participants.map(
+            (p) => p.name
+          )
+          let response = await fetch(
+            `${import.meta.env.VITE_API_URL}/api/brackets/save`,
+            {
+              method: 'POST',
+              headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                bracket_name: bracket.value?.bracket?.name,
+                results: reportedResults.value,
+                player_names: player_names,
+              }),
+            }
+          )
+          if (response.ok) {
+            reportedResults.value = []
+          } else {
+            console.debug(await response.text())
+            throw new Error('non-200 response for /api/brackets/save')
+          }
+        } catch (e) {
+          console.error(e)
+        }
+      } else {
+        throw new Error('missing bracket in store for reporting result')
+      }
     }
 
     return {
