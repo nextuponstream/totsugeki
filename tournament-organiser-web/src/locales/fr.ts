@@ -29,6 +29,7 @@ export default {
     unknownEmail: 'Email inconnu',
     communication:
       'Une erreur de communication est survenue. Veuillez faire une nouvelle tentative',
+    badPassword: 'Le mot de passe ne correspond pas.',
   },
   playerRegistrationForm: {
     title: 'Enregistrer un nouveau joueur',

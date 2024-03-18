@@ -1,17 +1,20 @@
 import { defineStore } from 'pinia'
-import { ref, type Ref } from 'vue'
+import { reactive, ref, type Ref } from 'vue'
 
-export type LoginAttempt = 200 | 404 | 500
+export type LoginAttempt = 200 | 401 | 404 | 500
+interface UserInfos {
+  email: string
+  name: string
+}
 
 export const useUserStore = defineStore(
   'user',
   () => {
-    const KEY = 'user'
-
     /**
      * ID of user if logged in
      */
     const id: Ref<string | null> = ref(null)
+    const infos: UserInfos = reactive({ email: '', name: '' })
 
     async function registration(values: any): Promise<string | 200 | 500> {
       try {
@@ -72,6 +75,9 @@ export const useUserStore = defineStore(
           } else {
             throw new Error('expected json response')
           }
+        } else if (response.status === 401) {
+          console.warn('bad password')
+          return 401
         } else if (response.status === 404) {
           console.warn('unknown email')
           return 404
@@ -130,12 +136,32 @@ export const useUserStore = defineStore(
       return false
     }
 
+    async function getUser(): Promise<void> {
+      let response = await fetch(`${import.meta.env.VITE_API_URL}/api/users`, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+      })
+      if (response.ok) {
+        let userInfos: { email: string; name: string } = await response.json()
+        console.debug(JSON.stringify(userInfos))
+        infos.email = userInfos.email
+        infos.name = userInfos.name
+      } else {
+        throw new Error('non-200 response for /api/users')
+      }
+    }
+
     return {
       registration,
       id,
       login,
       logout,
       deleteAccount,
+      getUser,
+      infos,
     }
   },
   {

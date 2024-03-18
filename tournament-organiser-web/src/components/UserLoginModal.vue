@@ -1,7 +1,7 @@
 <template>
   <BaseModal
     v-model="showModal"
-    :title="$t('loginModal.title')"
+    :title="t('loginModal.title')"
     @hide="hideModal"
   >
     <form
@@ -11,14 +11,14 @@
       name="login"
       @submit="submitForm"
     >
-      <label>{{ $t('generic.email') }}</label>
+      <label>{{ t('generic.email') }}</label>
       <FormInput name="email" type="email" />
-      <label>{{ $t('generic.password') }}</label>
+      <label>{{ t('generic.password') }}</label>
       <FormInput name="password" type="password" />
       <div class="mt-2">
-        {{ $t('loginModal.text1') }}
+        {{ t('loginModal.text1') }}
         <BaseLink href="/register" class="">
-          {{ $t('loginModal.text2') }}
+          {{ t('loginModal.text2') }}
         </BaseLink>
       </div>
       <SubmitBtn class="self-end" />
@@ -90,15 +90,14 @@ async function onSubmit(values: any) {
       emits('login')
       toastStore.success(t('login'))
       if (bracketStore.isSaved) {
-        router.push({
-          name: RouteNames.user.dashboard,
-        })
+        await router.push({ name: RouteNames.user.dashboard })
       } else {
-        router.push({
-          name: RouteNames.bracket.guest,
-        })
+        await router.push({ name: RouteNames.bracket.guest })
       }
 
+      break
+    case 401:
+      setFieldError('password', t('error.badPassword'))
       break
     case 404:
       console.warn('unknown email')

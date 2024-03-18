@@ -28,6 +28,7 @@ export default {
       'Provided password is too weak. Please provide a stronger password',
     unknownEmail: 'Unknown email',
     communication: 'An internal error happened. Please try again.',
+    badPassword: 'Wrong password was provided',
   },
   playerRegistrationForm: {
     title: 'Register players',

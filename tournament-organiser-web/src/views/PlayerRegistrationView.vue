@@ -20,7 +20,7 @@
             class="ml-3"
             style="position: absolute"
           >
-            {{ $t('playerRegistrationForm.minimum', { min: 3 }) }}
+            {{ t('playerRegistrationForm.minimum', { min: 3 }) }}
           </base-tooltip>
         </div>
       </div>
@@ -35,7 +35,7 @@
 <script setup lang="ts">
 import PlayerSeeder from '@/components/PlayerSeeder.vue'
 import PlayerRegistration from '@/components/PlayerRegistration.vue'
-import { computed, ref, onMounted } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useBracketStore } from '@/stores/bracket'

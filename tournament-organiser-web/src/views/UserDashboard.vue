@@ -2,21 +2,21 @@
   <div class="flex flex-col gap-8">
     <div>
       <div class="text-2xl">
-        <h1>{{ $t('generic.profile') }}</h1>
+        <h1>{{ t('generic.profile') }}</h1>
       </div>
       <EditUser ref="editUser"></EditUser>
     </div>
     <div class="flex flex-col max-w-xs gap-3">
       <div class="text-2xl text-red-700">
-        <h1>{{ $t('user.dashboard.deleteAccount') }}</h1>
+        <h1>{{ t('user.dashboard.deleteAccount') }}</h1>
       </div>
       <DangerBtn @click="showDeleteModal">{{
-        $t('user.dashboard.deleteMyAccount')
+        t('user.dashboard.deleteMyAccount')
       }}</DangerBtn>
     </div>
     <BaseModal
       v-model="showModal"
-      :title="$t('deleteModal.title')"
+      :title="t('deleteModal.title')"
       @hide="hideModal"
     >
       <form
@@ -27,9 +27,11 @@
         @submit="onDeleteAccountFormSubmit"
       >
         <div>
-          {{ $t('deleteModal.confirmWithMail', { email: infos.email }) }}
+          {{
+            t('deleteModal.confirmWithMail', { email: userStore.infos.email })
+          }}
         </div>
-        <label>{{ $t('generic.email') }}</label>
+        <label>{{ t('generic.email') }}</label>
         <FormInput
           name="deleteEmail"
           type="email"
@@ -37,14 +39,14 @@
           v-bind="deleteEmailAttrs"
         />
         <DangerBtn class="self-end">{{
-          $t('user.dashboard.deleteAccount')
+          t('user.dashboard.deleteAccount')
         }}</DangerBtn>
       </form>
     </BaseModal>
   </div>
 </template>
 <script setup lang="ts">
-import { onMounted, provide, reactive, ref, watch } from 'vue'
+import { onMounted, provide, ref } from 'vue'
 import { useForm } from 'vee-validate'
 import { useI18n } from 'vue-i18n'
 import { object, string } from 'yup'
@@ -63,11 +65,6 @@ const deleteSchema = object({
 const deleteForm = useForm({
   validationSchema: deleteSchema,
 })
-interface UserInfos {
-  email: string
-  name: string
-}
-const infos: UserInfos = reactive({ email: '', name: '' })
 
 // deleteModal
 const [deleteEmail, deleteEmailAttrs] = deleteForm.defineField('deleteEmail')
@@ -78,29 +75,8 @@ provide('formErrors', deleteFormErrors)
 const showModal = ref(false)
 
 onMounted(async () => {
-  try {
-    let response = await fetch(`${import.meta.env.VITE_API_URL}/api/users`, {
-      method: 'GET',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-    })
-    if (response.ok) {
-      let userInfos: { email: string; name: string } = await response.json()
-      console.debug(JSON.stringify(userInfos))
-      infos.email = userInfos.email
-      infos.name = userInfos.name
-    } else {
-      throw new Error('non-200 response for /api/user')
-    }
-  } catch (e) {
-    console.error(e)
-  }
-})
-watch(infos, (first, second) => {
-  console.debug('update edit form with', JSON.stringify(second))
-  editUser.value?.setValues(infos)
+  await userStore.getUser()
+  editUser.value?.setValues(userStore.infos)
 })
 
 function showDeleteModal() {
@@ -117,9 +93,9 @@ const onDeleteAccountFormSubmit = deleteForm.handleSubmit(
 
 async function deleteAccountFormSubmit(values: any) {
   // special validation
-  if (values.deleteEmail !== infos.email) {
-    console.error('missmatch')
-    console.debug(`${values.deleteEmail} !== ${infos.email}`)
+  if (values.deleteEmail !== userStore.infos.email) {
+    console.error('mismatch')
+    console.debug(`${values.deleteEmail} !== ${userStore.infos.email}`)
     deleteForm.setFieldError('deleteEmail', t('deleteModal.matchError'))
     return
   }
@@ -127,9 +103,7 @@ async function deleteAccountFormSubmit(values: any) {
   // all ok
   let deleted = await userStore.deleteAccount()
   if (deleted) {
-    router.push({
-      name: 'createBracket',
-    })
+    await router.push({ name: 'createBracket' })
   }
 }
 </script>
