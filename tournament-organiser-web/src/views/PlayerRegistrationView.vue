@@ -56,9 +56,12 @@ async function createBracketFromPlayers() {
   try {
     await bracketStore.createBracket(loggedIn)
     if (loggedIn) {
-      router.push({ name: 'bracket', params: { bracketId: bracketStore.id } })
+      await router.push({
+        name: 'bracket',
+        params: { bracketId: bracketStore.id },
+      })
     } else {
-      router.push({ name: 'bracket-guest' })
+      await router.push({ name: 'bracket-guest' })
     }
   } catch (e) {
     console.error(e)
