@@ -57,46 +57,41 @@ export const useBracketStore = defineStore(
      */
     async function createBracket(loggedIn: boolean) {
       console.debug(`creating bracket with ${loggedIn ? 'user' : 'guest'}`)
-      try {
-        let url = `${import.meta.env.VITE_API_URL}/api/${
-          loggedIn ? '' : 'guest/'
-        }brackets`
-        let response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            bracket_name: formCreate.value.bracket_name,
-            player_names: formCreate.value.player_names.map((p) => p.name),
-          }),
-          // can't send json without cors... https://stackoverflow.com/a/45655314
-          // documentation: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch#supplying_request_options
-        })
-        if (response.ok) {
-          let r = await response.json()
-          console.debug(r)
-          if (loggedIn) {
-            id.value = r.id
-            bracket.value = undefined
-            isSaved.value = true
-          } else {
-            id.value = undefined
-            bracket.value = r
-            isSaved.value = false
-          }
-          formCreate.value = { player_names: [], bracket_name: '' }
+      let url = `${import.meta.env.VITE_API_URL}/api/${
+        loggedIn ? '' : 'guest/'
+      }brackets`
+      let response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bracket_name: formCreate.value.bracket_name,
+          player_names: formCreate.value.player_names.map((p) => p.name),
+        }),
+        // can't send json without cors... https://stackoverflow.com/a/45655314
+        // documentation: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch#supplying_request_options
+      })
+      if (response.ok) {
+        let r = await response.json()
+        console.debug(r)
+        if (loggedIn) {
+          id.value = r.id
+          bracket.value = undefined
+          isSaved.value = true
         } else {
-          throw new Error(
-            `response (${
-              response.status
-            }) \"${await response.text()}\" from POST /api/brackets`
-          )
+          id.value = undefined
+          bracket.value = r
+          isSaved.value = false
         }
-      } catch (e) {
-        console.error(e)
-        throw e
+        formCreate.value = { player_names: [], bracket_name: '' }
+      } else {
+        throw new Error(
+          `response (${
+            response.status
+          }) \"${await response.text()}\" from POST /api/brackets`
+        )
       }
     }
 
@@ -105,31 +100,26 @@ export const useBracketStore = defineStore(
      * @throws Error when something goes wrong with the API
      */
     async function getBracket() {
-      try {
-        let response = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/brackets/${id.value}`,
-          {
-            method: 'GET',
-            headers: {
-              Accept: 'application/json',
-              'Content-Type': 'application/json',
-            },
-          }
-        )
-        if (response.ok) {
-          let r = await response.json()
-          console.debug(r)
-          bracket.value = r
-        } else {
-          throw new Error(
-            `response (${
-              response.status
-            }) \"${await response.text()}\" from /api/brackets/${id.value}`
-          )
+      let response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/brackets/${id.value}`,
+        {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
         }
-      } catch (e) {
-        console.error(e)
-        throw e
+      )
+      if (response.ok) {
+        let r = await response.json()
+        console.debug(r)
+        bracket.value = r
+      } else {
+        throw new Error(
+          `response (${
+            response.status
+          }) \"${await response.text()}\" from /api/brackets/${id.value}`
+        )
       }
     }
 
