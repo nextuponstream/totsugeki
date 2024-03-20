@@ -37,7 +37,10 @@ describe('creating brackets as a registered user', () => {
 
 describe('allow creating brackets without signing up', () => {
   let weeklyName = `weekly-name-${Date.now()}`
+  let email = `someMail-${Date.now()}@gmail.com`
+  let password = 'guestPass#)2'
   it("as an unregistered user, I can create bracket but with a warning that it won't be saved", () => {
+    cy.guestSession(weeklyName, email)
     cy.visit('/')
 
     cy.get('[name=bracket]').type(weeklyName)
@@ -47,25 +50,42 @@ describe('allow creating brackets without signing up', () => {
     cy.get('[name=name]').type('p2{enter}')
     cy.get('[name=name]').type('p3{enter}')
 
-    cy.intercept('POST', '/api/brackets').as('createBracket')
+    cy.intercept('POST', '/api/guest/brackets').as('createBracket')
 
     cy.get('[data-test-id=start-bracket]').click()
 
     cy.wait('@createBracket').then((interception) => {
-      assert.equal(interception.response?.statusCode, 201)
+      assert.equal(interception.response?.statusCode, 200)
     })
 
-    cy.url().should('contain', '/brackets/')
-
+    cy.url().should('contain', '/brackets/guest')
     cy.contains('p1')
     cy.contains('p2')
     cy.contains('p3')
     cy.contains('This bracket is currently unsaved')
+
+    cy.submitResult(2, 3, 2, 1, 'winner')
+    cy.submitResult(1, 2, 0, 2, 'winner')
+    cy.submitResult(2, 3, 2, 0, 'loser')
+    cy.submitResult(1, 2, 0, 2, 'grand-finals')
+    cy.submitResult(1, 2, 2, 0, 'grand-finals-reset')
   })
-  it('if I create an account and log in', () => {
-    throw new Error('implement')
+  // TODO finish story
+  it('if I create an account', () => {
+    cy.register(email, 'guestToUser', password)
   })
-  it('the current bracket I was managing is registered in my history', () => {
-    throw new Error('implement')
+  it('after login in, the current bracket I was managing can be registered in my history', () => {
+    cy.guestSession(weeklyName, email)
+    cy.login(email, password)
+    cy.contains(weeklyName)
+
+    cy.intercept('POST', '/api/brackets/save').as('saveBracket')
+
+    cy.contains('Save bracket').click()
+    cy.wait('@saveBracket').then((interception) => {
+      assert.equal(interception.response?.statusCode, 201)
+    })
+
+    cy.url().should('not.contain', '/brackets/guest')
   })
 })

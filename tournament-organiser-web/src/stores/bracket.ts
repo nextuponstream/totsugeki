@@ -9,9 +9,10 @@ interface BracketCreationForm {
 }
 
 interface MatchResult {
-  players: { name: string; id: string }[]
-  scoreP1: number
-  scoreP2: number
+  p1_id: string
+  p2_id: string
+  score_p1: number
+  score_p2: number
 }
 
 export const useBracketStore = defineStore(
@@ -85,6 +86,7 @@ export const useBracketStore = defineStore(
           bracket.value = r
           isSaved.value = false
         }
+        reportedResults.value = []
         formCreate.value = { player_names: [], bracket_name: '' }
       } else {
         throw new Error(
@@ -186,6 +188,12 @@ export const useBracketStore = defineStore(
         )
         if (response.ok) {
           bracket.value = await response.json()
+          reportedResults.value.push({
+            p1_id: players[0].id,
+            p2_id: players[1].id,
+            score_p1: scoreP1,
+            score_p2: scoreP2,
+          })
         } else {
           console.debug(await response.text())
           throw new Error('non-200 response for /api/report-result-for-bracket')
@@ -205,7 +213,7 @@ export const useBracketStore = defineStore(
       // use /brackets/save endpoint
       if (reportedResults.value && bracket.value?.bracket?.participants) {
         console.debug(`submitting result for bracket...`)
-        let player_names = bracket.value.bracket.participants.map((p) => p.name)
+        let player_names = bracket.value.bracket.participants
         let response = await fetch(
           `${import.meta.env.VITE_API_URL}/api/brackets/save`,
           {
@@ -217,7 +225,7 @@ export const useBracketStore = defineStore(
             body: JSON.stringify({
               bracket_name: bracket.value?.bracket?.name,
               results: reportedResults.value,
-              player_names: player_names,
+              players: player_names,
             }),
           }
         )
@@ -248,6 +256,7 @@ export const useBracketStore = defineStore(
       bracket,
       isSaved,
       formCreate,
+      reportedResults, // export ref so localStorage is updated with that value
     }
   },
   {

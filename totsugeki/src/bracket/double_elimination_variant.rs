@@ -162,7 +162,8 @@ mod tests {
         for i in 1..=1 {
             bracket = bracket
                 .add_participant(format!("p{i}").as_str())
-                .expect("player added");
+                .expect("player added")
+                .0;
         }
         let deb = Variant { bracket };
         assert_eq!(deb.bracket.participants.len(), 1);
@@ -180,7 +181,8 @@ mod tests {
         for i in 1..=2 {
             bracket = bracket
                 .add_participant(format!("p{i}").as_str())
-                .expect("player added");
+                .expect("player added")
+                .0;
         }
         let deb = Variant { bracket };
         assert_eq!(deb.bracket.participants.len(), 2);
@@ -201,7 +203,8 @@ mod tests {
         for i in 1..=n {
             bracket = bracket
                 .add_participant(format!("p{i}").as_str())
-                .expect("player added");
+                .expect("player added")
+                .0;
         }
         let deb = Variant { bracket };
 
@@ -222,7 +225,8 @@ mod tests {
         for i in 1..=n {
             bracket = bracket
                 .add_participant(format!("p{i}").as_str())
-                .expect("player added");
+                .expect("player added")
+                .0;
         }
         let deb = Variant { bracket };
 
@@ -245,7 +249,8 @@ mod tests {
         for i in 1..=n {
             bracket = bracket
                 .add_participant(format!("p{i}").as_str())
-                .expect("player added");
+                .expect("player added")
+                .0;
         }
         let deb = Variant { bracket };
 
@@ -270,7 +275,8 @@ mod tests {
         for i in 1..=n {
             bracket = bracket
                 .add_participant(format!("p{i}").as_str())
-                .expect("player added");
+                .expect("player added")
+                .0;
         }
         let deb = Variant { bracket };
 
@@ -313,7 +319,8 @@ mod tests {
         for i in 1..=n {
             bracket = bracket
                 .add_participant(format!("p{i}").as_str())
-                .expect("player added");
+                .expect("player added")
+                .0;
         }
         let deb = Variant { bracket };
 
@@ -366,7 +373,8 @@ mod tests {
         for i in 1..=n {
             bracket = bracket
                 .add_participant(format!("p{i}").as_str())
-                .expect("player added");
+                .expect("player added")
+                .0;
         }
         let deb = Variant { bracket };
 
@@ -429,7 +437,8 @@ mod tests {
         for i in 1..=n {
             bracket = bracket
                 .add_participant(format!("p{i}").as_str())
-                .expect("player added");
+                .expect("player added")
+                .0;
         }
         let deb = Variant { bracket };
 

@@ -12,7 +12,7 @@ pub struct TestApp {
 }
 
 use super::*;
-use crate::brackets::CreateBracketForm;
+use crate::brackets::{BracketState, CreateBracketForm};
 use reqwest::{Client, Response};
 use serde::Serialize;
 use tokio::net::TcpListener;
@@ -180,6 +180,18 @@ impl TestApp {
                 "{}/api/brackets?limit={}&offset={}",
                 self.addr, limit, offset
             ))
+            .send()
+            .await
+            .expect("request done")
+    }
+
+    /// `/api/brackets/save` POST
+    #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
+    pub async fn save_bracket(&self, state: BracketState) -> Response {
+        let request = state;
+        self.http_client
+            .post(format!("{}/api/brackets/save", self.addr))
+            .json(&request)
             .send()
             .await
             .expect("request done")

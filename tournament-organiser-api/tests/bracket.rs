@@ -3,7 +3,10 @@
 use reqwest::StatusCode;
 use sqlx::PgPool;
 use totsugeki::matches::Match;
-use tournament_organiser_api::brackets::{BracketRecord, GenericResourceCreated};
+use totsugeki::player::Player;
+use tournament_organiser_api::brackets::{
+    BracketRecord, BracketState, GenericResourceCreated, PlayerMatchResultReport,
+};
 use tournament_organiser_api::resources::GenericResource;
 use tournament_organiser_api::test_utils::spawn_app;
 
@@ -100,4 +103,59 @@ async fn list_brackets(db: PgPool) {
 
     let brackets: Vec<GenericResource> = response.json().await.unwrap();
     assert_eq!(brackets.len(), 100);
+}
+#[sqlx::test]
+async fn save_bracket(db: PgPool) {
+    let app = spawn_app(db).await;
+    app.login_as_test_user().await;
+
+    let p1 = Player::new("p1".into());
+    let p2 = Player::new("p2".into());
+    let p3 = Player::new("p3".into());
+    let state = BracketState {
+        bracket_name: "test bracket".to_string(),
+        players: vec![p1.clone(), p2.clone(), p3.clone()],
+        results: vec![
+            PlayerMatchResultReport {
+                p1_id: p2.clone().get_id(),
+                p2_id: p3.clone().get_id(),
+                score_p1: 2,
+                score_p2: 0,
+            },
+            PlayerMatchResultReport {
+                p1_id: p1.clone().get_id(),
+                p2_id: p2.clone().get_id(),
+                score_p1: 2,
+                score_p2: 0,
+            },
+            PlayerMatchResultReport {
+                p1_id: p2.clone().get_id(),
+                p2_id: p3.clone().get_id(),
+                score_p1: 0,
+                score_p2: 2,
+            },
+            PlayerMatchResultReport {
+                p1_id: p1.clone().get_id(),
+                p2_id: p3.clone().get_id(),
+                score_p1: 0,
+                score_p2: 2,
+            },
+            PlayerMatchResultReport {
+                p1_id: p1.clone().get_id(),
+                p2_id: p3.clone().get_id(),
+                score_p1: 0,
+                score_p2: 2,
+            },
+        ],
+    };
+
+    let response = app.save_bracket(state).await;
+
+    let status = response.status();
+    assert_eq!(
+        status,
+        StatusCode::CREATED,
+        "status: {status}, response: \"{}\"",
+        response.text().await.unwrap()
+    );
 }

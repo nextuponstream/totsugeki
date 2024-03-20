@@ -12,7 +12,7 @@ use totsugeki::bracket::{
     double_elimination_variant::Variant as DoubleEliminationVariant, Bracket, Id,
 };
 use totsugeki::matches::Match;
-use totsugeki::player::{Id as PlayerId, Participants};
+use totsugeki::player::{Id as PlayerId, Participants, Player};
 use totsugeki_display::loser_bracket::lines as loser_bracket_lines;
 use totsugeki_display::loser_bracket::reorder as reorder_loser_bracket;
 use totsugeki_display::winner_bracket::lines as winner_bracket_lines;
@@ -70,10 +70,14 @@ pub struct CreateBracketForm {
 /// Then this will do.
 #[derive(Deserialize, Serialize, Debug)]
 pub struct PlayerMatchResultReport {
-    /// player reporting
-    player_id: PlayerId,
-    /// match report player is involed in
-    report: (i8, i8),
+    /// high seed player
+    pub p1_id: PlayerId,
+    /// low seed player
+    pub p2_id: PlayerId,
+    /// score of player 1
+    pub score_p1: i8,
+    /// score of player 2
+    pub score_p2: i8,
 }
 
 /// List of players from which a bracket can be created
@@ -82,8 +86,8 @@ pub struct BracketState {
     /// bracket names
     pub bracket_name: String,
     /// player names
-    pub player_names: Vec<String>,
-    /// results in order of replay
+    pub players: Vec<Player>,
+    ///  results in order of replay
     pub results: Vec<PlayerMatchResultReport>,
 }
 
@@ -105,7 +109,7 @@ pub async fn new_bracket(AxumJson(form): AxumJson<CreateBracketForm>) -> impl In
         let Ok(tmp) = bracket.add_participant(name.as_str()) else {
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         };
-        bracket = tmp;
+        bracket = tmp.0;
     }
 
     Ok(breakdown(bracket).into_response())
@@ -118,6 +122,7 @@ pub async fn new_bracket(AxumJson(form): AxumJson<CreateBracketForm>) -> impl In
 /// parsed as that may lead to a malformed bracket. Then we do something a
 /// little more intense computation wise that always yields a correct bracket.
 #[instrument(name = "save_bracket")]
+#[debug_handler]
 pub async fn save_bracket(
     State(pool): State<PgPool>,
     AxumJson(bracket_state): AxumJson<BracketState>,
@@ -130,17 +135,43 @@ pub async fn save_bracket(
 
     let mut bracket = Bracket::default();
     bracket = bracket.update_name(bracket_state.bracket_name);
-    for name in bracket_state.player_names {
-        let Ok(tmp) = bracket.add_participant(name.as_str()) else {
+    let mut safe_player_mapping = vec![];
+    // Do not rely on given ID, assign new IDs to players and map
+    for player in bracket_state.players {
+        let Ok(tmp) = bracket.add_participant(player.get_name().as_str()) else {
+            tracing::warn!("oh no");
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         };
-        bracket = tmp;
+        bracket = tmp.0;
+        safe_player_mapping.push((player, tmp.1));
     }
+    let mut bracket = match bracket.start() {
+        Ok(b) => b.0,
+        Err(err) => {
+            tracing::warn!("{err}");
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+    // let mut bracket = bracket.0;
     for r in bracket_state.results {
-        let Ok(b) = bracket.report_result(r.player_id, r.report) else {
+        let report = (r.score_p1, r.score_p2);
+        let Some(p1_mapping) = safe_player_mapping.iter().find(|m| m.0.get_id() == r.p1_id) else {
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         };
-        bracket = b.0;
+        let Some(p2_mapping) = safe_player_mapping.iter().find(|m| m.0.get_id() == r.p2_id) else {
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        };
+        bracket = match bracket.tournament_organiser_reports_result(
+            p1_mapping.1.get_id(),
+            report,
+            p2_mapping.1.get_id(),
+        ) {
+            Ok(b) => b.0,
+            Err(err) => {
+                tracing::warn!("{err}");
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        };
     }
 
     let r = sqlx::query!(
@@ -151,14 +182,14 @@ pub async fn save_bracket(
     )
     .fetch_one(&pool)
     .await
-    .expect("user insert");
-    // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
-    tracing::info!("new bracket replayed from steps {}", r.id);
+    .expect("new bracket replayed from steps");
+    // use auto-generated db id rather than from Bracket::default()
+    bracket = bracket.set_id(r.id);
 
     tracing::info!("new bracket replayed from steps {}", bracket.get_id());
     tracing::debug!("new bracket replayed from steps {:?}", bracket);
 
-    Ok(breakdown(bracket).into_response())
+    Ok((StatusCode::CREATED, breakdown(bracket)).into_response())
 }
 
 /// Returns existing bracket for display purposes
@@ -200,7 +231,7 @@ fn breakdown(bracket: Bracket) -> impl IntoResponse {
         Ok(wb) => wb,
         Err(e) => {
             tracing::error!("{e:?}");
-            return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
         }
     };
     let mut winner_bracket_rounds = vec![];
@@ -215,12 +246,12 @@ fn breakdown(bracket: Bracket) -> impl IntoResponse {
     reorder_winner_bracket(&mut winner_bracket_rounds);
     let Some(winner_bracket_lines) = winner_bracket_lines(&winner_bracket_rounds) else {
         tracing::error!("winner bracket connecting lines");
-        return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     };
 
     let Ok(lower_bracket_matches) = dev.partition_loser_bracket() else {
         // TODO log error
-        return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     };
     let mut loser_bracket_rounds: Vec<Vec<MinimalMatch>> = vec![];
     for r in lower_bracket_matches {
@@ -233,14 +264,14 @@ fn breakdown(bracket: Bracket) -> impl IntoResponse {
     reorder_loser_bracket(&mut loser_bracket_rounds);
     let Some(loser_bracket_lines) = loser_bracket_lines(loser_bracket_rounds.clone()) else {
         tracing::error!("loser bracket connecting lines");
-        return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     };
 
     let (gf, gf_reset) = match dev.grand_finals_and_reset() {
         Ok((gf, bracket_reset)) => (gf, bracket_reset),
         Err(e) => {
             tracing::error!("{e:?}");
-            return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
         }
     };
     let gf = from_participants(&gf, &bracket.get_participants());
@@ -400,7 +431,7 @@ pub async fn create_bracket(
         let Ok(tmp) = bracket.add_participant(name.as_str()) else {
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         };
-        bracket = tmp;
+        bracket = tmp.0;
     }
 
     let r = sqlx::query!(

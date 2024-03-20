@@ -138,7 +138,8 @@ mod tests {
         for i in 1..=3 {
             bracket = bracket
                 .add_participant(format!("p{i}").as_str())
-                .expect("ok");
+                .expect("ok")
+                .0;
         }
 
         let updated_bracket = bracket.close();
@@ -165,7 +166,8 @@ mod tests {
         for i in 1..=3 {
             bracket = bracket
                 .add_participant(format!("p{i}").as_str())
-                .expect("ok");
+                .expect("ok")
+                .0;
         }
         let (updated_bracket, _) = bracket.start().expect("start");
         let bracket_id = updated_bracket.get_id();

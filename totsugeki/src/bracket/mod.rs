@@ -152,19 +152,17 @@ impl Bracket {
     ///
     /// # Errors
     /// when bracket has started
-    pub fn add_participant(&self, name: &str) -> Result<Bracket, Error> {
+    pub fn add_participant(&self, name: &str) -> Result<(Bracket, Player), Error> {
         if self.accept_match_results {
             return Err(Error::Started(
                 self.id,
                 "Bracket has started. You may not enter at this time.".into(),
             ));
         }
-        let participants = self
-            .participants
-            .clone()
-            .add_participant(Player::new(name.into()))?;
+        let p = Player::new(name.into());
+        let participants = self.participants.clone().add_participant(p.clone())?;
         let bracket = self.clone().regenerate_matches(participants)?;
-        Ok(bracket)
+        Ok((bracket, p))
     }
 
     /// Report result for a match in this bracket. Returns updated bracket,
@@ -275,7 +273,7 @@ impl Bracket {
     }
 
     /// Add bracket id to error message and maps player name from player id
-    // NOTE: I hope there will be a better way to add additionnal info to an
+    // NOTE: I hope there will be a better way to add additional info to an
     // error because this does not scale over time
     pub(crate) fn get_from_progression_error(&self, pe: ProgressError) -> Error {
         match pe {

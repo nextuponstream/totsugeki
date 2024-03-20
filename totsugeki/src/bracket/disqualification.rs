@@ -76,7 +76,8 @@ mod tests {
         for i in 1..=3 {
             bracket = bracket
                 .add_participant(format!("p{i}").as_str())
-                .expect("add player");
+                .expect("add player")
+                .0;
         }
 
         let players = bracket.get_participants().get_players_list();
