@@ -93,6 +93,7 @@ async fn auth_layer(
 /// Router for non-user facing endpoints. Web page makes requests to API
 /// (registration, updating bracket...)
 fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router {
+    // TODO declare that router in a new users folder and import
     let user_routes = Router::new().nest(
         "/users",
         Router::new()
@@ -100,6 +101,7 @@ fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router {
             .route("/", delete(delete_user)),
     );
 
+    // TODO declare that router in brackets and import
     let bracket_routes = Router::new().nest(
         "/brackets",
         Router::new()
@@ -117,9 +119,11 @@ fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router {
         ));
     let unprotected_bracket_routes = Router::new()
         .route("/health_check", get(health_check))
+        // TODO declare an auth router and merge routes
         .route("/register", post(registration))
         .route("/login", post(login))
         .route("/logout", post(logout))
+        // TODO declare brackets_guest router and merge
         .route("/report-result-for-bracket", post(report_result))
         .nest(
             "/guest",
@@ -140,13 +144,10 @@ fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router {
 /// Serve web part of the application, using `tournament-organiser-web` build
 /// For development, Cors rule are relaxed
 pub fn app(pool: Pool<Postgres>, session_store: PostgresStore) -> Router {
-    let web_build_path = match std::env::var("BUILD_PATH_TOURNAMENT_ORGANISER_WEB") {
-        Ok(s) => s,
-        Err(e) => {
-            tracing::info!("BUILD_PATH_TOURNAMENT_ORGANISER_WEB could not be parsed. Defaulting to relative path: {e}");
-            "../tournament-organiser-web/dist".into()
-        }
-    };
+    let web_build_path = std::env::var("BUILD_PATH_TOURNAMENT_ORGANISER_WEB").unwrap_or_else(|e| {
+        tracing::info!("BUILD_PATH_TOURNAMENT_ORGANISER_WEB could not be parsed. Defaulting to relative path: {e}");
+        "../tournament-organiser-web/dist".into()
+    });
 
     let spa = ServeDir::new(web_build_path.clone())
         // .not_found_service will throw 404, which makes cypress test fail

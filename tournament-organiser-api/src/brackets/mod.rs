@@ -250,7 +250,6 @@ fn breakdown(bracket: Bracket) -> impl IntoResponse {
     };
 
     let Ok(lower_bracket_matches) = dev.partition_loser_bracket() else {
-        // TODO log error
         return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     };
     let mut loser_bracket_rounds: Vec<Vec<MinimalMatch>> = vec![];
@@ -267,12 +266,8 @@ fn breakdown(bracket: Bracket) -> impl IntoResponse {
         return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     };
 
-    let (gf, gf_reset) = match dev.grand_finals_and_reset() {
-        Ok((gf, bracket_reset)) => (gf, bracket_reset),
-        Err(e) => {
-            tracing::error!("{e:?}");
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-        }
+    let Ok((gf, gf_reset)) = dev.grand_finals_and_reset() else {
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     };
     let gf = from_participants(&gf, &bracket.get_participants());
     let gf_reset = from_participants(&gf_reset, &bracket.get_participants());
@@ -315,7 +310,7 @@ pub async fn report_result(AxumJson(report): AxumJson<ReportResultInput>) -> imp
         Ok((bracket, _, _)) => bracket,
         Err(e) => {
             // TODO deal with corner case where UI shows a bracket that is out
-            // of sync with database state and returns something to user
+            //  of sync with database state and returns something to user
             tracing::error!("{e:?}");
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
@@ -324,7 +319,6 @@ pub async fn report_result(AxumJson(report): AxumJson<ReportResultInput>) -> imp
     let participants = bracket.get_participants();
     let dev: DoubleEliminationVariant = bracket.clone().try_into().expect("partition");
 
-    // TODO test if tracing shows from which methods it was called
     let winner_bracket_matches = match dev.partition_winner_bracket() {
         Ok(wb) => wb,
         Err(e) => {
