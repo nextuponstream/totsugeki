@@ -70,7 +70,6 @@ describe('allow creating brackets without signing up', () => {
     cy.submitResult(1, 2, 0, 2, 'grand-finals')
     cy.submitResult(1, 2, 2, 0, 'grand-finals-reset')
   })
-  // TODO finish story
   it('if I create an account', () => {
     cy.register(email, 'guestToUser', password)
   })
