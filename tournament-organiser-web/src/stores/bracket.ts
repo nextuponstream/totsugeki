@@ -71,8 +71,6 @@ export const useBracketStore = defineStore(
           bracket_name: formCreate.value.bracket_name,
           player_names: formCreate.value.player_names.map((p) => p.name),
         }),
-        // can't send json without cors... https://stackoverflow.com/a/45655314
-        // documentation: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch#supplying_request_options
       })
       if (response.ok) {
         let r = await response.json()

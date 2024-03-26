@@ -11,10 +11,10 @@ use Vue because that's the only frontend framework I know.
 
 What is needed:
 
-* vue draggable (or something equivalent like sortablejs) 
+* vue draggable (or something equivalent like sortablejs)
 
-There does not seem to exist any equivalent in any rust UI frameworks (like 
-dioxus). Seeding through drag and drop in place feels like a necessary feature 
+There does not seem to exist any equivalent in any rust UI frameworks (like
+dioxus). Seeding through drag and drop in place feels like a necessary feature
 for such an app.
 
 * Tailwind
@@ -24,43 +24,10 @@ this thing go in the grid!
 
 ## Recommended IDE Setup
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur)
+At the moment, I'd recommend RustRover because having the database tool with
+typescript lsp setup out-of-the-box is invaluable.
 
-This project uses eslint, use eslint vscode extension with the following editor
-settings:
-
-```json
-    ...
-    "editor.rulers": [80],
-    "editor.codeActionsOnSave": {
-        "source.fixAll": "never",
-        "source.fixAll.eslint": "always"
-    },
-    "eslint.validate": [
-        "javascript"
-    ],
-    "todohighlight.keywords": [
-        {
-            "text": "TODO",
-            "color": "rgb(13, 184, 38)",
-            "backgroundColor": "rgba(6, 89, 18,.4)",
-            "isWholeLine": true,
-        },
-        {
-            "text": "FIXME",
-            "color": "rgb(242, 51, 51)",
-            "backgroundColor": "rgba(138, 28, 28,.4)",
-            "isWholeLine": true,
-        },
-        {
-            "text": "NOTE",
-            "color": "rgb(13, 184, 38)",
-            "backgroundColor": "rgba(6, 89, 18,.1)",
-            "isWholeLine": false,
-        },
-    ],
-    ...
-```
+If you cannot, then I'd recommend vscode (see [doc](../docs/vscode_setup.md)).
 
 ## Project Setup
 
@@ -102,8 +69,8 @@ First, run the application in the background
 ```bash
 BUILD_PATH_TOURNAMENT_ORGANISER_WEB=tournament-organiser-web/dist \
 DB_USERNAME=toa DB_PASSWORD=toa DB_NAME=toa \
-cargo watch -w tournament-organiser-web -w tournament-organiser-api \
--s "npm --prefix tournament-organiser-web run build && cargo run --package tournament-organiser-api"
+cargo watch -w tournament-organiser-api \
+-s "cargo run --package tournament-organiser-api"
 ```
 
 Seed the database:
@@ -118,11 +85,14 @@ Launch interactive e2e cypress tests
 npm run test:e2e
 ```
 
-NOTE: I have not found a way to use `npm run dev` while the API runs on the same
-port during cypress testing. This would be nice because you would benefit from hot-reloading rather than rebuilding the app completely during testing.
-Currently, telling cypress to target something else than the API (API on 8080, 
-dev on 5173) fails because registration test has a CORS problem (not same 
-origin).
+Optionally, if you want to be closer to the real production setup:
+
+```bash
+BUILD_PATH_TOURNAMENT_ORGANISER_WEB=tournament-organiser-web/dist \
+DB_USERNAME=toa DB_PASSWORD=toa DB_NAME=toa \
+cargo watch -w tournament-organiser-web -w tournament-organiser-api \
+-s "npm --prefix tournament-organiser-web run build && cargo run --package tournament-organiser-api"
+```
 
 ### Lint with [ESLint](https://eslint.org/)
 

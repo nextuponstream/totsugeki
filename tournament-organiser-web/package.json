@@ -8,7 +8,7 @@
     "build:ci": "npm run build && cargo build --package tournament-organiser-api --release",
     "preview": "vite preview",
     "test:unit": "vitest",
-    "test:e2e": "CYPRESS_BASE_URL=http://localhost:8080 cypress open --browser chrome",
+    "test:e2e": "cypress open --browser chrome",
     "test:e2e:ci": "CYPRESS_BASE_URL=http://localhost:8080 cypress run --e2e --browser chrome",
     "test:e2e:dev": "start-server-and-test 'vite dev --port 4173' http://localhost:4173 'cypress open --e2e'",
     "build-only": "vite build",

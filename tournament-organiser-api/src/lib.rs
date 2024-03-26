@@ -142,7 +142,6 @@ fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router {
 }
 
 /// Serve web part of the application, using `tournament-organiser-web` build
-/// For development, Cors rule are relaxed
 pub fn app(pool: Pool<Postgres>, session_store: PostgresStore) -> Router {
     let web_build_path = std::env::var("BUILD_PATH_TOURNAMENT_ORGANISER_WEB").unwrap_or_else(|e| {
         tracing::info!("BUILD_PATH_TOURNAMENT_ORGANISER_WEB could not be parsed. Defaulting to relative path: {e}");
