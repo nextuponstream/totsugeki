@@ -17,11 +17,11 @@ use tracing::instrument;
 
 /// Credentials used by user
 #[derive(Debug, Deserialize)]
-pub(crate) struct Credentials {
+pub struct Credentials {
     /// user email
-    email: String,
+    pub email: String,
     /// user password
-    password: Secret<String>,
+    pub password: Secret<String>,
 }
 
 /// Successful login response with ID of logged in user

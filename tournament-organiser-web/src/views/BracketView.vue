@@ -1,20 +1,25 @@
 <template>
-  <ReportResultModal
-    v-model="show"
-    :match-id="matchId"
-    :players="players"
-    @new-result="reportResult"
-  />
+  <ReportResultModal v-model="show" :match-id="matchId" :players="players" />
 
+  <div>{{ JSON.stringify(bracketStore.bracket?.bracket!.name) }}</div>
   <div class="pb-5 text-gray-400">
     {{ t('bracketView.hint') }}
   </div>
+  <div v-if="unsavedBracketCanBeSaved">
+    <SubmitBtn @click="saveAndRedirectToNewBracketPage">{{
+      t('bracketView.saveBracket')
+    }}</SubmitBtn>
+  </div>
+  <div v-else-if="userStore.id === null">
+    {{ t('bracketView.unsavedWarning') }}
+  </div>
   <div>
     <ShowBracket
-      :bracket="bracket.winner_bracket"
-      :lines="bracket.winner_bracket_lines"
-      :grand-finals="bracket.grand_finals"
-      :grand-finals-reset="bracket.grand_finals_reset"
+      :bracket="bracketStore.bracket?.winner_bracket"
+      :lines="bracketStore.bracket?.winner_bracket_lines"
+      :grand-finals="bracketStore.bracket?.grand_finals"
+      :grand-finals-reset="bracketStore.bracket?.grand_finals_reset"
+      test-id-prefix="winner"
       @show-result-modal="showResultModal"
     >
       {{ t('bracketView.winnerBracket') }}
@@ -22,8 +27,9 @@
   </div>
   <div class="pt-6">
     <ShowBracket
-      :bracket="bracket.loser_bracket"
-      :lines="bracket.loser_bracket_lines"
+      :bracket="bracketStore.bracket?.loser_bracket"
+      :lines="bracketStore.bracket?.loser_bracket_lines"
+      test-id-prefix="loser"
       @show-result-modal="showResultModal"
     >
       {{ t('bracketView.loserBracket') }}
@@ -31,26 +37,42 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import type { Ref } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import ShowBracket from '@/components/ShowBracket.vue'
 import { useI18n } from 'vue-i18n'
 import ReportResultModal from '@/components/ReportResultModal.vue'
+import { useBracketStore } from '@/stores/bracket'
+import { useRoute, useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/user'
+import SubmitBtn from '@/components/ui/SubmitBtn.vue'
+import { RouteNames } from '@/router'
+const bracketStore = useBracketStore()
+const userStore = useUserStore()
+
+const route = useRoute()
+const router = useRouter()
 
 const { t } = useI18n({})
 
-const bracket: Ref<Bracket> = ref({
-  winner_bracket: [],
-  winner_bracket_lines: [],
-  loser_bracket: [],
-  loser_bracket_lines: [],
-  grand_finals: undefined as Match | undefined,
-  grand_finals_reset: undefined as Match | undefined,
-  bracket: undefined,
+const unsavedBracketCanBeSaved = computed(() => {
+  return userStore.id && !bracketStore.isSaved
 })
 
-onMounted(() => {
-  bracket.value = JSON.parse(localStorage.getItem('bracket')!)
+onMounted(async () => {
+  let id = route.params.bracketId
+  if (typeof id === 'string') {
+    bracketStore.setBracketId(id)
+    await bracketStore.getDisplayableBracket()
+  } else if (userStore.id === null && bracketStore.bracket) {
+    // guest view, nothing to do
+  } else if (unsavedBracketCanBeSaved.value) {
+    // guest just registered, they need to save that bracket
+  } else {
+    console.debug(typeof id)
+    throw new Error(
+      'neither logged in view, nor guest view could load properly'
+    )
+  }
 })
 
 const matchId = ref<string | null>(null)
@@ -66,39 +88,15 @@ function showResultModal(
   show.value = true
 }
 
-async function reportResult(
-  players: { name: string; id: string }[],
-  scoreP1: number,
-  scoreP2: number
-) {
-  try {
-    console.log(bracket.value.bracket)
-    let response = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/report-result-for-bracket`,
-      {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          bracket: bracket.value.bracket,
-          p1_id: players[0].id,
-          p2_id: players[1].id,
-          score_p1: scoreP1,
-          score_p2: scoreP2,
-        }),
-      }
-    )
-    if (response.ok) {
-      let newBracket = await response.json()
-      localStorage.setItem('bracket', JSON.stringify(bracket))
-      bracket.value = newBracket
-    } else {
-      throw new Error('non-200 response for /api/report-result-for-bracket')
-    }
-  } catch (e) {
-    console.error(e)
+async function saveAndRedirectToNewBracketPage() {
+  await bracketStore.saveBracket()
+  if (bracketStore.bracket?.bracket?.id) {
+    await router.push({
+      name: RouteNames.bracket.show,
+      params: { bracketId: bracketStore.bracket?.bracket.id },
+    })
+  } else {
+    throw new Error('missing bracket id to redirect')
   }
 }
 </script>

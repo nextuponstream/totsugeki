@@ -68,6 +68,6 @@ fn add_player(bracket: &UseSharedState<Bracket>, e: Event<FormData>) {
         }
     };
 
-    *bracket.write() = b;
+    *bracket.write() = b.0;
     log::trace!("Added player");
 }

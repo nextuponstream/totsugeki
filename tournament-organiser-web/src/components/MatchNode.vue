@@ -1,5 +1,5 @@
 <template>
-  <div class="py-2 flex flex-col" :class="rowClass">
+  <div class="py-2 flex flex-col" :class="rowClass" :data-test-id="testId">
     <div class="grid grid-rows-2 flex-col my-auto" :class="matchClass">
       <div class="grid grid-cols-7">
         <div
@@ -40,7 +40,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, type PropType } from 'vue'
 import MatchScore from './match/MatchScore.vue'
 
 // TODO hover only for matches for which you can submit scores
@@ -54,9 +54,24 @@ interface Match {
   row_hint: number | null
 }
 
-const props = defineProps<{
-  match: Match
-}>()
+const props = defineProps({
+  match: {
+    type: Object as PropType<Match>,
+    required: true,
+  },
+  testIdPrefix: {
+    type: String,
+    required: false,
+    default: () => {
+      return undefined
+    },
+  },
+})
+
+const testId = computed(() => {
+  let prefix = props.testIdPrefix ? `${props.testIdPrefix}-` : ''
+  return `${prefix}${props.match.seeds[0]}-${props.match.seeds[1]}`
+})
 
 const isPaddingMatch = computed(() => {
   return props.match?.row_hint === null && props.match?.seeds[0] === 0

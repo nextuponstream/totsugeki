@@ -6,8 +6,6 @@
   </button>
 </template>
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-
 // NOTE: on firefox with mobile view, hover doesn "not work" because how do you
 // hover with a mobile device? Exactly https://stackoverflow.com/a/67624464
 </script>

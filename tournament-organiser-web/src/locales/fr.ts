@@ -16,7 +16,7 @@ export default {
     confirmPassword: 'Confirmer le mot de passe',
     register: "S'inscrire",
     profile: 'Profil',
-    logout: 'Déconnextion',
+    logout: 'Déconnexion',
     delete: 'Supprimer',
   },
   error: {
@@ -29,6 +29,7 @@ export default {
     unknownEmail: 'Email inconnu',
     communication:
       'Une erreur de communication est survenue. Veuillez faire une nouvelle tentative',
+    badPassword: 'Le mot de passe ne correspond pas.',
   },
   playerRegistrationForm: {
     title: 'Enregistrer un nouveau joueur',
@@ -43,11 +44,15 @@ export default {
     title: 'Seeding',
     hint: 'Déplacer les joueurs pour mettre à jour le seeding',
     empty: "Aucun joueur n'a été enregistré...",
+    removeAllPlayers: 'Enlever tous les joueurs',
   },
   bracketView: {
     winnerBracket: 'Winner bracket',
     loserBracket: 'Loser bracket',
     hint: 'Veuillez cliquer un match pour entrer un résultat',
+    unsavedWarning:
+      'Ce tournoi ne sera pas sauvé. Veuillez vous connectez pour sauver le tournoi.',
+    saveBracket: 'Sauvegarder la bracket!',
   },
   loginModal: {
     title: 'Connection',
@@ -68,4 +73,6 @@ export default {
     confirmWithMail: 'Veuillez tapez {email} pour continuer.',
     matchError: "L'email fourni n'est pas correspond pas à votre email",
   },
+  login: 'Vous êtes maintenant connecté',
+  logout: 'Déconnexion réussie',
 }

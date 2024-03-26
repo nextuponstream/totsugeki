@@ -19,10 +19,14 @@
       <NavLink to="/about" data-test-id="about">
         {{ $t('generic.about') }}
       </NavLink>
-      <NavLink v-if="model" to="/user/dashboard">{{
+      <!-- <NavLink @click="test"> succ {{ toastStore.toasts.length }} </NavLink>
+      <NavLink @click="test2"> err {{ toastStore.toasts.length }} </NavLink> -->
+      <NavLink v-if="userStore.id" to="/user/dashboard">{{
         $t('generic.profile')
       }}</NavLink>
-      <NavLink v-if="model" @click="logout">{{ $t('generic.logout') }}</NavLink>
+      <NavLink v-if="userStore.id" @click="logout">{{
+        $t('generic.logout')
+      }}</NavLink>
       <NavLink v-else data-test-id="register" @click="showRegistrationModal">
         {{ $t('generic.registerLogin') }}
         <i class="pi pi-user" />
@@ -30,29 +34,25 @@
     </div>
   </div>
   <UserLoginModal v-model="registrationModal" @login="login" />
+  <UnsavedBracketModal v-model="unsavedBracketModal"></UnsavedBracketModal>
 </template>
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import NavLink from './NavLink.vue'
-import { onMounted, ref } from 'vue'
+import { ref } from 'vue'
 import UserLoginModal from './UserLoginModal.vue'
+import UnsavedBracketModal from './UnsavedBracketModal.vue'
+import { useUserStore } from '@/stores/user'
 import router from '@/router'
+import { useToastStore } from '@/stores/toast'
+const { t } = useI18n({})
+const userStore = useUserStore()
 
 const supportedLocales = ['en', 'fr']
 
 const { locale } = useI18n({})
 const registrationModal = ref(false)
-
-const model = defineModel()
-
-onMounted(() => {
-  refresh()
-})
-
-function refresh() {
-  let userId = localStorage.getItem('user_id')
-  model.value = userId !== null
-}
+const unsavedBracketModal = ref(false)
 
 function changeLocale(value: any) {
   locale.value = value.target.value
@@ -64,31 +64,21 @@ function showRegistrationModal() {
 
 function login() {
   registrationModal.value = false
-  refresh()
 }
 
 async function logout() {
-  try {
-    let response = await fetch(`${import.meta.env.VITE_API_URL}/api/logout`, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      credentials: 'same-origin',
-    })
-    if (response.ok) {
-      console.info('successful logout')
-      localStorage.removeItem('user_id')
-      refresh()
-      router.push({
-        name: 'createBracket',
-      })
-    } else {
-      throw new Error('non-200 response for /api/logout')
-    }
-  } catch (e) {
-    console.error(e)
-  }
+  await userStore.logout()
+  toastStore.success(t('logout'))
+  router.push({
+    name: 'createBracket',
+  })
 }
+
+const toastStore = useToastStore()
+// function test() {
+//   toastStore.success('content')
+// }
+// function test2() {
+//   toastStore.error('content')
+// }
 </script>

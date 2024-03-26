@@ -8,8 +8,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-function createBracket(name: string) {
-  localStorage.setItem('bracketName', name)
+function createBracket() {
   router.push({
     name: 'bracketRegistration',
   })

@@ -17,6 +17,7 @@
             v-for="match in element.match"
             :key="match.id"
             :match="match"
+            :test-id-prefix="testIdPrefix"
             @click="showResultModal(match.id, match.players)"
           />
         </div>
@@ -48,6 +49,7 @@
     >
       <MatchNode
         :match="bracketFinalMatch"
+        :test-id-prefix="testIdPrefix"
         @click="
           showResultModal(bracketFinalMatch.id, bracketFinalMatch.players)
         "
@@ -69,6 +71,7 @@
     >
       <MatchNode
         :match="grandFinals"
+        test-id-prefix="grand-finals"
         @click="showResultModal(grandFinals.id, grandFinals.players)"
       />
     </div>
@@ -91,6 +94,7 @@
     >
       <MatchNode
         :match="grandFinalsReset"
+        test-id-prefix="grand-finals-reset"
         @click="showResultModal(grandFinalsReset.id, grandFinalsReset.players)"
       />
     </div>
@@ -101,6 +105,12 @@ import { type PropType, computed } from 'vue'
 import MatchNode from '@/components/MatchNode.vue'
 
 const props = defineProps({
+  testIdPrefix: {
+    type: String,
+    default: () => {
+      return undefined
+    },
+  },
   bracket: {
     type: Array as PropType<Match[][]>,
     default: () => {

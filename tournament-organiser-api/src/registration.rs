@@ -30,19 +30,18 @@ pub struct FormInput {
 }
 
 /// User of application
-#[derive(sqlx::FromRow)]
-// reason = will be used later
-#[allow(dead_code)]
-pub(crate) struct User {
+#[derive(sqlx::FromRow, Clone, Debug)]
+pub struct User {
     /// Id of user
     pub id: Id,
     /// user name
     pub name: String,
     /// user email address
     pub email: String,
-    /// user password
-    pub password: Secret<String>,
+    /// user password hash
+    pub password: String,
     /// user id
+    #[allow(dead_code)]
     pub created_at: Option<DateTime<Utc>>,
 }
 

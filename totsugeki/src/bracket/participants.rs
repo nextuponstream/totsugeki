@@ -97,7 +97,7 @@ impl Bracket {
     pub fn remove_participant(self, participant_id: PlayerId) -> Result<Self, Error> {
         if self.accept_match_results {
             return Err(Error::Started(
-                self.bracket_id,
+                self.id,
                 ". As a player, you can quit the bracket by forfeiting or ask an admin to disqualify you."
                     .into(),
             ));
@@ -138,7 +138,8 @@ mod tests {
         for i in 1..=3 {
             bracket = bracket
                 .add_participant(format!("p{i}").as_str())
-                .expect("ok");
+                .expect("ok")
+                .0;
         }
 
         let updated_bracket = bracket.close();
@@ -165,7 +166,8 @@ mod tests {
         for i in 1..=3 {
             bracket = bracket
                 .add_participant(format!("p{i}").as_str())
-                .expect("ok");
+                .expect("ok")
+                .0;
         }
         let (updated_bracket, _) = bracket.start().expect("start");
         let bracket_id = updated_bracket.get_id();

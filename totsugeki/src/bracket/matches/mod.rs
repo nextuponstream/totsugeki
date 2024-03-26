@@ -256,6 +256,12 @@ pub trait Progression {
     ) -> Result<(Vec<Match>, MatchId, Vec<Match>), Error>;
 
     /// Tournament organiser reports result
+    ///
+    /// NOTE: both players are needed, so it is less ambiguous when reading code:
+    /// * p1 2-0 is more ambiguous to read than
+    /// * p1 2-0 p2
+    /// Technically, it's unnecessary.
+    ///
     /// # Errors
     /// thrown when player does not belong in bracket
     fn tournament_organiser_reports_result(
