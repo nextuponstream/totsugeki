@@ -105,6 +105,7 @@ async fn main() {
         let j = serde_json::to_vec(&bracket_data).expect("bracket");
         let mut f = std::fs::OpenOptions::new()
             .create(true)
+            .truncate(false)
             .write(true)
             .open(p)
             .expect("");
