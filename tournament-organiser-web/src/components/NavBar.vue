@@ -1,11 +1,15 @@
 <template>
-  <div
-    class="flex flex-wrap items-center justify-between px-2 py-2 bg-emerald-700 mb-3"
-  >
-    <NavLink to="/" text="Home" />
+  <div class="grid grid-cols-2 items-center px-2 py-2 bg-emerald-700 mb-3">
     <div class="flex gap-2 items-center">
+      <NavLink @click="toggleMenu">
+        <i class="pi pi-bars"></i>
+      </NavLink>
+      <NavLink to="/" text="Home" />
+    </div>
+    <div class="flex gap-2 items-center justify-self-end">
       <select
-        class="my-1 px-1 py-1 block rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+        class="my-1 px-1 py-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 hidden sm:block"
+        v-if="!showMenu"
         @input="changeLocale"
       >
         <option
@@ -16,18 +20,28 @@
           {{ supportedLocale }}
         </option>
       </select>
-      <NavLink to="/about" data-test-id="about">
+      <NavLink
+        to="/about"
+        data-test-id="about"
+        class="hidden sm:block"
+        v-if="!showMenu"
+      >
         {{ $t('generic.about') }}
       </NavLink>
-      <!-- <NavLink @click="test"> succ {{ toastStore.toasts.length }} </NavLink>
-      <NavLink @click="test2"> err {{ toastStore.toasts.length }} </NavLink> -->
-      <NavLink v-if="userStore.id" to="/user/dashboard">{{
-        $t('generic.profile')
-      }}</NavLink>
-      <NavLink v-if="userStore.id" @click="logout">{{
-        $t('generic.logout')
-      }}</NavLink>
-      <NavLink v-else data-test-id="register" @click="showRegistrationModal">
+      <NavLink
+        v-if="userStore.id && !showMenu"
+        to="/user/dashboard"
+        class="hidden sm:block"
+        >{{ $t('generic.profile') }}
+      </NavLink>
+      <NavLink v-if="userStore.id && !showMenu" @click="logout"
+        >{{ $t('generic.logout') }}
+      </NavLink>
+      <NavLink
+        v-else-if="!showMenu"
+        data-test-id="register"
+        @click="showRegistrationModal"
+      >
         {{ $t('generic.registerLogin') }}
         <i class="pi pi-user" />
       </NavLink>
@@ -39,14 +53,16 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import NavLink from './NavLink.vue'
-import { ref } from 'vue'
+import { inject, ref } from 'vue'
 import UserLoginModal from './UserLoginModal.vue'
 import UnsavedBracketModal from './UnsavedBracketModal.vue'
 import { useUserStore } from '@/stores/user'
 import router from '@/router'
 import { useToastStore } from '@/stores/toast'
+
 const { t } = useI18n({})
 const userStore = useUserStore()
+const emits = defineEmits(['toggleMenu'])
 
 const supportedLocales = ['en', 'fr']
 
@@ -69,16 +85,16 @@ function login() {
 async function logout() {
   await userStore.logout()
   toastStore.success(t('logout'))
-  router.push({
+  await router.push({
     name: 'createBracket',
   })
 }
 
 const toastStore = useToastStore()
-// function test() {
-//   toastStore.success('content')
-// }
-// function test2() {
-//   toastStore.error('content')
-// }
+
+const showMenu = inject('showMenu')
+
+function toggleMenu() {
+  emits('toggleMenu')
+}
 </script>

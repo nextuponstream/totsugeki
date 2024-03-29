@@ -31,6 +31,9 @@ export default {
       'Une erreur de communication est survenue. Veuillez faire une nouvelle tentative',
     badPassword: 'Le mot de passe ne correspond pas.',
   },
+  navbar: {
+    myBrackets: 'Mes brackets',
+  },
   playerRegistrationForm: {
     title: 'Enregistrer un nouveau joueur',
     newPlayerPlaceholder: 'Nom du joueur',

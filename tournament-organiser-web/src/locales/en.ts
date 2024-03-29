@@ -30,6 +30,9 @@ export default {
     communication: 'An internal error happened. Please try again.',
     badPassword: 'Wrong password was provided',
   },
+  navbar: {
+    myBrackets: 'My brackets',
+  },
   playerRegistrationForm: {
     title: 'Register players',
     newPlayerPlaceholder: 'Player name',
