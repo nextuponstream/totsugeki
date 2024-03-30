@@ -7,19 +7,7 @@
       <NavLink to="/" text="Home" />
     </div>
     <div class="flex gap-2 items-center justify-self-end">
-      <select
-        v-if="!showMenu"
-        class="px-1 py-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 hidden sm:block"
-        @input="changeLocale"
-      >
-        <option
-          v-for="supportedLocale in supportedLocales"
-          :key="supportedLocale"
-          :value="supportedLocale"
-        >
-          {{ supportedLocale }}
-        </option>
-      </select>
+      <SelectLanguage v-if="!showMenu"></SelectLanguage>
       <NavLink
         v-if="!showMenu"
         to="/about"
@@ -60,20 +48,16 @@ import { useUserStore } from '@/stores/user'
 import router from '@/router'
 import { useToastStore } from '@/stores/toast'
 import { showMenuKey } from '@/config'
+import SelectLanguage from '@/components/ui/SelectLanguage.vue'
 
 const { t } = useI18n({})
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const emits = defineEmits(['toggleMenu'])
+const showMenu = inject(showMenuKey)
 
-const supportedLocales = ['en', 'fr']
-
-const { locale } = useI18n({})
 const registrationModal = ref(false)
 const unsavedBracketModal = ref(false)
-
-function changeLocale(value: any) {
-  locale.value = value.target.value
-}
 
 function showRegistrationModal() {
   registrationModal.value = true
@@ -90,10 +74,6 @@ async function logout() {
     name: 'createBracket',
   })
 }
-
-const toastStore = useToastStore()
-
-const showMenu = inject(showMenuKey)
 
 function toggleMenu() {
   emits('toggleMenu')

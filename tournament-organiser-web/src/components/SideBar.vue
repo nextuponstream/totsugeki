@@ -18,18 +18,7 @@
       <NavLink data-test-id="your-brackets"
         >{{ $t('navbar.myBrackets') }}
       </NavLink>
-      <select
-        class="my-1 px-1 py-1 block rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-        @input="changeLocale"
-      >
-        <option
-          v-for="supportedLocale in supportedLocales"
-          :key="supportedLocale"
-          :value="supportedLocale"
-        >
-          {{ supportedLocale }}
-        </option>
-      </select>
+      <SelectLanguage></SelectLanguage>
       <NavLink to="/about" data-test-id="about">
         {{ $t('generic.about') }}
       </NavLink>
@@ -48,17 +37,13 @@ import router from '@/router'
 import { computed, inject, ref } from 'vue'
 import { useToastStore } from '@/stores/toast'
 import { showMenuKey } from '@/config'
+import SelectLanguage from '@/components/ui/SelectLanguage.vue'
 
 const userStore = useUserStore()
 const toastStore = useToastStore()
-const { locale } = useI18n({})
 const { t } = useI18n({})
 const emits = defineEmits(['toggleMenu'])
 const showMenu = inject(showMenuKey)
-
-function changeLocale(value: any) {
-  locale.value = value.target.value
-}
 
 async function logout() {
   await userStore.logout()
@@ -73,7 +58,6 @@ function showRegistrationModal() {
   registrationModal.value = true
 }
 
-const supportedLocales = ['en', 'fr']
 const registrationModal = ref<Boolean | null>(null)
 
 function toggleMenu() {
