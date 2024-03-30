@@ -1,5 +1,5 @@
 <template>
-  <div class="grid grid-cols-2 items-center px-2 py-2 bg-emerald-700 mb-3">
+  <div class="grid grid-cols-2 items-center px-2 py-4 bg-emerald-700 mb-3">
     <div class="flex gap-2 items-center">
       <NavLink @click="toggleMenu">
         <i class="pi pi-bars"></i>
@@ -8,8 +8,8 @@
     </div>
     <div class="flex gap-2 items-center justify-self-end">
       <select
-        class="my-1 px-1 py-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 hidden sm:block"
         v-if="!showMenu"
+        class="px-1 py-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 hidden sm:block"
         @input="changeLocale"
       >
         <option
@@ -21,10 +21,10 @@
         </option>
       </select>
       <NavLink
+        v-if="!showMenu"
         to="/about"
         data-test-id="about"
         class="hidden sm:block"
-        v-if="!showMenu"
       >
         {{ $t('generic.about') }}
       </NavLink>
@@ -59,6 +59,7 @@ import UnsavedBracketModal from './UnsavedBracketModal.vue'
 import { useUserStore } from '@/stores/user'
 import router from '@/router'
 import { useToastStore } from '@/stores/toast'
+import { showMenuKey } from '@/config'
 
 const { t } = useI18n({})
 const userStore = useUserStore()
@@ -92,7 +93,7 @@ async function logout() {
 
 const toastStore = useToastStore()
 
-const showMenu = inject('showMenu')
+const showMenu = inject(showMenuKey)
 
 function toggleMenu() {
   emits('toggleMenu')

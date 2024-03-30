@@ -1,9 +1,12 @@
 <template>
-  <div class="grow bg-neutral-700 min-h-full">
+  <div
+    class="fixed min-h-full overflow-hidden grow bg-neutral-700 h-full"
+    :class="openedSidebar"
+  >
     <div class="grid grid-cols-1 gap-2 py-3 px-3 text-sm">
       <i
-        @click="toggleMenu"
         class="pi pi-times text-gray-400 hover:text-gray-700 text-end"
+        @click="toggleMenu"
       ></i>
       <NavLink v-if="userStore.id" @click="logout"
         >{{ $t('generic.logout') }}
@@ -30,8 +33,6 @@
       <NavLink to="/about" data-test-id="about">
         {{ $t('generic.about') }}
       </NavLink>
-      <!-- <NavLink @click="test"> succ {{ toastStore.toasts.length }} </NavLink>
-      <NavLink @click="test2"> err {{ toastStore.toasts.length }} </NavLink> -->
       <NavLink v-if="userStore.id" to="/user/dashboard"
         >{{ $t('generic.profile') }}
       </NavLink>
@@ -44,14 +45,16 @@ import NavLink from '@/components/NavLink.vue'
 import { useUserStore } from '@/stores/user'
 import { useI18n } from 'vue-i18n'
 import router from '@/router'
-import { inject, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import { useToastStore } from '@/stores/toast'
+import { showMenuKey } from '@/config'
 
 const userStore = useUserStore()
 const toastStore = useToastStore()
 const { locale } = useI18n({})
 const { t } = useI18n({})
 const emits = defineEmits(['toggleMenu'])
+const showMenu = inject(showMenuKey)
 
 function changeLocale(value: any) {
   locale.value = value.target.value
@@ -71,11 +74,54 @@ function showRegistrationModal() {
 }
 
 const supportedLocales = ['en', 'fr']
-const registrationModal = ref(false)
+const registrationModal = ref<Boolean | null>(null)
 
 function toggleMenu() {
   emits('toggleMenu')
 }
+
+const openedSidebar = computed(() => {
+  console.info(showMenu?.value)
+  if (showMenu !== undefined) {
+    if (showMenu.value === null) {
+      return 'sidebar'
+    }
+    return showMenu.value ? 'sidebar-opened' : 'sidebar-closed'
+  }
+  return ''
+})
 </script>
 
-<style scoped></style>
+<style scoped>
+.sidebar {
+  left: -500px;
+}
+
+.sidebar-opened {
+  animation: slide-in 0.5s forwards;
+  left: -500px;
+}
+
+.sidebar-closed {
+  animation: slide-out 0.5s forwards;
+  left: -500px;
+}
+
+@keyframes slide-in {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(500px);
+  }
+}
+
+@keyframes slide-out {
+  0% {
+    transform: translateX(500px);
+  }
+  100% {
+    transform: translateX(0px);
+  }
+}
+</style>
