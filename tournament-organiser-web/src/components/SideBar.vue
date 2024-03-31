@@ -8,13 +8,7 @@
         class="pi pi-times text-gray-400 hover:text-gray-700 text-end"
         @click="toggleMenu"
       ></i>
-      <NavLink v-if="userStore.id" @click="logout"
-        >{{ $t('generic.logout') }}
-      </NavLink>
-      <NavLink v-else data-test-id="register" @click="showRegistrationModal">
-        {{ $t('generic.registerLogin') }}
-        <i class="pi pi-user" />
-      </NavLink>
+      <RegisterLogin></RegisterLogin>
       <NavLink data-test-id="your-brackets"
         >{{ $t('navbar.myBrackets') }}
       </NavLink>
@@ -32,40 +26,20 @@
 <script setup lang="ts">
 import NavLink from '@/components/NavLink.vue'
 import { useUserStore } from '@/stores/user'
-import { useI18n } from 'vue-i18n'
-import router from '@/router'
 import { computed, inject, ref } from 'vue'
-import { useToastStore } from '@/stores/toast'
 import { showMenuKey } from '@/config'
 import SelectLanguage from '@/components/ui/SelectLanguage.vue'
+import RegisterLogin from '@/components/ui/RegisterLogin.vue'
 
 const userStore = useUserStore()
-const toastStore = useToastStore()
-const { t } = useI18n({})
 const emits = defineEmits(['toggleMenu'])
 const showMenu = inject(showMenuKey)
-
-async function logout() {
-  await userStore.logout()
-  toastStore.success(t('logout'))
-  await router.push({
-    name: 'createBracket',
-  })
-}
-
-// FIXME login does not work from the sidebar
-function showRegistrationModal() {
-  registrationModal.value = true
-}
-
-const registrationModal = ref<Boolean | null>(null)
 
 function toggleMenu() {
   emits('toggleMenu')
 }
 
 const openedSidebar = computed(() => {
-  console.info(showMenu?.value)
   if (showMenu !== undefined) {
     if (showMenu.value === null) {
       return 'sidebar'

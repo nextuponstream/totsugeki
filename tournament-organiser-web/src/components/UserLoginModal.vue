@@ -2,6 +2,7 @@
   <BaseModal
     v-model="showModal"
     :title="t('loginModal.title')"
+    prefix="login"
     @hide="hideModal"
   >
     <form
@@ -28,7 +29,7 @@
 <script setup lang="ts">
 // NOTE submit button on the left for forms, right for modals (recommendation https://ux.stackexchange.com/a/13539)
 import { useForm } from 'vee-validate'
-import { ref, watchEffect, provide } from 'vue'
+import { ref, provide, computed } from 'vue'
 import BaseModal from './ui/BaseModal.vue'
 import router, { RouteNames } from '@/router'
 import { useI18n } from 'vue-i18n'
@@ -36,15 +37,14 @@ import { object, string } from 'yup'
 import { useUserStore } from '@/stores/user'
 import { useBracketStore } from '@/stores/bracket'
 import { useToastStore } from '@/stores/toast'
+import { useModalStore } from '@/stores/modal'
 
 const { t } = useI18n({})
 const userStore = useUserStore()
 const bracketStore = useBracketStore()
+const modalStore = useModalStore()
+const toastStore = useToastStore()
 
-const props = defineProps<{
-  modelValue: boolean
-}>()
-const showModal = ref(false)
 const schema = object({
   email: string()
     .email(() => t('error.invalidEmail'))
@@ -53,18 +53,9 @@ const schema = object({
     .required(() => t('error.required'))
     .min(8, () => t('error.minimum', { min: 8 })),
 })
-const emits = defineEmits(['update:modelValue', 'login'])
 
 const formErrors = ref({})
 provide('formErrors', formErrors)
-
-watchEffect(() => {
-  showModal.value = props.modelValue
-})
-
-function hideModal() {
-  emits('update:modelValue', false)
-}
 
 const { resetForm, defineField, handleSubmit, setFieldError } = useForm({
   validationSchema: schema,
@@ -78,7 +69,14 @@ function onInvalidSubmit({ values, errors, results }: any) {
   console.error('invalid form data')
 }
 
-const toastStore = useToastStore()
+const showModal = computed(() => {
+  return modalStore.activeModal === 'login'
+})
+
+function hideModal() {
+  modalStore.activeModal = null
+}
+
 /**
  * @param values validated form data
  */
@@ -87,7 +85,7 @@ async function onSubmit(values: any) {
   let response = await userStore.login(values)
   switch (response) {
     case 200:
-      emits('login')
+      modalStore.activeModal = null
       toastStore.success(t('login'))
       if (bracketStore.isSaved) {
         await router.push({ name: RouteNames.user.dashboard })

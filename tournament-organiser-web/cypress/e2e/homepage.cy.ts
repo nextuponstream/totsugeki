@@ -5,7 +5,9 @@ describe('Homepage proposes you to create a bracket', () => {
   })
   it('About page is reachable', () => {
     cy.visit('/')
-    cy.get('[data-test-id=about]').click()
+    cy.get('[data-test-id=navbar]').within(() => {
+      cy.get('[data-test-id=about]').click()
+    })
     cy.url().should('contain', '/about')
   })
 })

@@ -1,5 +1,5 @@
 <template>
-  <BaseModal v-model="showModal" title="TODO"></BaseModal>
+  <BaseModal v-model="showModal" title="TODO" prefix="TODO"></BaseModal>
 </template>
 <script setup lang="ts">
 import { ref } from 'vue'

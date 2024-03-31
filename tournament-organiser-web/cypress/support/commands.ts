@@ -13,16 +13,20 @@
 // -- This is a parent command --
 Cypress.Commands.add('login', (email: string, password: string) => {
   cy.visit('/')
-  cy.contains('Register / Login').click()
-  cy.get('[name=email]').type(email)
-  cy.get('[name=password]').type(password)
+  cy.get('[data-test-id=navbar]').within(() => {
+    cy.contains('Register / Login').click()
+  })
 
-  cy.intercept('POST', '/api/login').as('login')
-  cy.contains('Submit').click()
-  cy.wait('@login').then((interception) => {
-    assert.isNotNull(interception.response, 'response')
-    assert.equal(interception.response?.statusCode, 200)
-    // TODO body contains user_id
+  cy.get('[name=login]').within(() => {
+    cy.get('[name=email]').type(email)
+    cy.get('[name=password]').type(password)
+
+    cy.intercept('POST', '/api/login').as('login')
+    cy.contains('Submit').click()
+    cy.wait('@login').then((interception) => {
+      assert.isNotNull(interception.response, 'response')
+      assert.equal(interception.response?.statusCode, 200)
+    })
   })
 })
 Cypress.Commands.add(
@@ -57,7 +61,9 @@ Cypress.Commands.add('testUserLogin', () => {
     cy.visit('/')
 
     cy.get('[data-test-id=modal]').should('not.be.visible')
-    cy.contains('Register').click()
+    cy.get('[data-test-id=navbar]').within(() => {
+      cy.contains('Register').click()
+    })
     cy.get('[data-test-id=modal]').should('be.visible')
     cy.contains('Email')
     cy.contains('Password')
@@ -154,12 +160,15 @@ declare global {
   namespace Cypress {
     interface Chainable {
       login(email: string, password: string): Chainable<void>
+
       register(
         email: string,
         username: string,
         password: string
       ): Chainable<void>
+
       testUserLogin(): Chainable<void>
+
       submitResult(
         firstSeed: number,
         secondSeed: number,
@@ -167,6 +176,7 @@ declare global {
         scoreP2: number,
         bracket: Bracket
       ): Chainable<void>
+
       guestSession(weeklyName: string, email: string): Chainable<void>
 
       //   drag(subject: string, options?: Partial<TypeOptions>): Chainable<Element>

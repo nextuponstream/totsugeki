@@ -10,13 +10,14 @@
       <div class="text-2xl text-red-700">
         <h1>{{ t('user.dashboard.deleteAccount') }}</h1>
       </div>
-      <DangerBtn @click="showDeleteModal">{{
-        t('user.dashboard.deleteMyAccount')
-      }}</DangerBtn>
+      <DangerBtn @click="showDeleteModal"
+        >{{ t('user.dashboard.deleteMyAccount') }}
+      </DangerBtn>
     </div>
     <BaseModal
       v-model="showModal"
       :title="t('deleteModal.title')"
+      prefix="delete"
       @hide="hideModal"
     >
       <form
@@ -38,9 +39,9 @@
           autocomplete="off"
           v-bind="deleteEmailAttrs"
         />
-        <DangerBtn class="self-end">{{
-          t('user.dashboard.deleteAccount')
-        }}</DangerBtn>
+        <DangerBtn class="self-end"
+          >{{ t('user.dashboard.deleteAccount') }}
+        </DangerBtn>
       </form>
     </BaseModal>
   </div>

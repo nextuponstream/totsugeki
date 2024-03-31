@@ -7,6 +7,7 @@
       <div class="px-9 py-9">
         <RouterView />
       </div>
+      <UserLoginModal />
     </div>
   </div>
 </template>
@@ -17,6 +18,7 @@ import ToastZone from './components/ToastZone.vue'
 import { provide, type Ref, ref } from 'vue'
 import SideBar from '@/components/SideBar.vue'
 import { showMenuKey } from '@/config'
+import UserLoginModal from '@/components/UserLoginModal.vue'
 
 const showMenu = ref<boolean | null>(null)
 provide<Ref<boolean | null>>(showMenuKey, showMenu)

@@ -2,7 +2,7 @@
   <div
     class="fixed z-40 w-screen h-screen inset-0 bg-gray-900 bg-opacity-60"
     :class="isHidden"
-    data-test-id="blurred-background-outside-modal"
+    :data-test-id="backgroundName"
     @click="hideModal"
   />
   <div
@@ -31,11 +31,16 @@ const emits = defineEmits(['update:modelValue', 'hide'])
 const props = defineProps<{
   modelValue: boolean
   title: string
+  prefix: string
 }>()
 
 function hideModal() {
   emits('hide')
 }
+
+const backgroundName = computed(() => {
+  return `${props.prefix}-blurred-background-outside-modal`
+})
 
 const isHidden = computed(() => {
   if (props.modelValue) {
