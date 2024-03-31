@@ -78,4 +78,5 @@ export default {
   },
   login: 'Vous êtes maintenant connecté',
   logout: 'Déconnexion réussie',
+  about: 'Totsugeki est un outil pour créer et manager des brackets.',
 }

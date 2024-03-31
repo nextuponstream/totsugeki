@@ -26,4 +26,8 @@ provide<Ref<boolean | null>>(showMenuKey, showMenu)
 function toggleMenu() {
   showMenu.value = !showMenu.value
 }
+
+function hideMenu() {
+  showMenu.value = false
+}
 </script>

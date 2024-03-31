@@ -1,6 +1,12 @@
 <template>
   <div
-    class="fixed min-h-full overflow-hidden grow bg-neutral-700 h-full"
+    class="fixed z-40 w-screen h-screen inset-0 bg-gray-900 bg-opacity-60"
+    :class="isHidden"
+    data-test-id=""
+    @click="toggleMenu"
+  />
+  <div
+    class="fixed min-h-full overflow-hidden grow bg-neutral-700 h-full z-50"
     :class="openedSidebar"
   >
     <div class="grid grid-cols-1 gap-2 py-3 px-3 text-sm">
@@ -8,6 +14,7 @@
         class="pi pi-times text-gray-400 hover:text-gray-700 text-end"
         @click="toggleMenu"
       ></i>
+      <NavLink to="/" text="Home" />
       <RegisterLogin></RegisterLogin>
       <NavLink data-test-id="your-brackets"
         >{{ $t('navbar.myBrackets') }}
@@ -47,6 +54,14 @@ const openedSidebar = computed(() => {
     return showMenu.value ? 'sidebar-opened' : 'sidebar-closed'
   }
   return ''
+})
+
+const isHidden = computed(() => {
+  if (showMenu !== undefined) {
+    return showMenu.value ? null : 'hidden'
+  }
+
+  return 'hidden'
 })
 </script>
 
