@@ -18,6 +18,7 @@ pub mod resources;
 pub mod test_utils;
 pub mod users;
 
+use crate::brackets::user_brackets;
 use crate::health_check::health_check;
 use crate::login::login;
 use crate::logout::logout;
@@ -128,6 +129,10 @@ fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router {
         .nest(
             "/guest",
             Router::new().route("/brackets", post(new_bracket)),
+        )
+        .nest(
+            "/user",
+            Router::new().route("/:id/brackets", get(user_brackets)),
         )
         .nest(
             "/brackets",

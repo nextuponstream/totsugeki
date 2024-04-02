@@ -18,7 +18,7 @@ pub struct Infos {
     pub name: String,
 }
 
-/// `/api/user/profile` GET to check user informations
+/// `/api/user/profile` GET to check user information
 #[instrument(name = "user_dashboard", skip(pool, session))]
 pub(crate) async fn profile(session: Session, State(pool): State<PgPool>) -> impl IntoResponse {
     let user_id: Id = session

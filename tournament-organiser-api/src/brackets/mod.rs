@@ -481,10 +481,36 @@ pub async fn list_brackets(
     State(pool): State<PgPool>,
     ValidatedQueryParams(pagination): ValidatedQueryParams<Pagination>,
 ) -> impl IntoResponse {
-    tracing::debug!("bracket {pagination:?}");
     let limit: i64 = pagination.limit.try_into().expect("ok");
     let offset: i64 = pagination.offset.try_into().expect("ok");
 
+    let brackets = sqlx::query_as!(
+        GenericResource,
+        r#"SELECT id, name, created_at from brackets LIMIT $1 OFFSET $2"#,
+        limit,
+        offset
+    )
+    // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
+    .fetch_all(&pool)
+    .await
+    .expect("fetch result");
+
+    let list = GenericResourcesList(brackets);
+
+    (StatusCode::OK, AxumJson(list)).into_response()
+}
+
+/// `/:user_id/brackets` GET to view brackets managed by user
+#[instrument(name = "user_brackets", skip(pool))]
+pub(crate) async fn user_brackets(
+    Path(user_id): Path<Id>,
+    State(pool): State<PgPool>,
+    ValidatedQueryParams(pagination): ValidatedQueryParams<Pagination>,
+) -> impl IntoResponse {
+    let limit: i64 = pagination.limit.try_into().expect("ok");
+    let offset: i64 = pagination.offset.try_into().expect("ok");
+
+    // FIXME join with user table
     let brackets = sqlx::query_as!(
         GenericResource,
         r#"SELECT id, name, created_at from brackets LIMIT $1 OFFSET $2"#,

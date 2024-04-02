@@ -20,6 +20,7 @@ export const useBracketStore = defineStore(
   () => {
     const id: Ref<string | undefined> = ref(undefined)
     const bracket: Ref<Bracket | undefined> = ref(undefined)
+    const bracketList: Ref<Bracket[] | undefined> = ref(undefined)
     const isSaved: Ref<boolean> = ref(true)
     const formCreate: Ref<BracketCreationForm> = ref({
       player_names: [],
@@ -77,7 +78,6 @@ export const useBracketStore = defineStore(
         console.debug(r)
         if (loggedIn) {
           id.value = r.id
-          bracket.value = undefined
           isSaved.value = true
         } else {
           id.value = undefined
@@ -240,6 +240,27 @@ export const useBracketStore = defineStore(
       }
     }
 
+    async function getBracketsFrom(userId: string) {
+      let response = await fetch(
+        `${
+          import.meta.env.VITE_API_URL
+        }/api/user/${userId}/brackets?limit=10&offset=0`,
+        {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+        }
+      )
+      if (response.ok) {
+        bracketList.value = await response.json()
+      } else {
+        console.debug(await response.text())
+        throw new Error(`non-200 response for /api/user/${userId}/brackets`)
+      }
+    }
+
     return {
       id,
       setBracketId,
@@ -251,7 +272,9 @@ export const useBracketStore = defineStore(
       removePlayerInForm,
       removeAllPlayersInForm,
       saveBracket,
+      getBracketsFrom,
       bracket,
+      bracketList,
       isSaved,
       formCreate,
       reportedResults, // export ref so localStorage is updated with that value
