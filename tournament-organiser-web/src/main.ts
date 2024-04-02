@@ -11,13 +11,13 @@ import fr from './locales/fr'
 import { createI18n } from 'vue-i18n'
 
 import FormInputVue from './components/ui/FormInput.vue'
-import SubmitBtnVue from './components/ui/SubmitBtn.vue'
+import SubmitBtnVue from './components/ui/buttons/SubmitBtn.vue'
 import BaseTooltip from './components/ui/BaseTooltip.vue'
-import CancelBtnVue from './components/ui/CancelBtn.vue'
-import OtherBtnVue from './components/ui/OtherBtn.vue'
+import CancelBtnVue from './components/ui/buttons/CancelBtn.vue'
+import OtherBtnVue from './components/ui/buttons/OtherBtn.vue'
 import BaseLink from './components/ui/BaseLink.vue'
-import DangerBtnVue from './components/ui/DangerBtn.vue'
-import BaseModalVue from './components/ui/BaseModal.vue'
+import DangerBtnVue from './components/ui/buttons/DangerBtn.vue'
+import BaseModalVue from './components/ui/modals/BaseModal.vue'
 
 const app = createApp(App)
 

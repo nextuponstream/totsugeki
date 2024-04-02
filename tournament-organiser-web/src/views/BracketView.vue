@@ -6,9 +6,9 @@
     {{ t('bracketView.hint') }}
   </div>
   <div v-if="unsavedBracketCanBeSaved">
-    <SubmitBtn @click="saveAndRedirectToNewBracketPage">{{
-      t('bracketView.saveBracket')
-    }}</SubmitBtn>
+    <SubmitBtn @click="saveAndRedirectToNewBracketPage"
+      >{{ t('bracketView.saveBracket') }}
+    </SubmitBtn>
   </div>
   <div v-else-if="userStore.id === null">
     {{ t('bracketView.unsavedWarning') }}
@@ -44,8 +44,9 @@ import ReportResultModal from '@/components/ReportResultModal.vue'
 import { useBracketStore } from '@/stores/bracket'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import SubmitBtn from '@/components/ui/SubmitBtn.vue'
+import SubmitBtn from '@/components/ui/buttons/SubmitBtn.vue'
 import { RouteNames } from '@/router'
+
 const bracketStore = useBracketStore()
 const userStore = useUserStore()
 

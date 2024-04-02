@@ -3,7 +3,7 @@
 </template>
 <script setup lang="ts">
 import { ref } from 'vue'
-import BaseModal from './ui/BaseModal.vue'
+import BaseModal from './ui/modals/BaseModal.vue'
 
 const showModal = ref(false)
 </script>

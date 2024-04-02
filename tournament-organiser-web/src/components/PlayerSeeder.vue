@@ -6,8 +6,8 @@
     <DangerBtn
       :disabled="noPlayers"
       @click="bracketStore.removeAllPlayersInForm"
-      >{{ $t('playerSeeder.removeAllPlayers') }}</DangerBtn
-    >
+      >{{ $t('playerSeeder.removeAllPlayers') }}
+    </DangerBtn>
   </div>
   <div class="text-gray-400">
     {{ t('playerSeeder.hint') }}
@@ -45,7 +45,7 @@ import draggable from 'vuedraggable'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useBracketStore } from '@/stores/bracket'
-import DangerBtn from './ui/DangerBtn.vue'
+import DangerBtn from './ui/buttons/DangerBtn.vue'
 
 const { t } = useI18n({})
 const bracketStore = useBracketStore()

@@ -1,10 +1,5 @@
 <template>
-  <div
-    class="fixed z-40 w-screen h-screen inset-0 bg-gray-900 bg-opacity-60"
-    :class="isHidden"
-    data-test-id=""
-    @click="toggleMenu"
-  />
+  <blurred-background :class="isHidden" @click="toggleMenu" />
   <div
     class="fixed min-h-full overflow-hidden grow bg-neutral-700 h-full z-50"
     :class="openedSidebar"
@@ -37,6 +32,7 @@ import { computed, inject, ref } from 'vue'
 import { showMenuKey } from '@/config'
 import SelectLanguage from '@/components/ui/SelectLanguage.vue'
 import RegisterLogin from '@/components/ui/RegisterLogin.vue'
+import BlurredBackground from '@/components/ui/modals/BlurredBackground.vue'
 
 const userStore = useUserStore()
 const emits = defineEmits(['toggleMenu'])

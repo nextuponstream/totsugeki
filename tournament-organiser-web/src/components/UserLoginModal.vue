@@ -2,7 +2,6 @@
   <BaseModal
     v-model="showModal"
     :title="t('loginModal.title')"
-    prefix="login"
     @hide="hideModal"
   >
     <form
@@ -30,7 +29,7 @@
 // NOTE submit button on the left for forms, right for modals (recommendation https://ux.stackexchange.com/a/13539)
 import { useForm } from 'vee-validate'
 import { ref, provide, computed } from 'vue'
-import BaseModal from './ui/BaseModal.vue'
+import BaseModal from './ui/modals/BaseModal.vue'
 import router, { RouteNames } from '@/router'
 import { useI18n } from 'vue-i18n'
 import { object, string } from 'yup'
@@ -38,6 +37,7 @@ import { useUserStore } from '@/stores/user'
 import { useBracketStore } from '@/stores/bracket'
 import { useToastStore } from '@/stores/toast'
 import { useModalStore } from '@/stores/modal'
+import { prefixKey } from '@/config'
 
 const { t } = useI18n({})
 const userStore = useUserStore()
@@ -113,4 +113,6 @@ async function onSubmit(values: any) {
 const submitForm = handleSubmit((values: any) => {
   onSubmit(values)
 }, onInvalidSubmit)
+
+provide(prefixKey, 'login')
 </script>
