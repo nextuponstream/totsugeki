@@ -19,7 +19,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { computed, inject } from 'vue'
+import { computed } from 'vue'
 import BlurredBackground from '@/components/ui/modals/BlurredBackground.vue'
 
 const emits = defineEmits(['update:modelValue', 'hide'])

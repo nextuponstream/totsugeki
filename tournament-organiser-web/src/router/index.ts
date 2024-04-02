@@ -6,6 +6,7 @@ export const RouteNames = {
   user: {
     register: 'registerUser',
     dashboard: 'userDashboard',
+    brackets: 'userBrackets',
   },
   bracket: {
     create: 'createBracket',
@@ -59,10 +60,20 @@ const router = createRouter({
       component: () => import('../views/RegistrationView.vue'),
     },
     {
-      path: '/user/dashboard',
-      name: RouteNames.user.dashboard,
+      path: '/user',
       meta: { requiresAuth: true },
-      component: () => import('../views/UserDashboard.vue'),
+      children: [
+        {
+          path: 'dashboard',
+          name: RouteNames.user.dashboard,
+          component: () => import('../views/UserDashboard.vue'),
+        },
+        {
+          path: 'brackets',
+          name: RouteNames.user.brackets,
+          component: () => import('../views/UserBrackets.vue'),
+        },
+      ],
     },
     {
       path: '/:pathMatch(.*)*',

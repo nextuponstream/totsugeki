@@ -11,14 +11,18 @@
       ></i>
       <NavLink to="/" text="Home" />
       <RegisterLogin></RegisterLogin>
-      <NavLink data-test-id="your-brackets"
+      <NavLink
+        v-if="userStore.id"
+        data-test-id="my-brackets"
+        to="/user/brackets"
+        @click="toggleMenu"
         >{{ $t('navbar.myBrackets') }}
       </NavLink>
       <SelectLanguage></SelectLanguage>
-      <NavLink to="/about" data-test-id="about">
+      <NavLink to="/about" data-test-id="about" @click="toggleMenu">
         {{ $t('generic.about') }}
       </NavLink>
-      <NavLink v-if="userStore.id" to="/user/dashboard"
+      <NavLink v-if="userStore.id" to="/user/dashboard" @click="toggleMenu"
         >{{ $t('generic.profile') }}
       </NavLink>
     </div>
@@ -28,7 +32,7 @@
 <script setup lang="ts">
 import NavLink from '@/components/NavLink.vue'
 import { useUserStore } from '@/stores/user'
-import { computed, inject, ref } from 'vue'
+import { computed, inject } from 'vue'
 import { showMenuKey } from '@/config'
 import SelectLanguage from '@/components/ui/SelectLanguage.vue'
 import RegisterLogin from '@/components/ui/RegisterLogin.vue'

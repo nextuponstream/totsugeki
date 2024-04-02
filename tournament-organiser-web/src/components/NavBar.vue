@@ -4,7 +4,7 @@
     data-test-id="navbar"
   >
     <div class="flex gap-2 items-center">
-      <NavLink @click="toggleMenu">
+      <NavLink data-test-id="menu" @click="toggleMenu">
         <i class="pi pi-bars"></i>
       </NavLink>
       <NavLink to="/" text="Home" />
