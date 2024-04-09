@@ -40,8 +40,9 @@
 </template>
 <script setup lang="ts">
 import { useBracketStore } from '@/stores/bracket'
-import { ref, computed, onUpdated } from 'vue'
+import { ref, computed, onUpdated, provide } from 'vue'
 import BlurredBackground from '@/components/ui/modals/BlurredBackground.vue'
+import { prefixKey } from '@/config'
 
 const props = defineProps<{
   matchId: string | null
@@ -54,6 +55,8 @@ const scoreP1 = ref(0)
 const scoreP2 = ref(0)
 const emits = defineEmits(['update:modelValue'])
 const bracketStore = useBracketStore()
+
+provide(prefixKey, 'report-result-modal')
 
 onUpdated(() => {
   if (!props.modelValue) {

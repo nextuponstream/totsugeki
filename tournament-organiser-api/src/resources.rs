@@ -92,6 +92,27 @@ pub struct GenericResource {
     pub created_at: DateTime<Utc>,
 }
 
+/// Generic resource description
+#[derive(Deserialize, Serialize)]
+pub struct PaginatedGenericResource {
+    /// ID of resource
+    pub id: Id,
+    /// name of resource
+    pub name: String,
+    /// creation date
+    pub created_at: DateTime<Utc>,
+    /// pagination helper
+    pub total: Option<i64>,
+}
+
 /// List of generic resources
 #[derive(Deserialize, Serialize)]
 pub struct GenericResourcesList(pub Vec<GenericResource>);
+/// List of generic resources
+#[derive(Deserialize, Serialize)]
+pub struct PaginationResult {
+    /// total data
+    pub total: usize,
+    /// resources
+    pub data: Vec<PaginatedGenericResource>,
+}

@@ -4,6 +4,7 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 
+import PrimeVue from 'primevue/config'
 import App from './App.vue'
 import router from './router'
 import en from './locales/en'
@@ -34,6 +35,12 @@ pinia.use(piniaPluginPersistedstate)
 app.use(pinia)
 
 app.use(router)
+
+import 'primevue/resources/themes/lara-light-green/theme.css'
+// https://primevue.org/vite
+app.use(PrimeVue, {
+  // unstyled: false, // if you feel courageous enough to style all components
+})
 
 app.component('SubmitBtn', SubmitBtnVue)
 app.component('CancelBtn', CancelBtnVue)

@@ -17,7 +17,6 @@
     <BaseModal
       v-model="showModal"
       :title="t('deleteModal.title')"
-      prefix="delete"
       @hide="hideModal"
     >
       <form
@@ -54,7 +53,9 @@ import { object, string } from 'yup'
 import router from '@/router'
 import EditUser from '@/components/EditUser.vue'
 import { useUserStore } from '@/stores/user'
+import { prefixKey } from '@/config'
 
+provide(prefixKey, 'user-dashboard')
 const userStore = useUserStore()
 const { t } = useI18n({})
 const editUser = ref<InstanceType<typeof EditUser> | null>(null)

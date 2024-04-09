@@ -2,12 +2,13 @@
 
 use reqwest::StatusCode;
 use sqlx::PgPool;
+
 use totsugeki::matches::Match;
 use totsugeki::player::Player;
 use tournament_organiser_api::brackets::{
     BracketRecord, BracketState, GenericResourceCreated, PlayerMatchResultReport,
 };
-use tournament_organiser_api::resources::GenericResource;
+use tournament_organiser_api::resources::PaginationResult;
 use tournament_organiser_api::test_utils::spawn_app;
 
 #[sqlx::test]
@@ -101,8 +102,8 @@ async fn list_brackets(db: PgPool) {
     let status = response.status();
     assert_eq!(status, StatusCode::OK);
 
-    let brackets: Vec<GenericResource> = response.json().await.unwrap();
-    assert_eq!(brackets.len(), 100);
+    let brackets: PaginationResult = response.json().await.unwrap();
+    assert_eq!(brackets.total, 100);
 }
 #[sqlx::test]
 async fn save_bracket(db: PgPool) {

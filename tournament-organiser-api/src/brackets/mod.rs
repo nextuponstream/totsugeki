@@ -1,6 +1,8 @@
 //! bracket management
 
-use crate::resources::{GenericResource, GenericResourcesList, Pagination, ValidatedQueryParams};
+use crate::resources::{
+    PaginatedGenericResource, Pagination, PaginationResult, ValidatedQueryParams,
+};
 use axum::extract::{Path, State};
 use axum::{debug_handler, response::IntoResponse, Json as AxumJson};
 use chrono::prelude::*;
@@ -485,8 +487,10 @@ pub async fn list_brackets(
     let offset: i64 = pagination.offset.try_into().expect("ok");
 
     let brackets = sqlx::query_as!(
-        GenericResource,
-        r#"SELECT id, name, created_at from brackets LIMIT $1 OFFSET $2"#,
+        PaginatedGenericResource,
+        r#"SELECT id, name, created_at, count(*) OVER() AS total from brackets
+         LIMIT $1
+         OFFSET $2"#,
         limit,
         offset
     )
@@ -495,9 +499,10 @@ pub async fn list_brackets(
     .await
     .expect("fetch result");
 
-    let list = GenericResourcesList(brackets);
+    let data = brackets;
+    let pagination_result = PaginationResult { total: 100, data };
 
-    (StatusCode::OK, AxumJson(list)).into_response()
+    (StatusCode::OK, AxumJson(pagination_result)).into_response()
 }
 
 /// `/:user_id/brackets` GET to view brackets managed by user
@@ -511,9 +516,18 @@ pub(crate) async fn user_brackets(
     let offset: i64 = pagination.offset.try_into().expect("ok");
 
     // FIXME join with user table
+    // paginated results with total count: https://stackoverflow.com/a/28888696
+    // not optimal : each rows contains the total
+    // not optimal : you have to extract total from first row if you want the
+    // count to be separated from rows
+    // weird: need Option<i64> for total otherwise does not compile
+    // why keep : it might be nice for the consumer to access total rows in the
+    // returned row. Also it works for the current use case (return all rows)
     let brackets = sqlx::query_as!(
-        GenericResource,
-        r#"SELECT id, name, created_at from brackets LIMIT $1 OFFSET $2"#,
+        PaginatedGenericResource,
+        r#"SELECT id, name, created_at, count(*) OVER() AS total from brackets
+         LIMIT $1
+         OFFSET $2"#,
         limit,
         offset
     )
@@ -522,7 +536,14 @@ pub(crate) async fn user_brackets(
     .await
     .expect("fetch result");
 
-    let list = GenericResourcesList(brackets);
+    let total = if brackets.is_empty() {
+        0
+    } else {
+        brackets[0].total.expect("total")
+    };
+    let total = total.try_into().expect("conversion");
+    let data = brackets;
+    let pagination_result = PaginationResult { total, data };
 
-    (StatusCode::OK, AxumJson(list)).into_response()
+    (StatusCode::OK, AxumJson(pagination_result)).into_response()
 }

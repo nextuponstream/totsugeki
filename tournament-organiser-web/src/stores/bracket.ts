@@ -15,6 +15,19 @@ interface MatchResult {
   score_p2: number
 }
 
+type PaginationLimit = 10 | 25 | 50 | 100
+
+interface Pagination {
+  limit: PaginationLimit
+  offset: number
+  total: number
+}
+
+interface PaginationResponse {
+  total: number
+  data: any
+}
+
 export const useBracketStore = defineStore(
   'bracket',
   () => {
@@ -28,6 +41,11 @@ export const useBracketStore = defineStore(
     })
     const counter = ref(0)
     const reportedResults: Ref<MatchResult[]> = ref([])
+    const pagination: Ref<Pagination> = ref({
+      limit: 10,
+      offset: 0,
+      total: 0,
+    })
 
     function setBracketId(newId: string) {
       id.value = newId
@@ -240,11 +258,15 @@ export const useBracketStore = defineStore(
       }
     }
 
+    /**
+     * Fetches bracket of user using current pagination state
+     * @param userId
+     */
     async function getBracketsFrom(userId: string) {
       let response = await fetch(
-        `${
-          import.meta.env.VITE_API_URL
-        }/api/user/${userId}/brackets?limit=10&offset=0`,
+        `${import.meta.env.VITE_API_URL}/api/user/${userId}/brackets?limit=${
+          pagination.value.limit
+        }&offset=${pagination.value.offset}`,
         {
           method: 'GET',
           headers: {
@@ -254,7 +276,9 @@ export const useBracketStore = defineStore(
         }
       )
       if (response.ok) {
-        bracketList.value = await response.json()
+        let paginationResult: PaginationResponse = await response.json()
+        bracketList.value = paginationResult.data
+        pagination.value.total = paginationResult.total
       } else {
         console.debug(await response.text())
         throw new Error(`non-200 response for /api/user/${userId}/brackets`)
@@ -278,6 +302,7 @@ export const useBracketStore = defineStore(
       isSaved,
       formCreate,
       reportedResults, // export ref so localStorage is updated with that value
+      pagination,
     }
   },
   {

@@ -32,8 +32,8 @@
 <script setup lang="ts">
 import NavLink from '@/components/NavLink.vue'
 import { useUserStore } from '@/stores/user'
-import { computed, inject } from 'vue'
-import { showMenuKey } from '@/config'
+import { computed, inject, provide } from 'vue'
+import { prefixKey, showMenuKey } from '@/config'
 import SelectLanguage from '@/components/ui/SelectLanguage.vue'
 import RegisterLogin from '@/components/ui/RegisterLogin.vue'
 import BlurredBackground from '@/components/ui/modals/BlurredBackground.vue'
@@ -41,6 +41,7 @@ import BlurredBackground from '@/components/ui/modals/BlurredBackground.vue'
 const userStore = useUserStore()
 const emits = defineEmits(['toggleMenu'])
 const showMenu = inject(showMenuKey)
+provide(prefixKey, 'sidebar')
 
 function toggleMenu() {
   emits('toggleMenu')
