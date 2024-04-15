@@ -266,7 +266,6 @@ export const useBracketStore = defineStore(
      * @param userId
      */
     async function getBracketsFrom(userId: string) {
-      // FIXME sort by desc
       let response = await fetch(
         `${import.meta.env.VITE_API_URL}/api/user/${userId}/brackets?limit=${
           pagination.value.limit

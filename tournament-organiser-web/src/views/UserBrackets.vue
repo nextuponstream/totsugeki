@@ -9,9 +9,12 @@
     lazy
     paginator-template="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
     :striped-rows="true"
+    :sort-order="-1"
+    sort-field="created_at"
     :rows-per-page-options="[10, 25, 50, 100]"
     table-style="min-width: 50rem"
     @page="paginatorUpdate"
+    @sort="sortEvent"
   >
     <Column field="name" header="Name">
       <template #body="slotProps">
@@ -23,7 +26,7 @@
         >
       </template>
     </Column>
-    <Column field="created_at" header="Created at"></Column>
+    <Column field="created_at" header="Created at" :sortable="true"></Column>
   </DataTable>
 </template>
 
@@ -36,7 +39,10 @@ import { nameFallback } from '@/helpers'
 const userStore = useUserStore()
 const bracketStore = useBracketStore()
 
-import DataTable, { type DataTablePageEvent } from 'primevue/datatable'
+import DataTable, {
+  type DataTablePageEvent,
+  type DataTableSortEvent,
+} from 'primevue/datatable'
 import Column from 'primevue/column'
 
 onMounted(async () => {
@@ -44,6 +50,20 @@ onMounted(async () => {
 })
 
 function paginatorUpdate(_e: DataTablePageEvent) {
+  // console.debug(JSON.stringify(_e))
+  bracketStore.getBracketsFrom(userStore.id!)
+}
+
+function sortEvent(e: DataTableSortEvent) {
+  // NOTE: page number is reset. It might be annoying?
+  // console.debug(JSON.stringify(e))
+  if (e.sortField === 'created_at') {
+    if (e.sortOrder === 1) {
+      bracketStore.pagination.sortOrder = 'ASC'
+    } else if (e.sortOrder === -1) {
+      bracketStore.pagination.sortOrder = 'DESC'
+    }
+  }
   bracketStore.getBracketsFrom(userStore.id!)
 }
 </script>
