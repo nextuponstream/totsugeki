@@ -177,7 +177,7 @@ impl TestApp {
     pub async fn list_brackets(&self, limit: u32, offset: u32) -> Response {
         self.http_client
             .get(format!(
-                "{}/api/brackets?limit={}&offset={}",
+                "{}/api/brackets?limit={}&offset={}&sort_order=DESC",
                 self.addr, limit, offset
             ))
             .send()

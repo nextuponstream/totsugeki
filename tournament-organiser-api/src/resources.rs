@@ -69,6 +69,9 @@ pub struct Pagination {
     pub limit: usize,
     /// Display from bracket X
     pub offset: usize,
+    /// Sort by criteria: ASC or DESC
+    #[validate(custom = "sort_order")]
+    pub sort_order: String,
 }
 
 /// Limit for pagination is either 10, 25, 50 or 100
@@ -78,6 +81,14 @@ fn validate_limit(l: usize) -> Result<(), ValidationError> {
         _ => Err(ValidationError::new(
             "Must be equal to either 10, 25, 50 or 100",
         )),
+    }
+}
+
+/// Sort ascending or descending
+fn sort_order(sort_order: &str) -> Result<(), ValidationError> {
+    match sort_order {
+        "ASC" | "DESC" => Ok(()),
+        _ => Err(ValidationError::new("either ASC or DESC expected")),
     }
 }
 

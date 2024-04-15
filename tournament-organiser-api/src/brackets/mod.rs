@@ -523,13 +523,22 @@ pub(crate) async fn user_brackets(
     // weird: need Option<i64> for total otherwise does not compile
     // why keep : it might be nice for the consumer to access total rows in the
     // returned row. Also it works for the current use case (return all rows)
+    // TODO: if this app scales hard, then this naive pagination won't hold I
+    //  think (searching late page may become slow as offset forces all rows to
+    //  be counted). But it's good enough for now
+    // NOTE: ASC/DESC as param https://github.com/launchbadge/sqlx/issues/3020#issuecomment-1919930408
     let brackets = sqlx::query_as!(
         PaginatedGenericResource,
         r#"SELECT id, name, created_at, count(*) OVER() AS total from brackets
-         LIMIT $1
-         OFFSET $2"#,
+         ORDER BY 
+           CASE WHEN $1 = 'ASC' THEN created_at END ASC,
+           CASE WHEN $1 = 'DESC' THEN created_at END DESC
+         LIMIT $2
+         OFFSET $3
+         "#,
+        pagination.sort_order,
         limit,
-        offset
+        offset,
     )
     // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
     .fetch_all(&pool)

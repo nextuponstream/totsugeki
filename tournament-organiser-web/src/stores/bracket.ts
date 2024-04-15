@@ -16,10 +16,12 @@ interface MatchResult {
 }
 
 type PaginationLimit = 10 | 25 | 50 | 100
+type SortOrder = 'ASC' | 'DESC'
 
 interface Pagination {
   limit: PaginationLimit
   offset: number
+  sortOrder: SortOrder
   total: number
 }
 
@@ -44,6 +46,7 @@ export const useBracketStore = defineStore(
     const pagination: Ref<Pagination> = ref({
       limit: 10,
       offset: 0,
+      sortOrder: 'DESC',
       total: 0,
     })
 
@@ -263,10 +266,13 @@ export const useBracketStore = defineStore(
      * @param userId
      */
     async function getBracketsFrom(userId: string) {
+      // FIXME sort by desc
       let response = await fetch(
         `${import.meta.env.VITE_API_URL}/api/user/${userId}/brackets?limit=${
           pagination.value.limit
-        }&offset=${pagination.value.offset}`,
+        }&offset=${pagination.value.offset}&sort_order=${
+          pagination.value.sortOrder
+        }`,
         {
           method: 'GET',
           headers: {
