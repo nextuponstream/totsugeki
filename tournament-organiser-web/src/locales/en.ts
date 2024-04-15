@@ -18,6 +18,8 @@ export default {
     profile: 'Profile',
     logout: 'Logout',
     delete: 'Delete',
+    name: 'Name',
+    created_at: 'Date created',
   },
   error: {
     invalidEmail: 'This field must be a valid email',
@@ -74,4 +76,7 @@ export default {
   login: 'Successful login',
   logout: 'Successful logout',
   about: 'Totsugeki is a tool for creating and managing brackets.',
+  paginator: {
+    pageReport: 'of',
+  },
 }

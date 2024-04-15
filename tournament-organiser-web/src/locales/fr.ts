@@ -18,6 +18,8 @@ export default {
     profile: 'Profil',
     logout: 'Déconnexion',
     delete: 'Supprimer',
+    name: 'Nom',
+    created_at: 'Date de création',
   },
   error: {
     invalidEmail: 'Email invalide',
@@ -79,4 +81,7 @@ export default {
   login: 'Vous êtes maintenant connecté',
   logout: 'Déconnexion réussie',
   about: 'Totsugeki est un outil pour créer et manager des brackets.',
+  paginator: {
+    pageReport: '/',
+  },
 }

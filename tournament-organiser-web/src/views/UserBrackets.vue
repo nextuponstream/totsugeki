@@ -13,10 +13,13 @@
     sort-field="created_at"
     :rows-per-page-options="[10, 25, 50, 100]"
     table-style="min-width: 50rem"
+    :current-page-report-template="`{first} ${$t(
+      'paginator.pageReport'
+    )} {last}`"
     @page="paginatorUpdate"
     @sort="sortEvent"
   >
-    <Column field="name" header="Name">
+    <Column field="name" :header="$t('generic.name')">
       <template #body="slotProps">
         <a
           :href="`/brackets/${slotProps.data.id}`"
@@ -26,7 +29,11 @@
         >
       </template>
     </Column>
-    <Column field="created_at" header="Created at" :sortable="true"></Column>
+    <Column
+      field="created_at"
+      :header="$t('generic.created_at')"
+      :sortable="true"
+    ></Column>
   </DataTable>
 </template>
 
