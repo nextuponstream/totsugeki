@@ -1,5 +1,8 @@
+import { TEST_USER } from '../support/consts'
+
 describe('creating brackets as a registered user', () => {
   let weeklyName = `weekly-name-${Date.now()}`
+  let url: string | undefined = undefined
   it('as registered user, I can create bracket', () => {
     cy.testUserLogin()
     cy.visit('/')
@@ -19,22 +22,45 @@ describe('creating brackets as a registered user', () => {
       assert.equal(interception.response?.statusCode, 201)
     })
 
-    cy.url().should('contain', '/brackets/')
-
     cy.contains('p1')
     cy.contains('p2')
-    cy.contains('p3')
+    cy.contains('p3').then(() => {
+      cy.url()
+        .should('contain', '/brackets/')
+        .then((v) => {
+          url = v
+        })
+    })
+    // cy.url().then((val) => (url = val))
   })
-  // TODO finish this part
-  // it('the current bracket I was managing is registered in my history', () => {
-  //   cy.testUserLogin()
-  //   cy.visit('/')
-  //   cy.get('[data-test-id=menu]').click()
-  //   cy.get('[data-test-id=my-brackets]').click()
-  //   cy.url().should('contain', '/3c3ebe96-c051-4d7c-bace-a8ddf5924cf8/brackets')
-  // })
-})
+  it('the current bracket I was managing is registered in my history', () => {
+    cy.testUserLogin()
+    cy.visit('/')
 
+    cy.intercept(`/api/user/${TEST_USER.id}/brackets*`).as(
+      'userPaginatedBrackets'
+    )
+
+    cy.get('[data-test-id=menu]').click()
+    cy.get('[data-test-id=my-brackets]').click()
+    cy.url().should('contain', `/user/brackets`)
+
+    cy.wait('@userPaginatedBrackets').then((interception) => {
+      expect(interception.response)
+      if (interception.response) {
+        expect(
+          interception.response.statusCode === 200,
+          `expected 200 but got ${interception.response.statusCode}`
+        )
+      }
+      expect(url !== undefined)
+      let splits = url?.split('/')
+      let matchId = splits ? splits[splits.length - 1] : ''
+      cy.get(`[data-test-id=${matchId}]`).click()
+      cy.url().should('contain', matchId)
+    })
+  })
+})
 describe('allow creating brackets without signing up', () => {
   let weeklyName = `weekly-name-${Date.now()}`
   let email = `someMail-${Date.now()}@gmail.com`
