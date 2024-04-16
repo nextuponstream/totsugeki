@@ -28,8 +28,9 @@
           :href="`/brackets/${slotProps.data.id}`"
           :data-test-id="slotProps.data.id"
           style="color: blue; text-decoration: underline"
-          >{{ nameFallback(slotProps.data.name) }}</a
         >
+          {{ nameFallback(slotProps.data.name) }}
+        </a>
       </template>
     </Column>
     <Column
