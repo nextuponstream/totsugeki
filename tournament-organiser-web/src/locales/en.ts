@@ -76,7 +76,4 @@ export default {
   login: 'Successful login',
   logout: 'Successful logout',
   about: 'Totsugeki is a tool for creating and managing brackets.',
-  paginator: {
-    pageReport: 'of',
-  },
 }

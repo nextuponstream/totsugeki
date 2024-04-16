@@ -7,19 +7,22 @@
     :value="bracketStore.bracketList"
     paginator
     lazy
-    paginator-template="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
+    paginator-template="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink JumpToPageInput"
     :striped-rows="true"
     :sort-order="-1"
     sort-field="created_at"
     :rows-per-page-options="[10, 25, 50, 100]"
-    table-style="min-width: 50rem"
-    :current-page-report-template="`{first} ${$t(
-      'paginator.pageReport'
-    )} {last}`"
+    :current-page-report-template="`{first} - {last} ({totalRecords})`"
+    :scrollable="true"
     @page="paginatorUpdate"
     @sort="sortEvent"
   >
-    <Column field="name" :header="$t('generic.name')">
+    <Column
+      field="name"
+      :header="$t('generic.name')"
+      style="min-width: 175px"
+      frozen
+    >
       <template #body="slotProps">
         <a
           :href="`/brackets/${slotProps.data.id}`"

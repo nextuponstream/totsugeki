@@ -1,15 +1,11 @@
 <template>
   <ToastZone></ToastZone>
-  <div class="min-h-full">
-    <side-bar @toggle-menu="toggleMenu"></side-bar>
-    <div class="grow">
-      <NavBar @toggle-menu="toggleMenu" />
-      <div class="px-9 py-9">
-        <RouterView />
-      </div>
-      <UserLoginModal />
-    </div>
+  <side-bar @toggle-menu="toggleMenu"></side-bar>
+  <NavBar @toggle-menu="toggleMenu" />
+  <div class="px-9 py-9">
+    <RouterView />
   </div>
+  <UserLoginModal />
 </template>
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
