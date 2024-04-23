@@ -2,11 +2,10 @@
 
 use reqwest::StatusCode;
 use sqlx::PgPool;
-
 use totsugeki::matches::Match;
 use totsugeki::player::Player;
 use tournament_organiser_api::brackets::{
-    BracketRecord, BracketState, GenericResourceCreated, PlayerMatchResultReport,
+    BracketDisplay, BracketState, GenericResourceCreated, PlayerMatchResultReport,
 };
 use tournament_organiser_api::resources::PaginationResult;
 use tournament_organiser_api::test_utils::spawn_app;
@@ -76,9 +75,10 @@ async fn get_bracket(db: PgPool) {
         r.id
     );
 
-    let bracket: BracketRecord = response.json().await.unwrap();
-    assert_eq!(bracket.name, "");
-    let matches: Vec<Match> = bracket.matches.0 .0;
+    let bracket: BracketDisplay = response.json().await.unwrap();
+    // panic!("{:?}", response.text().await.unwrap());
+    assert_eq!(bracket.bracket.get_name(), "");
+    let matches: Vec<Match> = bracket.bracket.get_matches();
     assert!(matches.is_empty());
 }
 
