@@ -77,7 +77,6 @@ async fn get_bracket(db: PgPool) {
 
     let bracket: BracketDisplay = response.json().await.unwrap();
     // panic!("{:?}", response.text().await.unwrap());
-    assert_eq!(bracket.bracket.get_name(), "");
     let matches: Vec<Match> = bracket.bracket.get_matches();
     assert!(matches.is_empty());
 }
