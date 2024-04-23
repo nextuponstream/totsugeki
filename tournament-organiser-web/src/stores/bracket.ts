@@ -117,10 +117,10 @@ export const useBracketStore = defineStore(
     }
 
     /**
-     *
+     * Fetch bracket details depending on bracket ID in store.
      * @throws Error when something goes wrong with the API
      */
-    async function getBracket() {
+    async function getDisplayableBracket() {
       let response = await fetch(
         `${import.meta.env.VITE_API_URL}/api/brackets/${id.value}`,
         {
@@ -140,36 +140,6 @@ export const useBracketStore = defineStore(
           `response (${
             response.status
           }) \"${await response.text()}\" from /api/brackets/${id.value}`
-        )
-      }
-    }
-
-    /**
-     * Fetch bracket details depending on bracket ID in store.
-     * @throws Error when something goes wrong with the API
-     */
-    async function getDisplayableBracket() {
-      let response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/brackets/${id.value}/display`,
-        {
-          method: 'GET',
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-          },
-        }
-      )
-      if (response.ok) {
-        let r = await response.json()
-        console.debug(r)
-        bracket.value = r
-      } else {
-        throw new Error(
-          `response (${
-            response.status
-          }) \"${await response.text()}\" from /api/brackets/${
-            id.value
-          }/display`
         )
       }
     }
@@ -293,7 +263,6 @@ export const useBracketStore = defineStore(
     return {
       id,
       setBracketId,
-      getBracket,
       createBracket,
       getDisplayableBracket,
       reportResult,

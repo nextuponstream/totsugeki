@@ -10,18 +10,10 @@
         <div>
           <submit-btn
             data-test-id="start-bracket"
-            :disabled="hasMinNumberOfPlayerToStartBracket"
             @click="createBracketFromPlayers"
           >
             {{ t('registration.startBracket') }}
           </submit-btn>
-          <base-tooltip
-            v-if="hasMinNumberOfPlayerToStartBracket"
-            class="ml-3"
-            style="position: absolute"
-          >
-            {{ t('playerRegistrationForm.minimum', { min: 3 }) }}
-          </base-tooltip>
         </div>
       </div>
     </div>
@@ -46,10 +38,6 @@ const router = useRouter()
 
 const bracketStore = useBracketStore()
 const userStore = useUserStore()
-
-const hasMinNumberOfPlayerToStartBracket = computed(() => {
-  return bracketStore.formCreate.player_names.length < 3
-})
 
 async function createBracketFromPlayers() {
   let loggedIn: boolean = userStore.id !== null

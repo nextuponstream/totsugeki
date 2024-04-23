@@ -10,7 +10,7 @@
 #![warn(clippy::unwrap_used)]
 #![forbid(unsafe_code)]
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use totsugeki::matches::{Id as MatchId, Match};
 use totsugeki::opponent::Opponent;
 use totsugeki::player::Id as PlayerId;
@@ -19,7 +19,7 @@ use totsugeki::player::{Participants, Player};
 pub mod loser_bracket;
 pub mod winner_bracket;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 /// Strict necessary information to use when displaying a match in UI
 pub struct MinimalMatch {
     /// Match identifier
@@ -95,7 +95,7 @@ impl MinimalMatch {
 }
 
 /// Display lines using boxes and their borders
-#[derive(Clone, Copy, Debug, PartialEq, Default, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Default, Serialize, Deserialize)]
 pub struct BoxElement {
     /// true when left border of box should be visible
     pub(crate) left_border: bool,

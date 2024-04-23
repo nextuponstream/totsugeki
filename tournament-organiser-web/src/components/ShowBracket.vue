@@ -8,7 +8,7 @@
       :class="gridClassSetup"
     >
       <div
-        v-for="(element, indexCol) in mix"
+        v-for="(element, indexCol) in matchesThenLines"
         :key="indexCol"
         class="grid grid-cols-[200px_50px_50px] w-[300px]"
       >
@@ -112,13 +112,13 @@ const props = defineProps({
     },
   },
   bracket: {
-    type: Array as PropType<Match[][]>,
+    type: Array as PropType<Match[][] | undefined>,
     default: () => {
       return []
     },
   },
   lines: {
-    type: Array as PropType<Lines[][]>,
+    type: Array as PropType<Lines[][] | undefined>,
     default: () => {
       return []
     },
@@ -139,31 +139,37 @@ const props = defineProps({
 
 const emits = defineEmits(['showResultModal'])
 
-const mix = computed(() => {
-  let lines = props.lines
-  lines.push([])
-  let r = []
-  for (let i = 0; i < props.bracket.length - 1; i++) {
-    let o = {
-      match: props.bracket[i],
-      lines: lines[i],
+const matchesThenLines = computed(() => {
+  if (props.lines && props.bracket) {
+    let lines = props.lines
+    lines.push([])
+    let r = []
+    for (let i = 0; i < props.bracket.length - 1; i++) {
+      let o = {
+        match: props.bracket[i],
+        lines: lines[i],
+      }
+      r.push(o)
     }
-    r.push(o)
-  }
 
-  return r
+    return r
+  }
+  return []
 })
 
 const bracketFinalMatch = computed(() => {
-  let bracket = props.bracket
-  if (bracket.length > 0) {
-    return bracket[bracket.length - 1][0]
-  } else {
-    return undefined
+  if (props.bracket) {
+    let bracket = props.bracket
+    if (bracket.length > 0) {
+      return bracket[bracket.length - 1][0]
+    }
   }
+  return undefined
 })
 
-const gridClassSetup = computed(() => `grid-cols-${props.bracket.length - 1}`)
+const gridClassSetup = computed(() =>
+  props.bracket ? `grid-cols-${props.bracket.length - 1}` : ''
+)
 
 function show(l: Lines) {
   if (l.bottom_border && l.left_border) {

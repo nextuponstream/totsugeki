@@ -64,44 +64,47 @@ impl Variant {
         ))
     }
 
-    /// Returns winner bracket partitionned by round
+    /// Returns winner bracket partitioned by round
     ///
     /// # Errors
     /// When there is not enough players in the bracket for matches
-    pub fn partition_winner_bracket(&self) -> Result<Vec<Vec<Match>>, PartitionError> {
+    #[must_use]
+    pub fn partition_winner_bracket(&self) -> Option<Vec<Vec<Match>>> {
         if self.bracket.participants.len() < 3 {
-            return Err(PartitionError::NotEnoughPlayersInBracket);
+            return None;
         }
         let (wb_matches, _, _, _) =
             partition(&self.bracket.matches, self.bracket.participants.len());
 
-        Ok(winner_bracket(wb_matches, &self.bracket.participants))
+        Some(winner_bracket(wb_matches, &self.bracket.participants))
     }
 
-    /// Returns loser bracket partitionned by round
+    /// Returns loser bracket partitioned by round
     ///
     /// # Errors
     /// When there is not enough players in the bracket for matches
-    pub fn partition_loser_bracket(&self) -> Result<Vec<Vec<Match>>, PartitionError> {
+    #[must_use]
+    pub fn partition_loser_bracket(&self) -> Option<Vec<Vec<Match>>> {
         if self.bracket.participants.len() < 3 {
-            return Err(PartitionError::NotEnoughPlayersInBracket);
+            return None;
         }
         let (_, lb_matches, _, _) =
             partition(&self.bracket.matches, self.bracket.participants.len());
-        Ok(loser_bracket(lb_matches))
+        Some(loser_bracket(lb_matches))
     }
 
     /// Returns Grand Finals and Grand finals reset
     ///
     /// # Errors
     /// When there is not enough players in the bracket for matches
-    pub fn grand_finals_and_reset(&self) -> Result<(Match, Match), PartitionError> {
+    #[must_use]
+    pub fn grand_finals_and_reset(&self) -> Option<(Match, Match)> {
         if self.bracket.participants.len() < 3 {
-            return Err(PartitionError::NotEnoughPlayersInBracket);
+            return None;
         }
         let (_, _, gf, gf_reset) =
             partition(&self.bracket.matches, self.bracket.participants.len());
-        Ok((gf, gf_reset))
+        Some((gf, gf_reset))
     }
 }
 
@@ -142,20 +145,15 @@ fn loser_bracket(lb_matches: Vec<Match>) -> Vec<Vec<Match>> {
 
 #[cfg(test)]
 mod tests {
-    use super::PartitionError;
     use crate::bracket::double_elimination_variant::Variant;
 
     #[test]
-    fn less_than_3_participants_throws_error() {
+    fn less_than_3_participants_returns_empty() {
         let deb = Variant::default();
 
         let rounds = deb.partition_loser_bracket();
 
-        match rounds {
-            Err(PartitionError::NotEnoughPlayersInBracket) => {}
-            Ok(r) => panic!("expected error for 0 participants but got {r:?}"),
-        }
-
+        assert!(rounds.is_none());
         // 1
         let deb = Variant::default();
         let mut bracket = deb.bracket;
@@ -170,10 +168,7 @@ mod tests {
 
         let rounds = deb.partition_loser_bracket();
 
-        match rounds {
-            Err(PartitionError::NotEnoughPlayersInBracket) => {}
-            Ok(r) => panic!("expected error for 1 participants but got {r:?}"),
-        }
+        assert!(rounds.is_none());
 
         // 2
         let deb = Variant::default();
@@ -189,10 +184,7 @@ mod tests {
 
         let rounds = deb.partition_loser_bracket();
 
-        match rounds {
-            Err(PartitionError::NotEnoughPlayersInBracket) => {}
-            Ok(r) => panic!("expected error for 2 participants but got {r:?}"),
-        }
+        assert!(rounds.is_none());
     }
 
     #[test]
