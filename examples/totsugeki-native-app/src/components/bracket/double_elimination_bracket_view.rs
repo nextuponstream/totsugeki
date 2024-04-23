@@ -28,7 +28,7 @@ pub(crate) fn View(cx: Scope) -> Element {
 
     let participants = bracket.get_participants();
 
-    let Ok(wb_rounds_matches) = dev.partition_winner_bracket() else {
+    let Some(wb_rounds_matches) = dev.partition_winner_bracket() else {
         // TODO log error
         return None;
     };
@@ -66,7 +66,7 @@ pub(crate) fn View(cx: Scope) -> Element {
     let wb_columns = wb_elements.len();
 
     // TODO extract function for wb + lb Match to DisplayableMatch organised by rounds
-    let Ok(lb_rounds_matches) = dev.partition_loser_bracket() else {
+    let Some(lb_rounds_matches) = dev.partition_loser_bracket() else {
         // TODO log error
         return None;
     };
@@ -103,7 +103,7 @@ pub(crate) fn View(cx: Scope) -> Element {
     ));
     let lb_columns = lb_elements.len();
 
-    let Ok((gf, gf_reset)) = dev.grand_finals_and_reset() else {
+    let Some((gf, gf_reset)) = dev.grand_finals_and_reset() else {
         return None;
     };
     let gf = from_participants(&gf, &participants);
