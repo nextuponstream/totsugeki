@@ -434,17 +434,18 @@ pub(crate) struct BracketRecord {
 #[instrument(name = "create_bracket")]
 pub async fn create_bracket(
     State(pool): State<PgPool>,
-    AxumJson(player_list): AxumJson<CreateBracketForm>,
+    AxumJson(form): AxumJson<CreateBracketForm>,
 ) -> impl IntoResponse {
-    tracing::debug!("new bracket from players: {:?}", player_list.player_names);
+    tracing::debug!("new bracket from players: {:?}", form.player_names);
 
     let mut bracket = Bracket::default();
-    for name in player_list.player_names {
+    for name in form.player_names {
         let Ok(tmp) = bracket.add_participant(name.as_str()) else {
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         };
         bracket = tmp.0;
     }
+    let bracket = bracket.update_name(form.bracket_name);
 
     let r = sqlx::query!(
         "INSERT INTO brackets (name, matches, participants) VALUES ($1, $2, $3) RETURNING id",
