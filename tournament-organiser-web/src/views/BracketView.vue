@@ -110,7 +110,10 @@ async function saveAndRedirectToNewBracketPage() {
 }
 
 const hasEnoughPlayersToDisplay = computed(() => {
-  return bracketStore.bracket?.bracket?.participants?.length >= 3
+  if (bracketStore.bracket?.bracket?.participants?.length) {
+    return bracketStore.bracket.bracket.participants.length > 3
+  }
+  return false
 })
 </script>
 <style scoped>
