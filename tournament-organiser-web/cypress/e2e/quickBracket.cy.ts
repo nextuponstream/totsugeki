@@ -31,7 +31,6 @@ describe('creating brackets as a registered user', () => {
           url = v
         })
     })
-    // cy.url().then((val) => (url = val))
   })
   it('the current bracket I was managing is registered in my history', () => {
     cy.testUserLogin()
