@@ -58,6 +58,8 @@ export default {
     unsavedWarning:
       'Ce tournoi ne sera pas sauvé. Veuillez vous connectez pour sauver le tournoi.',
     saveBracket: 'Sauvegarder la bracket!',
+    notEnoughPlayersToDisplay:
+      "Il n'y a pas assez de joueurs pour afficher la bracket...",
   },
   loginModal: {
     title: 'Connection',

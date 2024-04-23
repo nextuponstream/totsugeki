@@ -56,6 +56,8 @@ export default {
     hint: 'Click on matches to enter results',
     unsavedWarning: 'This bracket is currently unsaved. Please log in to save.',
     saveBracket: 'Save bracket!',
+    notEnoughPlayersToDisplay:
+      'Not enough players in bracket to display bracket...',
   },
   loginModal: {
     title: 'Login',

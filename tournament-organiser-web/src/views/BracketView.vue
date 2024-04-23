@@ -13,7 +13,7 @@
   <div v-else-if="userStore.id === null">
     {{ t('bracketView.unsavedWarning') }}
   </div>
-  <div>
+  <div v-if="hasEnoughPlayersToDisplay">
     <ShowBracket
       :bracket="bracketStore.bracket?.winner_bracket"
       :lines="bracketStore.bracket?.winner_bracket_lines"
@@ -24,9 +24,8 @@
     >
       {{ t('bracketView.winnerBracket') }}
     </ShowBracket>
-  </div>
-  <div class="pt-6">
     <ShowBracket
+      class="pt-6"
       :bracket="bracketStore.bracket?.loser_bracket"
       :lines="bracketStore.bracket?.loser_bracket_lines"
       test-id-prefix="loser"
@@ -35,9 +34,12 @@
       {{ t('bracketView.loserBracket') }}
     </ShowBracket>
   </div>
+  <div v-else class="text-gray-500">
+    {{ $t('bracketView.notEnoughPlayersToDisplay') }}
+  </div>
 </template>
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, h } from 'vue'
 import ShowBracket from '@/components/ShowBracket.vue'
 import { useI18n } from 'vue-i18n'
 import ReportResultModal from '@/components/ReportResultModal.vue'
@@ -65,6 +67,12 @@ onMounted(async () => {
     bracketStore.setBracketId(id)
     await bracketStore.getDisplayableBracket()
   } else if (userStore.id === null && bracketStore.bracket) {
+    // NOTE: when in dev, reloading a bracket page for the guest view might
+    // throw the following error because pinia store is not reloaded before
+    // component finishes loading even though it's fine?
+    // Uncaught (in promise) Error: neither logged in view, nor guest view could
+    // load properly
+    //
     // guest view, nothing to do
   } else if (unsavedBracketCanBeSaved.value) {
     // guest just registered, they need to save that bracket
@@ -100,6 +108,10 @@ async function saveAndRedirectToNewBracketPage() {
     throw new Error('missing bracket id to redirect')
   }
 }
+
+const hasEnoughPlayersToDisplay = computed(() => {
+  return bracketStore.bracket?.bracket?.participants?.length >= 3
+})
 </script>
 <style scoped>
 .match {
