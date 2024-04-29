@@ -170,9 +170,20 @@ pub async fn run() {
             .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
     );
 
+    // could be a utility crate with more features but this suffice
+    // FIXME automatically log out when session is expired. Currently returning 401 only
+    let session_duration = if let Ok(duration) = std::env::var("SESSION_DURATION") {
+        let duration = duration.parse().expect("session duration in seconds");
+        tracing::info!("Session duration {duration}");
+        duration
+    } else {
+        let default_session_duration = 3600;
+        tracing::warn!("Default session duration set ({default_session_duration})");
+        default_session_duration
+    };
     let session_layer = SessionManagerLayer::new(session_store.clone())
         .with_secure(false)
-        .with_expiry(Expiry::OnInactivity(Duration::hours(1)));
+        .with_expiry(Expiry::OnInactivity(Duration::seconds(session_duration)));
 
     let port = if let Ok(port) = std::env::var("PORT") {
         port.parse().expect("port")
