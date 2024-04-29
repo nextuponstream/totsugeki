@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, name, created_at, count(*) OVER() AS total from brackets\n         ORDER BY \n           CASE WHEN $1 = 'ASC' THEN created_at END ASC,\n           CASE WHEN $1 = 'DESC' THEN created_at END DESC\n         LIMIT $2\n         OFFSET $3\n         ",
+  "query": "SELECT id, name, created_at, count(*) OVER() AS total from brackets\n         WHERE id IN (SELECT bracket_id FROM tournament_organisers WHERE user_id = $4)\n         ORDER BY \n           CASE WHEN $1 = 'ASC' THEN created_at END ASC,\n           CASE WHEN $1 = 'DESC' THEN created_at END DESC\n         LIMIT $2\n         OFFSET $3\n         ",
   "describe": {
     "columns": [
       {
@@ -28,7 +28,8 @@
       "Left": [
         "Text",
         "Int8",
-        "Int8"
+        "Int8",
+        "Uuid"
       ]
     },
     "nullable": [
@@ -38,5 +39,5 @@
       null
     ]
   },
-  "hash": "25637cacae8bbedd07065166257532311c1ae22bf90e8cce2e2f3ff815ce3e15"
+  "hash": "c02a6cd332d723664004064f8cee6d74dc468357409661efdd170bb9ff936d0c"
 }

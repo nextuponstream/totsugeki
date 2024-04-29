@@ -20,6 +20,7 @@ use totsugeki_display::loser_bracket::reorder as reorder_loser_bracket;
 use totsugeki_display::winner_bracket::lines as winner_bracket_lines;
 use totsugeki_display::winner_bracket::reorder as reorder_winner_bracket;
 use totsugeki_display::{from_participants, BoxElement, MinimalMatch};
+use tower_sessions::Session;
 use tracing::instrument;
 
 /// List of players from which a bracket can be created
@@ -433,11 +434,18 @@ pub(crate) struct BracketRecord {
 /// Return a newly instanciated bracket from ordered (=seeded) player names
 #[instrument(name = "create_bracket")]
 pub async fn create_bracket(
+    session: Session,
     State(pool): State<PgPool>,
     AxumJson(form): AxumJson<CreateBracketForm>,
 ) -> impl IntoResponse {
     tracing::debug!("new bracket from players: {:?}", form.player_names);
 
+    // TODO refactor user_id key in SESSION_KEY enum
+    let user_id: totsugeki::player::Id = session
+        .get("user_id")
+        .await
+        .expect("value from store")
+        .expect("user id");
     let mut bracket = Bracket::default();
     for name in form.player_names {
         let Ok(tmp) = bracket.add_participant(name.as_str()) else {
@@ -447,23 +455,40 @@ pub async fn create_bracket(
     }
     let bracket = bracket.update_name(form.bracket_name);
 
-    let r = sqlx::query!(
-        "INSERT INTO brackets (name, matches, participants) VALUES ($1, $2, $3) RETURNING id",
+    let Ok(mut transaction) = pool.begin().await else {
+        return Err(StatusCode::INTERNAL_SERVER_ERROR);
+    };
+    let _ = sqlx::query!(
+        "INSERT INTO brackets (id, name, matches, participants) VALUES ($1, $2, $3, $4)",
+        bracket.get_id(),
         bracket.get_name(),
         SqlxJson(bracket.get_matches()) as _,
         SqlxJson(bracket.get_participants()) as _,
     )
-    .fetch_one(&pool)
+    .execute(&mut *transaction)
     .await
-    .expect("user insert");
-    // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
-    tracing::info!("new bracket {}", r.id);
+    .expect("bracket insert");
+    let _ = sqlx::query!(
+        "INSERT INTO tournament_organisers (bracket_id, user_id) VALUES ($1, $2)",
+        bracket.get_id(),
+        user_id,
+    )
+    .execute(&mut *transaction)
+    .await
+    .expect("link bracket and user");
 
+    if transaction.commit().await.is_err() {
+        return Err(StatusCode::INTERNAL_SERVER_ERROR);
+    };
+    // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
     tracing::info!("new bracket {}", bracket.get_id());
+
     tracing::debug!("new bracket {:?}", bracket);
     Ok((
         StatusCode::CREATED,
-        AxumJson(GenericResourceCreated { id: r.id }),
+        AxumJson(GenericResourceCreated {
+            id: bracket.get_id(),
+        }),
     )
         .into_response())
 }
@@ -523,6 +548,7 @@ pub(crate) async fn user_brackets(
     let brackets = sqlx::query_as!(
         PaginatedGenericResource,
         r#"SELECT id, name, created_at, count(*) OVER() AS total from brackets
+         WHERE id IN (SELECT bracket_id FROM tournament_organisers WHERE user_id = $4)
          ORDER BY 
            CASE WHEN $1 = 'ASC' THEN created_at END ASC,
            CASE WHEN $1 = 'DESC' THEN created_at END DESC
@@ -532,6 +558,7 @@ pub(crate) async fn user_brackets(
         pagination.sort_order,
         limit,
         offset,
+        user_id,
     )
     // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
     .fetch_all(&pool)

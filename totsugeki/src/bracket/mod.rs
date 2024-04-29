@@ -130,7 +130,7 @@ impl Bracket {
         automatic_match_validation: bool,
     ) -> Self {
         Self {
-            id: BracketId::new_v4(),
+            id: BracketId::new_v4(), // This is relied in database transaction so avoid changing
             name: name.to_string(),
             participants: Participants::default(),
             matches: vec![],
