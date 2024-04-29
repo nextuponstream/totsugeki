@@ -16,6 +16,7 @@ pub mod logout;
 pub mod registration;
 pub mod resources;
 mod router;
+pub mod session;
 pub mod test_utils;
 pub mod users;
 

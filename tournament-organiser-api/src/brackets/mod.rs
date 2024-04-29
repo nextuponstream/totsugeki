@@ -3,6 +3,7 @@
 use crate::resources::{
     PaginatedGenericResource, Pagination, PaginationResult, ValidatedQueryParams,
 };
+use crate::session::Keys;
 use axum::extract::{Path, State};
 use axum::{debug_handler, response::IntoResponse, Json as AxumJson};
 use chrono::prelude::*;
@@ -442,7 +443,7 @@ pub async fn create_bracket(
 
     // TODO refactor user_id key in SESSION_KEY enum
     let user_id: totsugeki::player::Id = session
-        .get("user_id")
+        .get(&Keys::UserId.to_string())
         .await
         .expect("value from store")
         .expect("user id");

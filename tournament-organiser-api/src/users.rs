@@ -1,5 +1,6 @@
 //! user actions
 use crate::registration::User;
+use crate::session::Keys;
 use axum::extract::State;
 use axum::{response::IntoResponse, Json};
 use http::StatusCode;
@@ -22,7 +23,7 @@ pub struct Infos {
 #[instrument(name = "user_dashboard", skip(pool, session))]
 pub(crate) async fn profile(session: Session, State(pool): State<PgPool>) -> impl IntoResponse {
     let user_id: Id = session
-        .get("user_id")
+        .get(&Keys::UserId.to_string())
         .await
         .expect("session store maybe value")
         .expect("value checked by middleware");
@@ -46,7 +47,7 @@ pub(crate) async fn profile(session: Session, State(pool): State<PgPool>) -> imp
 #[instrument(name = "user_account_deletion", skip(pool, session))]
 pub(crate) async fn delete_user(session: Session, State(pool): State<PgPool>) -> impl IntoResponse {
     let user_id: Id = session
-        .get("user_id")
+        .get(&Keys::UserId.to_string())
         .await
         .expect("session store maybe value")
         .expect("value checked by auth middleware");
