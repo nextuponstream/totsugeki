@@ -28,10 +28,7 @@ pub(crate) fn View(cx: Scope) -> Element {
 
     let participants = bracket.get_participants();
 
-    let Some(wb_rounds_matches) = dev.partition_winner_bracket() else {
-        // TODO log error
-        return None;
-    };
+    let wb_rounds_matches = dev.partition_winner_bracket()?;
     let mut wb_rounds = vec![];
     for r in wb_rounds_matches {
         let round = r
@@ -66,10 +63,7 @@ pub(crate) fn View(cx: Scope) -> Element {
     let wb_columns = wb_elements.len();
 
     // TODO extract function for wb + lb Match to DisplayableMatch organised by rounds
-    let Some(lb_rounds_matches) = dev.partition_loser_bracket() else {
-        // TODO log error
-        return None;
-    };
+    let lb_rounds_matches = dev.partition_loser_bracket()?;
     let mut lb_rounds: Vec<Vec<MinimalMatch>> = vec![];
     for r in lb_rounds_matches {
         let round = r
@@ -103,9 +97,7 @@ pub(crate) fn View(cx: Scope) -> Element {
     ));
     let lb_columns = lb_elements.len();
 
-    let Some((gf, gf_reset)) = dev.grand_finals_and_reset() else {
-        return None;
-    };
+    let (gf, gf_reset) = dev.grand_finals_and_reset().expect("");
     let gf = from_participants(&gf, &participants);
     let gf_reset = from_participants(&gf_reset, &participants);
 
