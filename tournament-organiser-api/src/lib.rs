@@ -21,6 +21,7 @@ pub mod test_utils;
 pub mod users;
 
 use crate::router::api;
+use crate::session::Keys;
 use axum::extract::Request;
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
@@ -64,7 +65,10 @@ async fn auth_layer(
     request: Request,
     next: Next,
 ) -> Response {
-    let v: Option<Id> = session.get("user_id").await.expect("value from store");
+    let v: Option<Id> = session
+        .get(&Keys::UserId.to_string())
+        .await
+        .expect("value from store");
     if v.is_none() {
         tracing::warn!(
             "unauthenticated request against protected route /api{} {}",
