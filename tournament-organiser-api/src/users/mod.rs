@@ -1,6 +1,6 @@
 //! user actions
-use crate::registration::User;
-use crate::session::Keys;
+use crate::users::registration::User;
+use crate::users::session::Keys;
 use axum::extract::State;
 use axum::{response::IntoResponse, Json};
 use http::StatusCode;
@@ -9,6 +9,11 @@ use sqlx::postgres::PgPool;
 use totsugeki::player::Id;
 use tower_sessions::Session;
 use tracing::instrument;
+
+pub mod login;
+pub mod logout;
+pub mod registration;
+pub mod session;
 
 /// User retrieving his infos
 #[derive(Serialize, Deserialize, Debug)]

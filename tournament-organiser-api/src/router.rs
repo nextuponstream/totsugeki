@@ -1,14 +1,14 @@
 //! all API routes
 
-use crate::auth_layer;
 use crate::brackets::{
     create_bracket, get_bracket, list_brackets, new_bracket, report_result, save_bracket,
     user_brackets,
 };
 use crate::health_check::health_check;
-use crate::login::login;
-use crate::logout::logout;
-use crate::registration::registration;
+use crate::middlewares::authentication::auth_layer;
+use crate::users::login::login;
+use crate::users::logout::logout;
+use crate::users::registration::registration;
 use crate::users::{delete_user, profile};
 use axum::routing::{delete, get, post};
 use axum::Router;
@@ -19,7 +19,7 @@ use tower_sessions_sqlx_store::PostgresStore;
 /// Router for non-user facing endpoints. Web page makes requests to API
 /// (registration, updating bracket...)
 pub(crate) fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router {
-    // TODO declare that router in a new users folder and import
+    // TODO declare that router in a new dashboard folder and import
     let user_routes = Router::new().nest(
         "/users",
         Router::new()

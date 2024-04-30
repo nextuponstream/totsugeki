@@ -103,8 +103,8 @@ impl TestApp {
             .expect("request done")
     }
 
-    /// `/api/users DELETE` Delete user if logged in. User deleted is logged in
-    /// user. You must login for this request to succeed.
+    /// `/api/users DELETE` Delete user if logged in. User deleted is logged-in
+    /// user. You must log in for this request to succeed.
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
     pub async fn delete_user(&self) -> Response {
         self.http_client

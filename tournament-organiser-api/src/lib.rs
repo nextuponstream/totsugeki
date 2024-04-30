@@ -11,22 +11,14 @@
 
 pub mod brackets;
 pub mod health_check;
-pub mod login;
-pub mod logout;
-pub mod registration;
+mod middlewares;
 pub mod resources;
 mod router;
-pub mod session;
 pub mod test_utils;
 pub mod users;
 
 use crate::router::api;
-use crate::session::Keys;
-use axum::extract::Request;
-use axum::middleware::Next;
-use axum::response::{IntoResponse, Response};
 use axum::Router;
-use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
@@ -38,7 +30,6 @@ use tower_http::{
     services::{ServeDir, ServeFile},
     trace::TraceLayer,
 };
-use tower_sessions::Session;
 use tower_sessions::{ExpiredDeletion, Expiry, SessionManagerLayer};
 use tower_sessions_sqlx_store::PostgresStore;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -50,39 +41,6 @@ static APP: &str = "tournament organiser application";
 static PORT: u16 = 8080;
 
 // FIXME do not panic when submitting score for match with missing player
-
-/// Auth layer checking for presence of key `user_id` in session, set by login
-/// endpoint.
-///
-/// NOTE: if you need multi auth layer, reach out for `axum_login` crate. Until
-///       then, relying on a key being present in session is enough.
-async fn auth_layer(
-    // State(state): State<AppState>,
-    session: Session,
-    // you can add more extractors here but the last
-    // extractor must implement `FromRequest` which
-    // `Request` does
-    request: Request,
-    next: Next,
-) -> Response {
-    let v: Option<Id> = session
-        .get(&Keys::UserId.to_string())
-        .await
-        .expect("value from store");
-    if v.is_none() {
-        tracing::warn!(
-            "unauthenticated request against protected route /api{} {}",
-            request.uri(),
-            request.method()
-        );
-        return (StatusCode::UNAUTHORIZED).into_response();
-    };
-    // do something with `request`...
-
-    // do something with `response`...
-
-    next.run(request).await
-}
 
 /// Serve web part of the application, using `tournament-organiser-web` build
 pub fn app(pool: Pool<Postgres>, session_store: PostgresStore) -> Router {

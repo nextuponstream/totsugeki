@@ -4,9 +4,10 @@
     <option name="workingDirectory" value="file://$PROJECT_DIR$" />
     <envs>
       <env name="BUILD_PATH_TOURNAMENT_ORGANISER_WEB" value="tournament-organiser-web/dist" />
-      <env name="DB_USERNAME" value="toa" />
-      <env name="DB_PASSWORD" value="toa" />
       <env name="DB_NAME" value="toa" />
+      <env name="DB_PASSWORD" value="toa" />
+      <env name="DB_USERNAME" value="toa" />
+      <env name="SESSION_DURATION" value="5" />
     </envs>
     <option name="emulateTerminal" value="true" />
     <option name="channel" value="DEFAULT" />

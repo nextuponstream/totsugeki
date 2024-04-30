@@ -3,7 +3,7 @@
 use crate::resources::{
     PaginatedGenericResource, Pagination, PaginationResult, ValidatedQueryParams,
 };
-use crate::session::Keys;
+use crate::users::session::Keys;
 use axum::extract::{Path, State};
 use axum::{debug_handler, response::IntoResponse, Json as AxumJson};
 use chrono::prelude::*;
