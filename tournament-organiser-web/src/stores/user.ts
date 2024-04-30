@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { reactive, ref, type Ref } from 'vue'
 
 export type LoginAttempt = 200 | 401 | 404 | 500
+
 interface UserInfos {
   email: string
   name: string
@@ -125,20 +126,23 @@ export const useUserStore = defineStore(
     }
 
     async function getUser(): Promise<void> {
-      let response = await fetch(`${import.meta.env.VITE_API_URL}/api/users`, {
-        method: 'GET',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-      })
+      let response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/users/profile`,
+        {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+        }
+      )
       if (response.ok) {
         let userInfos: { email: string; name: string } = await response.json()
         console.debug(JSON.stringify(userInfos))
         infos.email = userInfos.email
         infos.name = userInfos.name
       } else {
-        throw new Error('non-200 response for /api/users')
+        throw new Error('non-200 response for /api/users/profile')
       }
     }
 

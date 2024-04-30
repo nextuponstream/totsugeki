@@ -23,8 +23,8 @@ pub(crate) fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router 
     let user_routes = Router::new().nest(
         "/users",
         Router::new()
-            .route("/", get(profile))
-            .route("/", delete(delete_user)),
+            .route("/", delete(delete_user))
+            .route("/profile", get(profile)),
     );
 
     // TODO declare that router in brackets and import
