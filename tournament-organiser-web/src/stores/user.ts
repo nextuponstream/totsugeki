@@ -24,16 +24,9 @@ export const useUserStore = defineStore(
      */
     async function registration(values: any): Promise<string | 200 | 500> {
       try {
-        let response = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/register`,
-          {
-            method: 'POST',
-            headers: {
-              Accept: 'application/json',
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ ...values }),
-          }
+        let response = await httpClient.post(
+          `/register`,
+          JSON.stringify({ ...values })
         )
         if (response.ok) {
           console.info('successful registration')
@@ -59,7 +52,7 @@ export const useUserStore = defineStore(
      * @returns status code response
      */
     async function login(values: any): Promise<LoginAttempt> {
-      let response = await fetch(`${import.meta.env.VITE_API_URL}/api/login`, {
+      let response = await fetch(`${import.meta.env.VITE_API_URL}/login`, {
         method: 'POST',
         headers: {
           Accept: 'application/json',
@@ -92,18 +85,18 @@ export const useUserStore = defineStore(
     }
 
     async function logout() {
-      await httpClient.post(`/api/logout`)
+      await httpClient.post(`/logout`)
       id.value = null
     }
 
     async function deleteAccount(): Promise<any> {
-      await httpClient.delete('/api/users')
+      await httpClient.delete('/users')
       console.info('successful account deletion')
       id.value = null
     }
 
     async function getUser(): Promise<void> {
-      let response = await httpClient.get('/api/users/profile')
+      let response = await httpClient.get('/users/profile')
       let userInfos: { email: string; name: string } = await response.json()
       console.debug(JSON.stringify(userInfos))
       infos.email = userInfos.email

@@ -15,7 +15,7 @@ RUN cargo build --release --package tournament-organiser-api
 # ---
 FROM node:18-alpine as static
 # TODO make it configurable
-ENV VITE_API_URL https://totsugekitest.fly.dev
+ENV VITE_API_URL https://totsugekitest.fly.dev/api
 COPY . .
 RUN npm --prefix tournament-organiser-web install
 RUN npm --prefix tournament-organiser-web run build

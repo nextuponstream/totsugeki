@@ -80,7 +80,7 @@ export const useBracketStore = defineStore(
      */
     async function createBracket(loggedIn: boolean) {
       console.debug(`creating bracket with ${loggedIn ? 'user' : 'guest'}`)
-      let url = `${import.meta.env.VITE_API_URL}/api/${
+      let url = `${import.meta.env.VITE_API_URL}/${
         loggedIn ? '' : 'guest/'
       }brackets`
       let response = await fetch(url, {
@@ -122,7 +122,7 @@ export const useBracketStore = defineStore(
      */
     async function getDisplayableBracket() {
       let response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/brackets/${id.value}`,
+        `${import.meta.env.VITE_API_URL}/brackets/${id.value}`,
         {
           method: 'GET',
           headers: {
@@ -159,7 +159,7 @@ export const useBracketStore = defineStore(
       if (bracket.value) {
         console.debug(`submitting result for bracket...`)
         let response = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/report-result-for-bracket`,
+          `${import.meta.env.VITE_API_URL}/report-result-for-bracket`,
           {
             method: 'POST',
             headers: {
@@ -204,7 +204,7 @@ export const useBracketStore = defineStore(
         console.debug(`submitting result for bracket...`)
         let player_names = bracket.value.bracket.participants
         let response = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/brackets/save`,
+          `${import.meta.env.VITE_API_URL}/brackets/save`,
           {
             method: 'POST',
             headers: {
@@ -237,7 +237,7 @@ export const useBracketStore = defineStore(
      */
     async function getBracketsFrom(userId: string) {
       let response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/user/${userId}/brackets?limit=${
+        `${import.meta.env.VITE_API_URL}/user/${userId}/brackets?limit=${
           pagination.value.limit
         }&offset=${pagination.value.offset}&sort_order=${
           pagination.value.sortOrder

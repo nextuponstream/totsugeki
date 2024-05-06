@@ -9,23 +9,23 @@ primary_region = 'cdg'
 [build]
 
 [env]
-  BUILD_PATH_TOURNAMENT_ORGANISER_WEB = 'dist'
-  DOCKER_BUILD = '1'
-  PORT = '8080'
-  VITE_API_URL = 'https://totsugekitest.fly.dev'
-  # TODO try fly secrets for env vars you may need to update while not needing
-  # to rebuild the entire app https://github.com/superfly/flyctl/issues/293
-  RUST_LOG = 'warn'
+BUILD_PATH_TOURNAMENT_ORGANISER_WEB = 'dist'
+DOCKER_BUILD = '1'
+PORT = '8080'
+VITE_API_URL = 'https://totsugekitest.fly.dev/api'
+# TODO try fly secrets for env vars you may need to update while not needing
+# to rebuild the entire app https://github.com/superfly/flyctl/issues/293
+RUST_LOG = 'warn'
 
 [http_service]
-  internal_port = 8080
-  force_https = true
-  auto_stop_machines = true
-  auto_start_machines = true
-  min_machines_running = 0
-  processes = ['app']
+internal_port = 8080
+force_https = true
+auto_stop_machines = true
+auto_start_machines = true
+min_machines_running = 0
+processes = ['app']
 
 [[vm]]
-  cpu_kind = 'shared'
-  cpus = 1
-  memory_mb = 256
+cpu_kind = 'shared'
+cpus = 1
+memory_mb = 256
