@@ -50,7 +50,7 @@ import { onMounted, provide, ref } from 'vue'
 import { useForm } from 'vee-validate'
 import { useI18n } from 'vue-i18n'
 import { object, string } from 'yup'
-import router from '@/router'
+import router, { RouteNames } from '@/router'
 import EditUser from '@/components/EditUser.vue'
 import { useUserStore } from '@/stores/user'
 import { prefixKey } from '@/config'
@@ -104,8 +104,6 @@ async function deleteAccountFormSubmit(values: any) {
 
   // all ok
   let deleted = await userStore.deleteAccount()
-  if (deleted) {
-    await router.push({ name: 'createBracket' })
-  }
+  await router.push({ name: 'createBracket' })
 }
 </script>

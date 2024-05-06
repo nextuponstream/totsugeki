@@ -3,6 +3,8 @@ import CreateBracket from '../views/CreateBracketView.vue'
 import { useUserStore } from '@/stores/user'
 
 export const RouteNames = {
+  home: 'home',
+  logout: 'logout',
   user: {
     register: 'registerUser',
     dashboard: 'userDashboard',
@@ -21,6 +23,11 @@ export const RouteNames = {
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    {
+      path: '/',
+      name: RouteNames.home,
+      component: CreateBracket,
+    },
     {
       path: '/',
       name: RouteNames.bracket.create,
@@ -57,21 +64,26 @@ const router = createRouter({
     {
       path: '/register',
       name: RouteNames.user.register,
-      component: () => import('../views/RegistrationView.vue'),
+      component: () => import('../views/users/UserRegistrationView.vue'),
     },
     {
       path: '/user',
       meta: { requiresAuth: true },
       children: [
         {
+          path: '/logout',
+          name: RouteNames.logout,
+          component: () => import('../views/users/UserLogoutView.vue'),
+        },
+        {
           path: 'dashboard',
           name: RouteNames.user.dashboard,
-          component: () => import('../views/UserDashboard.vue'),
+          component: () => import('../views/users/UserDashboardView.vue'),
         },
         {
           path: 'brackets',
           name: RouteNames.user.brackets,
-          component: () => import('../views/UserBrackets.vue'),
+          component: () => import('../views/users/UserBracketsView.vue'),
         },
       ],
     },

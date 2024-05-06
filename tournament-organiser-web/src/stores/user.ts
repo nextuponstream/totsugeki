@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { reactive, ref, type Ref } from 'vue'
+import { httpClient } from '@/httpClient'
 
 export type LoginAttempt = 200 | 401 | 404 | 500
 
@@ -51,6 +52,9 @@ export const useUserStore = defineStore(
 
     /**
      * Update user ID in store
+     *
+     * NOTE: this is too specialised and not reused enough to extract any logic
+     * in httpClient because
      * @param values form values
      * @returns status code response
      */
@@ -88,62 +92,22 @@ export const useUserStore = defineStore(
     }
 
     async function logout() {
-      let response = await fetch(`${import.meta.env.VITE_API_URL}/api/logout`, {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-        credentials: 'same-origin',
-      })
-      if (response.ok) {
-        console.info('successful logout')
-        id.value = null
-      } else {
-        throw new Error('non-200 response for /api/logout')
-      }
+      await httpClient.post(`/api/logout`)
+      id.value = null
     }
 
-    async function deleteAccount(): Promise<boolean> {
-      try {
-        let response = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/users`,
-          {
-            method: 'DELETE',
-          }
-        )
-        if (response.ok) {
-          console.info('successful account deletion')
-          id.value = null
-
-          return true
-        }
-      } catch (e) {
-        console.error(e)
-        return false
-      }
-      return false
+    async function deleteAccount(): Promise<any> {
+      await httpClient.delete('/api/users')
+      console.info('successful account deletion')
+      id.value = null
     }
 
     async function getUser(): Promise<void> {
-      let response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/users/profile`,
-        {
-          method: 'GET',
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-          },
-        }
-      )
-      if (response.ok) {
-        let userInfos: { email: string; name: string } = await response.json()
-        console.debug(JSON.stringify(userInfos))
-        infos.email = userInfos.email
-        infos.name = userInfos.name
-      } else {
-        throw new Error('non-200 response for /api/users/profile')
-      }
+      let response = await httpClient.get('/api/users/profile')
+      let userInfos: { email: string; name: string } = await response.json()
+      console.debug(JSON.stringify(userInfos))
+      infos.email = userInfos.email
+      infos.name = userInfos.name
     }
 
     return {
