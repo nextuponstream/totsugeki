@@ -316,14 +316,16 @@ pub async fn update_with_result(
     AxumJson(report): AxumJson<ReportResultInput>,
 ) -> impl IntoResponse {
     tracing::debug!("new reported result");
-    // TODO transaction
+    let Ok(mut transaction) = pool.begin().await else {
+        return Err(StatusCode::INTERNAL_SERVER_ERROR);
+    };
     let Some(b) = sqlx::query_as!(
         BracketRecord,
         r#"SELECT id, name, matches as "matches: SqlxJson<MatchesRaw>", created_at, participants as "participants: SqlxJson<Participants>" from brackets WHERE id = $1"#,
         bracket_id,
     )
         // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
-        .fetch_optional(&pool)
+        .fetch_optional(&mut *transaction)
         .await
         .expect("fetch result") else {
         return Err(StatusCode::NOT_FOUND);
@@ -341,15 +343,18 @@ pub async fn update_with_result(
     let _r = sqlx::query!(
         r#"
         UPDATE brackets
-        SET matches = $1
+            SET matches = $1
         WHERE id = $2
         "#,
         SqlxJson(bracket.get_matches()) as _,
         bracket.get_id(),
     )
-    .execute(&pool)
+    .execute(&mut *transaction)
     .await
     .expect("new bracket replayed from steps");
+    if transaction.commit().await.is_err() {
+        return Err(StatusCode::INTERNAL_SERVER_ERROR);
+    };
 
     let participants = bracket.get_participants();
     let dev: DoubleEliminationVariant = bracket.clone().try_into().expect("partition");
@@ -428,6 +433,7 @@ pub async fn update_with_result(
     tracing::debug!("updated bracket {:?}", bracket);
     Ok(AxumJson(bracket))
 }
+
 /// Returns updated bracket with result. Because there is no persistence, it's
 /// obviously limited in that TO can manipulate localStorage to change the
 /// bracket, but we are not worried about that right now. For now, the goal is
