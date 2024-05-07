@@ -24,10 +24,7 @@ export const useUserStore = defineStore(
      */
     async function registration(values: any): Promise<string | 200 | 500> {
       try {
-        let response = await httpClient.post(
-          `/register`,
-          JSON.stringify({ ...values })
-        )
+        let response = await httpClient.post(`/register`, values)
         if (response.ok) {
           console.info('successful registration')
           return 200
@@ -59,7 +56,7 @@ export const useUserStore = defineStore(
           'Content-Type': 'application/json',
           Authorization: 'Basic ' + btoa(`${values.email}:${values.password}`),
         },
-        credentials: 'same-origin',
+        credentials: 'same-origin', // keep any session cookie for future requests
         body: JSON.stringify({ ...values }),
       })
       if (response.ok) {
@@ -103,6 +100,10 @@ export const useUserStore = defineStore(
       infos.name = userInfos.name
     }
 
+    function loggedIn() {
+      return id.value !== null
+    }
+
     return {
       registration,
       id,
@@ -111,6 +112,7 @@ export const useUserStore = defineStore(
       deleteAccount,
       getUser,
       infos,
+      loggedIn,
     }
   },
   {

@@ -12,6 +12,7 @@ class HttpClient {
   apiHeaders = {
     Accept: 'application/json',
     'Content-Type': 'application/json',
+    credentials: 'same-origin', // keep any session cookie for future requests
   }
 
   /**
@@ -23,8 +24,12 @@ class HttpClient {
     return await this.fetchResponse('GET', path)
   }
 
+  /**
+   * @param path
+   * @param data Javascript object to JSON.stringify as the body
+   */
   async post(path: string, data?: any): Promise<any> {
-    return await this.fetchResponse('POST', path, data)
+    return await this.fetchResponse('POST', path, JSON.stringify(data))
   }
 
   async put(path: string) {

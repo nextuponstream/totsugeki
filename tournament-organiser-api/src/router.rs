@@ -1,8 +1,8 @@
 //! all API routes
 
 use crate::brackets::{
-    create_bracket, get_bracket, list_brackets, new_bracket, report_result, save_bracket,
-    user_brackets,
+    create_bracket, get_bracket, list_brackets, new_bracket, report_result,
+    save_bracket_from_steps, update_with_result, user_brackets,
 };
 use crate::health_check::health_check;
 use crate::middlewares::authentication::auth_layer;
@@ -33,7 +33,8 @@ pub(crate) fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router 
         Router::new()
             .route("/", post(create_bracket))
             .route("/", get(list_brackets))
-            .route("/save", post(save_bracket)),
+            .route("/save", post(save_bracket_from_steps))
+            .route("/:bracket_id/report-result", post(update_with_result)),
     );
     let protected_routes = Router::new()
         .merge(user_routes)
@@ -49,7 +50,8 @@ pub(crate) fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router 
         .route("/login", post(login))
         .route("/logout", post(logout))
         // TODO declare brackets_guest router and merge
-        .route("/report-result-for-bracket", post(report_result))
+        // FIXME naming is unclear, just say dry-run
+        .route("/report-result", post(report_result))
         .nest(
             "/guest",
             Router::new().route("/brackets", post(new_bracket)),

@@ -126,9 +126,9 @@ pub async fn new_bracket(AxumJson(form): AxumJson<CreateBracketForm>) -> impl In
 /// The server will not accept a JSON of a bracket just because it can be
 /// parsed as that may lead to a malformed bracket. Then we do something a
 /// little more intense computation wise that always yields a correct bracket.
-#[instrument(name = "save_bracket")]
+#[instrument(name = "save_bracket_from_steps")]
 #[debug_handler]
-pub async fn save_bracket(
+pub async fn save_bracket_from_steps(
     State(pool): State<PgPool>,
     AxumJson(bracket_state): AxumJson<BracketState>,
 ) -> impl IntoResponse {
@@ -300,7 +300,137 @@ fn breakdown(bracket: Bracket) -> impl IntoResponse {
 
 /// Returns updated bracket with result. Because there is no persistence, it's
 /// obviously limited in that TO can manipulate localStorage to change the
-/// bracket but we are not worried about that right now. For now, the goal is
+/// bracket, but we are not worried about that right now. For now, the goal is
+/// that it just works for normal use cases
+///
+/// # Panics
+/// May panic if I fucked up
+///
+/// # Errors
+/// Error 500 if a user gets out of sync with the bracket in the database and
+/// the one displayed in the web page
+#[instrument(name = "update_with_result", skip(report))]
+pub async fn update_with_result(
+    State(pool): State<PgPool>,
+    Path(bracket_id): Path<Id>,
+    AxumJson(report): AxumJson<ReportResultInput>,
+) -> impl IntoResponse {
+    tracing::debug!("new reported result");
+    // TODO transaction
+    let Some(b) = sqlx::query_as!(
+        BracketRecord,
+        r#"SELECT id, name, matches as "matches: SqlxJson<MatchesRaw>", created_at, participants as "participants: SqlxJson<Participants>" from brackets WHERE id = $1"#,
+        bracket_id,
+    )
+        // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
+        .fetch_optional(&pool)
+        .await
+        .expect("fetch result") else {
+        return Err(StatusCode::NOT_FOUND);
+    };
+    let bracket = Bracket::assemble(b.id, b.name, b.participants.0, b.matches.0 .0);
+
+    let Ok((bracket, _, _)) = bracket.tournament_organiser_reports_result(
+        report.p1_id,
+        (report.score_p1, report.score_p2),
+        report.p2_id,
+    ) else {
+        return Err(StatusCode::INTERNAL_SERVER_ERROR);
+    };
+
+    let _r = sqlx::query!(
+        r#"
+        UPDATE brackets
+        SET matches = $1
+        WHERE id = $2
+        "#,
+        SqlxJson(bracket.get_matches()) as _,
+        bracket.get_id(),
+    )
+    .execute(&pool)
+    .await
+    .expect("new bracket replayed from steps");
+
+    let participants = bracket.get_participants();
+    let dev: DoubleEliminationVariant = bracket.clone().try_into().expect("partition");
+
+    let winner_bracket_matches = dev.partition_winner_bracket();
+    let maybe_winner_bracket_lines = match winner_bracket_matches.clone() {
+        Some(winner_bracket_matches) => {
+            let mut winner_bracket_rounds = vec![];
+            for r in winner_bracket_matches {
+                let round = r
+                    .iter()
+                    .map(|m| from_participants(m, &participants))
+                    .collect();
+                winner_bracket_rounds.push(round);
+            }
+
+            reorder_winner_bracket(&mut winner_bracket_rounds);
+            winner_bracket_lines(&winner_bracket_rounds)
+        }
+        None => None,
+    };
+    let winner_bracket_rounds = match winner_bracket_matches {
+        Some(winner_bracket_matches) => {
+            let mut winner_bracket_rounds = vec![];
+            for r in winner_bracket_matches {
+                let round = r
+                    .iter()
+                    .map(|m| from_participants(m, &participants))
+                    .collect();
+                winner_bracket_rounds.push(round);
+            }
+            Some(winner_bracket_rounds)
+        }
+        None => None,
+    };
+
+    let lower_bracket_matches = dev.partition_loser_bracket();
+    let lower_bracket_rounds = match lower_bracket_matches.clone() {
+        Some(lower_bracket_matches) => {
+            let mut lower_bracket_rounds: Vec<Vec<MinimalMatch>> = vec![];
+            for r in lower_bracket_matches {
+                let round = r
+                    .iter()
+                    .map(|m| from_participants(m, &participants))
+                    .collect();
+                lower_bracket_rounds.push(round);
+            }
+            reorder_loser_bracket(&mut lower_bracket_rounds);
+            Some(lower_bracket_rounds)
+        }
+        None => None,
+    };
+    let maybe_loser_bracket_lines = match lower_bracket_rounds.clone() {
+        Some(lower_bracket_rounds) => loser_bracket_lines(lower_bracket_rounds),
+        None => None,
+    };
+
+    let (gf, gf_reset) = match dev.grand_finals_and_reset() {
+        Some((gf, bracket_reset)) => (
+            Some(from_participants(&gf, &participants)),
+            Some(from_participants(&bracket_reset, &participants)),
+        ),
+        None => (None, None),
+    };
+
+    let bracket = BracketDisplay {
+        winner_bracket: winner_bracket_rounds,
+        winner_bracket_lines: maybe_winner_bracket_lines,
+        loser_bracket: lower_bracket_rounds,
+        loser_bracket_lines: maybe_loser_bracket_lines,
+        grand_finals: gf,
+        grand_finals_reset: gf_reset,
+        bracket,
+    };
+    tracing::info!("updated bracket {}", bracket.bracket.get_id());
+    tracing::debug!("updated bracket {:?}", bracket);
+    Ok(AxumJson(bracket))
+}
+/// Returns updated bracket with result. Because there is no persistence, it's
+/// obviously limited in that TO can manipulate localStorage to change the
+/// bracket, but we are not worried about that right now. For now, the goal is
 /// that it just works for normal use cases
 ///
 /// # Panics

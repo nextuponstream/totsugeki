@@ -43,6 +43,7 @@ import { useBracketStore } from '@/stores/bracket'
 import { ref, computed, onUpdated, provide } from 'vue'
 import BlurredBackground from '@/components/ui/modals/BlurredBackground.vue'
 import { prefixKey } from '@/config'
+import { useUserStore } from '@/stores/user'
 
 const props = defineProps<{
   matchId: string | null
@@ -55,6 +56,7 @@ const scoreP1 = ref(0)
 const scoreP2 = ref(0)
 const emits = defineEmits(['update:modelValue'])
 const bracketStore = useBracketStore()
+const userStore = useUserStore()
 
 provide(prefixKey, 'report-result-modal')
 
@@ -77,7 +79,12 @@ function setScore(p1: number, p2: number) {
 
 async function submit() {
   if (props.players) {
-    await bracketStore.reportResult(props.players, scoreP1.value, scoreP2.value)
+    await bracketStore.reportResult(
+      props.players,
+      scoreP1.value,
+      scoreP2.value,
+      !userStore.loggedIn()
+    )
     hideModal()
   } else {
     throw new Error('missing players in modal, cannot report result')

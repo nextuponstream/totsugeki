@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, type Ref } from 'vue'
+import { httpClient } from '@/httpClient'
 
 type Player = { name: string; index: number }
 
@@ -80,40 +81,23 @@ export const useBracketStore = defineStore(
      */
     async function createBracket(loggedIn: boolean) {
       console.debug(`creating bracket with ${loggedIn ? 'user' : 'guest'}`)
-      let url = `${import.meta.env.VITE_API_URL}/${
-        loggedIn ? '' : 'guest/'
-      }brackets`
-      let response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          bracket_name: formCreate.value.bracket_name,
-          player_names: formCreate.value.player_names.map((p) => p.name),
-        }),
+      let url = `/${loggedIn ? '' : 'guest/'}brackets`
+      let response = await httpClient.post(url, {
+        bracket_name: formCreate.value.bracket_name,
+        player_names: formCreate.value.player_names.map((p) => p.name),
       })
-      if (response.ok) {
-        let r = await response.json()
-        console.debug(r)
-        if (loggedIn) {
-          id.value = r.id
-          isSaved.value = true
-        } else {
-          id.value = undefined
-          bracket.value = r
-          isSaved.value = false
-        }
-        reportedResults.value = []
-        formCreate.value = { player_names: [], bracket_name: '' }
+      let r = await response.json()
+      console.debug(r)
+      if (loggedIn) {
+        id.value = r.id
+        isSaved.value = true
       } else {
-        throw new Error(
-          `response (${
-            response.status
-          }) \"${await response.text()}\" from POST /api/brackets`
-        )
+        id.value = undefined
+        bracket.value = r
+        isSaved.value = false
       }
+      reportedResults.value = []
+      formCreate.value = { player_names: [], bracket_name: '' }
     }
 
     /**
@@ -121,27 +105,10 @@ export const useBracketStore = defineStore(
      * @throws Error when something goes wrong with the API
      */
     async function getDisplayableBracket() {
-      let response = await fetch(
-        `${import.meta.env.VITE_API_URL}/brackets/${id.value}`,
-        {
-          method: 'GET',
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-          },
-        }
-      )
-      if (response.ok) {
-        let r = await response.json()
-        console.debug(r)
-        bracket.value = r
-      } else {
-        throw new Error(
-          `response (${
-            response.status
-          }) \"${await response.text()}\" from /api/brackets/${id.value}`
-        )
-      }
+      let response = await httpClient.get(`/brackets/${id.value}`)
+      let r = await response.json()
+      console.debug(r)
+      bracket.value = r
     }
 
     /**
@@ -149,44 +116,37 @@ export const useBracketStore = defineStore(
      * @param players
      * @param scoreP1
      * @param scoreP2
+     * @param dryRun true if you must not be saved to database
      * @throws Error when something goes wrong with the API
      */
     async function reportResult(
       players: { name: string; id: string }[],
       scoreP1: number,
-      scoreP2: number
+      scoreP2: number,
+      dryRun: boolean
     ) {
+      // FIXME after reporting result while logged in on a bracket that belongs
+      //  to the user, hit f5 and all results should still be there
       if (bracket.value) {
         console.debug(`submitting result for bracket...`)
-        let response = await fetch(
-          `${import.meta.env.VITE_API_URL}/report-result-for-bracket`,
-          {
-            method: 'POST',
-            headers: {
-              Accept: 'application/json',
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              bracket: bracket.value.bracket,
-              p1_id: players[0].id,
-              p2_id: players[1].id,
-              score_p1: scoreP1,
-              score_p2: scoreP2,
-            }),
-          }
-        )
-        if (response.ok) {
-          bracket.value = await response.json()
-          reportedResults.value.push({
-            p1_id: players[0].id,
-            p2_id: players[1].id,
-            score_p1: scoreP1,
-            score_p2: scoreP2,
-          })
-        } else {
-          console.debug(await response.text())
-          throw new Error('non-200 response for /api/report-result-for-bracket')
-        }
+        let path = dryRun
+          ? `/report-result`
+          : `/brackets/${id.value}/report-result`
+
+        let response = await httpClient.post(path, {
+          bracket: bracket.value.bracket,
+          p1_id: players[0].id,
+          p2_id: players[1].id,
+          score_p1: scoreP1,
+          score_p2: scoreP2,
+        })
+        bracket.value = await response.json()
+        reportedResults.value.push({
+          p1_id: players[0].id,
+          p2_id: players[1].id,
+          score_p1: scoreP1,
+          score_p2: scoreP2,
+        })
       } else {
         throw new Error('missing bracket in store for reporting result')
       }
@@ -203,29 +163,14 @@ export const useBracketStore = defineStore(
       if (reportedResults.value && bracket.value?.bracket?.participants) {
         console.debug(`submitting result for bracket...`)
         let player_names = bracket.value.bracket.participants
-        let response = await fetch(
-          `${import.meta.env.VITE_API_URL}/brackets/save`,
-          {
-            method: 'POST',
-            headers: {
-              Accept: 'application/json',
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              bracket_name: bracket.value?.bracket?.name,
-              results: reportedResults.value,
-              players: player_names,
-            }),
-          }
-        )
-        if (response.ok) {
-          reportedResults.value = []
-          isSaved.value = true
-          bracket.value = await response.json()
-        } else {
-          console.debug(await response.text())
-          throw new Error('non-200 response for /api/brackets/save')
-        }
+        let response = await httpClient.post(`/brackets/save`, {
+          bracket_name: bracket.value?.bracket?.name,
+          results: reportedResults.value,
+          players: player_names,
+        })
+        reportedResults.value = []
+        isSaved.value = true
+        bracket.value = await response.json()
       } else {
         throw new Error('missing bracket in store for reporting result')
       }
@@ -236,28 +181,12 @@ export const useBracketStore = defineStore(
      * @param userId
      */
     async function getBracketsFrom(userId: string) {
-      let response = await fetch(
-        `${import.meta.env.VITE_API_URL}/user/${userId}/brackets?limit=${
-          pagination.value.limit
-        }&offset=${pagination.value.offset}&sort_order=${
-          pagination.value.sortOrder
-        }`,
-        {
-          method: 'GET',
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-          },
-        }
+      let response = await httpClient.get(
+        `/user/${userId}/brackets?limit=${pagination.value.limit}&offset=${pagination.value.offset}&sort_order=${pagination.value.sortOrder}`
       )
-      if (response.ok) {
-        let paginationResult: PaginationResponse = await response.json()
-        bracketList.value = paginationResult.data
-        pagination.value.total = paginationResult.total
-      } else {
-        console.debug(await response.text())
-        throw new Error(`non-200 response for /api/user/${userId}/brackets`)
-      }
+      let paginationResult: PaginationResponse = await response.json()
+      bracketList.value = paginationResult.data
+      pagination.value.total = paginationResult.total
     }
 
     return {

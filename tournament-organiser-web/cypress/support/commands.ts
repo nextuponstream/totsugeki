@@ -97,9 +97,7 @@ Cypress.Commands.add(
     cy.get(`[data-test-id=${bracket}-${firstSeed}-${secondSeed}]`).click()
     cy.contains(`${scoreP1} - ${scoreP2}`).click()
 
-    cy.intercept('POST', '/api/report-result-for-bracket').as(
-      'reportFirstMatch'
-    )
+    cy.intercept('POST', '/api/report-result').as('reportFirstMatch')
 
     cy.get('[data-test-id=submit-match-result]').click()
 
