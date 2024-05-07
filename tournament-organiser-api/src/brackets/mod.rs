@@ -315,6 +315,7 @@ pub async fn update_with_result(
     Path(bracket_id): Path<Id>,
     AxumJson(report): AxumJson<ReportResultInput>,
 ) -> impl IntoResponse {
+    // TODO check if user can edit bracket using tournament_organisers table
     tracing::debug!("new reported result");
     let Ok(mut transaction) = pool.begin().await else {
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
