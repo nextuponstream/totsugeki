@@ -96,7 +96,7 @@ pub struct BracketState {
     pub results: Vec<PlayerMatchResultReport>,
 }
 
-/// Return a newly instanciated bracket from ordered (=seeded) player names for
+/// Return a newly instantiated bracket from ordered (=seeded) player names for
 /// display purposes
 ///
 /// # Panics
@@ -129,6 +129,7 @@ pub async fn new_bracket(AxumJson(form): AxumJson<CreateBracketForm>) -> impl In
 #[instrument(name = "save_bracket_from_steps")]
 #[debug_handler]
 pub async fn save_bracket_from_steps(
+    session: Session,
     State(pool): State<PgPool>,
     AxumJson(bracket_state): AxumJson<BracketState>,
 ) -> impl IntoResponse {
@@ -179,17 +180,19 @@ pub async fn save_bracket_from_steps(
         };
     }
 
-    let r = sqlx::query!(
-        "INSERT INTO brackets (name, matches, participants) VALUES ($1, $2, $3) RETURNING id",
-        bracket.get_name(),
-        SqlxJson(bracket.get_matches()) as _,
-        SqlxJson(bracket.get_participants()) as _,
-    )
-    .fetch_one(&pool)
-    .await
-    .expect("new bracket replayed from steps");
-    // use auto-generated db id rather than from Bracket::default()
-    bracket = bracket.set_id(r.id);
+    let repo = BracketRepository::new(pool);
+    let user_id: totsugeki::player::Id = session
+        .get(&Keys::UserId.to_string())
+        .await
+        .expect("value from store")
+        .expect("user id");
+    let () = match repo.create(&bracket, user_id).await {
+        Ok(()) => (),
+        Err(e) => {
+            tracing::error!("{e:?}");
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
 
     tracing::info!("new bracket replayed from steps {}", bracket.get_id());
     tracing::debug!("new bracket replayed from steps {:?}", bracket);
