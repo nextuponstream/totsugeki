@@ -6,11 +6,12 @@ use sqlx::types::Json as SqlxJson;
 use sqlx::PgPool;
 
 use totsugeki::bracket::Bracket;
+use totsugeki::bracket::Error as TotsugekiError;
 use totsugeki::matches::Match;
 use totsugeki::player::Id;
 use totsugeki::player::Participants;
 
-use crate::brackets::BracketRecord;
+use crate::brackets::{BracketRecord, ReportResultInput};
 
 /// Interact with brackets in postgres database using sqlx
 #[derive(Debug)]
@@ -26,6 +27,9 @@ pub(crate) enum Error {
     #[allow(dead_code)]
     /// Error with sqlx, unrecoverable
     Sqlx(SqlxError),
+    /// Expected error when using library
+    #[allow(dead_code)]
+    Bracket(TotsugekiError),
 }
 
 impl From<SqlxError> for Error {
@@ -83,6 +87,55 @@ impl BracketRepository {
         };
         let bracket = Bracket::assemble(b.id, b.name, b.participants.0, b.matches.0 .0);
 
+        Ok(Some(bracket))
+    }
+
+    /// Update bracket with result
+    pub async fn update_with_result(
+        self,
+        bracket_id: Id,
+        report: &ReportResultInput,
+    ) -> Result<Option<Bracket>, Error> {
+        let mut transaction = self.pool.begin().await?;
+        let Some(b) = sqlx::query_as!(
+        BracketRecord,
+        r#"SELECT id, name, matches as "matches: SqlxJson<MatchesRaw>", created_at, participants as "participants: SqlxJson<Participants>" from brackets WHERE id = $1"#,
+        bracket_id,
+    )
+            // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
+            .fetch_optional(&mut *transaction)
+            .await
+            .expect("fetch result") else {
+            return Ok(None);
+        };
+        let bracket = Bracket::assemble(b.id, b.name, b.participants.0, b.matches.0 .0);
+
+        let bracket = match bracket.tournament_organiser_reports_result(
+            report.p1_id,
+            (report.score_p1, report.score_p2),
+            report.p2_id,
+        ) {
+            Ok((bracket, _, _)) => bracket,
+            Err(e) => {
+                // TODO from implementation for totsugeki error
+                tracing::warn!("{e:?}");
+                return Err(Error::Bracket(e));
+            }
+        };
+
+        let _r = sqlx::query!(
+            r#"
+        UPDATE brackets
+            SET matches = $1
+        WHERE id = $2
+        "#,
+            SqlxJson(bracket.get_matches()) as _,
+            bracket.get_id(),
+        )
+        .execute(&mut *transaction)
+        .await
+        .expect("new bracket replayed from steps");
+        transaction.commit().await?;
         Ok(Some(bracket))
     }
 }

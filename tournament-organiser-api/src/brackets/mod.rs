@@ -25,18 +25,18 @@ use tower_sessions::Session;
 use tracing::instrument;
 
 /// List of players from which a bracket can be created
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct ReportResultInput {
     /// current state of the bracket
-    bracket: Bracket,
+    pub bracket: Bracket,
     /// First player
-    p1_id: PlayerId,
+    pub p1_id: PlayerId,
     /// Second player
-    p2_id: PlayerId,
+    pub p2_id: PlayerId,
     /// player 1 score
-    score_p1: i8,
+    pub score_p1: i8,
     /// player 2 score
-    score_p2: i8,
+    pub score_p2: i8,
 }
 
 /// Bracket to display. When there is less than 3 players, then there is nothing
@@ -315,122 +315,16 @@ pub async fn update_with_result(
 ) -> impl IntoResponse {
     // TODO check if user can edit bracket using tournament_organisers table
     tracing::debug!("new reported result");
-    let Ok(mut transaction) = pool.begin().await else {
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
-    };
-    let Some(b) = sqlx::query_as!(
-        BracketRecord,
-        r#"SELECT id, name, matches as "matches: SqlxJson<MatchesRaw>", created_at, participants as "participants: SqlxJson<Participants>" from brackets WHERE id = $1"#,
-        bracket_id,
-    )
-        // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
-        .fetch_optional(&mut *transaction)
-        .await
-        .expect("fetch result") else {
-        return Err(StatusCode::NOT_FOUND);
-    };
-    let bracket = Bracket::assemble(b.id, b.name, b.participants.0, b.matches.0 .0);
-
-    let Ok((bracket, _, _)) = bracket.tournament_organiser_reports_result(
-        report.p1_id,
-        (report.score_p1, report.score_p2),
-        report.p2_id,
-    ) else {
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
-    };
-
-    let _r = sqlx::query!(
-        r#"
-        UPDATE brackets
-            SET matches = $1
-        WHERE id = $2
-        "#,
-        SqlxJson(bracket.get_matches()) as _,
-        bracket.get_id(),
-    )
-    .execute(&mut *transaction)
-    .await
-    .expect("new bracket replayed from steps");
-    if transaction.commit().await.is_err() {
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
-    };
-
-    let participants = bracket.get_participants();
-    let dev: DoubleEliminationVariant = bracket.clone().try_into().expect("partition");
-
-    let winner_bracket_matches = dev.partition_winner_bracket();
-    let maybe_winner_bracket_lines = match winner_bracket_matches.clone() {
-        Some(winner_bracket_matches) => {
-            let mut winner_bracket_rounds = vec![];
-            for r in winner_bracket_matches {
-                let round = r
-                    .iter()
-                    .map(|m| from_participants(m, &participants))
-                    .collect();
-                winner_bracket_rounds.push(round);
-            }
-
-            reorder_winner_bracket(&mut winner_bracket_rounds);
-            winner_bracket_lines(&winner_bracket_rounds)
+    let repo = BracketRepository::new(pool);
+    let bracket = match repo.update_with_result(bracket_id, &report).await {
+        Ok(Some(bracket)) => bracket,
+        Ok(None) => return Err(StatusCode::NOT_FOUND),
+        Err(e) => {
+            tracing::warn!("Cannot update bracket {bracket_id} with result {report:?}: {e:?}");
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
-        None => None,
     };
-    let winner_bracket_rounds = match winner_bracket_matches {
-        Some(winner_bracket_matches) => {
-            let mut winner_bracket_rounds = vec![];
-            for r in winner_bracket_matches {
-                let round = r
-                    .iter()
-                    .map(|m| from_participants(m, &participants))
-                    .collect();
-                winner_bracket_rounds.push(round);
-            }
-            Some(winner_bracket_rounds)
-        }
-        None => None,
-    };
-
-    let lower_bracket_matches = dev.partition_loser_bracket();
-    let lower_bracket_rounds = match lower_bracket_matches.clone() {
-        Some(lower_bracket_matches) => {
-            let mut lower_bracket_rounds: Vec<Vec<MinimalMatch>> = vec![];
-            for r in lower_bracket_matches {
-                let round = r
-                    .iter()
-                    .map(|m| from_participants(m, &participants))
-                    .collect();
-                lower_bracket_rounds.push(round);
-            }
-            reorder_loser_bracket(&mut lower_bracket_rounds);
-            Some(lower_bracket_rounds)
-        }
-        None => None,
-    };
-    let maybe_loser_bracket_lines = match lower_bracket_rounds.clone() {
-        Some(lower_bracket_rounds) => loser_bracket_lines(lower_bracket_rounds),
-        None => None,
-    };
-
-    let (gf, gf_reset) = match dev.grand_finals_and_reset() {
-        Some((gf, bracket_reset)) => (
-            Some(from_participants(&gf, &participants)),
-            Some(from_participants(&bracket_reset, &participants)),
-        ),
-        None => (None, None),
-    };
-
-    let bracket = BracketDisplay {
-        winner_bracket: winner_bracket_rounds,
-        winner_bracket_lines: maybe_winner_bracket_lines,
-        loser_bracket: lower_bracket_rounds,
-        loser_bracket_lines: maybe_loser_bracket_lines,
-        grand_finals: gf,
-        grand_finals_reset: gf_reset,
-        bracket,
-    };
-    tracing::info!("updated bracket {}", bracket.bracket.get_id());
-    tracing::debug!("updated bracket {:?}", bracket);
-    Ok(AxumJson(bracket))
+    Ok(breakdown(bracket))
 }
 
 /// Returns updated bracket with result. Because there is no persistence, it's
@@ -458,87 +352,11 @@ pub async fn report_result(AxumJson(report): AxumJson<ReportResultInput>) -> imp
         Err(e) => {
             // TODO deal with corner case where UI shows a bracket that is out
             //  of sync with database state and returns something to user
-            tracing::error!("{e:?}");
+            tracing::warn!("{e:?}");
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     };
-
-    let participants = bracket.get_participants();
-    let dev: DoubleEliminationVariant = bracket.clone().try_into().expect("partition");
-
-    let winner_bracket_matches = dev.partition_winner_bracket();
-    let maybe_winner_bracket_lines = match winner_bracket_matches.clone() {
-        Some(winner_bracket_matches) => {
-            let mut winner_bracket_rounds = vec![];
-            for r in winner_bracket_matches {
-                let round = r
-                    .iter()
-                    .map(|m| from_participants(m, &participants))
-                    .collect();
-                winner_bracket_rounds.push(round);
-            }
-
-            reorder_winner_bracket(&mut winner_bracket_rounds);
-            winner_bracket_lines(&winner_bracket_rounds)
-        }
-        None => None,
-    };
-    let winner_bracket_rounds = match winner_bracket_matches {
-        Some(winner_bracket_matches) => {
-            let mut winner_bracket_rounds = vec![];
-            for r in winner_bracket_matches {
-                let round = r
-                    .iter()
-                    .map(|m| from_participants(m, &participants))
-                    .collect();
-                winner_bracket_rounds.push(round);
-            }
-            Some(winner_bracket_rounds)
-        }
-        None => None,
-    };
-
-    let lower_bracket_matches = dev.partition_loser_bracket();
-    let lower_bracket_rounds = match lower_bracket_matches.clone() {
-        Some(lower_bracket_matches) => {
-            let mut lower_bracket_rounds: Vec<Vec<MinimalMatch>> = vec![];
-            for r in lower_bracket_matches {
-                let round = r
-                    .iter()
-                    .map(|m| from_participants(m, &participants))
-                    .collect();
-                lower_bracket_rounds.push(round);
-            }
-            reorder_loser_bracket(&mut lower_bracket_rounds);
-            Some(lower_bracket_rounds)
-        }
-        None => None,
-    };
-    let maybe_loser_bracket_lines = match lower_bracket_rounds.clone() {
-        Some(lower_bracket_rounds) => loser_bracket_lines(lower_bracket_rounds),
-        None => None,
-    };
-
-    let (gf, gf_reset) = match dev.grand_finals_and_reset() {
-        Some((gf, bracket_reset)) => (
-            Some(from_participants(&gf, &participants)),
-            Some(from_participants(&bracket_reset, &participants)),
-        ),
-        None => (None, None),
-    };
-
-    let bracket = BracketDisplay {
-        winner_bracket: winner_bracket_rounds,
-        winner_bracket_lines: maybe_winner_bracket_lines,
-        loser_bracket: lower_bracket_rounds,
-        loser_bracket_lines: maybe_loser_bracket_lines,
-        grand_finals: gf,
-        grand_finals_reset: gf_reset,
-        bracket,
-    };
-    tracing::info!("updated bracket {}", bracket.bracket.get_id());
-    tracing::debug!("updated bracket {:?}", bracket);
-    Ok(AxumJson(bracket))
+    Ok(breakdown(bracket))
 }
 
 #[derive(Serialize, Deserialize)]
