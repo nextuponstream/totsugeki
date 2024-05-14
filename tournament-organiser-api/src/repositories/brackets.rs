@@ -12,6 +12,7 @@ use totsugeki::player::Id;
 use totsugeki::player::Participants;
 
 use crate::brackets::{BracketRecord, ReportResultInput};
+use crate::resources::PaginatedGenericResource;
 
 /// Interact with brackets in postgres database using sqlx
 #[derive(Debug)]
@@ -133,5 +134,46 @@ impl BracketRepository {
         .await?;
         transaction.commit().await?;
         Ok(Some(bracket))
+    }
+    /// List all brackets belonging to `user_id`
+    pub async fn user_brackets(
+        self,
+        sort_order: String,
+        limit: i64,
+        offset: i64,
+        user_id: Id,
+    ) -> Result<Vec<PaginatedGenericResource>, Error> {
+        // paginated results with total count: https://stackoverflow.com/a/28888696
+        // not optimal : each rows contains the total
+        // not optimal : you have to extract total from first row if you want the
+        // count to be separated from rows
+        // weird: need Option<i64> for total otherwise does not compile
+        // why keep : it might be nice for the consumer to access total rows in the
+        // returned row. Also it works for the current use case (return all rows)
+        // TODO: if this app scales hard, then this naive pagination won't hold I
+        //  think (searching late page may become slow as offset forces all rows to
+        //  be counted). But it's good enough for now
+        // NOTE: ASC/DESC as param https://github.com/launchbadge/sqlx/issues/3020#issuecomment-1919930408
+        let brackets = sqlx::query_as!(
+            PaginatedGenericResource,
+            r#"SELECT id, name, created_at, count(*) OVER() AS total from brackets
+         WHERE id IN (SELECT bracket_id FROM tournament_organisers WHERE user_id = $4)
+         ORDER BY 
+           CASE WHEN $1 = 'ASC' THEN created_at END ASC,
+           CASE WHEN $1 = 'DESC' THEN created_at END DESC
+         LIMIT $2
+         OFFSET $3
+         "#,
+            sort_order,
+            limit,
+            offset,
+            user_id,
+        )
+        // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
+        .fetch_all(&self.pool)
+        .await
+        .expect("fetch result");
+
+        Ok(brackets)
     }
 }

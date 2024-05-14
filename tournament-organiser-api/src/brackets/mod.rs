@@ -467,37 +467,17 @@ pub(crate) async fn user_brackets(
     let limit: i64 = pagination.limit.try_into().expect("ok");
     let offset: i64 = pagination.offset.try_into().expect("ok");
 
-    // FIXME join with user table
-    // paginated results with total count: https://stackoverflow.com/a/28888696
-    // not optimal : each rows contains the total
-    // not optimal : you have to extract total from first row if you want the
-    // count to be separated from rows
-    // weird: need Option<i64> for total otherwise does not compile
-    // why keep : it might be nice for the consumer to access total rows in the
-    // returned row. Also it works for the current use case (return all rows)
-    // TODO: if this app scales hard, then this naive pagination won't hold I
-    //  think (searching late page may become slow as offset forces all rows to
-    //  be counted). But it's good enough for now
-    // NOTE: ASC/DESC as param https://github.com/launchbadge/sqlx/issues/3020#issuecomment-1919930408
-    let brackets = sqlx::query_as!(
-        PaginatedGenericResource,
-        r#"SELECT id, name, created_at, count(*) OVER() AS total from brackets
-         WHERE id IN (SELECT bracket_id FROM tournament_organisers WHERE user_id = $4)
-         ORDER BY 
-           CASE WHEN $1 = 'ASC' THEN created_at END ASC,
-           CASE WHEN $1 = 'DESC' THEN created_at END DESC
-         LIMIT $2
-         OFFSET $3
-         "#,
-        pagination.sort_order,
-        limit,
-        offset,
-        user_id,
-    )
-    // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
-    .fetch_all(&pool)
-    .await
-    .expect("fetch result");
+    let repo = BracketRepository::new(pool);
+    let brackets = match repo
+        .user_brackets(pagination.sort_order, limit, offset, user_id)
+        .await
+    {
+        Ok(b) => b,
+        Err(e) => {
+            tracing::warn!("{e:?}");
+            return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
+        }
+    };
 
     let total = if brackets.is_empty() {
         0
