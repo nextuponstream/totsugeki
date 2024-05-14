@@ -1,5 +1,6 @@
 //! bracket management
 
+use crate::repositories::brackets::{BracketRepository, MatchesRaw};
 use crate::resources::{
     PaginatedGenericResource, Pagination, PaginationResult, ValidatedQueryParams,
 };
@@ -14,7 +15,6 @@ use sqlx::PgPool;
 use totsugeki::bracket::{
     double_elimination_variant::Variant as DoubleEliminationVariant, Bracket, Id,
 };
-use totsugeki::matches::Match;
 use totsugeki::player::{Id as PlayerId, Participants, Player};
 use totsugeki_display::loser_bracket::lines as loser_bracket_lines;
 use totsugeki_display::loser_bracket::reorder as reorder_loser_bracket;
@@ -211,20 +211,15 @@ pub async fn get_bracket(
 ) -> impl IntoResponse {
     tracing::debug!("bracket {bracket_id}");
 
-    let Some(b) = sqlx::query_as!(
-        BracketRecord,
-        r#"SELECT id, name, matches as "matches: SqlxJson<MatchesRaw>", created_at, participants as "participants: SqlxJson<Participants>"  from brackets WHERE id = $1"#,
-        bracket_id,
-    )
-    // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
-    .fetch_optional(&pool)
-    .await
-    .expect("fetch result") else {
-        return (StatusCode::NOT_FOUND).into_response();
-    };
-    let bracket = Bracket::assemble(b.id, b.name, b.participants.0, b.matches.0 .0);
-
-    breakdown(bracket).into_response()
+    let repo = BracketRepository::new(pool);
+    match repo.read(bracket_id).await {
+        Ok(Some(bracket)) => breakdown(bracket).into_response(),
+        Ok(None) => (StatusCode::NOT_FOUND).into_response(),
+        Err(e) => {
+            tracing::error!("{e:?}");
+            (StatusCode::INTERNAL_SERVER_ERROR).into_response()
+        }
+    }
 }
 
 /// Breaks down bracket in small parts to be presented by UI
@@ -550,10 +545,6 @@ pub struct GenericResourceCreated {
     pub id: Id,
 }
 
-/// Matches raw value
-#[derive(Deserialize, Serialize)]
-pub struct MatchesRaw(pub Vec<Match>);
-
 /// Bracket in database
 #[derive(Serialize, Deserialize, sqlx::FromRow)]
 pub(crate) struct BracketRecord {
@@ -578,6 +569,7 @@ pub async fn create_bracket(
 ) -> impl IntoResponse {
     tracing::debug!("new bracket from players: {:?}", form.player_names);
 
+    let repo = BracketRepository::new(pool);
     // TODO refactor user_id key in SESSION_KEY enum
     let user_id: totsugeki::player::Id = session
         .get(&Keys::UserId.to_string())
@@ -593,31 +585,14 @@ pub async fn create_bracket(
     }
     let bracket = bracket.update_name(form.bracket_name);
 
-    let Ok(mut transaction) = pool.begin().await else {
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
-    };
-    let _ = sqlx::query!(
-        "INSERT INTO brackets (id, name, matches, participants) VALUES ($1, $2, $3, $4)",
-        bracket.get_id(),
-        bracket.get_name(),
-        SqlxJson(bracket.get_matches()) as _,
-        SqlxJson(bracket.get_participants()) as _,
-    )
-    .execute(&mut *transaction)
-    .await
-    .expect("bracket insert");
-    let _ = sqlx::query!(
-        "INSERT INTO tournament_organisers (bracket_id, user_id) VALUES ($1, $2)",
-        bracket.get_id(),
-        user_id,
-    )
-    .execute(&mut *transaction)
-    .await
-    .expect("link bracket and user");
+    match repo.create(&bracket, user_id).await {
+        Ok(()) => (),
+        Err(e) => {
+            tracing::error!("{e:?}");
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    }
 
-    if transaction.commit().await.is_err() {
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
-    };
     // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
     tracing::info!("new bracket {}", bracket.get_id());
 

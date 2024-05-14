@@ -439,10 +439,10 @@ impl Match {
     /// if same player is set as both opponents
     pub fn insert_player(self, player_id: PlayerId, is_player_1: bool) -> Result<Match, Error> {
         match (is_player_1, self.players) {
-            (true, [Opponent::Player(other_player), _]) if player_id != other_player => {
-                return Err(Error::AlreadyPresent(player_id, other_player));
-            }
-            (false, [_, Opponent::Player(other_player)]) if player_id != other_player => {
+            (true, [Opponent::Player(other_player), _])
+            | (false, [_, Opponent::Player(other_player)])
+                if player_id != other_player =>
+            {
                 return Err(Error::AlreadyPresent(player_id, other_player));
             }
             _ => {}

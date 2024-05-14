@@ -68,7 +68,7 @@ pub(crate) fn winner_bracket(matches: Vec<Match>, participants: &Participants) -
                 (a.to_vec(), b.to_vec())
             };
             partition.push(round.clone());
-            remaining_matches = matches.clone();
+            remaining_matches.clone_from(&matches);
             continue;
         }
     }

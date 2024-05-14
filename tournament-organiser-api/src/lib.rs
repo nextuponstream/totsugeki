@@ -12,6 +12,7 @@
 pub mod brackets;
 pub mod health_check;
 mod middlewares;
+pub(crate) mod repositories;
 pub mod resources;
 mod router;
 pub mod test_utils;
