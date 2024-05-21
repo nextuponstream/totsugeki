@@ -58,6 +58,7 @@ export default {
     saveBracket: 'Save bracket!',
     notEnoughPlayersToDisplay:
       'Not enough players in bracket to display bracket...',
+    copiedLinkToBracket: 'Copied link to bracket in clipboard',
   },
   loginModal: {
     title: 'Login',
@@ -78,4 +79,7 @@ export default {
   login: 'Successful login',
   logout: 'Successful logout',
   about: 'Totsugeki is a tool for creating and managing brackets.',
+  externalLink: {
+    hover: 'Copy link to clipboard',
+  },
 }

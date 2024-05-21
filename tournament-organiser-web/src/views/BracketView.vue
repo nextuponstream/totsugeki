@@ -1,7 +1,11 @@
 <template>
   <ReportResultModal v-model="show" :match-id="matchId" :players="players" />
 
-  <div>{{ JSON.stringify(bracketStore.bracket?.bracket!.name) }}</div>
+  <div v-if="isGuest">{{ bracketName }}</div>
+  <ExternalLink
+    v-else
+    :link-name="bracketStore.bracket?.bracket!.name"
+  ></ExternalLink>
   <div class="pb-5 text-gray-400">
     {{ t('bracketView.hint') }}
   </div>
@@ -48,6 +52,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import SubmitBtn from '@/components/ui/buttons/SubmitBtn.vue'
 import { RouteNames } from '@/router'
+import ExternalLink from '@/components/ui/ExternalLink.vue'
+import BaseTooltip from '@/components/ui/BaseTooltip.vue'
 
 const bracketStore = useBracketStore()
 const userStore = useUserStore()
@@ -57,11 +63,19 @@ const router = useRouter()
 
 const { t } = useI18n({})
 
+const props = defineProps({
+  isGuest: Boolean,
+})
+
 const unsavedBracketCanBeSaved = computed(() => {
-  return userStore.id && !bracketStore.isSaved
+  return userStore.id !== null && !bracketStore.isSaved
 })
 
 onMounted(async () => {
+  // no bracket to fetch, guest view
+  if (props.isGuest) {
+    return
+  }
   let id = route.params.bracketId
   if (typeof id === 'string') {
     bracketStore.setBracketId(id)
@@ -108,6 +122,10 @@ async function saveAndRedirectToNewBracketPage() {
     throw new Error('missing bracket id to redirect')
   }
 }
+
+const bracketName = computed(() => {
+  return bracketStore.bracket?.bracket!.name
+})
 
 const hasEnoughPlayersToDisplay = computed(() => {
   if (bracketStore.bracket?.bracket?.participants?.length) {

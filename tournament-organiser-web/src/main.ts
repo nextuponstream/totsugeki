@@ -37,6 +37,7 @@ app.use(pinia)
 app.use(router)
 
 import 'primevue/resources/themes/lara-light-green/theme.css'
+import ExternalLink from '@/components/ui/ExternalLink.vue'
 // https://primevue.org/vite
 app.use(PrimeVue, {
   // unstyled: false, // if you feel courageous enough to style all components
@@ -50,5 +51,6 @@ app.component('FormInput', FormInputVue)
 app.component('BaseTooltip', BaseTooltip)
 app.component('BaseLink', BaseLink)
 app.component('BaseModal', BaseModalVue)
+app.component('ExternalLink', ExternalLink)
 
 app.mount('#app')

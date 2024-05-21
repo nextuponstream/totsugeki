@@ -60,6 +60,7 @@ export default {
     saveBracket: 'Sauvegarder la bracket!',
     notEnoughPlayersToDisplay:
       "Il n'y a pas assez de joueurs pour afficher la bracket...",
+    copiedLinkToBracket: 'Lien de la bracket copié dans le presse-papier',
   },
   loginModal: {
     title: 'Connection',
@@ -83,4 +84,7 @@ export default {
   login: 'Vous êtes maintenant connecté',
   logout: 'Déconnexion réussie',
   about: 'Totsugeki est un outil pour créer et manager des brackets.',
+  externalLink: {
+    hover: 'Copier le lien dans le presse-papier',
+  },
 }

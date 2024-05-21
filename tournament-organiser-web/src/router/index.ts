@@ -49,11 +49,13 @@ const router = createRouter({
     {
       path: '/brackets/:bracketId',
       name: RouteNames.bracket.show,
+      props: { isGuest: false },
       component: () => import('../views/BracketView.vue'),
     },
     {
       path: '/brackets/guest',
       name: RouteNames.bracket.guest,
+      props: { isGuest: true },
       component: () => import('../views/BracketView.vue'),
     },
     {
