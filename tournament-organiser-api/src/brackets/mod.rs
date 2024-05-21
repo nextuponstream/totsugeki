@@ -1,9 +1,7 @@
 //! bracket management
 
 use crate::repositories::brackets::{BracketRepository, MatchesRaw};
-use crate::resources::{
-    PaginatedGenericResource, Pagination, PaginationResult, ValidatedQueryParams,
-};
+use crate::resources::{Pagination, PaginationResult, ValidatedQueryParams};
 use crate::users::session::Keys;
 use axum::extract::{Path, State};
 use axum::{debug_handler, response::IntoResponse, Json as AxumJson};
@@ -438,19 +436,14 @@ pub async fn list_brackets(
     let limit: i64 = pagination.limit.try_into().expect("ok");
     let offset: i64 = pagination.offset.try_into().expect("ok");
 
-    let brackets = sqlx::query_as!(
-        PaginatedGenericResource,
-        r#"SELECT id, name, created_at, count(*) OVER() AS total from brackets
-         LIMIT $1
-         OFFSET $2"#,
-        limit,
-        offset
-    )
-    // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
-    .fetch_all(&pool)
-    .await
-    .expect("fetch result");
-
+    let repo = BracketRepository::new(pool);
+    let brackets = match repo.list(pagination.sort_order, limit, offset).await {
+        Ok(b) => b,
+        Err(e) => {
+            tracing::warn!("{e:?}");
+            return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
+        }
+    };
     let data = brackets;
     let pagination_result = PaginationResult { total: 100, data };
 
