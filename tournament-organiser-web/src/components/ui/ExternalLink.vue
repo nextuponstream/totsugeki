@@ -1,7 +1,10 @@
 <template>
-  <div class="group hover:text-gray-400" @click="copyUrlToClipboard">
+  <div
+    class="relative group hover:text-gray-400 shrink-0"
+    @click="copyUrlToClipboard"
+  >
     {{ linkName }}
-    <i class="pi pi-external-link pr-1" />
+    <i class="pi pi-external-link" />
     <BaseTooltip>{{ t('externalLink.hover') }}</BaseTooltip>
   </div>
 </template>

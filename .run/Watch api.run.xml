@@ -8,6 +8,7 @@
       <env name="DB_PASSWORD" value="toa" />
       <env name="DB_USERNAME" value="toa" />
       <env name="SESSION_DURATION" value="3600" />
+      <env name="DEVELOPMENT" value="true" />
     </envs>
     <option name="emulateTerminal" value="true" />
     <option name="channel" value="DEFAULT" />

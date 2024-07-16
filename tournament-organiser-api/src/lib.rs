@@ -38,8 +38,11 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 /// Name of the app
 static APP: &str = "tournament organiser application";
 /// Port to serve the app. By default, we set what flyio is expecting as
-// default listening port
+/// default listening port
 static PORT: u16 = 8080;
+
+/// Expected env value for boolean configuration variable
+static ENABLED: &str = "true";
 
 // FIXME do not panic when submitting score for match with missing player
 
@@ -53,11 +56,17 @@ pub fn app(pool: Pool<Postgres>, session_store: PostgresStore) -> Router {
     let spa = ServeDir::new(web_build_path.clone())
         // .not_found_service will throw 404, which makes cypress test fail
         .fallback(ServeFile::new(format!("{web_build_path}/index.html")));
-    Router::new()
-        .nest("/api", api(pool, session_store))
-        .nest_service("/dist", spa.clone())
-        // Show vue app
-        .fallback_service(spa)
+    if std::env::var("DEVELOPMENT").is_ok_and(|v| v == ENABLED) {
+        // Vite dev server is used. This is to avoid confusion when app is
+        // served at default port AND on the vite dev server
+        Router::new().nest("/api", api(pool, session_store))
+    } else {
+        Router::new()
+            .nest("/api", api(pool, session_store))
+            .nest_service("/dist", spa.clone())
+            // Show vue app
+            .fallback_service(spa)
+    }
 }
 
 /// Serve tournament organiser application. Listening address is:
@@ -134,10 +143,10 @@ pub async fn run() {
     );
 
     // could be a utility crate with more features but this suffice
-    // FIXME automatically log out when session is expired. Currently returning 401 only
+    // Currently returning 401 only
     let session_duration = if let Ok(duration) = std::env::var("SESSION_DURATION") {
         let duration = duration.parse().expect("session duration in seconds");
-        tracing::info!("Session duration {duration}");
+        tracing::info!("Session duration {duration}s");
         duration
     } else {
         let default_session_duration = 3600;
@@ -154,7 +163,15 @@ pub async fn run() {
         tracing::warn!("PORT not set or error, defaulting to {PORT}");
         PORT
     };
-    tracing::info!("Serving {APP} on http://localhost:{port}");
+    if std::env::var("DEVELOPMENT").is_ok_and(|v| v == ENABLED) {
+        tracing::warn!(
+            "Development server used for hosting SPA. Checkout tournament-organiser-web..."
+        );
+    } else {
+        tracing::info!("Serving {APP} on http://localhost:{port}");
+    }
+    tracing::debug!("Serving {APP} API on http://localhost:{port}/api");
+
     serve(app(pool, session_store).layer(session_layer), port).await;
 }
 
