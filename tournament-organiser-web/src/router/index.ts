@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import CreateBracket from '../views/CreateBracketView.vue'
+import HomePage from '../views/CreateBracketView.vue'
 import { useUserStore } from '@/stores/user'
 
 export const RouteNames = {
@@ -11,9 +11,8 @@ export const RouteNames = {
     brackets: 'userBrackets',
   },
   bracket: {
-    create: 'createBracket',
+    create: 'bracketCreate',
     show: 'bracket',
-    registration: 'bracketRegistration',
     guest: 'bracket-guest',
   },
   about: 'about',
@@ -26,12 +25,7 @@ const router = createRouter({
     {
       path: '/',
       name: RouteNames.home,
-      component: CreateBracket,
-    },
-    {
-      path: '/',
-      name: RouteNames.bracket.create,
-      component: CreateBracket,
+      component: HomePage,
     },
     {
       path: '/about',
@@ -42,8 +36,8 @@ const router = createRouter({
       component: () => import('../views/AboutView.vue'),
     },
     {
-      path: '/brackets/register',
-      name: RouteNames.bracket.registration,
+      path: '/brackets/create',
+      name: RouteNames.bracket.create,
       component: () => import('../views/PlayerRegistrationView.vue'),
     },
     {

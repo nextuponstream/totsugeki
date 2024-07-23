@@ -3,6 +3,9 @@
     <div class="text-2xl">
       {{ t('playerRegistrationForm.title') }}
     </div>
+    <div class="text-gray-400">
+      {{ t('playerRegistrationForm.hint') }}
+    </div>
     <form class="flex gap-2 align-baseline" @submit="submitForm">
       <FormInput
         v-model="name"
@@ -10,7 +13,7 @@
         name="name"
         :placeholder="$t('playerRegistrationForm.newPlayerPlaceholder')"
       />
-      <SubmitBtn data-test-id="add-player" />
+      <SubmitBtn data-test-id="add-player">{{ $t('generic.add') }}</SubmitBtn>
     </form>
   </div>
 </template>
@@ -36,6 +39,7 @@ function onInvalidSubmit({ values, errors, results }: any) {
   formErrors.value = { ...errors }
   console.error('invalid form data')
 }
+
 /**
  * @param values validated form data
  */

@@ -141,6 +141,33 @@ Cypress.Commands.add('guestSession', (weeklyName: string, email: string) => {
   })
 })
 
+Cypress.Commands.add('playerLogin', (email: string, password: string) => {
+  cy.session([email], () => {
+    cy.visit('/')
+
+    cy.get('[data-test-id=modal]').should('not.be.visible')
+    cy.get('[data-test-id=navbar]').within(() => {
+      cy.contains('Register').click()
+    })
+    cy.get('[data-test-id=modal]').should('be.visible')
+    cy.contains('Email')
+    cy.contains('Password')
+
+    cy.intercept('POST', '/api/login').as('login')
+
+    cy.get('[name=login]').within(() => {
+      cy.get('[name=email]').type(email)
+      cy.get('[name=password]').type(password)
+      cy.get('button').click()
+    })
+
+    cy.wait('@login').then((interception) => {
+      assert.isNotNull(interception.response, 'response')
+      assert.equal(interception.response?.statusCode, 200)
+    })
+  })
+})
+
 //
 //
 // -- This is a child command --
@@ -157,7 +184,19 @@ Cypress.Commands.add('guestSession', (weeklyName: string, email: string) => {
 declare global {
   namespace Cypress {
     interface Chainable {
+      /**
+       * no sessions are saved
+       * @param email
+       * @param password
+       */
       login(email: string, password: string): Chainable<void>
+
+      /**
+       * Session is saved
+       * @param email
+       * @param password
+       */
+      playerLogin(email: string, password: string): Chainable<void>
 
       register(
         email: string,

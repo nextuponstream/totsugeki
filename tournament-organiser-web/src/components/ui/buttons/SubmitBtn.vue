@@ -1,6 +1,6 @@
 <template>
   <button
-    class="max-w-[130px] max-h-11 bg-green-700 hover:bg-green-800 rounded-lg py-2 px-2 text-white disabled:bg-gray-400"
+    class="max-h-11 bg-green-700 hover:bg-green-800 rounded-lg py-2 px-2 text-white disabled:bg-gray-400"
   >
     <slot>{{ $t('generic.submit') }}</slot>
   </button>

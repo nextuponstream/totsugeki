@@ -16,7 +16,10 @@
           :placeholder="t('bracketForm.namePlaceholder')"
         />
       </div>
-      <SubmitBtn data-test-id="next-form" />
+
+      <div class="flex">
+        <SubmitBtn data-test-id="next-form" />
+      </div>
     </Form>
   </div>
 </template>
@@ -26,6 +29,7 @@ import { ref, provide } from 'vue'
 import * as yup from 'yup'
 import { useI18n } from 'vue-i18n'
 import { useBracketStore } from '@/stores/bracket'
+
 const { t } = useI18n({})
 const bracketStore = useBracketStore()
 // NOTE: how to use i18n with yup https://stackoverflow.com/questions/72062851/problems-with-translations-with-vue-yup-and-i18n
@@ -40,6 +44,7 @@ function onInvalidSubmit({ values, errors, results }: any) {
   formErrors.value = { ...errors }
   console.error('invalid form data')
 }
+
 /**
  * @param values validated form data
  */

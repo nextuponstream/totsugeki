@@ -20,6 +20,7 @@ export default {
     delete: 'Supprimer',
     name: 'Nom',
     created_at: 'Date de création',
+    add: 'Ajouter',
   },
   error: {
     invalidEmail: 'Email invalide',
@@ -37,13 +38,14 @@ export default {
     myBrackets: 'Mes brackets',
   },
   playerRegistrationForm: {
-    title: 'Enregistrer un nouveau joueur',
+    title: 'Enregistrement expédié',
     newPlayerPlaceholder: 'Nom du joueur',
     minimum: '{min} joueurs minimum',
+    hint: 'Ajouter des joueurs sans comptes...',
   },
   registration: {
     bracketNameLabel: 'Bracket',
-    startBracket: 'Démarrer',
+    startBracket: 'Créer la bracket',
   },
   playerSeeder: {
     title: 'Seeding',

@@ -11,6 +11,34 @@ use tournament_organiser_api::resources::PaginationResult;
 use tournament_organiser_api::test_utils::spawn_app;
 
 #[sqlx::test]
+async fn bracket_is_searchable(db: PgPool) {
+    let app = spawn_app(db).await;
+    app.login_as_test_user().await;
+
+    let players = vec![];
+
+    let request = tournament_organiser_api::brackets::CreateBracketForm {
+        bracket_name: "".into(),
+        player_names: players,
+    };
+    let response = app
+        .http_client
+        .post(format!("{}/api/brackets", app.addr))
+        .json(&request)
+        .send()
+        .await
+        .expect("request done");
+
+    let status = response.status();
+    assert_eq!(
+        status,
+        StatusCode::BAD_REQUEST,
+        "status: {status}, response: \"{}\"",
+        response.text().await.unwrap()
+    );
+}
+
+#[sqlx::test]
 async fn create_bracket(db: PgPool) {
     let app = spawn_app(db).await;
     app.login_as_test_user().await;

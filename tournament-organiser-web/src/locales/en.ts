@@ -20,6 +20,7 @@ export default {
     delete: 'Delete',
     name: 'Name',
     created_at: 'Date created',
+    add: 'Add',
   },
   error: {
     invalidEmail: 'This field must be a valid email',
@@ -36,9 +37,10 @@ export default {
     myBrackets: 'My brackets',
   },
   playerRegistrationForm: {
-    title: 'Register players',
+    title: 'Rapid registration',
     newPlayerPlaceholder: 'Player name',
     minimum: '{min} players minimum',
+    hint: 'Add players without accounts...',
   },
   registration: {
     bracketNameLabel: 'Bracket',

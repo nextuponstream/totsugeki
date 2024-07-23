@@ -8,7 +8,7 @@ pub struct TestApp {
     /// http address of test app
     pub addr: String,
     /// http client with cookie jar to store sessions.
-    http_client: Client,
+    pub http_client: Client,
 }
 
 use super::*;

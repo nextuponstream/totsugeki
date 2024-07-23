@@ -10,7 +10,7 @@ const router = useRouter()
 
 function createBracket() {
   router.push({
-    name: 'bracketRegistration',
+    name: 'bracketCreate',
   })
 }
 </script>
