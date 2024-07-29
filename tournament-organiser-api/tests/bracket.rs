@@ -56,6 +56,26 @@ async fn create_bracket(db: PgPool) {
     );
     let _id: GenericResourceCreated = response.json().await.unwrap();
 }
+#[sqlx::test]
+async fn cannot_create_bracket_without_data(db: PgPool) {
+    let app = spawn_app(db).await;
+    app.login_as_test_user().await;
+
+    let response = app
+        .http_client
+        .post(format!("{}/api/brackets", app.addr))
+        .send()
+        .await
+        .expect("response");
+
+    let status = response.status();
+    assert_eq!(
+        status,
+        StatusCode::BAD_REQUEST,
+        "status: {status}, response: \"{}\"",
+        response.text().await.unwrap()
+    );
+}
 
 #[sqlx::test]
 async fn cannot_create_bracket_when_unauthenticated(db: PgPool) {

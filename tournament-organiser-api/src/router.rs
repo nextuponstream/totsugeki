@@ -1,5 +1,11 @@
 //! all API routes
 
+use axum::routing::{delete, get, post};
+use axum::Router;
+use http::StatusCode;
+use sqlx::{Pool, Postgres};
+use tower_sessions_sqlx_store::PostgresStore;
+
 use crate::brackets::{
     create_bracket, get_bracket, list_brackets, new_bracket, report_result,
     save_bracket_from_steps, update_with_result, user_brackets,
@@ -10,11 +16,6 @@ use crate::users::login::login;
 use crate::users::logout::logout;
 use crate::users::registration::registration;
 use crate::users::{delete_user, profile};
-use axum::routing::{delete, get, post};
-use axum::Router;
-use http::StatusCode;
-use sqlx::{Pool, Postgres};
-use tower_sessions_sqlx_store::PostgresStore;
 
 /// Router for non-user facing endpoints. Web page makes requests to API
 /// (registration, updating bracket...)
@@ -31,8 +32,8 @@ pub(crate) fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router 
     let bracket_routes = Router::new().nest(
         "/brackets",
         Router::new()
-            .route("/", post(create_bracket))
             .route("/", get(list_brackets))
+            .route("/", post(create_bracket))
             .route("/save", post(save_bracket_from_steps))
             .route("/:bracket_id/report-result", post(update_with_result)),
     );

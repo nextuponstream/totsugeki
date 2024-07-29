@@ -1,7 +1,8 @@
 //! bracket management
 
+use crate::middlewares::validation::{ValidatedJson, ValidatedRequest};
 use crate::repositories::brackets::{BracketRepository, MatchesRaw};
-use crate::resources::{Pagination, PaginationResult, ValidatedQueryParams};
+use crate::resources::{Pagination, PaginationResult};
 use crate::users::session::Keys;
 use axum::extract::{Path, State};
 use axum::{debug_handler, response::IntoResponse, Json as AxumJson};
@@ -21,6 +22,7 @@ use totsugeki_display::winner_bracket::reorder as reorder_winner_bracket;
 use totsugeki_display::{from_participants, BoxElement, MinimalMatch};
 use tower_sessions::Session;
 use tracing::instrument;
+use validator::Validate;
 
 /// List of players from which a bracket can be created
 #[derive(Debug, Deserialize)]
@@ -58,13 +60,17 @@ pub struct BracketDisplay {
 }
 
 /// List of players from which a bracket can be created
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Validate)]
 pub struct CreateBracketForm {
+    #[validate(length(min = 1))]
     /// bracket names
     pub bracket_name: String,
     /// player names
     pub player_names: Vec<String>,
 }
+/// qwoijeoqjie
+#[derive(Deserialize, Serialize, Debug, Clone, Validate)]
+pub struct CreateBracketForm2 {}
 
 /// Result reported by player
 ///
@@ -381,10 +387,11 @@ pub(crate) struct BracketRecord {
 
 /// Return a newly instanciated bracket from ordered (=seeded) player names
 #[instrument(name = "create_bracket")]
+#[debug_handler]
 pub async fn create_bracket(
     session: Session,
     State(pool): State<PgPool>,
-    AxumJson(form): AxumJson<CreateBracketForm>,
+    ValidatedJson(form): ValidatedJson<CreateBracketForm>,
 ) -> impl IntoResponse {
     tracing::debug!("new bracket from players: {:?}", form.player_names);
 
@@ -427,11 +434,10 @@ pub async fn create_bracket(
 
 /// Return a newly instanciated bracket from ordered (=seeded) player names
 #[instrument(name = "list_brackets", skip(pool))]
-#[debug_handler]
 pub async fn list_brackets(
     // NOTE pool before validated query params for some reason???
     State(pool): State<PgPool>,
-    ValidatedQueryParams(pagination): ValidatedQueryParams<Pagination>,
+    ValidatedRequest(pagination): ValidatedRequest<Pagination>,
 ) -> impl IntoResponse {
     let limit: i64 = pagination.limit.try_into().expect("ok");
     let offset: i64 = pagination.offset.try_into().expect("ok");
@@ -455,7 +461,7 @@ pub async fn list_brackets(
 pub(crate) async fn user_brackets(
     Path(user_id): Path<Id>,
     State(pool): State<PgPool>,
-    ValidatedQueryParams(pagination): ValidatedQueryParams<Pagination>,
+    ValidatedRequest(pagination): ValidatedRequest<Pagination>,
 ) -> impl IntoResponse {
     let limit: i64 = pagination.limit.try_into().expect("ok");
     let offset: i64 = pagination.offset.try_into().expect("ok");
