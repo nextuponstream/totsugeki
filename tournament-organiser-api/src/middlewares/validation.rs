@@ -83,8 +83,9 @@ impl IntoResponse for ServerError {
                 let message = format!("Input validation error: [{self}]").replace('\n', ", ");
                 (StatusCode::BAD_REQUEST, message)
             }
-            ServerError::AxumFormRejection(_) => (StatusCode::BAD_REQUEST, self.to_string()),
-            ServerError::AxumJsonRejection(_) => (StatusCode::BAD_REQUEST, self.to_string()),
+            ServerError::AxumFormRejection(_) | ServerError::AxumJsonRejection(_) => {
+                (StatusCode::BAD_REQUEST, self.to_string())
+            }
         }
         .into_response()
     }
