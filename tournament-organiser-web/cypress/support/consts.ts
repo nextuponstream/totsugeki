@@ -3,3 +3,8 @@ export const TEST_USER = {
   email: 'test@user.ch',
   name: 'test user',
 }
+
+const PASSWORD = 'securePass123#'
+
+export const DIEGO = { email: 'diego@gmail.com', password: PASSWORD }
+export const PINK = { email: 'pink@gmail.com', password: PASSWORD }

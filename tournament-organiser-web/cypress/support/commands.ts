@@ -168,6 +168,16 @@ Cypress.Commands.add('playerLogin', (email: string, password: string) => {
   })
 })
 
+Cypress.Commands.add('joinBracket', (id: string) => {
+  cy.visit(`/brackets/${id}`)
+  cy.intercept('POST', `/api/brackets/${id}/join`).as('join')
+  cy.get('Join').click()
+  cy.wait('@join').then((interception) => {
+    assert.isNotNull(interception.response, 'response')
+    assert.equal(interception.response?.statusCode, 200)
+  })
+})
+
 //
 //
 // -- This is a child command --
@@ -215,6 +225,8 @@ declare global {
       ): Chainable<void>
 
       guestSession(weeklyName: string, email: string): Chainable<void>
+
+      joinBracket(id: string): Chainable<void>
 
       //   drag(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
       //   dismiss(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
