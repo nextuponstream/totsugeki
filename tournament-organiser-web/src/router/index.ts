@@ -95,7 +95,7 @@ router.beforeEach((to, from, next) => {
 
   if (userStore.id === null && to.meta.requiresAuth) {
     console.warn('unauthenticated, redirecting to homepage...')
-    next({ name: 'createBracket' })
+    next({ name: RouteNames.home })
   } else {
     next()
   }

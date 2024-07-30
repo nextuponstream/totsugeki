@@ -12,7 +12,7 @@
 import NavLink from '@/components/NavLink.vue'
 
 import { useUserStore } from '@/stores/user'
-import router from '@/router'
+import router, { RouteNames } from '@/router'
 import { useI18n } from 'vue-i18n'
 import { useToastStore } from '@/stores/toast'
 import { useModalStore } from '@/stores/modal'
@@ -29,8 +29,6 @@ function showRegistrationModal() {
 async function logout() {
   await userStore.logout()
   toastStore.success(t('logout'))
-  await router.push({
-    name: 'createBracket',
-  })
+  await router.push({ name: RouteNames.home })
 }
 </script>

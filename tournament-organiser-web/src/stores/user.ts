@@ -94,10 +94,15 @@ export const useUserStore = defineStore(
 
     async function getUser(): Promise<void> {
       let response = await httpClient.get('/users/profile')
-      let userInfos: { email: string; name: string } = await response.json()
-      console.debug(JSON.stringify(userInfos))
-      infos.email = userInfos.email
-      infos.name = userInfos.name
+      let userInfos: { email: string; name: string } = { email: '', name: '' }
+      try {
+        userInfos = await response.json()
+        infos.email = userInfos.email
+        infos.name = userInfos.name
+        console.debug(JSON.stringify(userInfos))
+      } catch (e) {
+        console.error(e)
+      }
     }
 
     function loggedIn() {

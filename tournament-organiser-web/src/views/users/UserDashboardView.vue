@@ -46,7 +46,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { onMounted, provide, ref } from 'vue'
+import { onBeforeMount, onMounted, provide, ref } from 'vue'
 import { useForm } from 'vee-validate'
 import { useI18n } from 'vue-i18n'
 import { object, string } from 'yup'
@@ -58,7 +58,7 @@ import { prefixKey } from '@/config'
 provide(prefixKey, 'user-dashboard')
 const userStore = useUserStore()
 const { t } = useI18n({})
-const editUser = ref<InstanceType<typeof EditUser> | null>(null)
+const editUser = ref<InstanceType<typeof EditUser>>()
 const deleteSchema = object({
   deleteEmail: string()
     .email(() => t('error.invalidEmail'))
@@ -77,8 +77,12 @@ provide('formErrors', deleteFormErrors)
 const showModal = ref(false)
 
 onMounted(async () => {
+  // Note: in cypress, there's a warning, idk how to clear it. Yet does not
+  // appear in manual testing
   await userStore.getUser()
-  editUser.value?.setValues(userStore.infos)
+  if (editUser.value) {
+    editUser.value.setValues(userStore.infos)
+  }
 })
 
 function showDeleteModal() {
@@ -104,6 +108,6 @@ async function deleteAccountFormSubmit(values: any) {
 
   // all ok
   let deleted = await userStore.deleteAccount()
-  await router.push({ name: 'createBracket' })
+  await router.push({ name: RouteNames.home })
 }
 </script>

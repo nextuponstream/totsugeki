@@ -34,7 +34,7 @@ import { useForm } from 'vee-validate'
 import { ref, provide } from 'vue'
 import { object, string, ref as yupref } from 'yup'
 import { useI18n } from 'vue-i18n'
-import router from '@/router'
+import router, { RouteNames } from '@/router'
 import { useUserStore } from '@/stores/user'
 
 const userStore = useUserStore()
@@ -79,9 +79,7 @@ async function onSubmit(values: any) {
   const response = await userStore.registration(values)
   switch (response) {
     case 200:
-      router.push({
-        name: 'createBracket',
-      })
+      await router.push({ name: RouteNames.home })
       break
     case 500:
       break
