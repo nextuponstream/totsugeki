@@ -40,3 +40,23 @@ pub(crate) async fn auth_layer(
 
     next.run(request).await
 }
+/// Tries to extract user it if it's present.
+pub(crate) async fn maybe_auth_layer(
+    // State(state): State<AppState>,
+    session: Session,
+    // you can add more extractors here but the last
+    // extractor must implement `FromRequest` which
+    // `Request` does
+    request: Request,
+    next: Next,
+) -> Response {
+    let _v: Option<Id> = session
+        .get(&Keys::UserId.to_string())
+        .await
+        .expect("value from store");
+    // do something with `request`...
+
+    // do something with `response`...
+
+    next.run(request).await
+}

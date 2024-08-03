@@ -11,7 +11,7 @@ use crate::brackets::{
     save_bracket_from_steps, update_with_result, user_brackets,
 };
 use crate::health_check::health_check;
-use crate::middlewares::authentication::auth_layer;
+use crate::middlewares::authentication::{auth_layer, maybe_auth_layer};
 use crate::users::login::login;
 use crate::users::logout::logout;
 use crate::users::registration::registration;
@@ -41,7 +41,7 @@ pub(crate) fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router 
         .merge(user_routes)
         .merge(bracket_routes)
         .layer(axum::middleware::from_fn_with_state(
-            session_store,
+            session_store.clone(),
             auth_layer,
         ));
     let unprotected_bracket_routes = Router::new()
@@ -60,14 +60,21 @@ pub(crate) fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router 
         .nest(
             "/user",
             Router::new().route("/:id/brackets", get(user_brackets)),
-        )
+        );
+    let maybe_logged_in_routes = Router::new()
         .nest(
             "/brackets",
             Router::new().route("/:bracket_id", get(get_bracket)),
-        );
+        )
+        .layer(axum::middleware::from_fn_with_state(
+            session_store,
+            maybe_auth_layer,
+        ));
+
     let unprotected_routes = Router::new().merge(unprotected_bracket_routes);
     Router::new()
         .merge(unprotected_routes)
+        .merge(maybe_logged_in_routes)
         .merge(protected_routes)
         .fallback_service(get(|| async { (StatusCode::NOT_FOUND, "Not found") }))
         .with_state(pool)

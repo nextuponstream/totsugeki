@@ -53,7 +53,6 @@ import { useUserStore } from '@/stores/user'
 import SubmitBtn from '@/components/ui/buttons/SubmitBtn.vue'
 import { RouteNames } from '@/router'
 import ExternalLink from '@/components/ui/ExternalLink.vue'
-import BaseTooltip from '@/components/ui/BaseTooltip.vue'
 
 const bracketStore = useBracketStore()
 const userStore = useUserStore()

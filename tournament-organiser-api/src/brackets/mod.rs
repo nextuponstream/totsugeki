@@ -4,6 +4,7 @@ use crate::middlewares::validation::{ValidatedJson, ValidatedRequest};
 use crate::repositories::brackets::{BracketRepository, MatchesRaw};
 use crate::resources::{Pagination, PaginationResult};
 use crate::users::session::Keys;
+use crate::users::session::Keys::UserId;
 use axum::extract::{Path, State};
 use axum::{debug_handler, response::IntoResponse, Json as AxumJson};
 use chrono::prelude::*;
@@ -57,6 +58,8 @@ pub struct BracketDisplay {
     pub grand_finals_reset: Option<MinimalMatch>,
     /// Bracket object to update
     pub bracket: Bracket,
+    /// true if user requesting the data participates
+    pub is_participant: bool,
 }
 
 /// List of players from which a bracket can be created
@@ -68,9 +71,6 @@ pub struct CreateBracketForm {
     /// player names
     pub player_names: Vec<String>,
 }
-/// qwoijeoqjie
-#[derive(Deserialize, Serialize, Debug, Clone, Validate)]
-pub struct CreateBracketForm2 {}
 
 /// Result reported by player
 ///
@@ -121,7 +121,7 @@ pub async fn new_bracket(AxumJson(form): AxumJson<CreateBracketForm>) -> impl In
         bracket = tmp.0;
     }
 
-    Ok(breakdown(bracket).into_response())
+    Ok(breakdown(bracket, None).into_response())
 }
 
 /// Save bracket replayed from player reports so in the event a guest actually
@@ -201,7 +201,7 @@ pub async fn save_bracket_from_steps(
     tracing::info!("new bracket replayed from steps {}", bracket.get_id());
     tracing::debug!("new bracket replayed from steps {:?}", bracket);
 
-    Ok((StatusCode::CREATED, breakdown(bracket)).into_response())
+    Ok((StatusCode::CREATED, breakdown(bracket, None)).into_response())
 }
 
 /// Returns existing bracket for display purposes
@@ -211,26 +211,33 @@ pub async fn save_bracket_from_steps(
 ///
 /// # Errors
 /// May return 500 error when bracket cannot be parsed
-#[instrument(name = "get_bracket")]
+#[instrument(name = "get_bracket", skip(session, pool))]
 pub async fn get_bracket(
+    session: Session,
     Path(bracket_id): Path<Id>,
     State(pool): State<PgPool>,
 ) -> impl IntoResponse {
     tracing::debug!("bracket {bracket_id}");
+    let user_id: Option<totsugeki::player::Id> = session
+        .get(&UserId.to_string())
+        .await
+        .expect("maybe id of user");
 
     let repo = BracketRepository::new(pool);
-    match repo.read(bracket_id).await {
-        Ok(Some(bracket)) => breakdown(bracket).into_response(),
-        Ok(None) => (StatusCode::NOT_FOUND).into_response(),
+    let bracket = match repo.read(bracket_id).await {
+        Ok(Some(bracket)) => bracket,
+        Ok(None) => return (StatusCode::NOT_FOUND).into_response(),
         Err(e) => {
             tracing::error!("{e:?}");
-            (StatusCode::INTERNAL_SERVER_ERROR).into_response()
+            return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
         }
-    }
+    };
+
+    return breakdown(bracket, user_id).into_response();
 }
 
 /// Breaks down bracket in small parts to be presented by UI
-fn breakdown(bracket: Bracket) -> impl IntoResponse {
+fn breakdown(bracket: Bracket, user_id: Option<totsugeki::player::Id>) -> impl IntoResponse {
     let dev: DoubleEliminationVariant = bracket.clone().try_into().expect("partition");
 
     // TODO test if tracing shows from which methods it was called
@@ -286,6 +293,11 @@ fn breakdown(bracket: Bracket) -> impl IntoResponse {
         None => (None, None),
     };
 
+    let is_participant = match user_id {
+        Some(participant_id) => bracket.get_participants().get(participant_id).is_some(),
+        None => false,
+    };
+
     let bracket = BracketDisplay {
         winner_bracket: winner_bracket_rounds,
         winner_bracket_lines: maybe_winner_bracket_lines,
@@ -294,6 +306,7 @@ fn breakdown(bracket: Bracket) -> impl IntoResponse {
         grand_finals: gf,
         grand_finals_reset: gf_reset,
         bracket,
+        is_participant,
     };
     tracing::info!("displaying bracket {}", bracket.bracket.get_id());
     tracing::debug!("displaying bracket {:?}", bracket);
@@ -311,7 +324,8 @@ fn breakdown(bracket: Bracket) -> impl IntoResponse {
 /// # Errors
 /// Error 500 if a user gets out of sync with the bracket in the database and
 /// the one displayed in the web page
-#[instrument(name = "update_with_result", skip(report))]
+// TODO report should be at debug level
+#[instrument(name = "update_with_result", skip(report, pool))]
 pub async fn update_with_result(
     State(pool): State<PgPool>,
     Path(bracket_id): Path<Id>,
@@ -328,7 +342,7 @@ pub async fn update_with_result(
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     };
-    Ok(breakdown(bracket))
+    Ok(breakdown(bracket, None))
 }
 
 /// Returns updated bracket with result. Because there is no persistence, it's
@@ -342,6 +356,7 @@ pub async fn update_with_result(
 /// # Errors
 /// Error 500 if a user gets out of sync with the bracket in the database and
 /// the one displayed in the web page
+// TODO report should be at debug level
 #[instrument(name = "report_result", skip(report))]
 pub async fn report_result(AxumJson(report): AxumJson<ReportResultInput>) -> impl IntoResponse {
     tracing::debug!("new reported result");
@@ -360,7 +375,7 @@ pub async fn report_result(AxumJson(report): AxumJson<ReportResultInput>) -> imp
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     };
-    Ok(breakdown(bracket))
+    Ok(breakdown(bracket, None))
 }
 
 #[derive(Serialize, Deserialize)]
@@ -386,7 +401,7 @@ pub(crate) struct BracketRecord {
 }
 
 /// Return a newly instanciated bracket from ordered (=seeded) player names
-#[instrument(name = "create_bracket")]
+#[instrument(name = "create_bracket", skip(pool, session))]
 #[debug_handler]
 pub async fn create_bracket(
     session: Session,

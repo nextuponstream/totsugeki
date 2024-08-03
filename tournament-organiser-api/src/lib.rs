@@ -100,6 +100,9 @@ pub async fn run() {
                 // example_static_file_server=debug,tower_http=debug
                 // you can append this tower_http=debug to see more details
                 // .unwrap_or_else(|_| "INFO,tower_http=debug".into()),
+                // TODO set session to its own layer at trace level
+                // TODO set pool to its own layer at trace level
+                // use https://docs.rs/tracing-subscriber/latest/tracing_subscriber/layer/index.html#per-layer-filtering
                 .unwrap_or_else(|_| "INFO".into()),
         )
         .with(tracing_subscriber::fmt::layer())
