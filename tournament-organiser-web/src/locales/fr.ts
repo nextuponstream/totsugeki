@@ -63,6 +63,7 @@ export default {
     notEnoughPlayersToDisplay:
       "Il n'y a pas assez de joueurs pour afficher la bracket...",
     copiedLinkToBracket: 'Lien de la bracket copié dans le presse-papier',
+    join: 'Rejoindre',
   },
   loginModal: {
     title: 'Connection',

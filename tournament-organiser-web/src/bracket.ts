@@ -30,4 +30,6 @@ interface Bracket {
   grand_finals: Match | undefined
   grand_finals_reset: Match | undefined
   bracket: RawBracket | undefined
+  is_participant: boolean
+  is_tournament_organiser: boolean
 }

@@ -61,6 +61,7 @@ export default {
     notEnoughPlayersToDisplay:
       'Not enough players in bracket to display bracket...',
     copiedLinkToBracket: 'Copied link to bracket in clipboard',
+    join: 'Join bracket!',
   },
   loginModal: {
     title: 'Login',

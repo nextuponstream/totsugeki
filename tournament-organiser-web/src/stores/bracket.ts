@@ -189,6 +189,15 @@ export const useBracketStore = defineStore(
       pagination.value.total = paginationResult.total
     }
 
+    async function join() {
+      console.log('iasjoijijjii')
+      let response = await httpClient.post(
+        `/brackets/${bracket.value?.bracket?.id}/join`,
+        {}
+      )
+      throw new Error('implement')
+    }
+
     return {
       id,
       setBracketId,
@@ -206,6 +215,7 @@ export const useBracketStore = defineStore(
       formCreate,
       reportedResults, // export ref so localStorage is updated with that value
       pagination,
+      join,
     }
   },
   {

@@ -463,7 +463,7 @@ impl Match {
     /// if seeds of players are equal
     #[must_use]
     pub(crate) fn stronger_seed_wins(&self) -> Option<bool> {
-        assert!(self.seeds[0] != self.seeds[1]);
+        assert_ne!(self.seeds[0], self.seeds[1]);
         let Opponent::Player(winner) = self.winner else {
             return None;
         };

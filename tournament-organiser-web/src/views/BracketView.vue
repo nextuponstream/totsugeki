@@ -1,11 +1,18 @@
 <template>
   <ReportResultModal v-model="show" :match-id="matchId" :players="players" />
+  <JoinBracketConfirmModal
+    v-model="showJoin"
+    @confirmed="joinBracket"
+  ></JoinBracketConfirmModal>
 
   <div v-if="isGuest">{{ bracketName }}</div>
   <ExternalLink
     v-else
     :link-name="bracketStore.bracket?.bracket!.name"
   ></ExternalLink>
+  <div v-if="showJoinLink">
+    <other-btn @click="showJoinModal">{{ $t('bracketView.join') }}</other-btn>
+  </div>
   <div class="pb-5 text-gray-400">
     {{ t('bracketView.hint') }}
   </div>
@@ -53,6 +60,7 @@ import { useUserStore } from '@/stores/user'
 import SubmitBtn from '@/components/ui/buttons/SubmitBtn.vue'
 import { RouteNames } from '@/router'
 import ExternalLink from '@/components/ui/ExternalLink.vue'
+import JoinBracketConfirmModal from '@/components/JoinBracketConfirmModal.vue'
 
 const bracketStore = useBracketStore()
 const userStore = useUserStore()
@@ -132,6 +140,24 @@ const hasEnoughPlayersToDisplay = computed(() => {
   }
   return false
 })
+
+const showJoinLink = computed(() => {
+  return (
+    !bracketStore.bracket?.is_participant &&
+    !bracketStore.bracket?.is_tournament_organiser
+  )
+})
+
+const showJoin = ref(false)
+
+function showJoinModal() {
+  showJoin.value = true
+}
+
+async function joinBracket() {
+  showJoin.value = false
+  await bracketStore.join()
+}
 </script>
 <style scoped>
 .match {

@@ -443,7 +443,7 @@ mod tests {
             automatic_progression,
         )
         .expect("progress");
-        assert!(matches[0].get_winner() != Opponent::Unknown);
+        assert_ne!(matches[0].get_winner(), Opponent::Unknown);
         assert_eq!(new_matches.len(), 1, "grand finals match generated");
         assert_players_play_each_other(1, 2, &player_ids, &p);
         assert_eq!(p.matches_to_play().len(), 1);

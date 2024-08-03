@@ -78,22 +78,37 @@ impl BracketRepository {
 
         Ok(())
     }
-    /// Read bracket in database
-    pub async fn read(self, bracket_id: Id) -> Result<Option<Bracket>, Error> {
+
+    /// Returns bracket in database and boolean if user is a tournament organiser of that bracket
+    pub async fn read_for_user(
+        self,
+        bracket_id: Id,
+        user_id: Option<totsugeki::player::Id>,
+    ) -> Result<Option<(Bracket, bool)>, Error> {
+        let mut transaction = self.pool.begin().await?;
         let Some(b) = sqlx::query_as!(
         BracketRecord,
         r#"SELECT id, name, matches as "matches: SqlxJson<MatchesRaw>", created_at, participants as "participants: SqlxJson<Participants>"  from brackets WHERE id = $1"#,
         bracket_id,
         )
             // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
-            .fetch_optional(&self.pool)
-            .await?
-            else {
-                return Ok(None);
-            };
+        .fetch_optional(&mut *transaction).await? else {
+            return Ok(None);
+        };
+        let is_tournament_organiser = match user_id {
+            Some(to_id) => {
+                sqlx::query!(
+                    r#"SELECT bracket_id, user_id from tournament_organisers WHERE user_id = $1 AND bracket_id = $2"#,
+                    to_id,
+                    bracket_id
+                ).fetch_optional(&mut *transaction).await?.is_some()
+            }
+            None => false,
+        };
+
         let bracket = Bracket::assemble(b.id, b.name, b.participants.0, b.matches.0 .0);
 
-        Ok(Some(bracket))
+        Ok(Some((bracket, is_tournament_organiser)))
     }
 
     /// Update bracket with result

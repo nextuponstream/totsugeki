@@ -272,8 +272,9 @@ mod tests {
         let (winner_bracket, loser_bracket, gf, _gf_reset) =
             partition_double_elimination_matches(&s.matches, s.seeding.len());
         for m in &winner_bracket {
-            assert!(
-                m.get_automatic_loser() != Opponent::Unknown,
+            assert_ne!(
+                m.get_automatic_loser(),
+                Opponent::Unknown,
                 "expected winner bracket match to have automatic loser but got none: {m:?}"
             );
         }

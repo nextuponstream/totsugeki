@@ -58,6 +58,8 @@ pub struct BracketDisplay {
     pub grand_finals_reset: Option<MinimalMatch>,
     /// Bracket object to update
     pub bracket: Bracket,
+    /// true if user requesting the data is also a TO
+    pub is_tournament_organiser: bool,
     /// true if user requesting the data participates
     pub is_participant: bool,
 }
@@ -121,7 +123,7 @@ pub async fn new_bracket(AxumJson(form): AxumJson<CreateBracketForm>) -> impl In
         bracket = tmp.0;
     }
 
-    Ok(breakdown(bracket, None).into_response())
+    Ok(breakdown(bracket, None, false).into_response())
 }
 
 /// Save bracket replayed from player reports so in the event a guest actually
@@ -201,7 +203,7 @@ pub async fn save_bracket_from_steps(
     tracing::info!("new bracket replayed from steps {}", bracket.get_id());
     tracing::debug!("new bracket replayed from steps {:?}", bracket);
 
-    Ok((StatusCode::CREATED, breakdown(bracket, None)).into_response())
+    Ok((StatusCode::CREATED, breakdown(bracket, None, true)).into_response())
 }
 
 /// Returns existing bracket for display purposes
@@ -224,8 +226,8 @@ pub async fn get_bracket(
         .expect("maybe id of user");
 
     let repo = BracketRepository::new(pool);
-    let bracket = match repo.read(bracket_id).await {
-        Ok(Some(bracket)) => bracket,
+    let (bracket, is_tournament_organiser) = match repo.read_for_user(bracket_id, user_id).await {
+        Ok(Some(data)) => data,
         Ok(None) => return (StatusCode::NOT_FOUND).into_response(),
         Err(e) => {
             tracing::error!("{e:?}");
@@ -233,11 +235,15 @@ pub async fn get_bracket(
         }
     };
 
-    return breakdown(bracket, user_id).into_response();
+    return breakdown(bracket, user_id, is_tournament_organiser).into_response();
 }
 
 /// Breaks down bracket in small parts to be presented by UI
-fn breakdown(bracket: Bracket, user_id: Option<totsugeki::player::Id>) -> impl IntoResponse {
+fn breakdown(
+    bracket: Bracket,
+    user_id: Option<totsugeki::player::Id>,
+    is_tournament_organiser: bool,
+) -> impl IntoResponse {
     let dev: DoubleEliminationVariant = bracket.clone().try_into().expect("partition");
 
     // TODO test if tracing shows from which methods it was called
@@ -307,6 +313,7 @@ fn breakdown(bracket: Bracket, user_id: Option<totsugeki::player::Id>) -> impl I
         grand_finals_reset: gf_reset,
         bracket,
         is_participant,
+        is_tournament_organiser,
     };
     tracing::info!("displaying bracket {}", bracket.bracket.get_id());
     tracing::debug!("displaying bracket {:?}", bracket);
@@ -331,7 +338,7 @@ pub async fn update_with_result(
     Path(bracket_id): Path<Id>,
     AxumJson(report): AxumJson<ReportResultInput>,
 ) -> impl IntoResponse {
-    // TODO check if user can edit bracket using tournament_organisers table
+    // FIXME check if user can edit bracket using tournament_organisers table
     tracing::debug!("new reported result");
     let repo = BracketRepository::new(pool);
     let bracket = match repo.update_with_result(bracket_id, &report).await {
@@ -342,7 +349,7 @@ pub async fn update_with_result(
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     };
-    Ok(breakdown(bracket, None))
+    Ok(breakdown(bracket, None, true))
 }
 
 /// Returns updated bracket with result. Because there is no persistence, it's
@@ -375,7 +382,8 @@ pub async fn report_result(AxumJson(report): AxumJson<ReportResultInput>) -> imp
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     };
-    Ok(breakdown(bracket, None))
+    // People allowed to report are tournament organiser
+    Ok(breakdown(bracket, None, true))
 }
 
 #[derive(Serialize, Deserialize)]
