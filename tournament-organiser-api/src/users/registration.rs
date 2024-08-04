@@ -45,6 +45,17 @@ pub struct User {
     pub created_at: Option<DateTime<Utc>>,
 }
 
+/// User of application
+#[derive(sqlx::FromRow, Clone, Debug)]
+pub struct UserRecord {
+    /// Id of user
+    pub id: Id,
+    /// user name
+    pub name: String,
+    /// user email address
+    pub email: String,
+}
+
 /// `/register` endpoint for health check
 #[instrument(name = "user_registration", skip(pool))]
 pub(crate) async fn registration(

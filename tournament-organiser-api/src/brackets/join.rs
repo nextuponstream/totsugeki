@@ -1,8 +1,12 @@
 //! Register player in bracket
 
+use crate::brackets::breakdown;
+use crate::repositories::brackets::BracketRepository;
+use crate::repositories::users::UserRepository;
 use crate::users::session::Keys::UserId;
 use axum::extract::{Path, State};
 use axum::response::IntoResponse;
+use http::StatusCode;
 use sqlx::PgPool;
 use totsugeki::bracket::Id;
 use tower_sessions::Session;
@@ -22,22 +26,20 @@ pub async fn join_bracket(
         .expect("user id");
 
     let mut transaction = pool.begin().await.unwrap(); // FIXME no unwrap
-    todo!();
-    // let userRepo = UserRepository::new(&mut transaction);
-    // let user = match userRepo.read(user_id).await {
-    //     Ok(user) => user,
-    //     Err(e) => todo!(),
-    // };
-    todo!()
-    // let repo = BracketRepository::for_transaction(&mut transaction);
-    // let (bracket, is_tournament_organiser) = match repo.join(bracket_id, user).await {
-    //     Ok(Some(data)) => data,
-    //     Ok(None) => return (StatusCode::NOT_FOUND).into_response(),
-    //     Err(e) => {
-    //         tracing::error!("{e:?}");
-    //         return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
-    //     }
-    // };
-    //
-    // return breakdown(bracket, Some(user_id), is_tournament_organiser).into_response();
+    let user = match UserRepository::read(&mut transaction, user_id).await {
+        Ok(Some(user)) => user,
+        Ok(None) => return (StatusCode::NOT_FOUND).into_response(),
+        Err(e) => todo!(),
+    };
+    let (bracket, is_tournament_organiser) =
+        match BracketRepository::join(&mut transaction, bracket_id, user).await {
+            Ok(Some(data)) => data,
+            Ok(None) => return (StatusCode::NOT_FOUND).into_response(),
+            Err(e) => {
+                tracing::error!("{e:?}");
+                return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
+            }
+        };
+
+    return breakdown(bracket, Some(user_id), is_tournament_organiser).into_response();
 }

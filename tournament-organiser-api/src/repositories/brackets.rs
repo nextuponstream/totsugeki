@@ -13,7 +13,7 @@ use totsugeki::player::{Id, Player};
 
 use crate::brackets::{BracketRecord, ReportResultInput};
 use crate::resources::PaginatedGenericResource;
-use crate::users::registration::User;
+use crate::users::registration::UserRecord;
 
 /// Interact with brackets in postgres database using sqlx
 #[derive(Debug)]
@@ -81,7 +81,7 @@ impl BracketRepository {
     pub async fn join(
         transaction: &mut Transaction<'_, Postgres>,
         bracket_id: Id,
-        user: User,
+        user: UserRecord,
     ) -> Result<Option<(Bracket, bool)>, Error> {
         let Some(b) = sqlx::query_as!(
         BracketRecord,
@@ -92,6 +92,11 @@ impl BracketRepository {
             .fetch_optional(&mut **transaction).await? else {
             return Ok(None);
         };
+        let is_tournament_organiser = sqlx::query!(
+            r#"SELECT bracket_id, user_id from tournament_organisers WHERE user_id = $1 AND bracket_id = $2"#,
+               user.id,
+               bracket_id
+        ).fetch_optional(&mut **transaction).await?.is_some();
 
         let bracket = Bracket::assemble(b.id, b.name, b.participants.0, b.matches.0 .0);
 
@@ -100,7 +105,7 @@ impl BracketRepository {
             Err(e) => todo!(),
         };
 
-        Ok(Some((bracket, todo!())))
+        Ok(Some((bracket, is_tournament_organiser)))
     }
 
     /// Returns bracket in database and boolean if user is a tournament organiser of that bracket

@@ -194,12 +194,9 @@ pub async fn save_bracket_from_steps(
         .await
         .expect("value from store")
         .expect("user id");
-    let () = match BracketRepository::create(&mut transaction, &bracket, user_id).await {
-        Ok(()) => (),
-        Err(e) => {
-            tracing::error!("{e:?}");
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
+    if let Err(e) = BracketRepository::create(&mut transaction, &bracket, user_id).await {
+        tracing::error!("{e:?}");
+        return Err(StatusCode::INTERNAL_SERVER_ERROR);
     };
 
     transaction.commit().await.unwrap();
@@ -442,12 +439,9 @@ pub async fn create_bracket(
     }
     let bracket = bracket.update_name(form.bracket_name);
 
-    match BracketRepository::create(&mut transaction, &bracket, user_id).await {
-        Ok(()) => (),
-        Err(e) => {
-            tracing::error!("{e:?}");
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
+    if let Err(e) = BracketRepository::create(&mut transaction, &bracket, user_id).await {
+        tracing::error!("{e:?}");
+        return Err(StatusCode::INTERNAL_SERVER_ERROR);
     }
 
     transaction.commit().await.unwrap();

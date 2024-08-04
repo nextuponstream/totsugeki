@@ -1,5 +1,5 @@
 //! user actions
-use crate::users::registration::User;
+use crate::users::registration::UserRecord;
 use crate::users::session::Keys;
 use axum::extract::State;
 use axum::{response::IntoResponse, Json};
@@ -33,12 +33,15 @@ pub(crate) async fn profile(session: Session, State(pool): State<PgPool>) -> imp
         .expect("session store maybe value")
         .expect("value checked by middleware");
     tracing::debug!("{:?}", user_id);
-    let Some(u) = sqlx::query_as!(User, "SELECT * from users WHERE id = $1", user_id,)
-        // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
-        .fetch_optional(&pool)
-        .await
-        .expect("fetch result")
-    else {
+    let Some(u) = sqlx::query_as!(
+        UserRecord,
+        "SELECT id, email, name from users WHERE id = $1",
+        user_id,
+    )
+    // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
+    .fetch_optional(&pool)
+    .await
+    .expect("fetch result") else {
         return (StatusCode::NOT_FOUND).into_response();
     };
     Json(Infos {
