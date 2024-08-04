@@ -3,23 +3,21 @@
 use serde::{Deserialize, Serialize};
 use sqlx::error::Error as SqlxError;
 use sqlx::types::Json as SqlxJson;
-use sqlx::PgPool;
+use sqlx::{Postgres, Transaction};
 
 use totsugeki::bracket::Bracket;
 use totsugeki::bracket::Error as TotsugekiError;
 use totsugeki::matches::Match;
-use totsugeki::player::Id;
 use totsugeki::player::Participants;
+use totsugeki::player::{Id, Player};
 
 use crate::brackets::{BracketRecord, ReportResultInput};
 use crate::resources::PaginatedGenericResource;
+use crate::users::registration::User;
 
 /// Interact with brackets in postgres database using sqlx
 #[derive(Debug)]
-pub(crate) struct BracketRepository {
-    /// Connection pool to database
-    pool: PgPool,
-}
+pub(crate) struct BracketRepository {}
 
 /// All errors from using sqlx
 #[derive(Debug)]
@@ -49,14 +47,16 @@ impl From<TotsugekiError> for Error {
 pub struct MatchesRaw(pub Vec<Match>);
 
 impl BracketRepository {
-    /// Create new Bracket repository and interface with postgres database
-    pub fn new(pool: PgPool) -> BracketRepository {
-        Self { pool }
+    pub fn new() -> Self {
+        Self {}
     }
 
     /// Create bracket and set creator `user_id` as tournament organiser
-    pub async fn create(self, bracket: &Bracket, user_id: Id) -> Result<(), Error> {
-        let mut transaction = self.pool.begin().await?;
+    pub async fn create(
+        transaction: &mut Transaction<'_, Postgres>,
+        bracket: &Bracket,
+        user_id: Id,
+    ) -> Result<(), Error> {
         let _ = sqlx::query!(
             "INSERT INTO brackets (id, name, matches, participants) VALUES ($1, $2, $3, $4)",
             bracket.get_id(),
@@ -64,35 +64,58 @@ impl BracketRepository {
             SqlxJson(bracket.get_matches()) as _,
             SqlxJson(bracket.get_participants()) as _,
         )
-        .execute(&mut *transaction)
+        .execute(&mut **transaction)
         .await?;
         let _ = sqlx::query!(
             "INSERT INTO tournament_organisers (bracket_id, user_id) VALUES ($1, $2)",
             bracket.get_id(),
             user_id,
         )
-        .execute(&mut *transaction)
+        .execute(&mut **transaction)
         .await?;
-
-        transaction.commit().await?;
 
         Ok(())
     }
 
-    /// Returns bracket in database and boolean if user is a tournament organiser of that bracket
-    pub async fn read_for_user(
-        self,
+    /// User joins bracket
+    pub async fn join(
+        transaction: &mut Transaction<'_, Postgres>,
         bracket_id: Id,
-        user_id: Option<totsugeki::player::Id>,
+        user: User,
     ) -> Result<Option<(Bracket, bool)>, Error> {
-        let mut transaction = self.pool.begin().await?;
         let Some(b) = sqlx::query_as!(
         BracketRecord,
         r#"SELECT id, name, matches as "matches: SqlxJson<MatchesRaw>", created_at, participants as "participants: SqlxJson<Participants>"  from brackets WHERE id = $1"#,
         bracket_id,
         )
             // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
-        .fetch_optional(&mut *transaction).await? else {
+            .fetch_optional(&mut **transaction).await? else {
+            return Ok(None);
+        };
+
+        let bracket = Bracket::assemble(b.id, b.name, b.participants.0, b.matches.0 .0);
+
+        let bracket = match bracket.join(Player::from((user.id, user.name))) {
+            Ok(b) => b,
+            Err(e) => todo!(),
+        };
+
+        Ok(Some((bracket, todo!())))
+    }
+
+    /// Returns bracket in database and boolean if user is a tournament organiser of that bracket
+    pub async fn read_for_user(
+        transaction: &mut Transaction<'_, Postgres>,
+        bracket_id: Id,
+        user_id: Option<totsugeki::player::Id>,
+    ) -> Result<Option<(Bracket, bool)>, Error> {
+        let Some(b) = sqlx::query_as!(
+        BracketRecord,
+        r#"SELECT id, name, matches as "matches: SqlxJson<MatchesRaw>", created_at, participants as "participants: SqlxJson<Participants>"  from brackets WHERE id = $1"#,
+        bracket_id,
+        )
+            // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
+        .fetch_optional(&mut **transaction).await? else {
             return Ok(None);
         };
         let is_tournament_organiser = match user_id {
@@ -101,7 +124,7 @@ impl BracketRepository {
                     r#"SELECT bracket_id, user_id from tournament_organisers WHERE user_id = $1 AND bracket_id = $2"#,
                     to_id,
                     bracket_id
-                ).fetch_optional(&mut *transaction).await?.is_some()
+                ).fetch_optional(&mut **transaction).await?.is_some()
             }
             None => false,
         };
@@ -113,18 +136,17 @@ impl BracketRepository {
 
     /// Update bracket with result
     pub async fn update_with_result(
-        self,
+        transaction: &mut Transaction<'_, Postgres>,
         bracket_id: Id,
         report: &ReportResultInput,
     ) -> Result<Option<Bracket>, Error> {
-        let mut transaction = self.pool.begin().await?;
         let Some(b) = sqlx::query_as!(
         BracketRecord,
         r#"SELECT id, name, matches as "matches: SqlxJson<MatchesRaw>", created_at, participants as "participants: SqlxJson<Participants>" from brackets WHERE id = $1"#,
         bracket_id,
         )
             // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
-            .fetch_optional(&mut *transaction)
+            .fetch_optional(&mut **transaction)
             .await?
             else {
                 return Ok(None);
@@ -145,14 +167,13 @@ impl BracketRepository {
             SqlxJson(bracket.get_matches()) as _,
             bracket.get_id(),
         )
-        .execute(&mut *transaction)
+        .execute(&mut **transaction)
         .await?;
-        transaction.commit().await?;
         Ok(Some(bracket))
     }
     /// List all brackets belonging to `user_id`
     pub async fn list(
-        self,
+        transaction: &mut Transaction<'_, Postgres>,
         sort_order: String,
         limit: i64,
         offset: i64,
@@ -160,7 +181,7 @@ impl BracketRepository {
         let brackets = sqlx::query_as!(
             PaginatedGenericResource,
             r#"SELECT id, name, created_at, count(*) OVER() AS total from brackets
-         ORDER BY 
+         ORDER BY
            CASE WHEN $1 = 'ASC' THEN created_at END ASC,
            CASE WHEN $1 = 'DESC' THEN created_at END DESC
          LIMIT $2
@@ -171,13 +192,13 @@ impl BracketRepository {
             offset
         )
         // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
-        .fetch_all(&self.pool)
+        .fetch_all(&mut **transaction)
         .await?;
         Ok(brackets)
     }
     /// List all brackets belonging to `user_id`
     pub async fn user_brackets(
-        self,
+        transaction: &mut Transaction<'_, Postgres>,
         sort_order: String,
         limit: i64,
         offset: i64,
@@ -196,7 +217,7 @@ impl BracketRepository {
             PaginatedGenericResource,
             r#"SELECT id, name, created_at, count(*) OVER() AS total from brackets
          WHERE id IN (SELECT bracket_id FROM tournament_organisers WHERE user_id = $4)
-         ORDER BY 
+         ORDER BY
            CASE WHEN $1 = 'ASC' THEN created_at END ASC,
            CASE WHEN $1 = 'DESC' THEN created_at END DESC
          LIMIT $2
@@ -208,7 +229,7 @@ impl BracketRepository {
             user_id,
         )
         // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
-        .fetch_all(&self.pool)
+        .fetch_all(&mut **transaction)
         .await
         .expect("fetch result");
 

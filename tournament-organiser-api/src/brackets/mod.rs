@@ -1,5 +1,7 @@
 //! bracket management
 
+mod join;
+
 use crate::middlewares::validation::{ValidatedJson, ValidatedRequest};
 use crate::repositories::brackets::{BracketRepository, MatchesRaw};
 use crate::resources::{Pagination, PaginationResult};
@@ -186,19 +188,21 @@ pub async fn save_bracket_from_steps(
         };
     }
 
-    let repo = BracketRepository::new(pool);
+    let mut transaction = pool.begin().await.unwrap();
     let user_id: totsugeki::player::Id = session
         .get(&Keys::UserId.to_string())
         .await
         .expect("value from store")
         .expect("user id");
-    let () = match repo.create(&bracket, user_id).await {
+    let () = match BracketRepository::create(&mut transaction, &bracket, user_id).await {
         Ok(()) => (),
         Err(e) => {
             tracing::error!("{e:?}");
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     };
+
+    transaction.commit().await.unwrap();
 
     tracing::info!("new bracket replayed from steps {}", bracket.get_id());
     tracing::debug!("new bracket replayed from steps {:?}", bracket);
@@ -225,16 +229,18 @@ pub async fn get_bracket(
         .await
         .expect("maybe id of user");
 
-    let repo = BracketRepository::new(pool);
-    let (bracket, is_tournament_organiser) = match repo.read_for_user(bracket_id, user_id).await {
-        Ok(Some(data)) => data,
-        Ok(None) => return (StatusCode::NOT_FOUND).into_response(),
-        Err(e) => {
-            tracing::error!("{e:?}");
-            return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
-        }
-    };
+    let mut transaction = pool.begin().await.unwrap();
+    let (bracket, is_tournament_organiser) =
+        match BracketRepository::read_for_user(&mut transaction, bracket_id, user_id).await {
+            Ok(Some(data)) => data,
+            Ok(None) => return (StatusCode::NOT_FOUND).into_response(),
+            Err(e) => {
+                tracing::error!("{e:?}");
+                return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
+            }
+        };
 
+    transaction.commit().await.unwrap();
     return breakdown(bracket, user_id, is_tournament_organiser).into_response();
 }
 
@@ -340,15 +346,17 @@ pub async fn update_with_result(
 ) -> impl IntoResponse {
     // FIXME check if user can edit bracket using tournament_organisers table
     tracing::debug!("new reported result");
-    let repo = BracketRepository::new(pool);
-    let bracket = match repo.update_with_result(bracket_id, &report).await {
-        Ok(Some(bracket)) => bracket,
-        Ok(None) => return Err(StatusCode::NOT_FOUND),
-        Err(e) => {
-            tracing::warn!("Cannot update bracket {bracket_id} with result {report:?}: {e:?}");
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
+    let mut transaction = pool.begin().await.unwrap();
+    let bracket =
+        match BracketRepository::update_with_result(&mut transaction, bracket_id, &report).await {
+            Ok(Some(bracket)) => bracket,
+            Ok(None) => return Err(StatusCode::NOT_FOUND),
+            Err(e) => {
+                tracing::warn!("Cannot update bracket {bracket_id} with result {report:?}: {e:?}");
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        };
+    transaction.commit().await.unwrap();
     Ok(breakdown(bracket, None, true))
 }
 
@@ -418,7 +426,7 @@ pub async fn create_bracket(
 ) -> impl IntoResponse {
     tracing::debug!("new bracket from players: {:?}", form.player_names);
 
-    let repo = BracketRepository::new(pool);
+    let mut transaction = pool.begin().await.unwrap();
     // TODO refactor user_id key in SESSION_KEY enum
     let user_id: totsugeki::player::Id = session
         .get(&Keys::UserId.to_string())
@@ -434,13 +442,15 @@ pub async fn create_bracket(
     }
     let bracket = bracket.update_name(form.bracket_name);
 
-    match repo.create(&bracket, user_id).await {
+    match BracketRepository::create(&mut transaction, &bracket, user_id).await {
         Ok(()) => (),
         Err(e) => {
             tracing::error!("{e:?}");
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     }
+
+    transaction.commit().await.unwrap();
 
     // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
     tracing::info!("new bracket {}", bracket.get_id());
@@ -465,16 +475,19 @@ pub async fn list_brackets(
     let limit: i64 = pagination.limit.try_into().expect("ok");
     let offset: i64 = pagination.offset.try_into().expect("ok");
 
-    let repo = BracketRepository::new(pool);
-    let brackets = match repo.list(pagination.sort_order, limit, offset).await {
-        Ok(b) => b,
-        Err(e) => {
-            tracing::warn!("{e:?}");
-            return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
-        }
-    };
+    let mut transaction = pool.begin().await.unwrap();
+    let brackets =
+        match BracketRepository::list(&mut transaction, pagination.sort_order, limit, offset).await
+        {
+            Ok(b) => b,
+            Err(e) => {
+                tracing::warn!("{e:?}");
+                return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
+            }
+        };
     let data = brackets;
     let pagination_result = PaginationResult { total: 100, data };
+    transaction.commit().await.unwrap();
 
     (StatusCode::OK, AxumJson(pagination_result)).into_response()
 }
@@ -489,10 +502,15 @@ pub(crate) async fn user_brackets(
     let limit: i64 = pagination.limit.try_into().expect("ok");
     let offset: i64 = pagination.offset.try_into().expect("ok");
 
-    let repo = BracketRepository::new(pool);
-    let brackets = match repo
-        .user_brackets(pagination.sort_order, limit, offset, user_id)
-        .await
+    let mut transaction = pool.begin().await.unwrap();
+    let brackets = match BracketRepository::user_brackets(
+        &mut transaction,
+        pagination.sort_order,
+        limit,
+        offset,
+        user_id,
+    )
+    .await
     {
         Ok(b) => b,
         Err(e) => {
@@ -509,6 +527,8 @@ pub(crate) async fn user_brackets(
     let total = total.try_into().expect("conversion");
     let data = brackets;
     let pagination_result = PaginationResult { total, data };
+
+    transaction.commit().await.unwrap();
 
     (StatusCode::OK, AxumJson(pagination_result)).into_response()
 }

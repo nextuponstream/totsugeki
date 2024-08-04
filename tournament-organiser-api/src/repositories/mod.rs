@@ -5,3 +5,4 @@
 //! * authorize user to update their resource
 
 pub(crate) mod brackets;
+pub(crate) mod users;
