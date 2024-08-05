@@ -424,7 +424,7 @@ pub async fn create_bracket(
 ) -> Result<AxumJson<GenericResourceCreated>> {
     tracing::debug!("new bracket from players: {:?}", form.player_names);
 
-    let mut transaction = pool.begin().await.unwrap();
+    let mut transaction = pool.begin().await?;
     // TODO refactor user_id key in SESSION_KEY enum
     let user_id: totsugeki::player::Id = session
         .get(&Keys::UserId.to_string())
@@ -440,7 +440,7 @@ pub async fn create_bracket(
 
     BracketRepository::create(&mut transaction, &bracket, user_id).await?;
 
-    transaction.commit().await.unwrap();
+    transaction.commit().await?;
 
     // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
     tracing::info!("new bracket {}", bracket.get_id());
