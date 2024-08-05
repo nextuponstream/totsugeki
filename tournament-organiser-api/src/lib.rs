@@ -11,6 +11,7 @@
 
 pub mod brackets;
 pub mod health_check;
+pub mod http;
 mod middlewares;
 pub(crate) mod repositories;
 pub mod resources;

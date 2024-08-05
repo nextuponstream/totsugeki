@@ -47,16 +47,12 @@ impl From<TotsugekiError> for Error {
 pub struct MatchesRaw(pub Vec<Match>);
 
 impl BracketRepository {
-    pub fn new() -> Self {
-        Self {}
-    }
-
     /// Create bracket and set creator `user_id` as tournament organiser
     pub async fn create(
         transaction: &mut Transaction<'_, Postgres>,
         bracket: &Bracket,
         user_id: Id,
-    ) -> Result<(), Error> {
+    ) -> Result<(), SqlxError> {
         let _ = sqlx::query!(
             "INSERT INTO brackets (id, name, matches, participants) VALUES ($1, $2, $3, $4)",
             bracket.get_id(),
@@ -141,7 +137,7 @@ impl BracketRepository {
         transaction: &mut Transaction<'_, Postgres>,
         bracket_id: Id,
         report: &ReportResultInput,
-    ) -> Result<Option<Bracket>, Error> {
+    ) -> Result<Option<Bracket>, SqlxError> {
         let Some(b) = sqlx::query_as!(
         BracketRecord,
         r#"SELECT id, name, matches as "matches: SqlxJson<MatchesRaw>", created_at, participants as "participants: SqlxJson<Participants>" from brackets WHERE id = $1"#,
@@ -155,11 +151,15 @@ impl BracketRepository {
             };
         let bracket = Bracket::assemble(b.id, b.name, b.participants.0, b.matches.0 .0);
 
-        let (bracket, _, _) = bracket.tournament_organiser_reports_result(
+        let (bracket, _, _) = match bracket.tournament_organiser_reports_result(
             report.p1_id,
             (report.score_p1, report.score_p2),
             report.p2_id,
-        )?;
+        ) {
+            Ok(v) => v,
+            // Err(TotsugekiError) =>
+            _ => unreachable!(),
+        };
         let _r = sqlx::query!(
             r#"
         UPDATE brackets
@@ -179,7 +179,7 @@ impl BracketRepository {
         sort_order: String,
         limit: i64,
         offset: i64,
-    ) -> Result<Vec<PaginatedGenericResource>, Error> {
+    ) -> Result<Vec<PaginatedGenericResource>, SqlxError> {
         let brackets = sqlx::query_as!(
             PaginatedGenericResource,
             r#"SELECT id, name, created_at, count(*) OVER() AS total from brackets
@@ -205,7 +205,7 @@ impl BracketRepository {
         limit: i64,
         offset: i64,
         user_id: Id,
-    ) -> Result<Vec<PaginatedGenericResource>, Error> {
+    ) -> Result<Vec<PaginatedGenericResource>, SqlxError> {
         // paginated results with total count: https://stackoverflow.com/a/28888696
         // not optimal : each rows contains the total
         // not optimal : you have to extract total from first row if you want the
@@ -232,8 +232,7 @@ impl BracketRepository {
         )
         // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
         .fetch_all(&mut **transaction)
-        .await
-        .expect("fetch result");
+        .await?;
 
         Ok(brackets)
     }

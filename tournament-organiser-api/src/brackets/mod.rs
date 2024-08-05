@@ -2,6 +2,7 @@
 
 mod join;
 
+use crate::http::Result;
 use crate::middlewares::validation::{ValidatedJson, ValidatedRequest};
 use crate::repositories::brackets::{BracketRepository, MatchesRaw};
 use crate::resources::{Pagination, PaginationResult};
@@ -420,7 +421,7 @@ pub async fn create_bracket(
     session: Session,
     State(pool): State<PgPool>,
     ValidatedJson(form): ValidatedJson<CreateBracketForm>,
-) -> impl IntoResponse {
+) -> Result<AxumJson<GenericResourceCreated>> {
     tracing::debug!("new bracket from players: {:?}", form.player_names);
 
     let mut transaction = pool.begin().await.unwrap();
@@ -432,17 +433,12 @@ pub async fn create_bracket(
         .expect("user id");
     let mut bracket = Bracket::default();
     for name in form.player_names {
-        let Ok(tmp) = bracket.add_participant(name.as_str()) else {
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        };
+        let tmp = bracket.add_participant(name.as_str()).unwrap();
         bracket = tmp.0;
     }
     let bracket = bracket.update_name(form.bracket_name);
 
-    if let Err(e) = BracketRepository::create(&mut transaction, &bracket, user_id).await {
-        tracing::error!("{e:?}");
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
-    }
+    BracketRepository::create(&mut transaction, &bracket, user_id).await?;
 
     transaction.commit().await.unwrap();
 
@@ -450,13 +446,9 @@ pub async fn create_bracket(
     tracing::info!("new bracket {}", bracket.get_id());
 
     tracing::debug!("new bracket {:?}", bracket);
-    Ok((
-        StatusCode::CREATED,
-        AxumJson(GenericResourceCreated {
-            id: bracket.get_id(),
-        }),
-    )
-        .into_response())
+    Ok(AxumJson(GenericResourceCreated {
+        id: bracket.get_id(),
+    }))
 }
 
 /// Return a newly instanciated bracket from ordered (=seeded) player names
@@ -465,53 +457,40 @@ pub async fn list_brackets(
     // NOTE pool before validated query params for some reason???
     State(pool): State<PgPool>,
     ValidatedRequest(pagination): ValidatedRequest<Pagination>,
-) -> impl IntoResponse {
+) -> Result<AxumJson<PaginationResult>> {
     let limit: i64 = pagination.limit.try_into().expect("ok");
     let offset: i64 = pagination.offset.try_into().expect("ok");
 
-    let mut transaction = pool.begin().await.unwrap();
+    let mut transaction = pool.begin().await?;
     let brackets =
-        match BracketRepository::list(&mut transaction, pagination.sort_order, limit, offset).await
-        {
-            Ok(b) => b,
-            Err(e) => {
-                tracing::warn!("{e:?}");
-                return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
-            }
-        };
+        BracketRepository::list(&mut transaction, pagination.sort_order, limit, offset).await?;
     let data = brackets;
     let pagination_result = PaginationResult { total: 100, data };
-    transaction.commit().await.unwrap();
+    transaction.commit().await?;
 
-    (StatusCode::OK, AxumJson(pagination_result)).into_response()
+    Ok(AxumJson(pagination_result))
 }
 
 /// `/:user_id/brackets` GET to view brackets managed by user
 #[instrument(name = "user_brackets", skip(pool))]
+#[debug_handler]
 pub(crate) async fn user_brackets(
     Path(user_id): Path<Id>,
     State(pool): State<PgPool>,
     ValidatedRequest(pagination): ValidatedRequest<Pagination>,
-) -> impl IntoResponse {
+) -> Result<AxumJson<PaginationResult>> {
     let limit: i64 = pagination.limit.try_into().expect("ok");
     let offset: i64 = pagination.offset.try_into().expect("ok");
 
-    let mut transaction = pool.begin().await.unwrap();
-    let brackets = match BracketRepository::user_brackets(
+    let mut transaction = pool.begin().await?;
+    let brackets = BracketRepository::user_brackets(
         &mut transaction,
         pagination.sort_order,
         limit,
         offset,
         user_id,
     )
-    .await
-    {
-        Ok(b) => b,
-        Err(e) => {
-            tracing::warn!("{e:?}");
-            return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
-        }
-    };
+    .await?;
 
     let total = if brackets.is_empty() {
         0
@@ -522,7 +501,7 @@ pub(crate) async fn user_brackets(
     let data = brackets;
     let pagination_result = PaginationResult { total, data };
 
-    transaction.commit().await.unwrap();
+    transaction.commit().await?;
 
-    (StatusCode::OK, AxumJson(pagination_result)).into_response()
+    Ok(AxumJson(pagination_result))
 }

@@ -5,7 +5,10 @@ use sqlx::error::Error as SqlxError;
 use sqlx::{Postgres, Transaction};
 use totsugeki::player::Id;
 
+/// All methods to query user in database
 pub(crate) struct UserRepository {}
+
+/// Errors while reading user in database
 #[derive(Debug)]
 pub(crate) enum Error {
     #[allow(dead_code)]
@@ -19,6 +22,7 @@ impl From<SqlxError> for Error {
 }
 
 impl UserRepository {
+    /// Read user from database
     pub async fn read(
         transaction: &mut Transaction<'_, Postgres>,
         user_id: Id,
