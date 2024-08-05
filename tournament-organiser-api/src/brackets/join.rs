@@ -1,14 +1,16 @@
 //! Register player in bracket
 
 use crate::brackets::breakdown;
-use crate::repositories::brackets::BracketRepository;
+use crate::repositories::brackets::{BracketRepository, Error};
 use crate::repositories::users::UserRepository;
 use crate::users::session::Keys::UserId;
 use axum::extract::{Path, State};
 use axum::response::IntoResponse;
 use http::StatusCode;
 use sqlx::PgPool;
+use totsugeki::bracket::Error as TotsugekiError;
 use totsugeki::bracket::Id;
+use totsugeki::player::Error as PlayerError;
 use tower_sessions::Session;
 use tracing::instrument;
 
@@ -29,12 +31,18 @@ pub async fn join_bracket(
     let user = match UserRepository::read(&mut transaction, user_id).await {
         Ok(Some(user)) => user,
         Ok(None) => return (StatusCode::NOT_FOUND).into_response(),
-        Err(e) => todo!(),
+        Err(e) => {
+            tracing::error!("{e:?}");
+            return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
+        }
     };
     let (bracket, is_tournament_organiser) =
         match BracketRepository::join(&mut transaction, bracket_id, user).await {
             Ok(Some(data)) => data,
             Ok(None) => return (StatusCode::NOT_FOUND).into_response(),
+            Err(Error::Bracket(TotsugekiError::PlayerUpdate(PlayerError::AlreadyPresent))) => {
+                return (StatusCode::BAD_REQUEST).into_response();
+            }
             Err(e) => {
                 tracing::error!("{e:?}");
                 return (StatusCode::INTERNAL_SERVER_ERROR).into_response();

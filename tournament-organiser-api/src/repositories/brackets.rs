@@ -100,10 +100,7 @@ impl BracketRepository {
 
         let bracket = Bracket::assemble(b.id, b.name, b.participants.0, b.matches.0 .0);
 
-        let bracket = match bracket.join(Player::from((user.id, user.name))) {
-            Ok(b) => b,
-            Err(e) => todo!(),
-        };
+        let bracket = bracket.join(Player::from((user.id, user.name)))?;
 
         Ok(Some((bracket, is_tournament_organiser)))
     }
