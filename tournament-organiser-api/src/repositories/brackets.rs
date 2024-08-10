@@ -6,7 +6,6 @@ use sqlx::types::Json as SqlxJson;
 use sqlx::{Postgres, Transaction};
 
 use totsugeki::bracket::Bracket;
-use totsugeki::bracket::Error as TotsugekiError;
 use totsugeki::matches::Match;
 use totsugeki::player::Participants;
 use totsugeki::player::{Id, Player};
@@ -14,31 +13,29 @@ use totsugeki::player::{Id, Player};
 use crate::brackets::{BracketRecord, ReportResultInput};
 use crate::resources::PaginatedGenericResource;
 use crate::users::registration::UserRecord;
+use thiserror::Error;
+use totsugeki::bracket::participants::Error as JoinError;
+use totsugeki::player::Error as PlayerError;
+use tracing::error;
 
 /// Interact with brackets in postgres database using sqlx
 #[derive(Debug)]
 pub(crate) struct BracketRepository {}
 
-/// All errors from using sqlx
-#[derive(Debug)]
+/// All errors when joining a bracket
+#[derive(Error, Debug)]
 pub(crate) enum Error {
-    // reason for allow lint: might be needed to track down bug later
-    #[allow(dead_code)]
-    /// Error with sqlx, unrecoverable
+    #[error("Unrecoverable database error")]
+    /// Error with postgres, unrecoverable
     Sqlx(SqlxError),
-    /// Expected error when using library
-    #[allow(dead_code)]
-    Bracket(TotsugekiError),
+    /// Inconsistent state in the client
+    #[error("player tried to join bracket but they are already in")]
+    PlayerAlreadyPresent,
 }
 
 impl From<SqlxError> for Error {
     fn from(err: SqlxError) -> Self {
         Self::Sqlx(err)
-    }
-}
-impl From<TotsugekiError> for Error {
-    fn from(err: TotsugekiError) -> Self {
-        Self::Bracket(err)
     }
 }
 
@@ -96,7 +93,20 @@ impl BracketRepository {
 
         let bracket = Bracket::assemble(b.id, b.name, b.participants.0, b.matches.0 .0);
 
-        let bracket = bracket.join(Player::from((user.id, user.name)))?;
+        let bracket = match bracket.join(Player::from((user.id, user.name))) {
+            Ok(b) => b,
+            Err(JoinError::ParticipantError(PlayerError::AlreadyPresent)) => {
+                return Err(Error::PlayerAlreadyPresent)
+            }
+            // TODO handle edge case
+            // Err(JoinError::BarredFromEntering(_, _)) => {
+            //     panic!()
+            // }
+            Err(e) => {
+                error!("{e:?}");
+                panic!("{e:?}")
+            }
+        };
 
         Ok(Some((bracket, is_tournament_organiser)))
     }

@@ -1,7 +1,8 @@
 //! Generate seeded matches for single elimination
 
 use super::seeding_initial_round;
-use crate::{matches::Match, opponent::Opponent, player::Id as PlayerId, seeding::Error};
+use crate::seeding::Error as SeedingError;
+use crate::{matches::Match, opponent::Opponent, player::Id as PlayerId};
 
 /// Returns tournament matches for `n` players in a list. Used for generating
 /// single elimination bracket or winner bracket in double elimination format.
@@ -19,7 +20,7 @@ use crate::{matches::Match, opponent::Opponent, player::Id as PlayerId, seeding:
 /// Opponent.
 pub fn get_balanced_round_matches_top_seed_favored(
     seeding: &[PlayerId],
-) -> Result<Vec<Match>, Error> {
+) -> Result<Vec<Match>, SeedingError> {
     // Matches are built bottom-up:
     // * for n
     // * compute #byes = `next_power_of_two(n)` - n
@@ -31,7 +32,7 @@ pub fn get_balanced_round_matches_top_seed_favored(
     let n = seeding.len();
     let byes = match n.checked_next_power_of_two() {
         Some(b) => b - n,
-        None => return Err(Error::MathOverflow),
+        None => return Err(SeedingError::MathOverflow),
     };
     let mut remaining_byes = byes;
     let mut this_round: Vec<Match> = vec![];
@@ -44,7 +45,7 @@ pub fn get_balanced_round_matches_top_seed_favored(
     });
 
     let Some(first_round) = n.checked_next_power_of_two() else {
-        return Err(Error::MathOverflow);
+        return Err(SeedingError::MathOverflow);
     };
     let second_round = first_round / 2;
     let mut i = first_round;

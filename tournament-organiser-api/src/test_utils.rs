@@ -196,4 +196,14 @@ impl TestApp {
             .await
             .expect("request done")
     }
+
+    /// `/api/brackets/:bracket_id/join` POST
+    #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
+    pub async fn join_bracket(&self, bracket_id: Id) -> Response {
+        self.http_client
+            .post(format!("{}/api/brackets/{}/join", self.addr, bracket_id))
+            .send()
+            .await
+            .expect("request done")
+    }
 }

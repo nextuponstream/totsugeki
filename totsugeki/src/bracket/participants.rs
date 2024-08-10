@@ -1,8 +1,24 @@
 //! Add and remove or disqualify participants from bracket. Let them
 //! join/forfeit
 
-use super::{Bracket, Error};
-use crate::player::{Id as PlayerId, Participants, Player};
+use super::{Bracket, BracketId, Error as TotsugekiError};
+use crate::player::{Error as PlayerError, Id as PlayerId, Participants, Player};
+use crate::seeding::Error as SeedingError;
+use thiserror::Error;
+
+/// Player cannot join bracket
+#[derive(Error, Debug)]
+pub enum Error {
+    /// Bracket does not allow participant to enter
+    #[error("Bracket \"{1}\" does not accept new participants")]
+    BarredFromEntering(PlayerId, BracketId),
+    /// Adding participant to bracket is impossible
+    #[error("Cannot add participant to bracket {0}")]
+    ParticipantError(#[from] PlayerError),
+    /// Unrecoverable error
+    #[error("Could not generate matches")]
+    GenerateMatches(#[from] SeedingError),
+}
 
 impl Bracket {
     /// Regenerate matches and set participants of bracket with provided
@@ -10,10 +26,11 @@ impl Bracket {
     ///
     /// # Errors
     /// thrown when math overflow happens
+    // FIXME extract encountered error in enum variant
     pub(super) fn regenerate_matches(
         self,
         updated_participants: Participants,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, SeedingError> {
         let matches = if updated_participants.len() < 3 {
             vec![]
         } else {
@@ -44,7 +61,7 @@ impl Bracket {
     ///
     /// # Errors
     /// thrown when math overflow happens
-    pub fn generate_matches(self) -> Result<Self, Error> {
+    pub fn generate_matches(self) -> Result<Self, TotsugekiError> {
         let matches = if self.participants.len() < 3 {
             vec![]
         } else {
@@ -73,16 +90,22 @@ impl Bracket {
             participants: self.participants.clone().add_participant(player)?,
             ..self
         };
-        bracket.clone().regenerate_matches(bracket.participants)
+        Ok(bracket.clone().regenerate_matches(bracket.participants)?)
     }
 
     /// Let `player` join participants and returns an updated version of the bracket
     ///
     /// # Errors
     /// Thrown when bracket has already started
-    pub fn unchecked_join_skip_matches_generation(self, player: Player) -> Result<Bracket, Error> {
+    pub fn unchecked_join_skip_matches_generation(
+        self,
+        player: Player,
+    ) -> Result<Bracket, TotsugekiError> {
         if self.is_closed {
-            return Err(Error::BarredFromEntering(player.get_id(), self.get_id()));
+            return Err(TotsugekiError::BarredFromEntering(
+                player.get_id(),
+                self.get_id(),
+            ));
         }
         Ok(Self {
             participants: self.participants.unchecked_add_participant(player),
@@ -94,16 +117,16 @@ impl Bracket {
     ///
     /// # Errors
     /// thrown if referred participant does not belong in bracket
-    pub fn remove_participant(self, participant_id: PlayerId) -> Result<Self, Error> {
+    pub fn remove_participant(self, participant_id: PlayerId) -> Result<Self, TotsugekiError> {
         if self.accept_match_results {
-            return Err(Error::Started(
+            return Err(TotsugekiError::Started(
                 self.id,
                 ". As a player, you can quit the bracket by forfeiting or ask an admin to disqualify you."
                     .into(),
             ));
         }
         let updated_participants = self.participants.clone().remove(participant_id);
-        self.regenerate_matches(updated_participants)
+        Ok(self.regenerate_matches(updated_participants)?)
     }
 }
 

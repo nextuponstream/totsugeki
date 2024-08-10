@@ -51,7 +51,7 @@ impl Format {
         })
     }
 
-    // TODO remove abstraction? Putting stuff on the heap may not be necessary
+    // FIXME remove abstraction. Putting stuff on the heap may not be necessary
     /// Returns progression implementation for this bracket format
     ///
     /// # Panics

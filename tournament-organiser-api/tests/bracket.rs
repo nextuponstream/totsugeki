@@ -207,3 +207,23 @@ async fn save_bracket(db: PgPool) {
         response.text().await.unwrap()
     );
 }
+#[sqlx::test]
+async fn join_bracket(db: PgPool) {
+    let app = spawn_app(db).await;
+    app.login_as_test_user().await;
+
+    let players = vec![];
+
+    let response = app.create_bracket(players).await;
+
+    let bracket_id: GenericResourceCreated = response.json().await.unwrap();
+
+    let response = app.join_bracket(bracket_id.id).await;
+    let status = response.status();
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "status: {status}, response: \"{}\"",
+        response.text().await.unwrap()
+    );
+}

@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Watch api" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
-    <option name="command" value="watch -w tournament-organiser-api -s &quot;cargo run --package tournament-organiser-api&quot;" />
+    <option name="command" value="watch -w totsugeki -w tournament-organiser-api -s &quot;cargo run --package tournament-organiser-api&quot;" />
     <option name="workingDirectory" value="file://$PROJECT_DIR$" />
     <envs>
       <env name="BUILD_PATH_TOURNAMENT_ORGANISER_WEB" value="tournament-organiser-web/dist" />

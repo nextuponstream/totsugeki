@@ -6,6 +6,7 @@ use http::StatusCode;
 use sqlx::{Pool, Postgres};
 use tower_sessions_sqlx_store::PostgresStore;
 
+use crate::brackets::join::join_bracket;
 use crate::brackets::{
     create_bracket, get_bracket, list_brackets, new_bracket, report_result,
     save_bracket_from_steps, update_with_result, user_brackets,
@@ -35,7 +36,8 @@ pub(crate) fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router 
             .route("/", get(list_brackets))
             .route("/", post(create_bracket))
             .route("/save", post(save_bracket_from_steps))
-            .route("/:bracket_id/report-result", post(update_with_result)),
+            .route("/:bracket_id/report-result", post(update_with_result))
+            .route("/:bracket_id/join", post(join_bracket)),
     );
     let protected_routes = Router::new()
         .merge(user_routes)

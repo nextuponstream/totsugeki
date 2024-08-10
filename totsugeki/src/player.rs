@@ -73,7 +73,7 @@ pub type Id = Uuid;
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct Participants(Vec<Player>);
 
-/// Error while forming or querying group of players
+/// Error while updating or querying a group of players
 #[derive(Error, Debug, Eq, PartialEq)]
 pub enum Error {
     /// Player already exist in this group of player
@@ -92,6 +92,8 @@ impl Participants {
     ///
     /// # Errors
     /// thrown if player is already present
+    // FIXME only 1 error variant at play in this method, then extract error
+    // enum
     pub fn add_participant(self, new_player: Player) -> Result<Self, Error> {
         if self.0.iter().any(|p| p.get_id() == new_player.get_id()) {
             Err(Error::AlreadyPresent)

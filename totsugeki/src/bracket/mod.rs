@@ -7,7 +7,7 @@ pub mod double_elimination_variant;
 mod getter_setter;
 pub mod matches;
 mod ongoing;
-mod participants;
+pub mod participants;
 mod progression;
 mod query_state;
 mod seeding;
@@ -40,6 +40,7 @@ pub enum Error {
     /// Unknown player provided for seeding
     #[error("Unknown player \"{0}\" cannot be used for seeding. Use the following players: {1} of bracket {2}")]
     UnknownPlayer(PlayerId, Participants, BracketId),
+    // FIXME remove variant
     /// Cannot add player when they are barred from entering
     #[error("Bracket \"{1}\" does not accept new participants")]
     BarredFromEntering(PlayerId, BracketId),

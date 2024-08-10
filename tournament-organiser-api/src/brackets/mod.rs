@@ -1,8 +1,8 @@
 //! bracket management
 
-mod join;
+pub mod join;
 
-use crate::http::Result;
+use crate::http::{internal_error, Result};
 use crate::middlewares::validation::{ValidatedJson, ValidatedRequest};
 use crate::repositories::brackets::{BracketRepository, MatchesRaw};
 use crate::resources::{Pagination, PaginationResult};
@@ -239,7 +239,7 @@ pub async fn get_bracket(
         };
 
     transaction.commit().await.unwrap();
-    return breakdown(bracket, user_id, is_tournament_organiser).into_response();
+    breakdown(bracket, user_id, is_tournament_organiser).into_response()
 }
 
 /// Breaks down bracket in small parts to be presented by UI
@@ -421,16 +421,13 @@ pub async fn create_bracket(
     session: Session,
     State(pool): State<PgPool>,
     ValidatedJson(form): ValidatedJson<CreateBracketForm>,
-) -> Result<AxumJson<GenericResourceCreated>> {
+) -> impl IntoResponse {
     tracing::debug!("new bracket from players: {:?}", form.player_names);
 
-    let mut transaction = pool.begin().await?;
+    let mut transaction = pool.begin().await.map_err(internal_error).unwrap();
     // TODO refactor user_id key in SESSION_KEY enum
-    let user_id: totsugeki::player::Id = session
-        .get(&Keys::UserId.to_string())
-        .await
-        .expect("value from store")
-        .expect("user id");
+    let user_id: totsugeki::player::Id =
+        session.get(&UserId.to_string()).await.expect("").expect("");
     let mut bracket = Bracket::default();
     for name in form.player_names {
         let tmp = bracket.add_participant(name.as_str()).unwrap();
@@ -438,17 +435,22 @@ pub async fn create_bracket(
     }
     let bracket = bracket.update_name(form.bracket_name);
 
-    BracketRepository::create(&mut transaction, &bracket, user_id).await?;
+    BracketRepository::create(&mut transaction, &bracket, user_id)
+        .await
+        .unwrap();
 
-    transaction.commit().await?;
+    transaction.commit().await.map_err(internal_error).unwrap();
 
     // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
     tracing::info!("new bracket {}", bracket.get_id());
 
     tracing::debug!("new bracket {:?}", bracket);
-    Ok(AxumJson(GenericResourceCreated {
-        id: bracket.get_id(),
-    }))
+    (
+        StatusCode::CREATED,
+        AxumJson(GenericResourceCreated {
+            id: bracket.get_id(),
+        }),
+    )
 }
 
 /// Return a newly instanciated bracket from ordered (=seeded) player names
