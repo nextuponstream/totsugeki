@@ -1,6 +1,7 @@
 //! Report result without saving to database
 
 use crate::brackets::{breakdown, ReportResultInput};
+use crate::http::ErrorSlug;
 use axum::response::IntoResponse;
 use axum::Json;
 use http::StatusCode;
@@ -21,21 +22,16 @@ use tracing::instrument;
 #[instrument(name = "report_result", skip(report))]
 pub async fn report_result(Json(report): Json<ReportResultInput>) -> impl IntoResponse {
     tracing::debug!("new reported result");
-    let mut bracket = report.bracket;
+    let bracket = report.bracket;
 
-    bracket = match bracket.tournament_organiser_reports_result(
+    let Ok((bracket, _, _)) = bracket.tournament_organiser_reports_result(
         report.p1_id,
         (report.score_p1, report.score_p2),
         report.p2_id,
-    ) {
-        Ok((bracket, _, _)) => bracket,
-        Err(e) => {
-            // TODO deal with corner case where UI shows a bracket that is out
-            //  of sync with database state and returns something to user
-            tracing::warn!("{e:?}");
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
+    ) else {
+        // FIXME actual error handling
+        return Err(ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR));
     };
     // People allowed to report are tournament organiser
-    Ok(breakdown(bracket, None, true))
+    Ok((StatusCode::OK, breakdown(bracket, None, true)))
 }

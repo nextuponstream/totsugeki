@@ -1,6 +1,7 @@
 //! Show bracket
 
 use crate::brackets::breakdown;
+use crate::http::{internal_error, ErrorSlug};
 use crate::repositories::brackets::BracketRepository;
 use crate::users::session::Keys::UserId;
 use axum::extract::{Path, State};
@@ -30,17 +31,21 @@ pub async fn show_bracket(
         .await
         .expect("maybe id of user");
 
-    let mut transaction = pool.begin().await.unwrap();
+    let mut transaction = pool.begin().await.map_err(internal_error)?;
     let (bracket, is_tournament_organiser) =
+    // FIXME wrong error type
         match BracketRepository::read_for_user(&mut transaction, bracket_id, user_id).await {
             Ok(Some(data)) => data,
-            Ok(None) => return (StatusCode::NOT_FOUND).into_response(),
+            Ok(None) => return Err(ErrorSlug::from(StatusCode::NOT_FOUND)),
             Err(e) => {
                 tracing::error!("{e:?}");
-                return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
+                return Err(ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR));
             }
         };
 
-    transaction.commit().await.unwrap();
-    breakdown(bracket, user_id, is_tournament_organiser).into_response()
+    transaction.commit().await.map_err(internal_error)?;
+    Ok((
+        StatusCode::OK,
+        breakdown(bracket, user_id, is_tournament_organiser),
+    ))
 }

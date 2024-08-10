@@ -1,6 +1,7 @@
 //! Update bracket with result
 
 use crate::brackets::{breakdown, ReportResultInput};
+use crate::http::{internal_error, ErrorSlug};
 use crate::repositories::brackets::BracketRepository;
 use axum::extract::{Path, State};
 use axum::response::IntoResponse;
@@ -30,16 +31,16 @@ pub async fn update_with_result(
 ) -> impl IntoResponse {
     // FIXME check if user can edit bracket using tournament_organisers table
     tracing::debug!("new reported result");
-    let mut transaction = pool.begin().await.unwrap();
+    let mut transaction = pool.begin().await.map_err(internal_error)?;
     let bracket =
         match BracketRepository::update_with_result(&mut transaction, bracket_id, &report).await {
             Ok(Some(bracket)) => bracket,
-            Ok(None) => return Err(StatusCode::NOT_FOUND),
+            Ok(None) => return Err(ErrorSlug::from(StatusCode::NOT_FOUND)),
             Err(e) => {
                 tracing::warn!("Cannot update bracket {bracket_id} with result {report:?}: {e:?}");
-                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+                return Err(ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR));
             }
         };
-    transaction.commit().await.unwrap();
+    transaction.commit().await.map_err(internal_error)?;
     Ok(breakdown(bracket, None, true))
 }

@@ -2,6 +2,7 @@
 
 use crate::brackets::{CreateBracketForm, GenericResourceCreated};
 use crate::http::internal_error;
+use crate::http::Error;
 use crate::middlewares::validation::ValidatedJson;
 use crate::repositories::brackets::BracketRepository;
 use crate::users::session::Keys::UserId;
@@ -25,31 +26,32 @@ pub(crate) async fn create_bracket(
 ) -> impl IntoResponse {
     tracing::debug!("new bracket from players: {:?}", form.player_names);
 
-    let mut transaction = pool.begin().await.map_err(internal_error).unwrap();
+    let mut transaction = pool.begin().await.map_err(internal_error)?;
     // TODO refactor user_id key in SESSION_KEY enum
     let user_id: totsugeki::player::Id =
         session.get(&UserId.to_string()).await.expect("").expect("");
     let mut bracket = Bracket::default();
     for name in form.player_names {
-        let tmp = bracket.add_participant(name.as_str()).unwrap();
+        // FIXME actual error handling
+        let tmp = bracket
+            .add_participant(name.as_str())
+            .map_err(internal_error)?;
         bracket = tmp.0;
     }
     let bracket = bracket.update_name(form.bracket_name);
 
-    BracketRepository::create(&mut transaction, &bracket, user_id)
-        .await
-        .unwrap();
+    BracketRepository::create(&mut transaction, &bracket, user_id).await?;
 
-    transaction.commit().await.map_err(internal_error).unwrap();
+    transaction.commit().await.map_err(internal_error)?;
 
     // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
     tracing::info!("new bracket {}", bracket.get_id());
 
     tracing::debug!("new bracket {:?}", bracket);
-    (
+    Ok::<(StatusCode, axum::Json<GenericResourceCreated>), Error>((
         StatusCode::CREATED,
         AxumJson(GenericResourceCreated {
             id: bracket.get_id(),
         }),
-    )
+    ))
 }

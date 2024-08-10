@@ -1,5 +1,6 @@
 //! List brackets
 
+use crate::http::internal_error;
 use crate::middlewares::validation::ValidatedRequest;
 use crate::repositories::brackets::BracketRepository;
 use crate::resources::{Pagination, PaginationResult};
@@ -15,15 +16,15 @@ pub(crate) async fn list_brackets(
     State(pool): State<PgPool>,
     ValidatedRequest(pagination): ValidatedRequest<Pagination>,
 ) -> crate::http::Result<Json<PaginationResult>> {
-    let limit: i64 = pagination.limit.try_into().expect("ok");
-    let offset: i64 = pagination.offset.try_into().expect("ok");
+    let limit: i64 = pagination.limit.try_into().map_err(internal_error)?;
+    let offset: i64 = pagination.offset.try_into().map_err(internal_error)?;
 
-    let mut transaction = pool.begin().await?;
+    let mut transaction = pool.begin().await.map_err(internal_error)?;
     let brackets =
         BracketRepository::list(&mut transaction, pagination.sort_order, limit, offset).await?;
     let data = brackets;
     let pagination_result = PaginationResult { total: 100, data };
-    transaction.commit().await?;
+    transaction.commit().await.map_err(internal_error)?;
 
     Ok(Json(pagination_result))
 }

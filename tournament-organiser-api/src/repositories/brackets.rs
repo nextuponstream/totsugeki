@@ -161,15 +161,14 @@ impl BracketRepository {
             };
         let bracket = Bracket::assemble(b.id, b.name, b.participants.0, b.matches.0 .0);
 
-        let (bracket, _, _) = match bracket.tournament_organiser_reports_result(
-            report.p1_id,
-            (report.score_p1, report.score_p2),
-            report.p2_id,
-        ) {
-            Ok(v) => v,
-            // Err(TotsugekiError) =>
-            _ => unreachable!(),
-        };
+        // FIXME actual error handling
+        let (bracket, _, _) = bracket
+            .tournament_organiser_reports_result(
+                report.p1_id,
+                (report.score_p1, report.score_p2),
+                report.p2_id,
+            )
+            .unwrap();
         let _r = sqlx::query!(
             r#"
         UPDATE brackets

@@ -1,6 +1,7 @@
 //! Save bracket from steps
 
 use crate::brackets::{breakdown, BracketState};
+use crate::http::{internal_error, ErrorSlug};
 use crate::repositories::brackets::BracketRepository;
 use crate::users::session::Keys;
 use axum::extract::State;
@@ -39,7 +40,7 @@ pub async fn save_bracket_from_steps(
     for player in bracket_state.players {
         let Ok(tmp) = bracket.add_participant(player.get_name().as_str()) else {
             tracing::warn!("oh no");
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            return Err(ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR));
         };
         bracket = tmp.0;
         safe_player_mapping.push((player, tmp.1));
@@ -48,17 +49,17 @@ pub async fn save_bracket_from_steps(
         Ok(b) => b.0,
         Err(err) => {
             tracing::warn!("{err}");
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            return Err(ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR));
         }
     };
     // let mut bracket = bracket.0;
     for r in bracket_state.results {
         let report = (r.score_p1, r.score_p2);
         let Some(p1_mapping) = safe_player_mapping.iter().find(|m| m.0.get_id() == r.p1_id) else {
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            return Err(ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR));
         };
         let Some(p2_mapping) = safe_player_mapping.iter().find(|m| m.0.get_id() == r.p2_id) else {
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            return Err(ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR));
         };
         bracket = match bracket.tournament_organiser_reports_result(
             p1_mapping.1.get_id(),
@@ -68,12 +69,12 @@ pub async fn save_bracket_from_steps(
             Ok(b) => b.0,
             Err(err) => {
                 tracing::warn!("{err}");
-                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+                return Err(ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR));
             }
         };
     }
 
-    let mut transaction = pool.begin().await.unwrap();
+    let mut transaction = pool.begin().await.map_err(internal_error)?;
     let user_id: totsugeki::player::Id = session
         .get(&Keys::UserId.to_string())
         .await
@@ -81,13 +82,13 @@ pub async fn save_bracket_from_steps(
         .expect("user id");
     if let Err(e) = BracketRepository::create(&mut transaction, &bracket, user_id).await {
         tracing::error!("{e:?}");
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        return Err(ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR));
     };
 
-    transaction.commit().await.unwrap();
+    transaction.commit().await.map_err(internal_error)?;
 
     tracing::info!("new bracket replayed from steps {}", bracket.get_id());
     tracing::debug!("new bracket replayed from steps {:?}", bracket);
 
-    Ok((StatusCode::CREATED, breakdown(bracket, None, true)).into_response())
+    Ok((StatusCode::CREATED, breakdown(bracket, None, true)))
 }

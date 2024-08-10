@@ -104,6 +104,7 @@ pub struct Bracket {
     name: String,
     /// Players of this bracket
     participants: Participants,
+    // FIXME move to instance XXXBracket
     /// Matches from this bracket, sorted by rounds
     matches: Vec<Match>,
     /// Bracket format

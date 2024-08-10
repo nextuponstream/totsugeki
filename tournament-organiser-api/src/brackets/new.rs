@@ -24,6 +24,7 @@ pub async fn new_bracket(Json(form): Json<CreateBracketForm>) -> impl IntoRespon
     for name in form.player_names {
         // FIXME into
         let Ok(tmp) = bracket.add_participant(name.as_str()) else {
+            // FIXME actual error handling
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         };
         bracket = tmp.0;
