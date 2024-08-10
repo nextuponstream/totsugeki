@@ -6,9 +6,9 @@
   ],
   "compilerOptions": {
     "isolatedModules": false,
-    "target": "ES2022",
+    "target": "ES5",
     "lib": [
-      "ES2022",
+      "ES5",
       "dom"
     ],
     "types": [
