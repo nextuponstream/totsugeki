@@ -13,7 +13,6 @@ use crate::{
         disqualification::get_new_matches,
         progression::{new_matches, winner_of_bracket},
     },
-    format::Format,
     matches::{
         double_elimination_matches_from_partition as dem_partition,
         partition_double_elimination_matches, Error as MatchError, Id as MatchId, Match,
@@ -254,10 +253,6 @@ impl Progression for Step {
                 }
             }
         }
-    }
-
-    fn get_format(&self) -> Format {
-        Format::DoubleElimination
     }
 
     fn is_over(&self) -> bool {

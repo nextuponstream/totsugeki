@@ -55,7 +55,7 @@ impl Format {
     /// Returns progression implementation for this bracket format
     ///
     /// # Panics
-    /// Panics if match generation of given format cannot generate match
+    /// if match generation of given format cannot generate match
     #[must_use]
     pub fn get_progression(
         &self,

@@ -1,7 +1,6 @@
 //! Manage matches from bracket
 
 use crate::{
-    format::Format,
     matches::{Error as MatchError, Id as MatchId, Match},
     opponent::Opponent,
     player::Id as PlayerId,
@@ -91,13 +90,12 @@ pub(crate) fn update_bracket_with(bracket: &[Match], updated_match: &Match) -> V
 ///
 /// if applicable, the loser of updated match, the expected loser seed that
 /// should be used when sending them in lower bracket and a boolean to indicate
-/// if the they are disqualified
+/// if they are disqualified
 type BracketUpdate = (Vec<Match>, Option<(PlayerId, usize, bool)>);
 
 /// Takes matches in bracket, validate `match_id` and returns updated winner
 /// bracket, id of loser (if there is one), the seed to use when placing them
-/// in loser's bracket (if there is one) and whether or not this player is
-/// disqualified
+/// in loser's bracket (if there is one) and whether this player is disqualified
 ///
 /// Assuming bracket is always updated after any player is disqualified, there
 /// is at most one disqualified player that can drop from winners into loser
@@ -211,9 +209,6 @@ pub(crate) fn assert_match_is_well_formed(m: &Match) {
 
 /// Computes the next state of a tournament
 pub trait Progression {
-    /// Get format of this bracket
-    fn get_format(&self) -> Format;
-
     /// Disqualify participant from bracket and update matches. Returns updated
     /// matches and matches to play
     ///

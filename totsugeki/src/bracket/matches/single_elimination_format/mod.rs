@@ -10,7 +10,6 @@ use super::{
 };
 use crate::{
     bracket::{disqualification::get_new_matches, progression::new_matches},
-    format::Format,
     matches::{Error as MatchError, Id as MatchId, Match, ReportedResult},
     opponent::Opponent,
     player::Id as PlayerId,
@@ -143,10 +142,6 @@ impl Progression for Step {
             }
             Err(e) => Err(e),
         }
-    }
-
-    fn get_format(&self) -> Format {
-        Format::SingleElimination
     }
 
     fn is_over(&self) -> bool {
