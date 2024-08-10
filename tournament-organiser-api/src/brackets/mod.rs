@@ -1,20 +1,32 @@
 //! bracket management
 
-pub mod join;
+mod create;
+mod join;
+mod list;
+mod new;
+mod report_result;
+mod save_bracket_from_steps;
+mod show;
+mod update_with_result;
+mod user_brackets;
 
-use crate::http::{internal_error, Result};
-use crate::middlewares::validation::{ValidatedJson, ValidatedRequest};
-use crate::repositories::brackets::{BracketRepository, MatchesRaw};
-use crate::resources::{Pagination, PaginationResult};
-use crate::users::session::Keys;
-use crate::users::session::Keys::UserId;
-use axum::extract::{Path, State};
-use axum::{debug_handler, response::IntoResponse, Json as AxumJson};
+// Flatten exports when reusing
+pub(crate) use crate::brackets::create::*;
+pub(crate) use crate::brackets::join::*;
+pub(crate) use crate::brackets::list::*;
+pub(crate) use crate::brackets::new::*;
+pub(crate) use crate::brackets::report_result::*;
+pub(crate) use crate::brackets::save_bracket_from_steps::*;
+pub(crate) use crate::brackets::show::*;
+pub(crate) use crate::brackets::update_with_result::*;
+pub(crate) use crate::brackets::user_brackets::*;
+
+use crate::repositories::brackets::MatchesRaw;
+use axum::{response::IntoResponse, Json as AxumJson};
 use chrono::prelude::*;
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::types::Json as SqlxJson;
-use sqlx::PgPool;
 use totsugeki::bracket::{
     double_elimination_variant::Variant as DoubleEliminationVariant, Bracket, Id,
 };
@@ -24,8 +36,6 @@ use totsugeki_display::loser_bracket::reorder as reorder_loser_bracket;
 use totsugeki_display::winner_bracket::lines as winner_bracket_lines;
 use totsugeki_display::winner_bracket::reorder as reorder_winner_bracket;
 use totsugeki_display::{from_participants, BoxElement, MinimalMatch};
-use tower_sessions::Session;
-use tracing::instrument;
 use validator::Validate;
 
 /// List of players from which a bracket can be created
@@ -103,143 +113,6 @@ pub struct BracketState {
     pub players: Vec<Player>,
     ///  results in order of replay
     pub results: Vec<PlayerMatchResultReport>,
-}
-
-/// Return a newly instantiated bracket from ordered (=seeded) player names for
-/// display purposes
-///
-/// # Panics
-/// When bracket cannot be converted to double elimination bracket
-///
-/// # Errors
-/// May return 500 error when bracket cannot be parsed
-#[instrument(name = "new_bracket")]
-pub async fn new_bracket(AxumJson(form): AxumJson<CreateBracketForm>) -> impl IntoResponse {
-    tracing::debug!("new bracket");
-
-    let mut bracket = Bracket::default();
-    bracket = bracket.update_name(form.bracket_name);
-    for name in form.player_names {
-        let Ok(tmp) = bracket.add_participant(name.as_str()) else {
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        };
-        bracket = tmp.0;
-    }
-
-    Ok(breakdown(bracket, None, false).into_response())
-}
-
-/// Save bracket replayed from player reports so in the event a guest actually
-/// wants to save the resulting bracket, they can.
-///
-/// The server will not accept a JSON of a bracket just because it can be
-/// parsed as that may lead to a malformed bracket. Then we do something a
-/// little more intense computation wise that always yields a correct bracket.
-#[instrument(name = "save_bracket_from_steps")]
-#[debug_handler]
-pub async fn save_bracket_from_steps(
-    session: Session,
-    State(pool): State<PgPool>,
-    AxumJson(bracket_state): AxumJson<BracketState>,
-) -> impl IntoResponse {
-    // NOTE: always pool before arguments. Otherwise:
-    // error[E0277]: the trait bound `fn(axum::Json<BracketState>,
-    // State<Pool<Postgres>>) -> impl std::future::Future<Output = impl
-    // IntoResponse> {save_bracket}: Handler<_, _>` is not satisfied
-    tracing::debug!("new bracket replayed from steps");
-
-    let mut bracket = Bracket::default();
-    bracket = bracket.update_name(bracket_state.bracket_name);
-    let mut safe_player_mapping = vec![];
-    // Do not rely on given ID, assign new IDs to players and map
-    for player in bracket_state.players {
-        let Ok(tmp) = bracket.add_participant(player.get_name().as_str()) else {
-            tracing::warn!("oh no");
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        };
-        bracket = tmp.0;
-        safe_player_mapping.push((player, tmp.1));
-    }
-    let mut bracket = match bracket.start() {
-        Ok(b) => b.0,
-        Err(err) => {
-            tracing::warn!("{err}");
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
-    // let mut bracket = bracket.0;
-    for r in bracket_state.results {
-        let report = (r.score_p1, r.score_p2);
-        let Some(p1_mapping) = safe_player_mapping.iter().find(|m| m.0.get_id() == r.p1_id) else {
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        };
-        let Some(p2_mapping) = safe_player_mapping.iter().find(|m| m.0.get_id() == r.p2_id) else {
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        };
-        bracket = match bracket.tournament_organiser_reports_result(
-            p1_mapping.1.get_id(),
-            report,
-            p2_mapping.1.get_id(),
-        ) {
-            Ok(b) => b.0,
-            Err(err) => {
-                tracing::warn!("{err}");
-                return Err(StatusCode::INTERNAL_SERVER_ERROR);
-            }
-        };
-    }
-
-    let mut transaction = pool.begin().await.unwrap();
-    let user_id: totsugeki::player::Id = session
-        .get(&Keys::UserId.to_string())
-        .await
-        .expect("value from store")
-        .expect("user id");
-    if let Err(e) = BracketRepository::create(&mut transaction, &bracket, user_id).await {
-        tracing::error!("{e:?}");
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
-    };
-
-    transaction.commit().await.unwrap();
-
-    tracing::info!("new bracket replayed from steps {}", bracket.get_id());
-    tracing::debug!("new bracket replayed from steps {:?}", bracket);
-
-    Ok((StatusCode::CREATED, breakdown(bracket, None, true)).into_response())
-}
-
-/// Returns existing bracket for display purposes
-///
-/// # Panics
-/// When bracket cannot be converted to double elimination bracket
-///
-/// # Errors
-/// May return 500 error when bracket cannot be parsed
-#[instrument(name = "get_bracket", skip(session, pool))]
-pub async fn get_bracket(
-    session: Session,
-    Path(bracket_id): Path<Id>,
-    State(pool): State<PgPool>,
-) -> impl IntoResponse {
-    tracing::debug!("bracket {bracket_id}");
-    let user_id: Option<totsugeki::player::Id> = session
-        .get(&UserId.to_string())
-        .await
-        .expect("maybe id of user");
-
-    let mut transaction = pool.begin().await.unwrap();
-    let (bracket, is_tournament_organiser) =
-        match BracketRepository::read_for_user(&mut transaction, bracket_id, user_id).await {
-            Ok(Some(data)) => data,
-            Ok(None) => return (StatusCode::NOT_FOUND).into_response(),
-            Err(e) => {
-                tracing::error!("{e:?}");
-                return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
-            }
-        };
-
-    transaction.commit().await.unwrap();
-    breakdown(bracket, user_id, is_tournament_organiser).into_response()
 }
 
 /// Breaks down bracket in small parts to be presented by UI
@@ -324,74 +197,6 @@ fn breakdown(
     (StatusCode::OK, AxumJson(bracket)).into_response()
 }
 
-/// Returns updated bracket with result. Because there is no persistence, it's
-/// obviously limited in that TO can manipulate localStorage to change the
-/// bracket, but we are not worried about that right now. For now, the goal is
-/// that it just works for normal use cases
-///
-/// # Panics
-/// May panic if I fucked up
-///
-/// # Errors
-/// Error 500 if a user gets out of sync with the bracket in the database and
-/// the one displayed in the web page
-// TODO report should be at debug level
-#[instrument(name = "update_with_result", skip(report, pool))]
-pub async fn update_with_result(
-    State(pool): State<PgPool>,
-    Path(bracket_id): Path<Id>,
-    AxumJson(report): AxumJson<ReportResultInput>,
-) -> impl IntoResponse {
-    // FIXME check if user can edit bracket using tournament_organisers table
-    tracing::debug!("new reported result");
-    let mut transaction = pool.begin().await.unwrap();
-    let bracket =
-        match BracketRepository::update_with_result(&mut transaction, bracket_id, &report).await {
-            Ok(Some(bracket)) => bracket,
-            Ok(None) => return Err(StatusCode::NOT_FOUND),
-            Err(e) => {
-                tracing::warn!("Cannot update bracket {bracket_id} with result {report:?}: {e:?}");
-                return Err(StatusCode::INTERNAL_SERVER_ERROR);
-            }
-        };
-    transaction.commit().await.unwrap();
-    Ok(breakdown(bracket, None, true))
-}
-
-/// Returns updated bracket with result. Because there is no persistence, it's
-/// obviously limited in that TO can manipulate localStorage to change the
-/// bracket, but we are not worried about that right now. For now, the goal is
-/// that it just works for normal use cases
-///
-/// # Panics
-/// May panic if I fucked up
-///
-/// # Errors
-/// Error 500 if a user gets out of sync with the bracket in the database and
-/// the one displayed in the web page
-// TODO report should be at debug level
-#[instrument(name = "report_result", skip(report))]
-pub async fn report_result(AxumJson(report): AxumJson<ReportResultInput>) -> impl IntoResponse {
-    tracing::debug!("new reported result");
-    let mut bracket = report.bracket;
-
-    bracket = match bracket.tournament_organiser_reports_result(
-        report.p1_id,
-        (report.score_p1, report.score_p2),
-        report.p2_id,
-    ) {
-        Ok((bracket, _, _)) => bracket,
-        Err(e) => {
-            // TODO deal with corner case where UI shows a bracket that is out
-            //  of sync with database state and returns something to user
-            tracing::warn!("{e:?}");
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
-    // People allowed to report are tournament organiser
-    Ok(breakdown(bracket, None, true))
-}
-
 #[derive(Serialize, Deserialize)]
 /// 201 response
 pub struct GenericResourceCreated {
@@ -412,98 +217,4 @@ pub(crate) struct BracketRecord {
     pub matches: SqlxJson<MatchesRaw>,
     /// participants
     pub participants: SqlxJson<Participants>,
-}
-
-/// Return a newly instanciated bracket from ordered (=seeded) player names
-#[instrument(name = "create_bracket", skip(pool, session))]
-#[debug_handler]
-pub async fn create_bracket(
-    session: Session,
-    State(pool): State<PgPool>,
-    ValidatedJson(form): ValidatedJson<CreateBracketForm>,
-) -> impl IntoResponse {
-    tracing::debug!("new bracket from players: {:?}", form.player_names);
-
-    let mut transaction = pool.begin().await.map_err(internal_error).unwrap();
-    // TODO refactor user_id key in SESSION_KEY enum
-    let user_id: totsugeki::player::Id =
-        session.get(&UserId.to_string()).await.expect("").expect("");
-    let mut bracket = Bracket::default();
-    for name in form.player_names {
-        let tmp = bracket.add_participant(name.as_str()).unwrap();
-        bracket = tmp.0;
-    }
-    let bracket = bracket.update_name(form.bracket_name);
-
-    BracketRepository::create(&mut transaction, &bracket, user_id)
-        .await
-        .unwrap();
-
-    transaction.commit().await.map_err(internal_error).unwrap();
-
-    // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
-    tracing::info!("new bracket {}", bracket.get_id());
-
-    tracing::debug!("new bracket {:?}", bracket);
-    (
-        StatusCode::CREATED,
-        AxumJson(GenericResourceCreated {
-            id: bracket.get_id(),
-        }),
-    )
-}
-
-/// Return a newly instanciated bracket from ordered (=seeded) player names
-#[instrument(name = "list_brackets", skip(pool))]
-pub async fn list_brackets(
-    // NOTE pool before validated query params for some reason???
-    State(pool): State<PgPool>,
-    ValidatedRequest(pagination): ValidatedRequest<Pagination>,
-) -> Result<AxumJson<PaginationResult>> {
-    let limit: i64 = pagination.limit.try_into().expect("ok");
-    let offset: i64 = pagination.offset.try_into().expect("ok");
-
-    let mut transaction = pool.begin().await?;
-    let brackets =
-        BracketRepository::list(&mut transaction, pagination.sort_order, limit, offset).await?;
-    let data = brackets;
-    let pagination_result = PaginationResult { total: 100, data };
-    transaction.commit().await?;
-
-    Ok(AxumJson(pagination_result))
-}
-
-/// `/:user_id/brackets` GET to view brackets managed by user
-#[instrument(name = "user_brackets", skip(pool))]
-#[debug_handler]
-pub(crate) async fn user_brackets(
-    Path(user_id): Path<Id>,
-    State(pool): State<PgPool>,
-    ValidatedRequest(pagination): ValidatedRequest<Pagination>,
-) -> Result<AxumJson<PaginationResult>> {
-    let limit: i64 = pagination.limit.try_into().expect("ok");
-    let offset: i64 = pagination.offset.try_into().expect("ok");
-
-    let mut transaction = pool.begin().await?;
-    let brackets = BracketRepository::user_brackets(
-        &mut transaction,
-        pagination.sort_order,
-        limit,
-        offset,
-        user_id,
-    )
-    .await?;
-
-    let total = if brackets.is_empty() {
-        0
-    } else {
-        brackets[0].total.expect("total")
-    };
-    let total = total.try_into().expect("conversion");
-    let data = brackets;
-    let pagination_result = PaginationResult { total, data };
-
-    transaction.commit().await?;
-
-    Ok(AxumJson(pagination_result))
 }

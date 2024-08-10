@@ -13,11 +13,9 @@ use totsugeki::bracket::Id;
 use tower_sessions::Session;
 use tracing::instrument;
 
-// FIXME better error slugs
-
 /// Let user join bracket as a player
 #[instrument(name = "join_bracket", skip(session, pool))]
-pub async fn join_bracket(
+pub(crate) async fn join_bracket(
     session: Session,
     Path(bracket_id): Path<Id>,
     State(pool): State<PgPool>,
@@ -27,29 +25,32 @@ pub async fn join_bracket(
         .get(&UserId.to_string())
         .await
         .map_err(internal_error)?
-        .ok_or_else(|| ErrorSlug::new(StatusCode::INTERNAL_SERVER_ERROR, "user id"))?;
+        .ok_or_else(|| {
+            tracing::error!("missing user id");
+            ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR)
+        })?;
 
     let mut transaction = pool.begin().await.map_err(internal_error)?;
     let user = match UserRepository::read(&mut transaction, user_id).await {
         Ok(Some(user)) => user,
-        Ok(None) => return Err(ErrorSlug::new(StatusCode::NOT_FOUND, "")),
+        Ok(None) => return Err(ErrorSlug::from(StatusCode::NOT_FOUND)),
         Err(e) => {
             tracing::error!("{e:?}");
-            return Err(ErrorSlug::new(StatusCode::INTERNAL_SERVER_ERROR, "otu"));
+            return Err(ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR));
         }
     };
     let (bracket, is_tournament_organiser) =
         // FIXME make all errors from totsugeki library simple to parse and not a big enum when some
-        // enum variants are simply irrelevant for some methods
+        //  enum variants are simply irrelevant for some methods
         match BracketRepository::join(&mut transaction, bracket_id, user).await {
             Ok(Some(data)) => data,
-            Ok(None) => return Err(ErrorSlug::new(StatusCode::NOT_FOUND, "")),
+            Ok(None) => return Err(ErrorSlug::from(StatusCode::NOT_FOUND)),
             Err(Error::PlayerAlreadyPresent)=> {
                 return Err(ErrorSlug::new(StatusCode::CONFLICT, "player-already-present"));
             }
             Err(e) => {
                 tracing::error!("{e:?}");
-                return Err(ErrorSlug::new(StatusCode::INTERNAL_SERVER_ERROR, ""));
+                return Err(ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR));
             }
         };
 

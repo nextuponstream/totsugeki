@@ -6,10 +6,10 @@ use http::StatusCode;
 use sqlx::{Pool, Postgres};
 use tower_sessions_sqlx_store::PostgresStore;
 
-use crate::brackets::join::join_bracket;
+use crate::brackets::join_bracket;
 use crate::brackets::{
-    create_bracket, get_bracket, list_brackets, new_bracket, report_result,
-    save_bracket_from_steps, update_with_result, user_brackets,
+    create_bracket, list_brackets, new_bracket, report_result, save_bracket_from_steps,
+    show_bracket, update_with_result, user_brackets,
 };
 use crate::health_check::health_check;
 use crate::middlewares::authentication::{auth_layer, maybe_auth_layer};
@@ -66,7 +66,7 @@ pub(crate) fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router 
     let maybe_logged_in_routes = Router::new()
         .nest(
             "/brackets",
-            Router::new().route("/:bracket_id", get(get_bracket)),
+            Router::new().route("/:bracket_id", get(show_bracket)),
         )
         .layer(axum::middleware::from_fn_with_state(
             session_store,
