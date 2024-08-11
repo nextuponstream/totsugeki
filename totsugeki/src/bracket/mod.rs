@@ -10,7 +10,7 @@ mod ongoing;
 pub mod participants;
 mod progression;
 mod query_state;
-mod seeding;
+pub(crate) mod seeding;
 pub mod single_elimination_variant;
 mod winner_bracket;
 

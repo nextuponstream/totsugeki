@@ -1,10 +1,42 @@
 //! Update seeding of bracket
 
 use crate::{
-    bracket::{Bracket, Error},
+    bracket::{Bracket, Error as BracketError},
     player::{Id as PlayerId, Participants, Player},
     seeding::seed,
+    ID,
 };
+use thiserror::Error;
+
+/// Seeding is an ordered list of player
+#[derive(Debug, Clone)]
+pub(crate) struct Seeding(Vec<PlayerId>);
+
+/// Error while creating seeding
+#[derive(Error, Debug)]
+pub enum SeedingError {
+    /// Duplicate player
+    #[error("Duplicate player")]
+    DuplicatePlayer,
+}
+
+impl Seeding {
+    /// Creates a unique player list, ordered for seeding
+    pub fn new(player_ids: &[ID]) -> Result<Self, SeedingError> {
+        // FIXME validate all players are unique
+        todo!()
+    }
+
+    /// Contains player
+    pub fn contains(&self, player_id: PlayerId) -> bool {
+        self.0.contains(&player_id)
+    }
+
+    /// Number of players
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+}
 
 impl Bracket {
     /// Update seeding with players ordered by seeding position and generate
@@ -12,16 +44,16 @@ impl Bracket {
     ///
     /// # Errors
     /// thrown when provided players do not match current players in bracket
-    pub fn update_seeding(self, players: &[PlayerId]) -> Result<Self, Error> {
+    pub fn update_seeding(self, players: &[PlayerId]) -> Result<Self, BracketError> {
         if self.accept_match_results {
-            return Err(Error::Started(self.id, String::new()));
+            return Err(BracketError::Started(self.id, String::new()));
         }
 
         let mut player_group = Participants::default();
         for sorted_player in players {
             let players = self.get_participants().get_players_list();
             let Some(player) = players.iter().find(|p| p.get_id() == *sorted_player) else {
-                return Err(Error::UnknownPlayer(
+                return Err(BracketError::UnknownPlayer(
                     *sorted_player,
                     self.participants.clone(),
                     self.id,
@@ -71,7 +103,7 @@ mod tests {
         let (updated_bracket, _) = bracket.start().expect("start");
         let seeding = vec![p3_id, p2_id, p1_id];
         match updated_bracket.update_seeding(&seeding) {
-            Err(Error::Started(id, _)) => assert_eq!(id, bracket_id),
+            Err(BracketError::Started(id, _)) => assert_eq!(id, bracket_id),
             Err(e) => panic!("Expected Started error, got {e}"),
             Ok(b) => panic!("Expected error, bracket: {b}"),
         }
@@ -95,7 +127,7 @@ mod tests {
         let expected_participants = bracket.get_participants();
         let expected_bracket_id = bracket.id;
         let (id, p, bracket_id) = match bracket.clone().update_seeding(&seeding) {
-            Err(Error::UnknownPlayer(id, p, bracket_id)) => (id, p, bracket_id),
+            Err(BracketError::UnknownPlayer(id, p, bracket_id)) => (id, p, bracket_id),
             Err(e) => panic!("Expected Players error, got {e}"),
             Ok(b) => panic!("Expected error, bracket: {b}"),
         };
@@ -106,7 +138,9 @@ mod tests {
         // no players
         let seeding = vec![];
         let wrong_p = match bracket.clone().update_seeding(&seeding) {
-            Err(Error::Seeding(SeedingError::DifferentParticipants(wrong_p, _actual_p))) => wrong_p,
+            Err(BracketError::Seeding(SeedingError::DifferentParticipants(wrong_p, _actual_p))) => {
+                wrong_p
+            }
             Err(e) => panic!(
                 "Expected Error::Seeding(SeedingError::DifferentParticipants) error but got {e}"
             ),
@@ -117,7 +151,7 @@ mod tests {
         // duplicate player
         let seeding = vec![p1_id, p1_id, p1_id];
         match bracket.clone().update_seeding(&seeding) {
-            Err(Error::PlayerUpdate(PlayerError::AlreadyPresent)) => {}
+            Err(BracketError::PlayerUpdate(PlayerError::AlreadyPresent)) => {}
             Err(e) => panic!(
                 "Expected Error::PlayerUpdate(PlayerError::AlreadyPresent) error but got {e}"
             ),

@@ -16,6 +16,8 @@ use crate::{
     seeding::single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored,
 };
 
+// FIXME remove struct entirely once refactored into single_elimination_bracket
+//  module
 /// Computes the next step of a single-elimination tournament
 #[derive(Clone, Debug)]
 pub(crate) struct Step {

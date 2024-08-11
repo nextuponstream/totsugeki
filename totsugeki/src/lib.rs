@@ -9,7 +9,6 @@
 #![warn(clippy::unwrap_used)]
 #![forbid(unsafe_code)]
 
-#[cfg(test)]
 use uuid::Uuid;
 
 pub mod bracket;
@@ -20,6 +19,9 @@ pub mod opponent;
 pub mod player;
 pub mod seeding;
 pub mod single_elimination_bracket;
+
+/// ID for bracket, players...
+pub type ID = Uuid;
 
 #[cfg(test)]
 /// Helper function for test cases with small group of players. Instead of

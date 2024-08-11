@@ -1,8 +1,18 @@
 //! Generate seeded matches for single elimination
 
-use super::seeding_initial_round;
+use super::{seeding_initial_round, seeding_initial_round2};
+use crate::bracket::seeding::Seeding;
 use crate::seeding::Error as SeedingError;
 use crate::{matches::Match, opponent::Opponent, player::Id as PlayerId};
+use thiserror::Error;
+
+/// Single elimination bracket match generation errors
+#[derive(Error, Debug)]
+pub enum SingleEliminationBracketMatchGenerationError {
+    /// Math overflow
+    #[error("Unrecoverable math overflow")]
+    UnrecoverableMathOverflow,
+}
 
 /// Returns tournament matches for `n` players in a list. Used for generating
 /// single elimination bracket or winner bracket in double elimination format.
@@ -18,9 +28,108 @@ use crate::{matches::Match, opponent::Opponent, player::Id as PlayerId};
 /// We do not expect any panics here because we take the top and bottom seed to
 /// form a new match or we use the players with byes and give them an "unknown"
 /// Opponent.
+pub fn get_balanced_round_matches_top_seed_favored2(
+    seeding: &Seeding,
+) -> Result<Vec<Match>, SingleEliminationBracketMatchGenerationError> {
+    // FIXME seeding should be a struct that has been well constructed
+    // Matches are built bottom-up:
+    // * for n
+    // * compute #byes = `next_power_of_two(n)` - n
+    // * for round 1, assign the #byes top seeds their bye match
+    //   NOTE: you don't need to add those matches to the list of generated matches
+    // * for round 1, find top+low seed, assign them a match and repeat until no players are left
+    // * for round 2, select next 4 matches
+    // * ...
+    let n = seeding.len();
+    let byes = n
+        .checked_next_power_of_two()
+        .ok_or(SingleEliminationBracketMatchGenerationError::UnrecoverableMathOverflow)?
+        - n;
+    // let mut remaining_byes = byes;
+    // let mut this_round: Vec<Match> = vec![];
+    // let mut round_matches: Vec<Vec<Match>> = vec![];
+    //
+    // // Initialize bye matches in first round
+    // let mut available_players: Vec<usize> = (1..=n).collect();
+    // (0..byes).for_each(|_| {
+    //     let _top_seed = available_players.remove(0);
+    // });
+    //
+    // let Some(first_round) = n.checked_next_power_of_two() else {
+    //     return Err(SeedingError::MathOverflow);
+    // };
+    // let second_round = first_round / 2;
+    // let mut i = first_round;
+    // while i > 1 {
+    //     while !available_players.is_empty() {
+    //         if first_round == i {
+    //             seeding_initial_round2(&mut available_players, seeding, &mut this_round);
+    //         } else if second_round == i {
+    //             let top_seed = available_players.remove(0);
+    //             let player_list = seeding;
+    //             let top_seed_player = player_list[top_seed - 1];
+    //             let bottom_seed = available_players[available_players.len() - 1];
+    //             available_players.pop();
+    //             let bottom_seed_player = player_list[bottom_seed - 1];
+    //             let player_1 = if remaining_byes > 0 && top_seed <= byes {
+    //                 remaining_byes -= 1;
+    //                 Opponent::Player(top_seed_player)
+    //             } else {
+    //                 Opponent::Unknown
+    //             };
+    //             let player_2 = if remaining_byes > 0 && bottom_seed <= byes {
+    //                 remaining_byes -= 1;
+    //                 Opponent::Player(bottom_seed_player)
+    //             } else {
+    //                 Opponent::Unknown
+    //             };
+    //
+    //             this_round.push(
+    //                 Match::new([player_1, player_2], [top_seed, bottom_seed]).expect("match"),
+    //             );
+    //         } else {
+    //             let top_seed = available_players.remove(0);
+    //             let bottom_seed = available_players[available_players.len() - 1];
+    //             available_players.pop();
+    //
+    //             this_round.push(
+    //                 Match::new(
+    //                     [Opponent::Unknown, Opponent::Unknown],
+    //                     [top_seed, bottom_seed],
+    //                 )
+    //                 .expect("match"),
+    //             );
+    //         }
+    //     }
+    //
+    //     // empty iteration variable `this_round` into round_matches
+    //     round_matches.push(std::mem::take(&mut this_round));
+    //     i /= 2;
+    //     available_players = (1..=i).collect();
+    // }
+    //
+    // Ok(round_matches.into_iter().flatten().collect())
+    todo!()
+}
+
+/// Returns tournament matches for `n` players in a list. Used for generating
+/// single elimination bracket or winner bracket in double elimination format.
+///
+/// Top seed plays the least matches. They will face predicted higher seeds
+/// only later in the bracket. Top seed plays at most one more match than
+/// anyone else.
+///
+/// # Errors
+/// Throws error when math overflow happens
+///
+/// # Panics
+/// We do not expect any panics here because we take the top and bottom seed to
+/// form a new match, or we use the players with byes and give them an "unknown"
+/// Opponent.
 pub fn get_balanced_round_matches_top_seed_favored(
     seeding: &[PlayerId],
 ) -> Result<Vec<Match>, SeedingError> {
+    // FIXME seeding should be a struct that has been well constructed
     // Matches are built bottom-up:
     // * for n
     // * compute #byes = `next_power_of_two(n)` - n
