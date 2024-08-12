@@ -28,7 +28,7 @@ pub enum SingleEliminationBracketMatchGenerationError {
 /// We do not expect any panics here because we take the top and bottom seed to
 /// form a new match or we use the players with byes and give them an "unknown"
 /// Opponent.
-pub fn get_balanced_round_matches_top_seed_favored2(
+pub(crate) fn get_balanced_round_matches_top_seed_favored2(
     seeding: &Seeding,
 ) -> Result<Vec<Match>, SingleEliminationBracketMatchGenerationError> {
     // FIXME seeding should be a struct that has been well constructed

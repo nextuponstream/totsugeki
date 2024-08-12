@@ -6,25 +6,31 @@ use crate::{
     seeding::seed,
     ID,
 };
+use std::collections::HashSet;
 use thiserror::Error;
 
 /// Seeding is an ordered list of player
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) struct Seeding(Vec<PlayerId>);
 
 /// Error while creating seeding
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 pub enum SeedingError {
     /// Duplicate player
-    #[error("Duplicate player")]
-    DuplicatePlayer,
+    #[error("Duplicate player {0}")]
+    DuplicatePlayer(PlayerId),
 }
 
 impl Seeding {
     /// Creates a unique player list, ordered for seeding
-    pub fn new(player_ids: &[ID]) -> Result<Self, SeedingError> {
-        // FIXME validate all players are unique
-        todo!()
+    pub fn new(player_ids: Vec<ID>) -> Result<Self, SeedingError> {
+        let mut set = HashSet::new();
+        for player_id in &player_ids {
+            if !set.insert(player_id) {
+                return Err(SeedingError::DuplicatePlayer(*player_id));
+            }
+        }
+        Ok(Self(player_ids))
     }
 
     /// Contains player
@@ -85,8 +91,23 @@ mod tests {
         matches::{Id as MatchId, Match},
         opponent::Opponent,
         player::Error as PlayerError,
-        seeding::Error as SeedingError,
+        seeding::Error as OldSeedingError,
     };
+
+    #[test]
+    fn seed_many_players() {
+        let players = vec![ID::new_v4(), ID::new_v4()];
+        assert!(Seeding::new(players).is_ok())
+    }
+    #[test]
+    fn seeding_throws_error_for_duplicate_id() {
+        let duplicate_id = ID::new_v4();
+        let players = vec![ID::new_v4(), ID::new_v4(), duplicate_id, duplicate_id];
+        assert_eq!(
+            Seeding::new(players),
+            Err(SeedingError::DuplicatePlayer(duplicate_id))
+        )
+    }
 
     #[test]
     fn cannot_seed_bracket_after_it_started() {
@@ -138,9 +159,10 @@ mod tests {
         // no players
         let seeding = vec![];
         let wrong_p = match bracket.clone().update_seeding(&seeding) {
-            Err(BracketError::Seeding(SeedingError::DifferentParticipants(wrong_p, _actual_p))) => {
-                wrong_p
-            }
+            Err(BracketError::Seeding(OldSeedingError::DifferentParticipants(
+                wrong_p,
+                _actual_p,
+            ))) => wrong_p,
             Err(e) => panic!(
                 "Expected Error::Seeding(SeedingError::DifferentParticipants) error but got {e}"
             ),
