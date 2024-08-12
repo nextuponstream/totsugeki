@@ -1,5 +1,8 @@
 //! Manage matches from bracket
 
+use crate::matches::GenerationError;
+#[cfg(test)]
+use crate::player::Player;
 use crate::{
     matches::{Error as MatchError, Id as MatchId, Match},
     opponent::Opponent,
@@ -7,9 +10,6 @@ use crate::{
     seeding::Error as SeedingError,
 };
 use thiserror::Error;
-
-#[cfg(test)]
-use crate::player::Player;
 
 pub mod double_elimination_format;
 pub mod single_elimination_format;
@@ -58,8 +58,15 @@ pub enum Error {
     ForbiddenDisqualified(PlayerId),
 }
 
+// FIXME remove
+impl From<GenerationError> for Error {
+    fn from(value: GenerationError) -> Self {
+        Self::MatchUpdate(MatchError::SamePlayer)
+    }
+}
+
 /// Returns true if bracket is over
-fn bracket_is_over(bracket_matches: &[Match]) -> bool {
+pub(crate) fn bracket_is_over(bracket_matches: &[Match]) -> bool {
     !bracket_matches.iter().any(|m| !m.is_over())
 }
 

@@ -28,6 +28,9 @@ pub enum SingleEliminationReportResultError {
     /// Player is unknown, user provided a wrong player
     #[error("Player {0} is unknown")]
     UnknownPlayer(ID),
+    /// Tournament is already over
+    #[error("Tournament is over")]
+    TournamentIsOver,
 }
 
 impl SingleEliminationBracket {

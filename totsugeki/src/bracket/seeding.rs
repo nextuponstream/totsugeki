@@ -9,7 +9,7 @@ use crate::{
 use std::collections::HashSet;
 use thiserror::Error;
 
-/// Seeding is an ordered list of player
+/// Seeding is an ordered list of player. All players IDs are guaranteed unique
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct Seeding(Vec<PlayerId>);
 
@@ -31,6 +31,11 @@ impl Seeding {
             }
         }
         Ok(Self(player_ids))
+    }
+
+    /// Get seeding
+    pub fn get(&self) -> Vec<ID> {
+        self.0.clone()
     }
 
     /// Contains player

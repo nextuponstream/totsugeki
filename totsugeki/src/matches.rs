@@ -41,6 +41,20 @@ pub enum Error {
     AlreadyPresent(PlayerId, PlayerId),
 }
 
+/// Match generation error
+#[derive(Error, Debug)]
+pub enum GenerationError {
+    /// Cannot instantiate match with two same player
+    #[error("Error. Cannot use same player as both player of a match.")]
+    SamePlayer,
+}
+
+impl From<GenerationError> for Error {
+    fn from(value: GenerationError) -> Self {
+        Self::SamePlayer
+    }
+}
+
 /// Seeds of players
 pub type Seeds = [usize; 2];
 
@@ -345,9 +359,11 @@ impl Match {
     /// # Errors
     /// Returns an error if both players are the same (two unknown players will
     /// not produce an error)
-    pub fn new(players: [Opponent; 2], seeds: [usize; 2]) -> Result<Match, Error> {
+    pub fn new(players: [Opponent; 2], seeds: [usize; 2]) -> Result<Match, GenerationError> {
         match players {
-            [Opponent::Player(p1), Opponent::Player(p2)] if p1 == p2 => Err(Error::SamePlayer),
+            [Opponent::Player(p1), Opponent::Player(p2)] if p1 == p2 => {
+                Err(GenerationError::SamePlayer)
+            }
             _ => Ok(Self {
                 id: Id::new_v4(),
                 players,

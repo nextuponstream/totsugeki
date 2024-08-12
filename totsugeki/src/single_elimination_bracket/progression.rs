@@ -1,5 +1,6 @@
 //! Progression of a single elimination bracket
 
+use crate::bracket::matches::bracket_is_over;
 use crate::bracket::seeding::Seeding;
 use crate::matches::{Id, Match};
 use crate::seeding::single_elimination_seeded_bracket::{
@@ -45,10 +46,10 @@ pub trait Progression {
     //     player_id: crate::player::Id,
     // ) -> Result<(Vec<Match>, Vec<Match>), Error>;
     //
-    // /// Returns true if bracket is over (all matches are played)
-    // #[must_use]
-    // fn is_over(&self) -> bool;
-    //
+    /// Returns true if bracket is over (all matches are played)
+    #[must_use]
+    fn is_over(&self) -> bool;
+
     // /// Returns true if bracket is over (all matches are played)
     // #[must_use]
     // fn matches_progress(&self) -> (usize, usize);
@@ -116,6 +117,10 @@ pub trait Progression {
 }
 
 impl Progression for SingleEliminationBracket {
+    fn is_over(&self) -> bool {
+        bracket_is_over(&self.matches)
+    }
+
     fn report_result(
         &self,
         player_id: ID,
@@ -124,10 +129,9 @@ impl Progression for SingleEliminationBracket {
         if !self.seeding.contains(player_id) {
             return Err(SingleEliminationReportResultError::UnknownPlayer(player_id));
         };
-        todo!()
-        // if self.is_over() {
-        //     return Err(Error::TournamentIsOver);
-        // }
+        if self.is_over() {
+            return Err(SingleEliminationReportResultError::TournamentIsOver);
+        }
         // if self.is_disqualified(player_id) {
         //     return Err(Error::ForbiddenDisqualified(player_id));
         // }
@@ -177,5 +181,6 @@ impl Progression for SingleEliminationBracket {
         //     }
         //     None => Err(Error::NoMatchToPlay(player_id)),
         // }
+        todo!()
     }
 }
