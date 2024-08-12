@@ -31,6 +31,12 @@ pub enum SingleEliminationReportResultError {
     /// Tournament is already over
     #[error("Tournament is over")]
     TournamentIsOver,
+    /// Player is disqualified
+    #[error("Player {0} is disqualified")]
+    ForbiddenDisqualified(ID),
+    /// No match to play for player
+    #[error("There is no matches for player {0}")]
+    NoMatchToPlay(ID),
 }
 
 impl SingleEliminationBracket {
