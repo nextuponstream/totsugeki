@@ -8,7 +8,7 @@ mod getter_setter;
 pub mod matches;
 mod ongoing;
 pub mod participants;
-mod progression;
+pub(crate) mod progression;
 mod query_state;
 pub(crate) mod seeding;
 pub mod single_elimination_variant;

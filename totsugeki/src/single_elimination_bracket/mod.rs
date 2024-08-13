@@ -28,6 +28,9 @@ pub enum SingleEliminationReportResultError {
     /// Player is unknown, user provided a wrong player
     #[error("Player {0} is unknown")]
     UnknownPlayer(ID),
+    /// Match is unknown, user provided a wrong match
+    #[error("Match {0} is unknown")]
+    UnknownMatch(ID),
     /// Tournament is already over
     #[error("Tournament is over")]
     TournamentIsOver,
@@ -37,9 +40,40 @@ pub enum SingleEliminationReportResultError {
     /// No match to play for player
     #[error("There is no matches for player {0}")]
     NoMatchToPlay(ID),
+    /// Missing opponent
+    #[error("Missing opponent")]
+    MissingOpponent(),
+}
+
+/// Cannot generate single elimination bracket
+#[derive(Error, Debug)]
+pub enum SingleEliminationBracketGenerationError {
+    /// Unknown
+    #[error("Seeding does not contain player {0} present in match {1}")]
+    UnknownPlayer(ID, ID),
 }
 
 impl SingleEliminationBracket {
+    /// New single elimination bracket
+    pub fn new(
+        seeding: Seeding,
+        matches: Vec<Match>,
+        automatic_match_progression: bool,
+    ) -> Result<Self, SingleEliminationBracketGenerationError> {
+        // NOTE: I really don't like taking `matches` without verifying anything whatsoever
+        // FIXME add some assertions, could save from a grave mistake, example: any players not in
+        // seeding found in matches should cause an unrecoverable error
+        // NOTE: could make it "fumble proof" by only recording reports, but then you have to
+        // recompute the bracket at every turn. Then it's not efficient. Just use the database for
+        // what it is, saving intermediate state
+        todo!()
+        // Ok(Self {
+        //     seeding,
+        //     matches,
+        //     automatic_match_progression,
+        // })
+    }
+
     /// Report result for a match in this bracket. Returns updated bracket,
     /// match id where result is reported and new generated matches if
     /// automatic match validation is on.

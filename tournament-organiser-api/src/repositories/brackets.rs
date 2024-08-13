@@ -115,7 +115,7 @@ impl BracketRepository {
     pub async fn read_for_user(
         transaction: &mut Transaction<'_, Postgres>,
         bracket_id: Id,
-        user_id: Option<totsugeki::player::Id>,
+        user_id: Option<Id>,
     ) -> Result<Option<(Bracket, bool)>, Error> {
         let Some(b) = sqlx::query_as!(
         BracketRecord,

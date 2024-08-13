@@ -1,5 +1,7 @@
 //! Two players play a match, resulting in a winner and a loser
 
+pub(crate) mod update_player_reported_result;
+
 use crate::{
     matches::Id as MatchId,
     opponent::{Opponent, ParsingOpponentError},
@@ -8,6 +10,7 @@ use crate::{
 use serde::{Deserialize, Serialize};
 use std::{num::ParseIntError, str::FromStr};
 use thiserror::Error;
+use update_player_reported_result::Error as MatchUpdatePlayerReportedResultError;
 
 /// Error while interacting with match
 #[derive(Error, Debug, Clone)]
@@ -580,11 +583,11 @@ impl Match {
         self,
         player_id: PlayerId,
         result: ReportedResult,
-    ) -> Result<Match, Error> {
+    ) -> Result<Match, MatchUpdatePlayerReportedResultError> {
         match self.players {
-            [Opponent::Unknown, _] | [_, Opponent::Unknown] => {
-                Err(Error::MissingOpponent(self.players))
-            }
+            [Opponent::Unknown, _] | [_, Opponent::Unknown] => Err(
+                MatchUpdatePlayerReportedResultError::MissingOpponent(self.id, self.players),
+            ),
             [Opponent::Player(player1), Opponent::Player(_)] if player1 == player_id => {
                 let mut reported_results = self.reported_results;
                 reported_results[0] = result.0;
@@ -609,7 +612,11 @@ impl Match {
                     reported_results,
                 })
             }
-            _ => Err(Error::UnknownPlayer(player_id, self.players)),
+            _ => Err(MatchUpdatePlayerReportedResultError::UnknownPlayer(
+                self.id,
+                player_id,
+                self.players,
+            )),
         }
     }
 

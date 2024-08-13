@@ -240,11 +240,7 @@ mod tests {
                 .collect::<Vec<_>>(),
         )
         .expect("balanced matches");
-        let mut match_ids: Vec<MatchId> = matches
-            .iter()
-            .map(crate::matches::Match::get_id)
-            .rev()
-            .collect();
+        let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
         let expected_matches = vec![
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -356,11 +352,7 @@ mod tests {
                 .collect::<Vec<_>>(),
         )
         .expect("balanced matches");
-        let mut match_ids: Vec<MatchId> = matches
-            .iter()
-            .map(crate::matches::Match::get_id)
-            .rev()
-            .collect();
+        let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
         let expected_matches = vec![
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -429,11 +421,7 @@ mod tests {
                 .collect::<Vec<_>>(),
         )
         .expect("balanced matches");
-        let mut match_ids: Vec<MatchId> = matches
-            .iter()
-            .map(crate::matches::Match::get_id)
-            .rev()
-            .collect();
+        let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
         let expected_matches = vec![
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -511,11 +499,7 @@ mod tests {
                 .collect::<Vec<_>>(),
         )
         .expect("balanced matches");
-        let mut match_ids: Vec<MatchId> = matches
-            .iter()
-            .map(crate::matches::Match::get_id)
-            .rev()
-            .collect();
+        let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
         let expected_matches = vec![
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -606,11 +590,7 @@ mod tests {
                 .collect::<Vec<_>>(),
         )
         .expect("balanced matches");
-        let mut match_ids: Vec<MatchId> = matches
-            .iter()
-            .map(crate::matches::Match::get_id)
-            .rev()
-            .collect();
+        let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
         let expected_matches = vec![
             Match {
                 id: match_ids.pop().expect("match id"),

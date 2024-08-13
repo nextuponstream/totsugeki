@@ -64,6 +64,19 @@ impl From<GenerationError> for Error {
         Self::MatchUpdate(MatchError::SamePlayer)
     }
 }
+// FIXME remove
+impl From<crate::matches::update_player_reported_result::Error> for Error {
+    fn from(value: crate::matches::update_player_reported_result::Error) -> Self {
+        match value {
+            crate::matches::update_player_reported_result::Error::MissingOpponent(_, players) => {
+                Self::MatchUpdate(MatchError::MissingOpponent(players))
+            }
+            crate::matches::update_player_reported_result::Error::UnknownPlayer(_, p, players) => {
+                Self::MatchUpdate(MatchError::UnknownPlayer(p, players))
+            }
+        }
+    }
+}
 
 /// Returns true if bracket is over
 pub(crate) fn bracket_is_over(bracket_matches: &[Match]) -> bool {
@@ -110,7 +123,7 @@ type BracketUpdate = (Vec<Match>, Option<(PlayerId, usize, bool)>);
 /// # Errors
 /// thrown when attempting an update for winner/loser bracket match in
 /// loser/winner bracket
-fn update(bracket: &[Match], match_id: MatchId) -> Result<BracketUpdate, Error> {
+pub(crate) fn update(bracket: &[Match], match_id: MatchId) -> Result<BracketUpdate, Error> {
     let Some(m) = bracket.iter().find(|m| m.get_id() == match_id) else {
         return Err(Error::UnknownMatch(match_id));
     };

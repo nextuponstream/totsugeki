@@ -8,6 +8,7 @@ use super::{
     assert_disqualified_at_most_once, assert_match_is_well_formed, update_bracket_with, Error,
     Progression,
 };
+use crate::bracket::Id;
 use crate::{
     bracket::{disqualification::get_new_matches, progression::new_matches},
     matches::{Error as MatchError, Id as MatchId, Match, ReportedResult},
@@ -158,10 +159,7 @@ impl Progression for Step {
             .collect()
     }
 
-    fn next_opponent(
-        &self,
-        player_id: PlayerId,
-    ) -> Result<(crate::opponent::Opponent, crate::matches::Id), Error> {
+    fn next_opponent(&self, player_id: PlayerId) -> Result<(crate::opponent::Opponent, Id), Error> {
         if !self.seeding.contains(&player_id) {
             return Err(Error::PlayerIsNotParticipant(player_id));
         };
