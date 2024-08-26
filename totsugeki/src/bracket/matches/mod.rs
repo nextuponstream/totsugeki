@@ -154,7 +154,7 @@ pub(crate) fn update(bracket: &[Match], match_id: MatchId) -> Result<BracketUpda
     let m = iter
         .find(|m| m.get_seeds().contains(&seed_of_expected_winner))
         .expect("match where winner of updated match plays next");
-    let updated_match = (*m).insert_player(winner, m.get_seeds()[0] == seed_of_expected_winner)?;
+    let updated_match = (*m).insert_player(winner, m.get_seeds()[0] == seed_of_expected_winner);
     let mut bracket = update_bracket_with(&bracket, &updated_match);
 
     // looser drops to loser bracket in double elimination format
@@ -196,8 +196,7 @@ pub(crate) fn update(bracket: &[Match], match_id: MatchId) -> Result<BracketUpda
         let m = iter
             .find(|m| m.get_seeds().contains(&seed_of_expected_winner))
             .expect("match where winner of updated match plays next");
-        let updated_match =
-            (*m).insert_player(winner, m.get_seeds()[0] == seed_of_expected_winner)?;
+        let updated_match = (*m).insert_player(winner, m.get_seeds()[0] == seed_of_expected_winner);
         bracket = update_bracket_with(&bracket, &updated_match);
     }
 

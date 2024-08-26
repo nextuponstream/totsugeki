@@ -5,7 +5,6 @@ mod progression;
 use crate::bracket::seeding::Seeding;
 use crate::matches::Match;
 use crate::seeding::Error as SeedingError;
-use crate::single_elimination_bracket::progression::{Progression, Step};
 use crate::ID;
 use thiserror::Error;
 

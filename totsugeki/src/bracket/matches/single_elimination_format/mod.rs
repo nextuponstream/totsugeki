@@ -229,6 +229,9 @@ impl Progression for Step {
                             Error::MatchUpdate(
                                 MatchError::PlayersReportedDifferentMatchOutcome(_, _),
                             ) => p.matches,
+                            Error::MatchUpdate(crate::matches::Error::MissingReport(_, _)) => {
+                                p.matches
+                            }
                             _ => return Err(e),
                         },
                     }
@@ -256,14 +259,14 @@ impl Progression for Step {
         result: (i8, i8),
         player2: PlayerId,
     ) -> Result<(Vec<Match>, crate::matches::Id, Vec<Match>), Error> {
-        let result_player_1 = ReportedResult(result);
+        let result_player_1 = ReportedResult(Some(result));
         let bracket = self.clone().clear_reported_result(player1)?;
         let bracket = bracket.clear_reported_result(player2)?;
         let (bracket, first_affected_match, _new_matches) =
-            bracket.report_result(player1, result_player_1.0)?;
+            bracket.report_result(player1, result)?;
         let bracket = Step::new(Some(bracket), &self.seeding, self.automatic_progression)?;
         let (bracket, second_affected_match, new_matches_2) =
-            bracket.report_result(player2, result_player_1.reverse().0)?;
+            bracket.report_result(player2, result_player_1.reverse().0.expect("result"))?;
         assert_eq!(first_affected_match, second_affected_match);
         Ok((bracket, first_affected_match, new_matches_2))
     }
@@ -278,7 +281,7 @@ impl Progression for Step {
             return Err(Error::UnknownMatch(match_id));
         };
 
-        let updated_match = (*m).update_reported_result(player_id, ReportedResult(result))?;
+        let updated_match = (*m).update_reported_result(player_id, ReportedResult(Some(result)))?;
         let matches = self
             .matches
             .clone()

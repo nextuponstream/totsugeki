@@ -20,6 +20,14 @@ pub enum SingleEliminationBracketMatchGenerationError {
     UnrecoverableMatchError(#[from] GenerationError),
 }
 
+/// Cannot validate match
+#[derive(Error, Debug)]
+pub enum SingleEliminationBracketMatchValidationError {
+    /// FIXME remove that error
+    #[error("idk")]
+    SomeStuff,
+}
+
 /// Returns tournament matches for `n` players in a list. Used for generating
 /// single elimination bracket or winner bracket in double elimination format.
 ///
@@ -209,7 +217,7 @@ pub fn get_balanced_round_matches_top_seed_favored(
 }
 #[cfg(test)]
 mod tests {
-    use crate::matches::Id as MatchId;
+    use crate::matches::{Id as MatchId, ReportedResult};
     use crate::seeding::single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored;
     use crate::seeding::{seed, Method};
     use crate::{
@@ -251,7 +259,7 @@ mod tests {
                 seeds: [2, 3],
                 winner: Opponent::Unknown,
                 automatic_loser: Opponent::Unknown,
-                reported_results: [(0, 0), (0, 0)],
+                reported_results: [None, None],
             },
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -259,11 +267,11 @@ mod tests {
                 seeds: [1, 2],
                 winner: Opponent::Unknown,
                 automatic_loser: Opponent::Unknown,
-                reported_results: [(0, 0), (0, 0)],
+                reported_results: [None, None],
             },
         ];
 
-        assert_eq!(matches, expected_matches,);
+        assert_eq!(matches, expected_matches);
     }
 
     #[test]
@@ -303,7 +311,7 @@ mod tests {
                 seeds: [1, 4],
                 winner: Opponent::Unknown,
                 automatic_loser: Opponent::Unknown,
-                reported_results: [(0, 0), (0, 0)],
+                reported_results: [None, None],
             },
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -314,7 +322,7 @@ mod tests {
                 seeds: [2, 3],
                 winner: Opponent::Unknown,
                 automatic_loser: Opponent::Unknown,
-                reported_results: [(0, 0), (0, 0)],
+                reported_results: [None, None],
             },
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -322,7 +330,7 @@ mod tests {
                 seeds: [1, 2],
                 winner: Opponent::Unknown,
                 automatic_loser: Opponent::Unknown,
-                reported_results: [(0, 0), (0, 0)],
+                reported_results: [None, None],
             },
         ];
 
@@ -363,7 +371,7 @@ mod tests {
                 seeds: [4, 5],
                 winner: Opponent::Unknown,
                 automatic_loser: Opponent::Unknown,
-                reported_results: [(0, 0), (0, 0)],
+                reported_results: [None, None],
             },
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -371,7 +379,7 @@ mod tests {
                 seeds: [1, 4],
                 winner: Opponent::Unknown,
                 automatic_loser: Opponent::Unknown,
-                reported_results: [(0, 0), (0, 0)],
+                reported_results: [None, None],
             },
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -382,7 +390,7 @@ mod tests {
                 seeds: [2, 3],
                 winner: Opponent::Unknown,
                 automatic_loser: Opponent::Unknown,
-                reported_results: [(0, 0), (0, 0)],
+                reported_results: [None, None],
             },
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -390,7 +398,7 @@ mod tests {
                 seeds: [1, 2],
                 winner: Opponent::Unknown,
                 automatic_loser: Opponent::Unknown,
-                reported_results: [(0, 0), (0, 0)],
+                reported_results: [None, None],
             },
         ];
 
@@ -432,7 +440,7 @@ mod tests {
                 seeds: [3, 6],
                 winner: Opponent::Unknown,
                 automatic_loser: Opponent::Unknown,
-                reported_results: [(0, 0), (0, 0)],
+                reported_results: [None, None],
             },
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -443,7 +451,7 @@ mod tests {
                 seeds: [4, 5],
                 winner: Opponent::Unknown,
                 automatic_loser: Opponent::Unknown,
-                reported_results: [(0, 0), (0, 0)],
+                reported_results: [None, None],
             },
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -451,7 +459,7 @@ mod tests {
                 seeds: [1, 4],
                 winner: Opponent::Unknown,
                 automatic_loser: Opponent::Unknown,
-                reported_results: [(0, 0), (0, 0)],
+                reported_results: [None, None],
             },
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -459,7 +467,7 @@ mod tests {
                 seeds: [2, 3],
                 winner: Opponent::Unknown,
                 automatic_loser: Opponent::Unknown,
-                reported_results: [(0, 0), (0, 0)],
+                reported_results: [None, None],
             },
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -467,7 +475,7 @@ mod tests {
                 seeds: [1, 2],
                 winner: Opponent::Unknown,
                 automatic_loser: Opponent::Unknown,
-                reported_results: [(0, 0), (0, 0)],
+                reported_results: [None, None],
             },
         ];
 
@@ -510,7 +518,7 @@ mod tests {
                 seeds: [2, 7],
                 winner: Opponent::Unknown,
                 automatic_loser: Opponent::Unknown,
-                reported_results: [(0, 0), (0, 0)],
+                reported_results: [None, None],
             },
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -521,7 +529,7 @@ mod tests {
                 seeds: [3, 6],
                 winner: Opponent::Unknown,
                 automatic_loser: Opponent::Unknown,
-                reported_results: [(0, 0), (0, 0)],
+                reported_results: [None, None],
             },
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -532,7 +540,7 @@ mod tests {
                 seeds: [4, 5],
                 winner: Opponent::Unknown,
                 automatic_loser: Opponent::Unknown,
-                reported_results: [(0, 0), (0, 0)],
+                reported_results: [None, None],
             },
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -540,7 +548,7 @@ mod tests {
                 seeds: [1, 4],
                 winner: Opponent::Unknown,
                 automatic_loser: Opponent::Unknown,
-                reported_results: [(0, 0), (0, 0)],
+                reported_results: [None, None],
             },
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -548,7 +556,7 @@ mod tests {
                 seeds: [2, 3],
                 winner: Opponent::Unknown,
                 automatic_loser: Opponent::Unknown,
-                reported_results: [(0, 0), (0, 0)],
+                reported_results: [None, None],
             },
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -556,7 +564,7 @@ mod tests {
                 seeds: [1, 2],
                 winner: Opponent::Unknown,
                 automatic_loser: Opponent::Unknown,
-                reported_results: [(0, 0), (0, 0)],
+                reported_results: [None, None],
             },
         ];
 
@@ -601,7 +609,7 @@ mod tests {
                 seeds: [1, 8],
                 winner: Opponent::Unknown,
                 automatic_loser: Opponent::Unknown,
-                reported_results: [(0, 0), (0, 0)],
+                reported_results: [None, None],
             },
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -612,7 +620,7 @@ mod tests {
                 seeds: [2, 7],
                 winner: Opponent::Unknown,
                 automatic_loser: Opponent::Unknown,
-                reported_results: [(0, 0), (0, 0)],
+                reported_results: [None, None],
             },
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -623,7 +631,7 @@ mod tests {
                 seeds: [3, 6],
                 winner: Opponent::Unknown,
                 automatic_loser: Opponent::Unknown,
-                reported_results: [(0, 0), (0, 0)],
+                reported_results: [None, None],
             },
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -634,7 +642,7 @@ mod tests {
                 seeds: [4, 5],
                 winner: Opponent::Unknown,
                 automatic_loser: Opponent::Unknown,
-                reported_results: [(0, 0), (0, 0)],
+                reported_results: [None, None],
             },
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -642,7 +650,7 @@ mod tests {
                 seeds: [1, 4],
                 winner: Opponent::Unknown,
                 automatic_loser: Opponent::Unknown,
-                reported_results: [(0, 0), (0, 0)],
+                reported_results: [None, None],
             },
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -650,7 +658,7 @@ mod tests {
                 seeds: [2, 3],
                 winner: Opponent::Unknown,
                 automatic_loser: Opponent::Unknown,
-                reported_results: [(0, 0), (0, 0)],
+                reported_results: [None, None],
             },
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -658,7 +666,7 @@ mod tests {
                 seeds: [1, 2],
                 winner: Opponent::Unknown,
                 automatic_loser: Opponent::Unknown,
-                reported_results: [(0, 0), (0, 0)],
+                reported_results: [None, None],
             },
         ];
 

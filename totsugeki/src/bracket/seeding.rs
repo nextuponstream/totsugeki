@@ -11,7 +11,7 @@ use thiserror::Error;
 
 /// Seeding is an ordered list of player. All players IDs are guaranteed unique
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) struct Seeding(Vec<PlayerId>);
+pub struct Seeding(Vec<PlayerId>);
 
 /// Error while creating seeding
 #[derive(Error, Debug, PartialEq)]
@@ -219,7 +219,7 @@ mod tests {
                     seeds: [2, 3],
                     winner: Opponent::Unknown,
                     automatic_loser: Opponent::Unknown,
-                    reported_results: [(0, 0), (0, 0)]
+                    reported_results: [None, None]
                 },
                 Match {
                     id: match_ids.pop().expect("match id"),
@@ -227,7 +227,7 @@ mod tests {
                     seeds: [1, 2],
                     winner: Opponent::Unknown,
                     automatic_loser: Opponent::Unknown,
-                    reported_results: [(0, 0), (0, 0)]
+                    reported_results: [None, None]
                 }
             ]
         );
@@ -270,7 +270,7 @@ mod tests {
                     seeds: [4, 5],
                     winner: Opponent::Unknown,
                     automatic_loser: Opponent::Unknown,
-                    reported_results: [(0, 0), (0, 0)]
+                    reported_results: [None, None]
                 },
                 Match {
                     id: match_ids.pop().expect("match id"),
@@ -278,7 +278,7 @@ mod tests {
                     seeds: [1, 4],
                     winner: Opponent::Unknown,
                     automatic_loser: Opponent::Unknown,
-                    reported_results: [(0, 0), (0, 0)]
+                    reported_results: [None, None]
                 },
                 Match {
                     id: match_ids.pop().expect("match id"),
@@ -286,7 +286,7 @@ mod tests {
                     seeds: [2, 3],
                     winner: Opponent::Unknown,
                     automatic_loser: Opponent::Unknown,
-                    reported_results: [(0, 0), (0, 0)]
+                    reported_results: [None, None]
                 },
                 Match {
                     id: match_ids.pop().expect("match id"),
@@ -294,7 +294,7 @@ mod tests {
                     seeds: [1, 2],
                     winner: Opponent::Unknown,
                     automatic_loser: Opponent::Unknown,
-                    reported_results: [(0, 0), (0, 0)]
+                    reported_results: [None, None]
                 },
             ]
         );

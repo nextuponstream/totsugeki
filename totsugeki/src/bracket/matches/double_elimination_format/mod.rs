@@ -102,7 +102,7 @@ fn send_to_losers(
         .find(|m| m.is_first_loser_match(expected_loser_seed))
         .expect("match");
     let is_player_1 = expected_loser_seed == loser_match.get_seeds()[0];
-    let loser_match = (*loser_match).insert_player(loser, is_player_1)?;
+    let loser_match = (*loser_match).insert_player(loser, is_player_1);
 
     Ok(update_bracket_with(loser_bracket, &loser_match))
 }
@@ -126,11 +126,11 @@ fn update_grand_finals_or_reset(
                     // Set players of gf reset
                     let gf_reset = match gf.get_players() {
                         [Opponent::Player(p1), Opponent::Player(p2)] => {
-                            let ggf_reset = gf_reset.insert_player(p1, true)?;
-                            ggf_reset.insert_player(p2, false)?
+                            let ggf_reset = gf_reset.insert_player(p1, true);
+                            ggf_reset.insert_player(p2, false)
                         }
-                        [Opponent::Player(p), _] => gf_reset.insert_player(p, true)?,
-                        [_, Opponent::Player(p)] => gf_reset.insert_player(p, false)?,
+                        [Opponent::Player(p), _] => gf_reset.insert_player(p, true),
+                        [_, Opponent::Player(p)] => gf_reset.insert_player(p, false),
                         _ => gf_reset,
                     };
 
@@ -346,6 +346,9 @@ impl Progression for Step {
                 Err(Error::MatchUpdate(MatchError::PlayersReportedDifferentMatchOutcome(_, _))) => {
                     bracket.matches
                 }
+                Err(Error::MatchUpdate(crate::matches::Error::MissingReport(_, _))) => {
+                    bracket.matches
+                }
                 Err(e) => return Err(e),
             }
         } else {
@@ -368,15 +371,15 @@ impl Progression for Step {
         let bracket = bracket.clear_reported_result(player2)?;
 
         // report score as p1
-        let result_player_1 = ReportedResult(result);
+        let result_player_1 = ReportedResult(Some(result));
         let (matches, first_affected_match, _new_matches) =
-            bracket.report_result(player1, result_player_1.0)?;
+            bracket.report_result(player1, result_player_1.0.expect("result"))?;
 
         // report same score as p2
         let bracket = Step::new(Some(matches), self.seeding.clone(), self.auto)?;
 
         let (matches, second_affected_match, new_matches) =
-            bracket.report_result(player2, result_player_1.reverse().0)?;
+            bracket.report_result(player2, result_player_1.reverse().0.expect("result"))?;
 
         assert_eq!(first_affected_match, second_affected_match);
 
@@ -393,7 +396,7 @@ impl Progression for Step {
             return Err(Error::UnknownMatch(match_id));
         };
 
-        let updated_match = (*m).update_reported_result(player_id, ReportedResult(result))?;
+        let updated_match = (*m).update_reported_result(player_id, ReportedResult(Some(result)))?;
         let matches = self
             .matches
             .clone()
@@ -437,14 +440,14 @@ impl Progression for Step {
 
                 let gf = match winner_of_bracket(&w_bracket) {
                     Some(winner_of_winner_bracket) => {
-                        gf.insert_player(winner_of_winner_bracket, true)?
+                        gf.insert_player(winner_of_winner_bracket, true)
                     }
                     None => gf,
                 };
                 // when loser of winners finals is disqualified, grand finals can be updated
                 let gf = match winner_of_bracket(&l_bracket) {
                     Some(winner_of_loser_bracket) => {
-                        let gf = gf.insert_player(winner_of_loser_bracket, false)?;
+                        let gf = gf.insert_player(winner_of_loser_bracket, false);
 
                         if w_bracket.iter().any(|m| {
                             m.is_automatic_loser_by_disqualification(winner_of_loser_bracket)

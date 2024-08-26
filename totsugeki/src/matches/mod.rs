@@ -15,6 +15,9 @@ use update_player_reported_result::Error as MatchUpdatePlayerReportedResultError
 /// Error while interacting with match
 #[derive(Error, Debug, Clone)]
 pub enum Error {
+    /// Can only update match when both player reported
+    #[error("Missing report: {:?} and {:?} were reported", .1[0], .1[1])]
+    MissingReport(MatchId, MatchReportedResult),
     /// Players reported different match outcome
     #[error("Players reported different match outcomes: {} and {} were reported", .1[0], .1[1])]
     PlayersReportedDifferentMatchOutcome(MatchId, [ReportedResult; 2]),
@@ -27,9 +30,6 @@ pub enum Error {
     /// Cannot update match result because an opponent is missing
     #[error("Cannot report result in a match where opponent is missing. Current players: {} VS {}", .0[0], .0[1])]
     MissingOpponent(MatchPlayers),
-    /// Match got into a really bad state where an unknown player has result
-    #[error("Error. Unable to proceed further.")]
-    UnknownPlayerWithReportedResults,
     /// Cannot instantiate match with two same player
     #[error("Error. Cannot use same player as both player of a match.")]
     SamePlayer,
@@ -39,9 +39,6 @@ pub enum Error {
     /// No opponent to player was found
     #[error("Incomplete match")]
     NoOpponent(MatchPlayers),
-    /// Cannot insert player because another player is already present
-    #[error("Player \"{0}\" cannot be set because player \"{1}\" is already there")]
-    AlreadyPresent(PlayerId, PlayerId),
 }
 
 /// Match generation error
@@ -53,7 +50,7 @@ pub enum GenerationError {
 }
 
 impl From<GenerationError> for Error {
-    fn from(value: GenerationError) -> Self {
+    fn from(_value: GenerationError) -> Self {
         Self::SamePlayer
     }
 }
@@ -62,15 +59,23 @@ impl From<GenerationError> for Error {
 pub type Seeds = [usize; 2];
 
 /// A match result is a score. For example, I win 2-0
-pub type MatchReportedResult = [(i8, i8); 2];
+pub type MatchReportedResult = [Option<(i8, i8)>; 2];
 
-/// Reported result
-#[derive(Debug, Clone, Copy)]
-pub struct ReportedResult(pub (i8, i8));
+/// Reported result, where first number is player own score, and second score is their opponent
+/// score (example: I won 2-0, or I lost 0-2)
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct ReportedResult(pub Option<(i8, i8)>);
 
-impl std::cmp::PartialEq<ReportedResult> for ReportedResult {
+impl PartialEq<ReportedResult> for ReportedResult {
     fn eq(&self, other: &ReportedResult) -> bool {
-        self.0 .0 == other.0 .0 && self.0 .1 == other.0 .1
+        match (self, *other) {
+            (ReportedResult(None), ReportedResult(None)) => false,
+            (ReportedResult(None), ReportedResult(Some(_)))
+            | (ReportedResult(Some(_)), ReportedResult(None)) => false,
+            (ReportedResult(Some((s11, s12))), ReportedResult(Some((s21, s22)))) => {
+                *s11 == s21 && *s12 == s22
+            }
+        }
     }
 }
 
@@ -78,13 +83,19 @@ impl ReportedResult {
     /// Reverse score
     #[must_use]
     pub fn reverse(self) -> Self {
-        Self((self.0 .1, self.0 .0))
+        match self.0 {
+            Some((s1, s2)) => ReportedResult(Some((s2, s1))),
+            None => ReportedResult(None),
+        }
     }
 }
 
 impl std::fmt::Display for ReportedResult {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}-{}", self.0 .0, self.0 .1)
+        match self {
+            ReportedResult(Some((s1, s2))) => write!(f, "{s1}-{s2}"),
+            ReportedResult(None) => write!(f, "?"),
+        }
     }
 }
 
@@ -107,7 +118,7 @@ impl FromStr for ReportedResult {
             Some((l, r)) => {
                 let l_score: i8 = l.parse::<i8>()?;
                 let r_score: i8 = r.parse::<i8>()?;
-                Ok(Self((l_score, r_score)))
+                Ok(Self(Some((l_score, r_score))))
             }
             None => Err(MatchResultParsingError::MissingResultDelimiter(s.into())),
         }
@@ -245,11 +256,11 @@ impl Match {
         );
         match self.players {
             [Opponent::Player(p1), _] if p1 == player_id => Self {
-                reported_results: [(0, 0), self.reported_results[1]],
+                reported_results: [None, self.reported_results[1]],
                 ..self
             },
             [_, Opponent::Player(p2)] if p2 == player_id => Self {
-                reported_results: [self.reported_results[0], (0, 0)],
+                reported_results: [self.reported_results[0], None],
                 ..self
             },
             _ => unreachable!("cannot clear result for unknown player"),
@@ -341,7 +352,7 @@ impl Match {
             seeds,
             winner: Opponent::Unknown,
             automatic_loser: Opponent::Unknown,
-            reported_results: [(0, 0), (0, 0)],
+            reported_results: [None, None],
         }
     }
 
@@ -373,7 +384,7 @@ impl Match {
                 winner: Opponent::Unknown,
                 automatic_loser: Opponent::Unknown,
                 seeds,
-                reported_results: [(0_i8, 0_i8), (0_i8, 0)],
+                reported_results: [None, None],
             }),
         }
     }
@@ -393,7 +404,7 @@ impl Match {
             winner: Opponent::Unknown,
             automatic_loser: Opponent::Unknown,
             seeds,
-            reported_results: [(0_i8, 0_i8), (0_i8, 0)],
+            reported_results: [None, None],
         }
     }
 
@@ -406,7 +417,7 @@ impl Match {
             seeds,
             winner: Opponent::Unknown,
             automatic_loser: Opponent::Unknown,
-            reported_results: [(0, 0), (0, 0)],
+            reported_results: [None, None],
         }
     }
 
@@ -454,15 +465,15 @@ impl Match {
 
     /// Insert player in match and return updated match
     ///
-    /// # Errors
-    /// if same player is set as both opponents
-    pub fn insert_player(self, player_id: PlayerId, is_player_1: bool) -> Result<Match, Error> {
+    /// # Panics
+    /// If match slot is not empty
+    pub fn insert_player(self, player_id: PlayerId, is_player_1: bool) -> Match {
         match (is_player_1, self.players) {
             (true, [Opponent::Player(other_player), _])
             | (false, [_, Opponent::Player(other_player)])
                 if player_id != other_player =>
             {
-                return Err(Error::AlreadyPresent(player_id, other_player));
+                panic!("player {player_id} is already in match {}", self.id);
             }
             _ => {}
         }
@@ -472,7 +483,7 @@ impl Match {
         } else {
             [self.players[0], player]
         };
-        Ok(Match { players, ..self })
+        Match { players, ..self }
     }
 
     /// Returns true if the stronger seed won. Returns None if winner cannot be
@@ -506,7 +517,7 @@ impl Match {
     /// id and looser id
     ///
     /// # Errors
-    /// Returns an error if reported scores don't not agree on the winner
+    /// Returns an error if reported scores don't agree on the winner
     pub fn update_outcome(self) -> Result<(Match, PlayerId, PlayerId), Error> {
         // if there is a disqualified player, try to set the winner
         if let Opponent::Player(dq_player) = self.automatic_loser {
@@ -527,38 +538,52 @@ impl Match {
                     p1,
                     dq_player,
                 )),
+                // TODO add test for bracket of 3 person, 1st seed is DQ'ed
                 _ => Err(Error::MissingOpponent(self.players)),
             };
         }
 
-        let (winner, loser) = match self.reported_results {
-            [(s11, s12), (s21, s22)]
-                if ReportedResult((s11, s12)).reverse() != ReportedResult((s21, s22)) =>
-            {
-                return Err(Error::PlayersReportedDifferentMatchOutcome(
-                    self.id,
-                    [ReportedResult((s11, s12)), ReportedResult((s21, s22))],
-                ));
+        let same_result_reported = match self.reported_results {
+            [Some((s11, s12)), Some((s21, s22))] => {
+                ReportedResult(Some((s11, s12))).reverse() == ReportedResult(Some((s21, s22)))
             }
-            [(s11, s12), (s21, s22)] if s11 > s12 && s21 < s22 => {
-                (self.players[0], self.players[1])
+            _ => false,
+        };
+
+        let (winner, loser) = match (self.players, same_result_reported, self.reported_results) {
+            ([Opponent::Unknown, _], _, _) | ([_, Opponent::Unknown], _, _) => {
+                return Err(Error::MissingOpponent(self.players));
             }
-            [(s11, s12), (s21, s22)] if s11 < s12 && s21 > s22 => {
-                (self.players[1], self.players[0])
-            }
-            _ => {
+            (
+                [Opponent::Player(p1), Opponent::Player(p2)],
+                true,
+                [Some((s11, s12)), Some((s21, s22))],
+            ) if s11 > s12 && s21 < s22 => (p1, p2),
+            (
+                [Opponent::Player(p1), Opponent::Player(p2)],
+                true,
+                [Some((s11, s12)), Some((s21, s22))],
+            ) if s11 < s12 && s21 > s22 => (p2, p1),
+            (
+                [Opponent::Player(_), Opponent::Player(_)],
+                false,
+                [Some((s11, s12)), Some((s21, s22))],
+            ) => {
                 return Err(Error::PlayersReportedDifferentMatchOutcome(
                     self.id,
                     [
-                        ReportedResult((self.reported_results[0].0, self.reported_results[0].1)),
-                        ReportedResult((self.reported_results[1].0, self.reported_results[1].1)),
+                        ReportedResult(Some((s11, s12))),
+                        ReportedResult(Some((s21, s22))),
                     ],
-                ))
+                ));
             }
-        };
-
-        let (Opponent::Player(winner), Opponent::Player(loser)) = (winner, loser) else {
-            return Err(Error::UnknownPlayerWithReportedResults);
+            ([Opponent::Player(_), Opponent::Player(_)], _, [None, _])
+            | ([Opponent::Player(_), Opponent::Player(_)], _, [_, None]) => {
+                return Err(Error::MissingReport(self.id, self.reported_results));
+            }
+            (_, _, r) => {
+                unreachable!("{r:?}")
+            }
         };
 
         Ok((
@@ -634,10 +659,10 @@ impl Match {
 
     /// Get score of match. Defaults to 0-0 if winner is not declared
     #[must_use]
-    pub fn get_score(&self) -> (i8, i8) {
+    pub fn get_score(&self) -> Option<(i8, i8)> {
         match self.reported_results {
-            [r1, r2] if r1.0 == r2.1 && r1.1 == r2.0 => r1,
-            _ => (0, 0),
+            [Some(r1), Some(r2)] if r1.0 == r2.1 && r1.1 == r2.0 => Some(r1),
+            _ => None,
         }
     }
 }
@@ -710,8 +735,7 @@ mod tests {
         let p = PlayerId::new_v4();
         let player = Opponent::Player(p);
         match Match::new([player, player], [1, 2]) {
-            Err(Error::SamePlayer) => {}
-            Err(e) => panic!("Expected error SamePlayer but got {e}"),
+            Err(GenerationError::SamePlayer) => {}
             _ => panic!("Expected error but got none"),
         }
     }
@@ -727,10 +751,10 @@ mod tests {
         .expect("match");
         assert!(!m.is_over());
         let m = m
-            .update_reported_result(p1.get_id(), ReportedResult((2, 0)))
+            .update_reported_result(p1.get_id(), ReportedResult(Some((2, 0))))
             .expect("match p1 result");
         let m = m
-            .update_reported_result(p2.get_id(), ReportedResult((0, 2)))
+            .update_reported_result(p2.get_id(), ReportedResult(Some((0, 2))))
             .expect("match p2 result");
         let (m, _, _) = m.update_outcome().expect("validation");
         assert!(m.is_over());
@@ -746,10 +770,10 @@ mod tests {
         .expect("match");
         assert!(!m.is_over());
         let m = m
-            .update_reported_result(p2.get_id(), ReportedResult((2, 0)))
+            .update_reported_result(p2.get_id(), ReportedResult(Some((2, 0))))
             .expect("match p2 result");
         let m = m
-            .update_reported_result(p1.get_id(), ReportedResult((0, 2)))
+            .update_reported_result(p1.get_id(), ReportedResult(Some((0, 2))))
             .expect("match p1 result");
         let (m, _, _) = m.update_outcome().expect("validation");
         assert!(m.is_over());
@@ -765,10 +789,10 @@ mod tests {
         .expect("match");
         assert!(!m.is_over());
         let m = m
-            .update_reported_result(p1.get_id(), ReportedResult((2, 0)))
+            .update_reported_result(p1.get_id(), ReportedResult(Some((2, 0))))
             .expect("match p1 result");
         let m = m
-            .update_reported_result(p2.get_id(), ReportedResult((0, 2)))
+            .update_reported_result(p2.get_id(), ReportedResult(Some((0, 2))))
             .expect("match p2 result");
         let (m, _, _) = m.update_outcome().expect("validation");
         assert!(m.is_over());
@@ -784,10 +808,10 @@ mod tests {
         .expect("match");
         assert!(!m.is_over());
         let m = m
-            .update_reported_result(p2.get_id(), ReportedResult((2, 0)))
+            .update_reported_result(p2.get_id(), ReportedResult(Some((2, 0))))
             .expect("match p1 result");
         let m = m
-            .update_reported_result(p1.get_id(), ReportedResult((0, 2)))
+            .update_reported_result(p1.get_id(), ReportedResult(Some((0, 2))))
             .expect("match p1 result");
         let (m, _, _) = m.update_outcome().expect("validation");
         assert!(m.is_over());
@@ -842,7 +866,9 @@ mod tests {
             ("2-3", (2, 3)),
         ];
         for (s, (l_expected, r_expected)) in to_test {
-            let ReportedResult((l, r)) = s.parse::<ReportedResult>().expect("result");
+            let ReportedResult(Some((l, r))) = s.parse::<ReportedResult>().expect("result") else {
+                panic!("no result")
+            };
             assert_eq!(
                 l, l_expected,
                 "could not parse {s} into ({l_expected}, {r_expected})"
@@ -859,39 +885,33 @@ mod tests {
         let m = Match::default();
         let p1 = PlayerId::new_v4();
         let p2 = PlayerId::new_v4();
-        let m = m.insert_player(p1, true).expect("player 1 inserted");
-        let _m = m.insert_player(p2, false).expect("player 2 inserted");
+        let m = m.insert_player(p1, true);
+        let _m = m.insert_player(p2, false);
 
         let m = Match::default();
-        let m = m.insert_player(p2, false).expect("player 2 inserted");
-        let _m = m.insert_player(p1, true).expect("player 1 inserted");
+        let m = m.insert_player(p2, false);
+        let _m = m.insert_player(p1, true);
     }
 
     #[test]
-    fn cannot_insert_player_if_someone_else_is_already_there() {
+    #[should_panic]
+    fn cannot_insert_player_if_someone_else_is_already_there_p1_side() {
         let p1 = PlayerId::new_v4();
         let p2 = PlayerId::new_v4();
         let m = Match::new([Opponent::Player(p1), Opponent::Player(p2)], [0, 0]).expect("match");
         let p1_intruder = PlayerId::new_v4();
 
-        match m.insert_player(p1_intruder, true) {
-            Err(Error::AlreadyPresent(p, another_p)) if p == p1_intruder && another_p == p1 => {}
-            Err(Error::AlreadyPresent(p, another_p)) => {
-                panic!("got {p} and {another_p}, expected {p1_intruder} and {p1}")
-            }
-            Err(e) => panic!("expected error AlreadyPresent, got {e}"),
-            _ => panic!("expected error but got none"),
-        }
+        m.insert_player(p1_intruder, true);
+    }
+    #[test]
+    #[should_panic]
+    fn cannot_insert_player_if_someone_else_is_already_there_p2_side() {
+        let p1 = PlayerId::new_v4();
+        let p2 = PlayerId::new_v4();
+        let m = Match::new([Opponent::Player(p1), Opponent::Player(p2)], [0, 0]).expect("match");
 
         let p2_intruder = PlayerId::new_v4();
-        match m.insert_player(p2_intruder, false) {
-            Err(Error::AlreadyPresent(p, another_p)) if p == p2_intruder && another_p == p2 => {}
-            Err(Error::AlreadyPresent(p, another_p)) => {
-                panic!("got {p} and {another_p}, expected {p2_intruder} and {p2}")
-            }
-            Err(e) => panic!("expected error AlreadyPresent, got {e}"),
-            _ => panic!("expected error but got none"),
-        }
+        m.insert_player(p2_intruder, false);
     }
 
     #[test]
@@ -900,23 +920,21 @@ mod tests {
         let p2 = PlayerId::new_v4();
         let m = Match::new([Opponent::Player(p1), Opponent::Player(p2)], [0, 0]).expect("match");
 
-        let m = m.insert_player(p1, true).expect("no error");
-        let m = m.insert_player(p1, true).expect("no error");
-        let m = m.insert_player(p1, true).expect("no error");
+        let m = m.insert_player(p1, true);
+        let m = m.insert_player(p1, true);
+        let m = m.insert_player(p1, true);
 
-        let m = m.insert_player(p2, false).expect("no error");
-        let m = m.insert_player(p2, false).expect("no error");
-        let _m = m.insert_player(p2, false).expect("no error");
+        let m = m.insert_player(p2, false);
+        let m = m.insert_player(p2, false);
+        let _m = m.insert_player(p2, false);
     }
 
     #[test]
-    fn match_score_is_0_and_0_when_there_is_no_winner() {
+    fn no_match_score_when_no_winner_is_declared() {
         let p1 = PlayerId::new_v4();
         let p2 = PlayerId::new_v4();
         let m = Match::new([Opponent::Player(p1), Opponent::Player(p2)], [0, 0]).expect("match");
 
-        let score = m.get_score();
-
-        assert_eq!(score, (0, 0));
+        assert!(m.get_score().is_none());
     }
 }

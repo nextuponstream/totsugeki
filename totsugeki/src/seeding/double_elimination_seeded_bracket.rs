@@ -282,7 +282,7 @@ mod tests {
                     seeds: [2, 3],
                     winner: Opponent::Unknown,
                     automatic_loser: Opponent::Unknown,
-                    reported_results: [(0, 0), (0, 0)],
+                    reported_results: [None, None],
                 },
                 Match {
                     id: match_ids.pop().expect("id"),
@@ -290,7 +290,7 @@ mod tests {
                     seeds: [1, 2],
                     winner: Opponent::Unknown,
                     automatic_loser: Opponent::Unknown,
-                    reported_results: [(0, 0), (0, 0)],
+                    reported_results: [None, None],
                 },
                 Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3]),
                 Match::looser_bracket_match(match_ids.pop().expect("id"), [1, 2]),
