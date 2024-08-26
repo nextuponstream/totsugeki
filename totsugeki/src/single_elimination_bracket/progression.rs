@@ -41,7 +41,7 @@ impl Step {
 /// All errors when progressing a single elimination bracket
 #[derive(Error, Debug)]
 pub enum StepError {
-    ///
+    /// Unrecoverable
     #[error("Unrecoverable seeding error")]
     UnrecoverableMatchGenerationError(#[from] SingleEliminationBracketMatchGenerationError),
 }
