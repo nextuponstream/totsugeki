@@ -103,8 +103,10 @@ fn MatchInRound(
     let player2_name = players[1].get_name();
     let player2 = player2_name.as_str();
     let score = m.get_score();
-    let score1 = score.0.to_string();
-    let score2 = score.1.to_string();
+    let (score1, score2) = match score {
+        Some((s1, s2)) => (s1.to_string(), s2.to_string()),
+        None => ("?".to_string(), "?".to_string()),
+    };
     let (player, score) = if is_player1 {
         (player1, score1.as_str())
     } else {

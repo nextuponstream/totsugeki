@@ -11,7 +11,7 @@
 #![forbid(unsafe_code)]
 
 use serde::{Deserialize, Serialize};
-use totsugeki::matches::{Id as MatchId, Match};
+use totsugeki::matches::{Id as MatchId, Match, ReportedResult};
 use totsugeki::opponent::Opponent;
 use totsugeki::player::Id as PlayerId;
 use totsugeki::player::{Participants, Player};
@@ -27,7 +27,7 @@ pub struct MinimalMatch {
     /// Names of players participating in match
     players: [Player; 2],
     /// Score of match
-    score: (i8, i8),
+    score: ReportedResult,
     /// Expected seeds of player in match
     seeds: [usize; 2],
     /// Indicate which row it belongs to, starting from 0 index
@@ -42,7 +42,7 @@ impl Default for MinimalMatch {
                 Player::new(String::default()),
                 Player::new(String::default()),
             ],
-            score: (0, 0),
+            score: ReportedResult(None),
             seeds: [0, 0],
             row_hint: None,
         }
@@ -83,8 +83,8 @@ impl MinimalMatch {
 
     /// Get scores of match
     #[must_use]
-    pub fn get_score(&self) -> (i8, i8) {
-        self.score
+    pub fn get_score(&self) -> Option<(i8, i8)> {
+        self.score.0
     }
 
     /// Get ID of match
@@ -151,7 +151,7 @@ pub fn from_participants(m: &Match, participants: &Participants) -> MinimalMatch
             Player::from((p1, top_seed)),
             Player::from((p2, bottom_seed)),
         ],
-        score: m.get_score(),
+        score: ReportedResult(m.get_score()),
         seeds: m.get_seeds(),
         row_hint: None,
     }

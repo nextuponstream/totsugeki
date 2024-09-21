@@ -64,10 +64,11 @@ impl Format {
         automatic_progression: bool,
     ) -> Box<dyn Progression> {
         match self {
-            Format::SingleElimination => Box::new(
-                SE_Step::new(Some(matches), &seeding.get_seeding(), automatic_progression)
-                    .expect("single elimination bracket state"),
-            ),
+            Format::SingleElimination => Box::new(SE_Step::new(
+                matches,
+                &seeding.get_seeding(),
+                automatic_progression,
+            )),
             Format::DoubleElimination => Box::new(
                 DE_Step::new(
                     Some(matches),

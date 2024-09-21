@@ -25,7 +25,7 @@ pub(crate) struct Step {
     /// Seeding for this bracket
     seeding: Vec<PlayerId>,
     /// All matches of single-elimination bracket
-    matches: Vec<Match>,
+    pub(crate) matches: Vec<Match>,
     /// True when matches do not need to be validated by the tournament
     /// organiser
     automatic_progression: bool,
@@ -37,21 +37,30 @@ impl Step {
     ///
     /// # Errors
     /// thrown when initial matches cannot be generated
-    pub fn new(
-        matches: Option<Vec<Match>>,
-        seeding: &[PlayerId],
-        automatic_progression: bool,
-    ) -> Result<Self, Error> {
-        let matches = match matches {
-            Some(matches) => matches,
-            None => get_balanced_round_matches_top_seed_favored(seeding)?,
-        };
+    pub fn create(seeding: &[PlayerId], automatic_progression: bool) -> Result<Self, Error> {
+        let matches = get_balanced_round_matches_top_seed_favored(seeding)?;
 
         Ok(Self {
             matches,
             seeding: seeding.to_vec(),
             automatic_progression,
         })
+    }
+
+    /// Create new matches for single elimination bracket.
+    ///
+    /// # Errors
+    /// thrown when initial matches cannot be generated
+    pub(crate) fn new(
+        matches: Vec<Match>,
+        seeding: &[PlayerId],
+        automatic_progression: bool,
+    ) -> Self {
+        Self {
+            matches,
+            seeding: seeding.to_vec(),
+            automatic_progression,
+        }
     }
 
     /// Returns true if `player_id` is disqualified
@@ -114,7 +123,7 @@ impl Progression for Step {
         let current_match_to_play =
             (*match_of_player_to_disqualify).set_automatic_loser(player_id)?;
         let bracket = update_bracket_with(&self.matches, &current_match_to_play);
-        let bracket = Step::new(Some(bracket), &self.seeding, self.automatic_progression)?;
+        let bracket = Step::new(bracket, &self.seeding, self.automatic_progression);
         let new_matches = get_new_matches(&old_matches_to_play, &bracket.matches_to_play());
         match bracket
             .clone()
@@ -133,7 +142,7 @@ impl Progression for Step {
                     }
                     None => bracket,
                 };
-                let bracket = Step::new(Some(bracket), &self.seeding, self.automatic_progression)?;
+                let bracket = Step::new(bracket, &self.seeding, self.automatic_progression);
 
                 let new_matches = get_new_matches(&old_matches_to_play, &bracket.matches_to_play());
                 Ok((bracket.matches, new_matches))
@@ -220,7 +229,7 @@ impl Progression for Step {
                 let affected_match_id = m.get_id();
                 let matches =
                     self.update_player_reported_match_result(affected_match_id, result, player_id)?;
-                let p = Step::new(Some(matches), &self.seeding, self.automatic_progression)?;
+                let p = Step::new(matches, &self.seeding, self.automatic_progression);
 
                 let matches = if self.automatic_progression {
                     match p.clone().validate_match_result(affected_match_id) {
@@ -239,7 +248,7 @@ impl Progression for Step {
                     p.matches
                 };
 
-                let p = Step::new(Some(matches), &self.seeding, self.automatic_progression)?;
+                let p = Step::new(matches, &self.seeding, self.automatic_progression);
 
                 let new_matches = p
                     .matches_to_play()
@@ -264,7 +273,7 @@ impl Progression for Step {
         let bracket = bracket.clear_reported_result(player2)?;
         let (bracket, first_affected_match, _new_matches) =
             bracket.report_result(player1, result)?;
-        let bracket = Step::new(Some(bracket), &self.seeding, self.automatic_progression)?;
+        let bracket = Step::new(bracket, &self.seeding, self.automatic_progression);
         let (bracket, second_affected_match, new_matches_2) =
             bracket.report_result(player2, result_player_1.reverse().0.expect("result"))?;
         assert_eq!(first_affected_match, second_affected_match);
@@ -300,11 +309,7 @@ impl Progression for Step {
     fn validate_match_result(&self, match_id: MatchId) -> Result<(Vec<Match>, Vec<Match>), Error> {
         let old_matches = self.matches_to_play();
         let (matches, _) = super::update(&self.matches, match_id)?;
-        let p = Step::new(
-            Some(matches.clone()),
-            &self.seeding,
-            self.automatic_progression,
-        )?;
+        let p = Step::new(matches.clone(), &self.seeding, self.automatic_progression);
         let new_matches = new_matches(&old_matches, &p.matches_to_play());
         Ok((matches, new_matches))
     }
@@ -331,10 +336,7 @@ impl Progression for Step {
 #[cfg(test)]
 mod tests {
     use crate::{
-        bracket::matches::{
-            single_elimination_format::{self, Step},
-            Progression,
-        },
+        bracket::matches::{single_elimination_format::Step, Progression},
         opponent::Opponent,
         player::{Id as PlayerId, Participants, Player},
     };
@@ -386,25 +388,25 @@ mod tests {
             .collect::<Vec<_>>();
 
         // player 2 reports before TO does
-        let bracket = Step::new(None, &seeding, auto).expect("matches");
+        let bracket = Step::create(&seeding, auto).expect("matches");
 
         assert_players_play_each_other(2, 3, &player_ids, &bracket);
         let (matches, _, _) = bracket
             .report_result(player_ids[2], (2, 0))
             .expect("matches");
-        let bracket = Step::new(Some(matches), &seeding, auto).expect("bracket");
+        let bracket = Step::new(matches, &seeding, auto);
         let (_, _, _) = bracket
             .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[3])
             .expect("matches");
 
         // player 3 reports before TO does
-        let bracket = Step::new(None, &seeding, true).expect("matches");
+        let bracket = Step::create(&seeding, true).expect("matches");
 
         assert_players_play_each_other(2, 3, &player_ids, &bracket);
         let (matches, _, _) = bracket
             .report_result(player_ids[3], (0, 2))
             .expect("matches");
-        let bracket = Step::new(Some(matches), &seeding, auto).expect("bracket");
+        let bracket = Step::new(matches, &seeding, auto);
         let (_, _, _) = bracket
             .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[3])
             .expect("matches");
@@ -427,7 +429,7 @@ mod tests {
             .map(Player::get_id)
             .collect::<Vec<_>>();
         let automatic_progression = true;
-        let bracket = Step::new(None, &seeding, automatic_progression).expect("matches");
+        let bracket = Step::create(&seeding, automatic_progression).expect("matches");
 
         assert_eq!(bracket.matches.len(), 2);
         assert_eq!(bracket.matches_to_play().len(), 1);
@@ -435,12 +437,7 @@ mod tests {
         let (matches, _, new_matches) = bracket
             .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[3])
             .expect("matches");
-        let p = single_elimination_format::Step::new(
-            Some(matches.clone()),
-            &bracket.seeding,
-            automatic_progression,
-        )
-        .expect("progress");
+        let p = Step::new(matches.clone(), &bracket.seeding, automatic_progression);
         assert_ne!(matches[0].get_winner(), Opponent::Unknown);
         assert_eq!(new_matches.len(), 1, "grand finals match generated");
         assert_players_play_each_other(1, 2, &player_ids, &p);
@@ -448,9 +445,7 @@ mod tests {
         let (matches, _, new_matches) = p
             .tournament_organiser_reports_result(player_ids[1], (0, 2), player_ids[2])
             .expect("matches");
-        let p =
-            single_elimination_format::Step::new(Some(matches), &p.seeding, automatic_progression)
-                .expect("progress");
+        let p = Step::new(matches, &p.seeding, automatic_progression);
         assert!(p.matches_to_play().is_empty());
         assert!(new_matches.is_empty());
         assert!(p.is_over());
@@ -474,28 +469,28 @@ mod tests {
             .map(Player::get_id)
             .collect::<Vec<_>>();
 
-        let p = Step::new(None, &seeding, automatic_progression).expect("progress");
+        let p = Step::create(&seeding, automatic_progression).expect("progress");
         assert_eq!(p.matches.len(), 4);
         assert_eq!(p.matches_to_play().len(), 2);
         let (matches, _, _new_matches) = p
             .tournament_organiser_reports_result(player_ids[4], (2, 0), player_ids[5])
             .expect("bracket");
-        let p = Step::new(Some(matches), &p.seeding, automatic_progression).expect("progress");
+        let p = Step::new(matches, &p.seeding, automatic_progression);
         assert_eq!(p.matches_to_play().len(), 2);
         let (matches, _, _new_matches) = p
             .tournament_organiser_reports_result(player_ids[2], (0, 2), player_ids[3])
             .expect("bracket");
-        let p = Step::new(Some(matches), &p.seeding, automatic_progression).expect("progress");
+        let p = Step::new(matches, &p.seeding, automatic_progression);
         assert_eq!(p.matches_to_play().len(), 1);
         let (matches, _, _new_matches) = p
             .tournament_organiser_reports_result(player_ids[1], (2, 0), player_ids[4])
             .expect("bracket");
-        let p = Step::new(Some(matches), &p.seeding, automatic_progression).expect("progress");
+        let p = Step::new(matches, &p.seeding, automatic_progression);
         assert_eq!(p.matches_to_play().len(), 1);
         let (matches, _, _new_matches) = p
             .tournament_organiser_reports_result(player_ids[1], (2, 0), player_ids[3])
             .expect("bracket");
-        let p = Step::new(Some(matches), &p.seeding, automatic_progression).expect("progress");
+        let p = Step::new(matches, &p.seeding, automatic_progression);
         if !p.is_over() {
             for m in p.matches {
                 println!("{m}");

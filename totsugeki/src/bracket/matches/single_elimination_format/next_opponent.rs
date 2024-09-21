@@ -48,7 +48,7 @@ mod tests {
             bad_seeding = bad_seeding.add_participant(player).expect("bracket");
         }
         let auto = true;
-        let s = Step::new(None, &seeding, auto).expect("step");
+        let s = Step::create(&seeding, auto).expect("step");
 
         assert_eq!(s.matches.len(), 2);
         assert_eq!(s.matches_to_play().len(), 1);
@@ -56,14 +56,14 @@ mod tests {
         let (matches, _, new_matches) = s
             .tournament_organiser_reports_result(p[2].get_id(), (2, 0), p[3].get_id())
             .expect("bracket");
-        let s = Step::new(Some(matches), &s.seeding, auto).expect("step");
+        let s = Step::new(matches, &s.seeding, auto);
         assert_eq!(new_matches.len(), 1, "grand finals match generated");
         assert_players_play_each_other(1, 2, &p, &s);
         assert_eq!(s.matches_to_play().len(), 1);
         let (matches, _, new_matches) = s
             .tournament_organiser_reports_result(p[1].get_id(), (0, 2), p[2].get_id())
             .expect("bracket");
-        let s = Step::new(Some(matches), &s.seeding, auto).expect("step");
+        let s = Step::new(matches, &s.seeding, auto);
         assert!(s.matches_to_play().is_empty());
         assert!(new_matches.is_empty());
         assert!(s.is_over());
@@ -81,29 +81,29 @@ mod tests {
             bad_seeding = bad_seeding.add_participant(player).expect("bracket");
         }
         let auto = true;
-        let s = Step::new(None, &seeding, auto).expect("step");
+        let s = Step::create(&seeding, auto).expect("step");
 
         assert_eq!(s.matches.len(), 4);
         assert_eq!(s.matches_to_play().len(), 2);
         let (matches, _, _new_matches) = s
             .tournament_organiser_reports_result(p[4].get_id(), (2, 0), p[5].get_id())
             .expect("bracket");
-        let s = Step::new(Some(matches), &s.seeding, auto).expect("step");
+        let s = Step::new(matches, &s.seeding, auto);
         assert_eq!(s.matches_to_play().len(), 2);
         let (matches, _, _new_matches) = s
             .tournament_organiser_reports_result(p[2].get_id(), (0, 2), p[3].get_id())
             .expect("bracket");
-        let s = Step::new(Some(matches), &s.seeding, auto).expect("step");
+        let s = Step::new(matches, &s.seeding, auto);
         assert_eq!(s.matches_to_play().len(), 1);
         let (matches, _, _new_matches) = s
             .tournament_organiser_reports_result(p[1].get_id(), (2, 0), p[4].get_id())
             .expect("bracket");
-        let s = Step::new(Some(matches), &s.seeding, auto).expect("step");
+        let s = Step::new(matches, &s.seeding, auto);
         assert_eq!(s.matches_to_play().len(), 1);
         let (matches, _, _new_matches) = s
             .tournament_organiser_reports_result(p[1].get_id(), (2, 0), p[3].get_id())
             .expect("bracket");
-        let s = Step::new(Some(matches), &s.seeding, auto).expect("step");
+        let s = Step::new(matches, &s.seeding, auto);
         assert!(s.is_over());
         assert_eq!(s.matches_to_play().len(), 0);
     }

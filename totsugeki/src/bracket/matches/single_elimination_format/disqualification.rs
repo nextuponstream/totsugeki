@@ -24,7 +24,7 @@ mod tests {
             .map(Player::get_id)
             .collect::<Vec<_>>();
         let auto = false;
-        let s = Step::new(None, &seeding, auto).expect("step");
+        let s = Step::create(&seeding, auto).expect("step");
 
         let unknown_player = PlayerId::new_v4();
         let id = match s.disqualify_participant(unknown_player) {
@@ -47,7 +47,7 @@ mod tests {
             bad_seeding = bad_seeding.add_participant(player).expect("seeding");
         }
         let auto = true;
-        let s = Step::new(None, &seeding, auto).expect("step");
+        let s = Step::create(&seeding, auto).expect("step");
 
         assert!(
             !s.matches.iter().any(
@@ -58,7 +58,7 @@ mod tests {
         let (matches, _) = s
             .disqualify_participant(p[1].get_id())
             .expect("bracket with player 1 disqualified");
-        let s = Step::new(Some(matches), &s.seeding, auto).expect("step");
+        let s = Step::new(matches, &s.seeding, auto);
         assert!(
             s.matches.iter().any(
                 |m| matches!(m.get_automatic_loser(), Opponent::Player(loser) if loser == p[1].get_id())
@@ -85,16 +85,16 @@ mod tests {
             bad_seeding = bad_seeding.add_participant(player).expect("seeding");
         }
         let auto = false;
-        let s = Step::new(None, &seeding, auto).expect("step");
+        let s = Step::create(&seeding, auto).expect("step");
 
         let (matches, match_id_p2, _new_matches) = s
             .tournament_organiser_reports_result(p[2].get_id(), (2, 0), p[3].get_id())
             .expect("reported result by player 2");
-        let s = Step::new(Some(matches), &s.seeding, auto).expect("step");
+        let s = Step::new(matches, &s.seeding, auto);
         let (matches, _) = s
             .validate_match_result(match_id_p2)
             .expect("validated match for p2 and p3");
-        let s = Step::new(Some(matches), &s.seeding, auto).expect("step");
+        let s = Step::new(matches, &s.seeding, auto);
 
         assert!(
             !s.matches.iter().any(|m| matches!(m.get_automatic_loser(), Opponent::Player(loser) if loser == p[2].get_id())),
@@ -103,7 +103,7 @@ mod tests {
         let (matches, _) = s
             .disqualify_participant(p[2].get_id())
             .expect("p2 is disqualified");
-        let s = Step::new(Some(matches), &s.seeding, auto).expect("step");
+        let s = Step::new(matches, &s.seeding, auto);
         assert!(
             s.matches.iter().any(|m| matches!(
                     (m.get_automatic_loser(), m.get_winner()),
@@ -132,7 +132,7 @@ mod tests {
             bad_seeding = bad_seeding.add_participant(player).expect("seeding");
         }
         let auto = false;
-        let s = Step::new(None, &seeding, auto).expect("step");
+        let s = Step::create(&seeding, auto).expect("step");
 
         assert!(
             !s.matches.iter().any(|m|
@@ -143,7 +143,7 @@ mod tests {
         let (matches, _) = s
             .disqualify_participant(p[2].get_id())
             .expect("bracket with player 2 disqualified");
-        let s = Step::new(Some(matches), &s.seeding, auto).expect("step");
+        let s = Step::new(matches, &s.seeding, auto);
         assert!(
             s.matches.iter().any(|m|
                 matches!(m.get_automatic_loser(), Opponent::Player(loser) if loser == p[2].get_id())
@@ -171,41 +171,41 @@ mod tests {
             bad_seeding = bad_seeding.add_participant(player).expect("seeding");
         }
         let auto = false;
-        let s = Step::new(None, &seeding, auto).expect("step");
+        let s = Step::create(&seeding, auto).expect("step");
         let (matches, _) = s
             .disqualify_participant(p[2].get_id())
             .expect("bracket with player 2 disqualified");
-        let s = Step::new(Some(matches), &s.seeding, auto).expect("step");
+        let s = Step::new(matches, &s.seeding, auto);
         assert_outcome(&s.matches, &p[7], &p[2]);
         let (matches, _) = s
             .disqualify_participant(p[3].get_id())
             .expect("bracket with player 3 disqualified");
-        let s = Step::new(Some(matches), &s.seeding, auto).expect("step");
+        let s = Step::new(matches, &s.seeding, auto);
         assert_outcome(&s.matches, &p[6], &p[3]);
         let (matches, _) = s
             .disqualify_participant(p[4].get_id())
             .expect("bracket with player 4 disqualified");
-        let s = Step::new(Some(matches), &s.seeding, auto).expect("step");
+        let s = Step::new(matches, &s.seeding, auto);
         assert_outcome(&s.matches, &p[5], &p[4]);
         let (matches, _) = s
             .disqualify_participant(p[5].get_id())
             .expect("bracket with player 5 disqualified");
-        let s = Step::new(Some(matches), &s.seeding, auto).expect("step");
+        let s = Step::new(matches, &s.seeding, auto);
         // player 5 opponent is unknown
         let (matches, _) = s
             .disqualify_participant(p[6].get_id())
             .expect("bracket with player 6 disqualified");
-        let s = Step::new(Some(matches), &s.seeding, auto).expect("step");
+        let s = Step::new(matches, &s.seeding, auto);
         assert_outcome(&s.matches, &p[7], &p[6]);
         let (matches, _) = s
             .disqualify_participant(p[7].get_id())
             .expect("bracket with player 7 disqualified");
-        let s = Step::new(Some(matches), &s.seeding, auto).expect("step");
+        let s = Step::new(matches, &s.seeding, auto);
         // player 7 is in GF
         let (matches, _) = s
             .disqualify_participant(p[8].get_id())
             .expect("bracket with player 8 disqualified");
-        let s = Step::new(Some(matches), &s.seeding, auto).expect("step");
+        let s = Step::new(matches, &s.seeding, auto);
         assert_outcome(&s.matches, &p[1], &p[8]);
         assert_outcome(&s.matches, &p[1], &p[5]);
         assert_outcome(&s.matches, &p[1], &p[7]);

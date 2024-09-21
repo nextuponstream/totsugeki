@@ -39,7 +39,7 @@ impl Seeding {
     }
 
     /// Contains player
-    pub fn contains(&self, player_id: PlayerId) -> bool {
+    pub fn contains(&self, player_id: ID) -> bool {
         self.0.contains(&player_id)
     }
 
