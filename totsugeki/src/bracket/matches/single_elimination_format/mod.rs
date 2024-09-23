@@ -8,13 +8,15 @@ use super::{
     assert_disqualified_at_most_once, assert_match_is_well_formed, update_bracket_with, Error,
     Progression,
 };
+use crate::bracket::seeding::Seeding;
 use crate::bracket::Id;
 use crate::{
-    bracket::{disqualification::get_new_matches, progression::new_matches},
+    bracket::{disqualification::get_new_matches, progression::new_matches_for_bracket},
     matches::{Error as MatchError, Id as MatchId, Match, ReportedResult},
     opponent::Opponent,
     player::Id as PlayerId,
     seeding::single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored,
+    ID,
 };
 
 // FIXME remove struct entirely once refactored into single_elimination_bracket
@@ -38,11 +40,12 @@ impl Step {
     /// # Errors
     /// thrown when initial matches cannot be generated
     pub fn create(seeding: &[PlayerId], automatic_progression: bool) -> Result<Self, Error> {
-        let matches = get_balanced_round_matches_top_seed_favored(seeding)?;
+        let seeding = Seeding::new(seeding.to_owned()).unwrap();
+        let matches = get_balanced_round_matches_top_seed_favored(seeding.clone())?;
 
         Ok(Self {
             matches,
-            seeding: seeding.to_vec(),
+            seeding: seeding.get(),
             automatic_progression,
         })
     }
@@ -61,13 +64,6 @@ impl Step {
             seeding: seeding.to_vec(),
             automatic_progression,
         }
-    }
-
-    /// Returns true if `player_id` is disqualified
-    fn is_disqualified(&self, player_id: PlayerId) -> bool {
-        self.matches
-            .iter()
-            .any(|m| m.is_automatic_loser_by_disqualification(player_id))
     }
 
     /// Clear previous reported result for `player_id`
@@ -98,7 +94,7 @@ impl Step {
     }
 }
 
-impl Progression for Step {
+impl Step {
     fn disqualify_participant(
         &self,
         player_id: PlayerId,
@@ -160,6 +156,13 @@ impl Progression for Step {
         super::bracket_is_over(&self.matches)
     }
 
+    fn matches_progress(&self) -> (usize, usize) {
+        let right = self.matches.len();
+        let left = self.matches.iter().filter(|m| m.is_over()).count();
+
+        (left, right)
+    }
+
     fn matches_to_play(&self) -> Vec<Match> {
         self.matches
             .iter()
@@ -205,11 +208,15 @@ impl Progression for Step {
         Ok((opponent, relevant_match.get_id()))
     }
 
+    fn is_disqualified(&self, player_id: PlayerId) -> bool {
+        super::is_disqualified(player_id, &self.matches)
+    }
+
     fn report_result(
         &self,
         player_id: PlayerId,
         result: (i8, i8),
-    ) -> Result<(Vec<Match>, crate::matches::Id, Vec<Match>), Error> {
+    ) -> Result<(Vec<Match>, ID, Vec<Match>), Error> {
         if !self.seeding.contains(&player_id) {
             return Err(Error::UnknownPlayer(player_id, self.seeding.clone()));
         };
@@ -310,12 +317,8 @@ impl Progression for Step {
         let old_matches = self.matches_to_play();
         let (matches, _) = super::update(&self.matches, match_id)?;
         let p = Step::new(matches.clone(), &self.seeding, self.automatic_progression);
-        let new_matches = new_matches(&old_matches, &p.matches_to_play());
+        let new_matches = new_matches_for_bracket(&old_matches, &p.matches_to_play());
         Ok((matches, new_matches))
-    }
-
-    fn is_disqualified(&self, player_id: PlayerId) -> bool {
-        super::is_disqualified(player_id, &self.matches)
     }
 
     fn check_all_assertions(&self) {
@@ -323,13 +326,6 @@ impl Progression for Step {
         for m in &self.matches {
             assert_match_is_well_formed(m);
         }
-    }
-
-    fn matches_progress(&self) -> (usize, usize) {
-        let right = self.matches.len();
-        let left = self.matches.iter().filter(|m| m.is_over()).count();
-
-        (left, right)
     }
 }
 

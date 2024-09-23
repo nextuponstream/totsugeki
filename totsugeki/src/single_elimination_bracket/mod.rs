@@ -1,6 +1,9 @@
 //! Single elimination bracket
 
+mod matches_to_play;
+mod next_opponent_in_bracket;
 mod progression;
+mod query_state;
 
 use crate::bracket::matches::single_elimination_format::Step;
 use crate::bracket::matches::{Error, Progression};
@@ -8,6 +11,7 @@ use crate::bracket::seeding::Seeding;
 use crate::matches::Match;
 use crate::opponent::Opponent;
 use crate::opponent::Opponent::Player;
+use crate::seeding::single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored;
 use crate::seeding::Error as SeedingError;
 use crate::single_elimination_bracket::progression::ProgressionSEB;
 use crate::ID;
@@ -50,40 +54,49 @@ pub enum SingleEliminationReportResultError {
     MissingOpponent(),
 }
 
-/// Cannot generate single elimination bracket
-#[derive(Error, Debug)]
-pub enum SingleEliminationBracketGenerationError {
-    /// Unknown
-    #[error("Seeding does not contain player {0} present in match {1}")]
-    UnknownPlayer(ID, ID),
-}
-
 impl SingleEliminationBracket {
-    /// New single elimination bracket
-    pub fn new(
-        seeding: Seeding,
-        matches: Vec<Match>,
-        automatic_match_progression: bool,
-    ) -> Result<Self, SingleEliminationBracketGenerationError> {
-        // NOTE: I really don't like taking `matches` without verifying anything whatsoever
-        // FIXME add some assertions, could save from a grave mistake, example: any players not in
-        // seeding found in matches should cause an unrecoverable error
-        // NOTE: could make it "fumble proof" by only recording reports, but then you have to
-        // recompute the bracket at every turn. Then it's not efficient. Just use the database for
-        // what it is, saving intermediate state
-        for player in seeding.get() {
-            // could downgrade to debug_assert but let's verify assumptions, even in release mode
-            assert!(matches
-                .iter()
-                .find(|m| m.players.contains(&Player(player)))
-                .is_some());
-        }
+    /// Get matches
+    pub fn get_matches(&self) -> Vec<Match> {
+        self.matches.clone()
+    }
 
-        Ok(Self {
+    /// Generate matches for bracket using `seeding`  and other configuration
+    pub fn create(seeding: Seeding, automatic_match_progression: bool) -> Self {
+        let matches = get_balanced_round_matches_top_seed_favored(seeding.clone())
+            .expect("initial matches generated");
+
+        Self {
             seeding,
             matches,
             automatic_match_progression,
-        })
+        }
+    }
+
+    /// New single elimination bracket
+    ///
+    /// # Panics
+    /// When player in seeding is not in any of the matches
+    pub fn new(seeding: Seeding, matches: Vec<Match>, automatic_match_progression: bool) -> Self {
+        for player in seeding.get() {
+            if matches
+                .iter()
+                .find(|m| m.players.contains(&Player(player)))
+                .is_none()
+            {
+                panic!("player {player} was not found in matches. Is matches data corrupt?")
+            }
+        }
+
+        Self {
+            seeding,
+            matches,
+            automatic_match_progression,
+        }
+    }
+
+    /// Seeding of bracket
+    pub fn get_seeding(&self) -> Seeding {
+        self.seeding.clone()
     }
 
     /// Report result for a match in this bracket. Returns updated bracket,
@@ -119,48 +132,25 @@ impl SingleEliminationBracket {
                 let affected_match_id = m.get_id();
                 let matches =
                     self.update_player_reported_match_result(affected_match_id, result, player_id)?;
-                let p = Step::new(
+                let seb = SingleEliminationBracket::new(
+                    self.seeding,
                     matches,
-                    &self.seeding.get(),
                     self.automatic_match_progression,
                 );
 
-                let matches = if self.automatic_match_progression {
-                    // FIXME update error type is probably too big
-                    match p.clone().validate_match_result(affected_match_id) {
-                        Ok((b, _)) => b,
-                        Err(e) => match e {
-                            Error::MatchUpdate(
-                                crate::matches::Error::PlayersReportedDifferentMatchOutcome(_, _),
-                            ) => p.matches,
-                            Error::MatchUpdate(crate::matches::Error::MissingReport(_, _)) => {
-                                p.matches
-                            }
-                            _ => unreachable!(),
-                        },
-                    }
+                let seb = if self.automatic_match_progression {
+                    let (seb, _) = seb.validate_match_result(affected_match_id);
+                    seb
                 } else {
-                    p.matches
+                    seb
                 };
 
-                let p = Step::new(
-                    matches,
-                    &self.seeding.get(),
-                    self.automatic_match_progression,
-                );
-
-                let new_matches = p
+                let new_matches = seb
                     .matches_to_play()
                     .iter()
                     .filter(|m| !old_matches.iter().any(|old_m| old_m.get_id() == m.get_id()))
-                    .map(std::clone::Clone::clone)
+                    .map(Clone::clone)
                     .collect();
-                let seb = SingleEliminationBracket::new(
-                    self.seeding,
-                    p.matches,
-                    self.automatic_match_progression,
-                )
-                .expect("single elimination bracket");
                 Ok((seb, affected_match_id, new_matches))
             }
             None => Err(SingleEliminationReportResultError::NoMatchToPlay(player_id)),

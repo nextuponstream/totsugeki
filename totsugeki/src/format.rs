@@ -3,6 +3,8 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+use crate::bracket::seeding::Seeding;
+use crate::single_elimination_bracket::SingleEliminationBracket;
 use crate::{
     bracket::matches::{
         double_elimination_format::Step as DE_Step, single_elimination_format::Step as SE_Step,
@@ -32,15 +34,16 @@ impl Format {
     /// # Errors
     /// thrown when math overflow happens
     pub fn generate_matches(self, seeding: &[PlayerId]) -> Result<Vec<Match>, SeedingError> {
+        let seeding = Seeding::new(seeding.into()).unwrap();
         Ok(match self {
             Format::SingleElimination => get_balanced_round_matches_top_seed_favored(seeding)?,
             Format::DoubleElimination => {
                 let mut matches = vec![];
                 let mut winner_bracket_matches =
-                    get_balanced_round_matches_top_seed_favored(seeding)?;
+                    get_balanced_round_matches_top_seed_favored(seeding.clone())?;
                 matches.append(&mut winner_bracket_matches);
                 let mut looser_bracket_matches =
-                    get_loser_bracket_matches_top_seed_favored(seeding)?;
+                    get_loser_bracket_matches_top_seed_favored(&seeding.get())?;
                 matches.append(&mut looser_bracket_matches);
                 let grand_finals: Match = Match::new_empty([1, 2]);
                 matches.push(grand_finals);
@@ -64,11 +67,9 @@ impl Format {
         automatic_progression: bool,
     ) -> Box<dyn Progression> {
         match self {
-            Format::SingleElimination => Box::new(SE_Step::new(
-                matches,
-                &seeding.get_seeding(),
-                automatic_progression,
-            )),
+            Format::SingleElimination => {
+                panic!()
+            }
             Format::DoubleElimination => Box::new(
                 DE_Step::new(
                     Some(matches),

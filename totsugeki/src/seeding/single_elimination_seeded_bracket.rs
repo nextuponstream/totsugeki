@@ -4,7 +4,7 @@ use super::{seeding_initial_round, seeding_initial_round2};
 use crate::bracket::seeding::Seeding;
 use crate::matches::GenerationError;
 use crate::seeding::Error as SeedingError;
-use crate::{matches::Match, opponent::Opponent, player::Id as PlayerId};
+use crate::{matches::Match, opponent::Opponent};
 use thiserror::Error;
 
 /// Single elimination bracket match generation errors
@@ -134,7 +134,7 @@ pub(crate) fn get_balanced_round_matches_top_seed_favored2(
 /// form a new match, or we use the players with byes and give them an "unknown"
 /// Opponent.
 pub fn get_balanced_round_matches_top_seed_favored(
-    seeding: &[PlayerId],
+    seeding: Seeding,
 ) -> Result<Vec<Match>, SeedingError> {
     // FIXME seeding should be a struct that has been well constructed
     // Matches are built bottom-up:
@@ -146,10 +146,10 @@ pub fn get_balanced_round_matches_top_seed_favored(
     // * for round 2, select next 4 matches
     // * ...
     let n = seeding.len();
-    let byes = match n.checked_next_power_of_two() {
-        Some(b) => b - n,
-        None => return Err(SeedingError::MathOverflow),
-    };
+    let byes = n
+        .checked_next_power_of_two()
+        .expect("smaller number of participants")
+        - n;
     let mut remaining_byes = byes;
     let mut this_round: Vec<Match> = vec![];
     let mut round_matches: Vec<Vec<Match>> = vec![];
@@ -160,18 +160,18 @@ pub fn get_balanced_round_matches_top_seed_favored(
         let _top_seed = available_players.remove(0);
     });
 
-    let Some(first_round) = n.checked_next_power_of_two() else {
-        return Err(SeedingError::MathOverflow);
-    };
+    let first_round = n
+        .checked_next_power_of_two()
+        .expect("smaller number of participants");
     let second_round = first_round / 2;
     let mut i = first_round;
     while i > 1 {
         while !available_players.is_empty() {
             if first_round == i {
-                seeding_initial_round(&mut available_players, seeding, &mut this_round);
+                seeding_initial_round(&mut available_players, &seeding.get(), &mut this_round);
             } else if second_round == i {
                 let top_seed = available_players.remove(0);
-                let player_list = seeding;
+                let player_list = seeding.get();
                 let top_seed_player = player_list[top_seed - 1];
                 let bottom_seed = available_players[available_players.len() - 1];
                 available_players.pop();
@@ -217,7 +217,8 @@ pub fn get_balanced_round_matches_top_seed_favored(
 }
 #[cfg(test)]
 mod tests {
-    use crate::matches::{Id as MatchId, ReportedResult};
+    use crate::bracket::seeding::Seeding;
+    use crate::matches::Id as MatchId;
     use crate::seeding::single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored;
     use crate::seeding::{seed, Method};
     use crate::{
@@ -240,14 +241,16 @@ mod tests {
         let cute_cat = players.remove(0);
 
         let players = Participants::try_from(players_copy).expect("players");
-        let matches = get_balanced_round_matches_top_seed_favored(
-            &players
+        let seeding = Seeding::new(
+            players
                 .get_players_list()
                 .iter()
                 .map(Player::get_id)
                 .collect::<Vec<_>>(),
         )
-        .expect("balanced matches");
+        .unwrap();
+        let matches =
+            get_balanced_round_matches_top_seed_favored(seeding).expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
         let expected_matches = vec![
             Match {
@@ -288,14 +291,16 @@ mod tests {
         let cute_cat = players.remove(0);
 
         let players = Participants::try_from(players_copy).expect("players");
-        let matches = get_balanced_round_matches_top_seed_favored(
-            &players
+        let seeding = Seeding::new(
+            players
                 .get_players_list()
                 .iter()
                 .map(Player::get_id)
                 .collect::<Vec<_>>(),
         )
-        .expect("balanced matches");
+        .unwrap();
+        let matches =
+            get_balanced_round_matches_top_seed_favored(seeding).expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches
             .iter()
             .map(crate::matches::Match::get_id)
@@ -352,14 +357,16 @@ mod tests {
         let cute_cat = players.remove(0);
 
         let players = Participants::try_from(players_copy).expect("players");
-        let matches = get_balanced_round_matches_top_seed_favored(
-            &players
+        let seeding = Seeding::new(
+            players
                 .get_players_list()
                 .iter()
                 .map(Player::get_id)
                 .collect::<Vec<_>>(),
         )
-        .expect("balanced matches");
+        .unwrap();
+        let matches =
+            get_balanced_round_matches_top_seed_favored(seeding).expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
         let expected_matches = vec![
             Match {
@@ -421,14 +428,16 @@ mod tests {
         let cute_cat = players.remove(0);
 
         let players = Participants::try_from(players_copy).expect("players");
-        let matches = get_balanced_round_matches_top_seed_favored(
-            &players
+        let seeding = Seeding::new(
+            players
                 .get_players_list()
                 .iter()
                 .map(Player::get_id)
                 .collect::<Vec<_>>(),
         )
-        .expect("balanced matches");
+        .unwrap();
+        let matches =
+            get_balanced_round_matches_top_seed_favored(seeding).expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
         let expected_matches = vec![
             Match {
@@ -499,14 +508,16 @@ mod tests {
         let cute_cat = players.remove(0);
 
         let players = Participants::try_from(players_copy).expect("players");
-        let matches = get_balanced_round_matches_top_seed_favored(
-            &players
+        let seeding = Seeding::new(
+            players
                 .get_players_list()
                 .iter()
                 .map(Player::get_id)
                 .collect::<Vec<_>>(),
         )
-        .expect("balanced matches");
+        .unwrap();
+        let matches =
+            get_balanced_round_matches_top_seed_favored(seeding).expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
         let expected_matches = vec![
             Match {
@@ -590,14 +601,16 @@ mod tests {
         let cute_cat = players.remove(0);
 
         let players = Participants::try_from(players_copy).expect("players");
-        let matches = get_balanced_round_matches_top_seed_favored(
-            &players
+        let seeding = Seeding::new(
+            players
                 .get_players_list()
                 .iter()
                 .map(Player::get_id)
                 .collect::<Vec<_>>(),
         )
-        .expect("balanced matches");
+        .unwrap();
+        let matches =
+            get_balanced_round_matches_top_seed_favored(seeding).expect("balanced matches");
         let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
         let expected_matches = vec![
             Match {
@@ -685,13 +698,15 @@ mod tests {
             });
             let players = Participants::try_from(players).expect("players");
             let players = seed(&Method::Strict, players.clone(), players).expect("seeded players");
-            let _matches = get_balanced_round_matches_top_seed_favored(
-                &players
+            let seeding = Seeding::new(
+                players
                     .get_players_list()
                     .iter()
                     .map(Player::get_id)
                     .collect::<Vec<_>>(),
-            );
+            )
+            .unwrap();
+            let _matches = get_balanced_round_matches_top_seed_favored(seeding);
         });
     }
 }

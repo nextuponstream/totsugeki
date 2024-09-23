@@ -37,12 +37,31 @@ impl Bracket {
 }
 
 /// Get new matches using `old_matches` to play and new matches to play
-pub(crate) fn new_matches(old_matches: &[Match], new_matches: &[Match]) -> Vec<Match> {
-    new_matches
+pub(crate) fn new_matches_for_bracket(
+    old_matches: &[Match],
+    matches_to_play: &[Match],
+) -> Vec<Match> {
+    assert!(
+        matches_to_play.iter().all(|match_to_play| old_matches
+            .iter()
+            .any(|old_match| old_match.id == match_to_play.id)),
+        "there is at least one match to play that does not have a corresponding older match. Possible data corruption or logic error"
+    );
+    let new_matches: Vec<Match> = matches_to_play
         .iter()
         .filter(|m| !old_matches.iter().any(|old_m| old_m.get_id() == m.get_id()))
-        .map(std::clone::Clone::clone)
-        .collect()
+        .map(Clone::clone)
+        .collect();
+
+    if new_matches.len() > 2 {
+        panic!(
+            "Misuse: when resolving in a bracket, the winner of the match goes to his next match \
+        and same thing for the loser. Therefore, there should be at most two new matches to play \
+         but found ({})",
+            new_matches.len()
+        )
+    }
+    new_matches
 }
 
 /// Returns winner of bracket

@@ -309,7 +309,7 @@ pub trait Progression {
 }
 
 #[cfg(test)]
-fn assert_elimination(s: &dyn Progression, players: &[Player], player_who_won: usize) {
+pub(crate) fn assert_elimination(s: &dyn Progression, players: &[Player], player_who_won: usize) {
     let iter = players.iter().enumerate();
     let iter = iter.skip(1);
 
@@ -336,7 +336,7 @@ fn assert_elimination(s: &dyn Progression, players: &[Player], player_who_won: u
 }
 
 #[cfg(test)]
-fn assert_next_matches(
+pub(crate) fn assert_next_matches(
     s: &dyn Progression,
     players_with_unknown_opponent: &[usize],
     expected_matches: &[(usize, usize)],

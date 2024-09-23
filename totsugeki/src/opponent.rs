@@ -4,6 +4,7 @@ use crate::player::Id as PlayerId;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+// FIXME opponent is either Some or None, no need for enum here
 /// Opponent in a match
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Default, Copy)]
 pub enum Opponent {

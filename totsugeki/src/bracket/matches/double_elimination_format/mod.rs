@@ -8,10 +8,11 @@ use super::{
     assert_disqualified_at_most_once, assert_match_is_well_formed, update_bracket_with, Error,
     Progression,
 };
+use crate::bracket::seeding::Seeding;
 use crate::{
     bracket::{
         disqualification::get_new_matches,
-        progression::{new_matches, winner_of_bracket},
+        progression::{new_matches_for_bracket, winner_of_bracket},
     },
     matches::{
         double_elimination_matches_from_partition as dem_partition,
@@ -50,9 +51,12 @@ impl Step {
     ) -> Result<Self, Error> {
         let Some(matches) = matches else {
             let mut matches = vec![];
-            let mut winner_bracket_matches = get_balanced_round_matches_top_seed_favored(&seeding)?;
+            let seeding = Seeding::new(seeding).unwrap();
+            let mut winner_bracket_matches =
+                get_balanced_round_matches_top_seed_favored(seeding.clone())?;
             matches.append(&mut winner_bracket_matches);
-            let mut loser_bracket_matches = get_loser_bracket_matches_top_seed_favored(&seeding)?;
+            let mut loser_bracket_matches =
+                get_loser_bracket_matches_top_seed_favored(&seeding.get())?;
             matches.append(&mut loser_bracket_matches);
             let grand_finals: Match = Match::new([Opponent::Unknown, Opponent::Unknown], [1, 2])?;
             matches.push(grand_finals);
@@ -61,7 +65,7 @@ impl Step {
             matches.push(grand_finals_reset);
 
             return Ok(Self {
-                seeding,
+                seeding: seeding.get(),
                 matches,
                 auto: automatic_progression,
             });
@@ -203,7 +207,7 @@ impl Progression for Step {
         };
         let matches = dem_partition(&w_bracket, &l_bracket, gf, gf_reset);
         let p = Step::new(Some(matches), self.seeding.clone(), self.auto)?;
-        // move DQ'ed played as far as possible
+        // move disqualified player as far as possible
         match p.validate_match_result(current_match_to_play.get_id()) {
             Ok((bracket, _)) => {
                 let Some(m) = bracket
@@ -239,8 +243,8 @@ impl Progression for Step {
                         disqualify_player(&p, player_id, &old_matches_to_play)
                     }
                     MatchError::PlayersReportedDifferentMatchOutcome(_, _) => {
-                        // Can't update match in losers where where DQ'ed player is in.
-                        // Set DQ'ed player as loser and update
+                        // Can't update match in losers where disqualified player is in.
+                        // Set disqualified player as loser and update
                         disqualify_player_and_update_bracket(
                             &p,
                             player_id,
@@ -265,6 +269,23 @@ impl Progression for Step {
             && super::bracket_is_over(&loser_bracket)
             && gf.is_over()
             && (stronger_seed_wins || gfr.is_over())
+    }
+
+    fn matches_progress(&self) -> (usize, usize) {
+        let (winner_bracket, loser_bracket, gf, gfr) =
+            partition_double_elimination_matches(&self.matches, self.seeding.len());
+        let right = winner_bracket.len() + loser_bracket.len() + 2;
+        let mut left = 0;
+        left += winner_bracket.iter().filter(|m| m.is_over()).count();
+        left += loser_bracket.iter().filter(|m| m.is_over()).count();
+        if gf.is_over() {
+            left += 1;
+        }
+        if gfr.is_over() {
+            left += 1;
+        }
+
+        (left, right)
     }
 
     fn matches_to_play(&self) -> Vec<Match> {
@@ -312,6 +333,10 @@ impl Progression for Step {
         Ok((opponent, relevant_match.get_id()))
     }
 
+    fn is_disqualified(&self, player_id: PlayerId) -> bool {
+        super::is_disqualified(player_id, &self.matches)
+    }
+
     fn report_result(
         &self,
         player_id: crate::player::Id,
@@ -356,7 +381,7 @@ impl Progression for Step {
         };
         let p = Step::new(Some(matches), self.seeding.clone(), self.auto)?;
 
-        let new_matches = new_matches(&old_matches, &p.matches_to_play());
+        let new_matches = new_matches_for_bracket(&old_matches, &p.matches_to_play());
         Ok((p.matches, affected_match_id, new_matches))
     }
 
@@ -414,7 +439,7 @@ impl Progression for Step {
 
     // NOTE: w_bracket -> winner bracket
     //       l_bracket -> loser bracket
-    /// First look if match is in winners, then loosers, then GF, then GF reset
+    /// First look if match is in winners, then losers, then GF, then GF reset
     /// If found in winners, update winners, send loser to losers and update
     /// losers as well
     fn validate_match_result(
@@ -480,7 +505,7 @@ impl Progression for Step {
 
                 let matches = dem_partition(&w_bracket, &l_bracket, gf, gf_reset);
                 let bracket = Step::new(Some(matches.clone()), self.seeding.clone(), self.auto)?;
-                let new_matches = new_matches(&old_matches, &bracket.matches_to_play());
+                let new_matches = new_matches_for_bracket(&old_matches, &bracket.matches_to_play());
                 Ok((matches, new_matches))
             }
             Err(Error::UnknownMatch(_bad_winner_match)) => {
@@ -508,7 +533,8 @@ impl Progression for Step {
                             _ => dem_partition(&w_bracket, &l_bracket, gf, gf_reset),
                         };
                         let bracket = Step::new(Some(matches), self.seeding.clone(), self.auto)?;
-                        let new_matches = new_matches(&old_matches, &bracket.matches_to_play());
+                        let new_matches =
+                            new_matches_for_bracket(&old_matches, &bracket.matches_to_play());
                         Ok((bracket.matches, new_matches))
                     }
                     Err(Error::UnknownMatch(_bad_loser_match)) => {
@@ -516,7 +542,8 @@ impl Progression for Step {
                             match_id, w_bracket, l_bracket, gf, gf_reset,
                         )?;
                         let bracket = Step::new(Some(matches), self.seeding.clone(), self.auto)?;
-                        let new_m = new_matches(&old_matches, &bracket.matches_to_play());
+                        let new_m =
+                            new_matches_for_bracket(&old_matches, &bracket.matches_to_play());
                         Ok((bracket.matches, new_m))
                     }
                     Err(e) => Err(e),
@@ -524,10 +551,6 @@ impl Progression for Step {
             }
             Err(e) => Err(e),
         }
-    }
-
-    fn is_disqualified(&self, player_id: PlayerId) -> bool {
-        super::is_disqualified(player_id, &self.matches)
     }
 
     fn check_all_assertions(&self) {
@@ -538,23 +561,6 @@ impl Progression for Step {
         for m in &self.matches {
             assert_match_is_well_formed(m);
         }
-    }
-
-    fn matches_progress(&self) -> (usize, usize) {
-        let (winner_bracket, loser_bracket, gf, gfr) =
-            partition_double_elimination_matches(&self.matches, self.seeding.len());
-        let right = winner_bracket.len() + loser_bracket.len() + 2;
-        let mut left = 0;
-        left += winner_bracket.iter().filter(|m| m.is_over()).count();
-        left += loser_bracket.iter().filter(|m| m.is_over()).count();
-        if gf.is_over() {
-            left += 1;
-        }
-        if gfr.is_over() {
-            left += 1;
-        }
-
-        (left, right)
     }
 }
 

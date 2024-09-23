@@ -15,6 +15,8 @@ pub mod bracket;
 pub mod double_elimination_bracket;
 pub mod format;
 pub mod matches;
+mod matches_to_play;
+mod next_opponent;
 pub mod opponent;
 pub mod player;
 pub mod seeding;
