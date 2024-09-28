@@ -11,7 +11,7 @@ use super::{
 use crate::bracket::seeding::Seeding;
 use crate::bracket::Id;
 use crate::{
-    bracket::{disqualification::get_new_matches, progression::new_matches_for_bracket},
+    bracket::{disqualification::get_new_matches, progression::new_matches_to_play_for_bracket},
     matches::{Error as MatchError, Id as MatchId, Match, ReportedResult},
     opponent::Opponent,
     player::Id as PlayerId,
@@ -317,7 +317,7 @@ impl Step {
         let old_matches = self.matches.clone();
         let (matches, _) = super::update(&self.matches, match_id)?;
         let p = Step::new(matches.clone(), &self.seeding, self.automatic_progression);
-        let new_matches = new_matches_for_bracket(&old_matches, &p.matches_to_play());
+        let new_matches = new_matches_to_play_for_bracket(&old_matches, &p.matches_to_play());
         Ok((matches, new_matches))
     }
 

@@ -1,15 +1,17 @@
 //! Progression of a single elimination bracket
 
 use crate::bracket::matches::{bracket_is_over, is_disqualified, Error};
-use crate::bracket::progression::new_matches_for_bracket;
+use crate::bracket::progression::new_matches_to_play_for_bracket;
 use crate::bracket::seeding::Seeding;
 use crate::matches::update_player_reported_result::Error as UpdatePlayerReportError;
+use crate::matches::Error as MatchError;
 use crate::matches::{Id, Match, ReportedResult};
 use crate::opponent::Opponent;
 use crate::opponent::Opponent::Player;
 use crate::seeding::single_elimination_seeded_bracket::{
     SingleEliminationBracketMatchGenerationError, SingleEliminationBracketMatchValidationError,
 };
+use crate::single_elimination_bracket::SingleEliminationReportResultError::MissingOpponent;
 use crate::single_elimination_bracket::{
     SingleEliminationBracket, SingleEliminationReportResultError,
 };
@@ -254,10 +256,16 @@ impl ProgressionSEB for SingleEliminationBracket {
     }
 
     fn validate_match_result(self, match_id: Id) -> (SingleEliminationBracket, Vec<Match>) {
-        let old_matches = self.matches_to_play();
-        let (matches, _) = crate::bracket::matches::update(&self.matches, match_id).unwrap();
+        let old_matches_to_play = self.matches_to_play();
+        // FIXME remove unreachable
+        let (matches, _) = match crate::bracket::matches::update(&self.matches, match_id) {
+            Ok(t) => t,
+            Err(Error::MatchUpdate(MatchError::MissingOpponent(_))) => return (self, vec![]),
+            _ => unreachable!(),
+        };
 
-        let new_matches = new_matches_for_bracket(&old_matches, &self.matches_to_play());
+        let new_matches =
+            new_matches_to_play_for_bracket(&old_matches_to_play, &self.matches_to_play());
         (
             SingleEliminationBracket::new(self.seeding, matches, self.automatic_match_progression),
             new_matches,

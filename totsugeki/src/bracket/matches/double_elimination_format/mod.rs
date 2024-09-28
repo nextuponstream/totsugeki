@@ -12,7 +12,7 @@ use crate::bracket::seeding::Seeding;
 use crate::{
     bracket::{
         disqualification::get_new_matches,
-        progression::{new_matches_for_bracket, winner_of_bracket},
+        progression::{new_matches_to_play_for_bracket, winner_of_bracket},
     },
     matches::{
         double_elimination_matches_from_partition as dem_partition,
@@ -384,7 +384,7 @@ impl Progression for Step {
 
         // println!("{:?}", old_matches);
         // println!("{:?}", p.matches_to_play());
-        let new_matches = new_matches_for_bracket(&old_matches, &p.matches_to_play());
+        let new_matches = new_matches_to_play_for_bracket(&old_matches, &p.matches_to_play());
         Ok((p.matches, affected_match_id, new_matches))
     }
 
@@ -508,7 +508,8 @@ impl Progression for Step {
 
                 let matches = dem_partition(&w_bracket, &l_bracket, gf, gf_reset);
                 let bracket = Step::new(Some(matches.clone()), self.seeding.clone(), self.auto)?;
-                let new_matches = new_matches_for_bracket(&old_matches, &bracket.matches_to_play());
+                let new_matches =
+                    new_matches_to_play_for_bracket(&old_matches, &bracket.matches_to_play());
                 Ok((matches, new_matches))
             }
             Err(Error::UnknownMatch(_bad_winner_match)) => {
@@ -536,8 +537,10 @@ impl Progression for Step {
                             _ => dem_partition(&w_bracket, &l_bracket, gf, gf_reset),
                         };
                         let bracket = Step::new(Some(matches), self.seeding.clone(), self.auto)?;
-                        let new_matches =
-                            new_matches_for_bracket(&old_matches, &bracket.matches_to_play());
+                        let new_matches = new_matches_to_play_for_bracket(
+                            &old_matches,
+                            &bracket.matches_to_play(),
+                        );
                         Ok((bracket.matches, new_matches))
                     }
                     Err(Error::UnknownMatch(_bad_loser_match)) => {
@@ -545,8 +548,10 @@ impl Progression for Step {
                             match_id, w_bracket, l_bracket, gf, gf_reset,
                         )?;
                         let bracket = Step::new(Some(matches), self.seeding.clone(), self.auto)?;
-                        let new_m =
-                            new_matches_for_bracket(&old_matches, &bracket.matches_to_play());
+                        let new_m = new_matches_to_play_for_bracket(
+                            &old_matches,
+                            &bracket.matches_to_play(),
+                        );
                         Ok((bracket.matches, new_m))
                     }
                     Err(e) => Err(e),
