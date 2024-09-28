@@ -4,12 +4,8 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::bracket::seeding::Seeding;
-use crate::single_elimination_bracket::SingleEliminationBracket;
 use crate::{
-    bracket::matches::{
-        double_elimination_format::Step as DE_Step, single_elimination_format::Step as SE_Step,
-        Progression,
-    },
+    bracket::matches::{double_elimination_format::Step as DE_Step, Progression},
     matches::Match,
     player::{Id as PlayerId, Participants, Player},
     seeding::{

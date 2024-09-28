@@ -7,3 +7,4 @@
 *.crt
 *.key
 .idea
+test.json

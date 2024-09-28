@@ -69,16 +69,7 @@ pub trait ProgressionSEB {
     //  rather then inferring (p1, p2). This way, does additional checks are done (is p2
     //  disqualified?). Currently, it only requires p1, which is fine in itself. There might be a
     //  case to require all players involved that I don't foresee, like a performance improvement
-    // /// Disqualify participant from bracket and update matches. Returns updated
-    // /// matches and matches to play
-    // ///
-    // /// # Errors
-    // /// thrown when participant does not belong in tournament
-    // fn disqualify_participant(
-    //     &self,
-    //     player_id: crate::player::Id,
-    // ) -> Result<(Vec<Match>, Vec<Match>), Error>;
-    //
+
     /// Returns true if bracket is over (all matches are played)
     #[must_use]
     fn is_over(&self) -> bool;

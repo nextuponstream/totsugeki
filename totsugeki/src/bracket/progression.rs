@@ -45,11 +45,14 @@ pub(crate) fn new_matches_for_bracket(
         matches_to_play.iter().all(|match_to_play| old_matches
             .iter()
             .any(|old_match| old_match.id == match_to_play.id)),
-        "there is at least one match to play that does not have a corresponding older match. Possible data corruption or logic error"
+        "there is at least one match to play that does not have a corresponding older match. \
+        Possible data corruption or logic error {}, {}",
+        old_matches.len(),
+        matches_to_play.len()
     );
     let new_matches: Vec<Match> = matches_to_play
         .iter()
-        .filter(|m| !old_matches.iter().any(|old_m| old_m.get_id() == m.get_id()))
+        .filter(|m| old_matches.iter().any(|old_m| old_m.get_id() == m.get_id()))
         .map(Clone::clone)
         .collect();
 

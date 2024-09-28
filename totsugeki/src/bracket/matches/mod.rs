@@ -8,6 +8,7 @@ use crate::{
     opponent::Opponent,
     player::Id as PlayerId,
     seeding::Error as SeedingError,
+    ID,
 };
 use thiserror::Error;
 
@@ -233,10 +234,7 @@ pub trait Progression {
     ///
     /// # Errors
     /// thrown when participant does not belong in tournament
-    fn disqualify_participant(
-        &self,
-        player_id: PlayerId,
-    ) -> Result<(Vec<Match>, Vec<Match>), Error>;
+    fn disqualify_participant(&self, player_id: ID) -> Result<(Vec<Match>, Vec<Match>), Error>;
 
     /// Returns true if bracket is over (all matches are played)
     #[must_use]

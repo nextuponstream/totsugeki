@@ -314,7 +314,7 @@ impl Step {
     }
 
     fn validate_match_result(&self, match_id: MatchId) -> Result<(Vec<Match>, Vec<Match>), Error> {
-        let old_matches = self.matches_to_play();
+        let old_matches = self.matches.clone();
         let (matches, _) = super::update(&self.matches, match_id)?;
         let p = Step::new(matches.clone(), &self.seeding, self.automatic_progression);
         let new_matches = new_matches_for_bracket(&old_matches, &p.matches_to_play());

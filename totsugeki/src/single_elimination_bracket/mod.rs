@@ -1,11 +1,11 @@
 //! Single elimination bracket
 
+mod disqualify_from_bracket;
 mod matches_to_play;
 mod next_opponent_in_bracket;
 mod progression;
 mod query_state;
 
-use crate::bracket::matches::single_elimination_format::Step;
 use crate::bracket::matches::{Error, Progression};
 use crate::bracket::seeding::Seeding;
 use crate::matches::Match;

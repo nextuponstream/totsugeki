@@ -1,3 +1,5 @@
+mod disqualify_from_bracket;
+
 use totsugeki::bracket::seeding::Seeding;
 use totsugeki::player::{Participants, Player};
 use totsugeki::single_elimination_bracket::SingleEliminationBracket;

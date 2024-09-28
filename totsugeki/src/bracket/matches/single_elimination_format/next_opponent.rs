@@ -2,15 +2,9 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::bracket::seeding::Seeding;
     use crate::matches_to_play::MatchesToPlay;
     use crate::next_opponent::NextOpponentInBracket;
-    use crate::single_elimination_bracket::SingleEliminationBracket;
-    use crate::{
-        bracket::matches::single_elimination_format::Step,
-        opponent::Opponent,
-        player::{Participants, Player},
-    };
+    use crate::{opponent::Opponent, player::Player};
 
     fn assert_players_play_each_other(
         player_1: usize,
