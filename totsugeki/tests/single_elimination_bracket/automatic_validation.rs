@@ -42,3 +42,58 @@ fn run_5_man_bracket_automated() {
 
     assert_no_next_match_after_tournament_is_over(&bracket);
 }
+
+#[test]
+fn bracket_8_man_automated() {
+    let mut p = vec![Player::new("don't use".into())];
+    let mut seeding = vec![];
+    for i in 1..=8 {
+        let player = Player::new(format!("p{i}"));
+        p.push(player.clone());
+        seeding.push(player.get_id());
+    }
+    let bracket = SingleEliminationBracket::create(Seeding::new(seeding).unwrap(), true);
+
+    let (bracket, _, new_matches) = bracket
+        .tournament_organiser_reports_result(p[1].get_id(), (2, 0), p[8].get_id())
+        .expect("winner 1vs8");
+    assert_eq!(new_matches.len(), 0);
+    assert_next_matches(&bracket, &[1], &[(2, 7), (3, 6), (4, 5)], &p);
+
+    let (bracket, _, new_matches) = bracket
+        .tournament_organiser_reports_result(p[2].get_id(), (2, 0), p[7].get_id())
+        .expect("winner 2vs7");
+    assert_eq!(new_matches.len(), 0);
+    assert_next_matches(&bracket, &[1, 2], &[(3, 6), (4, 5)], &p);
+
+    let (bracket, _, new_matches) = bracket
+        .tournament_organiser_reports_result(p[5].get_id(), (2, 0), p[4].get_id())
+        .expect("winner 4vs5");
+    assert_eq!(new_matches.len(), 1);
+    assert_next_matches(&bracket, &[2], &[(3, 6), (1, 5)], &p);
+
+    let (bracket, _, new_matches) = bracket
+        .tournament_organiser_reports_result(p[5].get_id(), (2, 0), p[1].get_id())
+        .expect("winner 1vs5");
+    assert_eq!(new_matches.len(), 0);
+    assert_next_matches(&bracket, &[2, 5], &[(3, 6)], &p);
+
+    let (bracket, _, new_matches) = bracket
+        .tournament_organiser_reports_result(p[6].get_id(), (2, 0), p[3].get_id())
+        .expect("winner 3vs6");
+    assert_eq!(new_matches.len(), 1);
+    assert_next_matches(&bracket, &[5], &[(2, 6)], &p);
+
+    let (bracket, _, new_matches) = bracket
+        .tournament_organiser_reports_result(p[6].get_id(), (2, 0), p[2].get_id())
+        .expect("winner 2vs6");
+    assert_eq!(new_matches.len(), 1);
+    assert_next_matches(&bracket, &[], &[(5, 6)], &p);
+
+    let (bracket, _, new_matches) = bracket
+        .tournament_organiser_reports_result(p[5].get_id(), (2, 0), p[6].get_id())
+        .expect("winner 5vs6");
+    assert_eq!(new_matches.len(), 0);
+
+    assert_no_next_match_after_tournament_is_over(&bracket);
+}
