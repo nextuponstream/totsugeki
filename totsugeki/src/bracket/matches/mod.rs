@@ -261,6 +261,8 @@ pub trait Progression {
     /// matches to play
     /// # Errors
     /// thrown when player does not belong in bracket
+    /// # Panics
+    /// When player does not belong in bracket
     fn report_result(
         &self,
         player_id: PlayerId,

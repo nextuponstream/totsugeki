@@ -1,55 +1,66 @@
+use totsugeki::bracket::matches::{Error, Progression};
+use totsugeki::single_elimination_bracket::progression::ProgressionSEB;
+mod automatic_validation;
 mod disqualify_from_bracket;
+mod manual_validation;
 
 use totsugeki::bracket::seeding::Seeding;
+use totsugeki::opponent::Opponent;
 use totsugeki::player::{Participants, Player};
 use totsugeki::single_elimination_bracket::SingleEliminationBracket;
+use totsugeki::ID;
 
-#[test]
-fn run_5_man_bracket() {
-    let mut p = vec![Player::new("don't use".into())];
-    let mut seeding = vec![];
-    for i in 1..=5 {
-        let player = Player::new(format!("p{i}"));
-        p.push(player.clone());
-        seeding.push(player.get_id());
+fn assert_next_matches(
+    bracket: &SingleEliminationBracket,
+    players_with_unknown_opponent: &[usize],
+    expected_matches: &[(usize, usize)],
+    players: &[Player],
+) {
+    for p in players_with_unknown_opponent {
+        let player = players[*p].clone();
+        let (next_opponent, _) = bracket
+            .next_opponent(player.get_id())
+            .expect("next opponent");
+        assert_eq!(
+            next_opponent,
+            Opponent::Unknown,
+            "expected unknown opponent for {p} but got {next_opponent}"
+        );
     }
-    let seeding = Seeding::new(seeding).unwrap();
-    let auto = false;
-    let s = SingleEliminationBracket::create(seeding, auto);
 
-    todo!()
-    // let (seb, match_id, _) = s
-    //     .tournament_organiser_reports_result(p[5].get_id(), (2, 0), p[4].get_id())
-    //     .expect("winner 4vs5");
-    // let (seb, new_matches) = s.validate_match_result(match_id);
-    // assert_eq!(new_matches.len(), 1, "{new_matches:?}");
-    // assert_next_matches(seb, &[], &[(1, 5), (2, 3)], &p);
-    //
-    // let (matches, match_id, _) = s
-    //     .tournament_organiser_reports_result(p[1].get_id(), (2, 1), p[5].get_id())
-    //     .expect("winner 1vs5");
-    // let s = Step::new(matches, &s.seeding, auto);
-    // let (matches, new_matches) = s.validate_match_result(match_id).expect("validation");
-    // let s = Step::new(matches, &s.seeding, auto);
-    // assert_eq!(new_matches.len(), 0);
-    // assert_next_matches(&s, &[1], &[(2, 3)], &p);
-    //
-    // let (matches, match_id, _) = s
-    //     .tournament_organiser_reports_result(p[3].get_id(), (2, 0), p[2].get_id())
-    //     .expect("winner 2vs3");
-    // let s = Step::new(matches, &s.seeding, auto);
-    // let (matches, new_matches) = s.validate_match_result(match_id).expect("validation");
-    // assert_eq!(new_matches.len(), 1);
-    // let s = Step::new(matches, &s.seeding, auto);
-    // assert_next_matches(&s, &[], &[(1, 3)], &p);
-    //
-    // let (matches, match_id, _) = s
-    //     .tournament_organiser_reports_result(p[3].get_id(), (2, 0), p[1].get_id())
-    //     .expect("winner 1vs3");
-    // let s = Step::new(matches, &s.seeding, auto);
-    // let (matches, new_matches) = s.validate_match_result(match_id).expect("validation");
-    // assert_eq!(new_matches.len(), 0);
-    //
-    // let s = Step::new(matches, &s.seeding, auto);
-    // assert_elimination(&s, &p, 3);
+    for (o1, o2) in expected_matches {
+        let opponent1 = players[*o1].clone();
+        let opponent2 = players[*o2].clone();
+
+        let (next_opponent, _) = bracket
+            .next_opponent(opponent1.get_id())
+            .expect("next opponent");
+        let Opponent::Player(p) = next_opponent else {
+            panic!("expected player for next opponent");
+        };
+        assert_eq!(
+            p,
+            opponent2.get_id(),
+            "expected {opponent2} for {opponent1} but got {p}"
+        );
+        let (next_opponent, _) = bracket
+            .next_opponent(opponent2.get_id())
+            .expect("next opponent");
+        let Opponent::Player(p) = next_opponent else {
+            panic!("expected player for next opponent");
+        };
+        assert_eq!(
+            p,
+            opponent1.get_id(),
+            "expected {opponent1} for {opponent2} but got {p}"
+        );
+    }
+}
+
+fn assert_no_next_match_after_tournament_is_over(bracket: &SingleEliminationBracket) {
+    for player in bracket.get_seeding().get().iter() {
+        if let Some(next_opponent) = bracket.next_opponent(*player) {
+            panic!("expected no next match when tournament is over but got {next_opponent:?}",)
+        }
+    }
 }

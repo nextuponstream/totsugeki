@@ -3,7 +3,7 @@
 mod disqualify_from_bracket;
 mod matches_to_play;
 mod next_opponent_in_bracket;
-mod progression;
+pub mod progression;
 mod query_state;
 
 use crate::bracket::matches::{Error, Progression};
@@ -31,9 +31,6 @@ pub struct SingleEliminationBracket {
 /// All errors you might come across when players reports match result
 #[derive(Error, Debug)]
 pub enum SingleEliminationReportResultError {
-    #[error("Cannot join single elimination bracket because of unrecoverable seeding error {0}")]
-    /// Seeding is wrong
-    UnrecoverableSeedingError(#[from] SeedingError),
     /// Player is unknown, user provided a wrong player
     #[error("Player {0} is unknown")]
     UnknownPlayer(ID),
@@ -46,7 +43,8 @@ pub enum SingleEliminationReportResultError {
     /// Player is disqualified
     #[error("Player {0} is disqualified")]
     ForbiddenDisqualified(ID),
-    /// No match to play for player
+    /// No match to play for player. May happen if tournament organiser validated right before
+    /// player did for the same match
     #[error("There is no matches for player {0}")]
     NoMatchToPlay(ID),
     /// Missing opponent
@@ -78,13 +76,13 @@ impl SingleEliminationBracket {
     /// When player in seeding is not in any of the matches
     pub fn new(seeding: Seeding, matches: Vec<Match>, automatic_match_progression: bool) -> Self {
         for player in seeding.get() {
-            if matches
-                .iter()
-                .find(|m| m.players.contains(&Player(player)))
-                .is_none()
-            {
-                panic!("player {player} was not found in matches. Is matches data corrupt?")
-            }
+            assert!(
+                matches
+                    .iter()
+                    .find(|m| m.players.contains(&Player(player)))
+                    .is_some(),
+                "player {player} was not found in matches. Is matches data corrupt?"
+            );
         }
 
         Self {
@@ -99,21 +97,28 @@ impl SingleEliminationBracket {
         self.seeding.clone()
     }
 
-    /// Report result for a match in this bracket. Returns updated bracket,
-    /// match id where result is reported and new generated matches if
-    /// automatic match validation is on.
+    /// Report result for a match in this bracket
+    ///
+    /// If automatic match validation is off, then only returns bracket
+    ///
+    /// If automatic validation is on, when no player has reported yet a result
+    /// for the match so far, returns the bracket. Otherwise, returns updated
+    /// bracket, match id where result is reported and new generated matches
     ///
     /// # Errors
-    /// thrown when result cannot be parsed
+    /// thrown when result cannot be parsed or a disqualified player reports
+    /// # Panics
+    /// When `player_id` is unknown
     pub fn report_result(
         self,
         player_id: ID,
         result: (i8, i8),
     ) -> Result<(SingleEliminationBracket, ID, Vec<Match>), SingleEliminationReportResultError>
     {
-        if !self.seeding.contains(player_id) {
-            return Err(SingleEliminationReportResultError::UnknownPlayer(player_id));
-        };
+        assert!(
+            self.seeding.contains(player_id),
+            "Unknown player {player_id}"
+        );
         if self.is_over() {
             return Err(SingleEliminationReportResultError::TournamentIsOver);
         }
@@ -127,31 +132,29 @@ impl SingleEliminationBracket {
             .matches
             .iter()
             .find(|m| m.contains(player_id) && m.get_winner() == Opponent::Unknown);
+        let seeding = self.seeding.clone();
+        let automatic_match_progression = self.automatic_match_progression;
         match match_to_update {
             Some(m) => {
                 let affected_match_id = m.get_id();
                 let matches =
                     self.update_player_reported_match_result(affected_match_id, result, player_id)?;
-                let seb = SingleEliminationBracket::new(
-                    self.seeding,
-                    matches,
-                    self.automatic_match_progression,
-                );
+                let bracket =
+                    SingleEliminationBracket::new(seeding, matches, automatic_match_progression);
 
-                let seb = if self.automatic_match_progression {
-                    let (seb, _) = seb.validate_match_result(affected_match_id);
-                    seb
+                let bracket = if automatic_match_progression {
+                    bracket.validate_match_result(affected_match_id).0
                 } else {
-                    seb
+                    bracket
                 };
 
-                let new_matches = seb
+                let new_matches = bracket
                     .matches_to_play()
                     .iter()
                     .filter(|m| !old_matches.iter().any(|old_m| old_m.get_id() == m.get_id()))
                     .map(Clone::clone)
                     .collect();
-                Ok((seb, affected_match_id, new_matches))
+                Ok((bracket, affected_match_id, new_matches))
             }
             None => Err(SingleEliminationReportResultError::NoMatchToPlay(player_id)),
         }

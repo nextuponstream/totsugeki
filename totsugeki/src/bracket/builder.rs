@@ -3,6 +3,7 @@
 use crate::bracket::Bracket;
 use crate::{format::Format, player::Participants};
 
+// FIXME remove since all formats will have their own structs+methods
 /// Initialize a new bracket with participants and format (but not matches)
 #[allow(dead_code)]
 #[derive(Default)]
