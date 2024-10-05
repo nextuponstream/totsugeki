@@ -1,3 +1,5 @@
+//! Check next opponent
+
 use crate::opponent::Opponent;
 use crate::ID;
 

@@ -126,3 +126,36 @@ fn disqualifying_player_sets_looser_of_their_current_match() {
         "expected all matches were played"
     );
 }
+
+#[test]
+fn disqualifying_player_sets_their_opponent_as_the_winner_and_they_move_to_their_next_match() {
+    let mut p = vec![Player::new("don't use".into())];
+    let mut seeding = vec![];
+    for i in 1..=3 {
+        let player = Player::new(format!("p{i}"));
+        p.push(player.clone());
+        seeding.push(player.get_id());
+    }
+    let bracket = SingleEliminationBracket::create(Seeding::new(seeding).unwrap(), false);
+
+    assert!(
+        !bracket.get_matches().iter().any(
+            |m| matches!(m.get_automatic_loser(), Opponent::Player(loser) if loser == p[2].get_id())
+        ),
+        "expected player 2 not to be declared looser in any match"
+    );
+    let bracket = bracket.disqualify_participant_from_bracket(p[2].get_id());
+    assert!(
+        bracket.get_matches().iter().any(
+            |m| matches!(m.get_automatic_loser(), Opponent::Player(loser) if loser == p[2].get_id())
+        ),
+        "expected match where player 2 is declared looser"
+    );
+    assert!(
+        bracket
+            .get_matches()
+            .iter()
+            .any(|m| m.contains(p[1].get_id()) && m.contains(p[3].get_id())),
+        "expected player 1 and 3 playing in grand finals"
+    );
+}

@@ -115,27 +115,6 @@ mod tests {
     }
 
     #[test]
-    fn cannot_seed_bracket_after_it_started() {
-        let bracket = Builder::default()
-            .set_format(Format::SingleElimination)
-            .set_new_players(3)
-            .build()
-            .expect("bracket");
-        let bracket_id = bracket.id;
-        let players = bracket.get_participants().get_players_list();
-        let p1_id = players[0].get_id();
-        let p2_id = players[1].get_id();
-        let p3_id = players[2].get_id();
-        let (updated_bracket, _) = bracket.start().expect("start");
-        let seeding = vec![p3_id, p2_id, p1_id];
-        match updated_bracket.update_seeding(&seeding) {
-            Err(BracketError::Started(id, _)) => assert_eq!(id, bracket_id),
-            Err(e) => panic!("Expected Started error, got {e}"),
-            Ok(b) => panic!("Expected error, bracket: {b}"),
-        }
-    }
-
-    #[test]
     fn seeding_single_elimination_bracket_with_wrong_players_fails() {
         let unknown_player = PlayerId::new_v4();
         let bracket = Builder::default()

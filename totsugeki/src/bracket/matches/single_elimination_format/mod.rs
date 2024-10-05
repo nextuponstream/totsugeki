@@ -1,7 +1,5 @@
 //! Manage matches of single elimination bracket
 
-mod disqualification;
-mod next_opponent;
 mod query_state;
 
 use super::{

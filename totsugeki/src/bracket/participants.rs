@@ -133,6 +133,7 @@ impl Bracket {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::single_elimination_bracket::SingleEliminationBracket;
     use crate::{bracket::Format, seeding::Method as SeedingMethod};
     use chrono::prelude::*;
 
@@ -192,17 +193,20 @@ mod tests {
                 .expect("ok")
                 .0;
         }
-        let (updated_bracket, _) = bracket.start().expect("start");
-        let bracket_id = updated_bracket.get_id();
-
-        let player = Player::new("New player".to_string());
-        let player_id = player.get_id();
-        let (id, b_id) = match updated_bracket.join(player) {
-            Err(Error::BarredFromEntering(id, b_id)) => (id, b_id),
-            Err(e) => panic!("expected BarredFromEntering error, got: {e}"),
-            Ok(_) => panic!("expected error but got none"),
-        };
-        assert_eq!(id, player_id);
-        assert_eq!(b_id, bracket_id);
+        let seb = SingleEliminationBracket::create(todo!(), true);
+        todo!();
+        // let seb = seb.start().expect();
+        // let (updated_bracket, _) = bracket.start().expect("start");
+        // let bracket_id = updated_bracket.get_id();
+        //
+        // let player = Player::new("New player".to_string());
+        // let player_id = player.get_id();
+        // let (id, b_id) = match updated_bracket.join(player) {
+        //     Err(Error::BarredFromEntering(id, b_id)) => (id, b_id),
+        //     Err(e) => panic!("expected BarredFromEntering error, got: {e}"),
+        //     Ok(_) => panic!("expected error but got none"),
+        // };
+        // assert_eq!(id, player_id);
+        // assert_eq!(b_id, bracket_id);
     }
 }

@@ -20,14 +20,6 @@ pub enum SingleEliminationBracketMatchGenerationError {
     UnrecoverableMatchError(#[from] GenerationError),
 }
 
-/// Cannot validate match
-#[derive(Error, Debug)]
-pub enum SingleEliminationBracketMatchValidationError {
-    /// FIXME remove that error
-    #[error("idk")]
-    SomeStuff,
-}
-
 /// Returns tournament matches for `n` players in a list. Used for generating
 /// single elimination bracket or winner bracket in double elimination format.
 ///
