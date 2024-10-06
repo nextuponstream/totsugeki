@@ -1,7 +1,5 @@
 //! Manage matches of single elimination bracket
 
-mod query_state;
-
 use super::{
     assert_disqualified_at_most_once, assert_match_is_well_formed, update_bracket_with, Error,
     Progression,

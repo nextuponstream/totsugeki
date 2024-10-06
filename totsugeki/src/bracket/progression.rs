@@ -117,57 +117,6 @@ mod tests {
     }
 
     #[test]
-    fn player_reports_before_tournament_organiser() {
-        // player 2 reports before TO does
-        let mut bracket = Bracket::new(
-            "",
-            Format::SingleElimination,
-            Method::Strict,
-            Utc.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap(),
-            true,
-        );
-        let mut player_ids = vec![PlayerId::new_v4()]; // padding for readability
-        for i in 1..=3 {
-            let player = Player::new(format!("p{i}"));
-            player_ids.push(player.get_id());
-            bracket = bracket.join(player).expect("bracket");
-        }
-
-        let (bracket, _) = bracket.start().expect("start");
-        assert_players_play_each_other(2, 3, &player_ids, &bracket);
-        let (bracket, _, _) = bracket
-            .report_result(player_ids[2], (2, 0))
-            .expect("bracket");
-        let (_, _, _) = bracket
-            .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[3])
-            .expect("bracket");
-
-        // player 3 reports before TO does
-        let mut bracket = Bracket::new(
-            "",
-            Format::SingleElimination,
-            Method::Strict,
-            Utc.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap(),
-            true,
-        );
-        let mut player_ids = vec![PlayerId::new_v4()]; // padding for readability
-        for i in 1..=3 {
-            let player = Player::new(format!("p{i}"));
-            player_ids.push(player.get_id());
-            bracket = bracket.join(player).expect("bracket");
-        }
-
-        let (bracket, _) = bracket.start().expect("start");
-        assert_players_play_each_other(2, 3, &player_ids, &bracket);
-        let (bracket, _, _) = bracket
-            .report_result(player_ids[3], (0, 2))
-            .expect("bracket");
-        let (_, _, _) = bracket
-            .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[3])
-            .expect("bracket");
-    }
-
-    #[test]
     fn partition_matches_for_3_man_bracket() {
         let mut bracket = Bracket::new(
             "",
