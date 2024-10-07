@@ -68,7 +68,63 @@ mod player_report_before_organiser {
     use super::*;
 
     #[test]
-    fn higher_seed_reports_before_to() {
+    fn higher_seed_reports_before_to_example2() {
+        // in 3 man tournament
+        let mut seeding = Participants::default();
+        let mut player_ids = vec![ID::new_v4()]; // padding
+        for i in 1..=3 {
+            let player = Player::new(format!("p{i}"));
+            player_ids.push(player.get_id());
+            seeding = seeding.add_participant(player).expect("updated seeding");
+        }
+        let seeding = seeding
+            .get_players_list()
+            .iter()
+            .map(Player::get_id)
+            .collect::<Vec<_>>();
+
+        let bracket = SingleEliminationBracket::create(Seeding::new(seeding).unwrap(), true);
+        assert_players_play_each_other_ids(2, 3, &player_ids, &bracket);
+
+        // player 2 reports before TO does
+        let (bracket, _, _) = bracket
+            .report_result(player_ids[2], (2, 0))
+            .expect("matches");
+        let (_, _, _) = bracket
+            .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[3])
+            .expect("matches");
+    }
+
+    #[test]
+    fn lower_seed_reports_before_to_example2() {
+        // in 3 man tournament
+        let mut seeding = Participants::default();
+        let mut player_ids = vec![ID::new_v4()]; // padding
+        for i in 1..=3 {
+            let player = Player::new(format!("p{i}"));
+            player_ids.push(player.get_id());
+            seeding = seeding.add_participant(player).expect("updated seeding");
+        }
+        let seeding = seeding
+            .get_players_list()
+            .iter()
+            .map(Player::get_id)
+            .collect::<Vec<_>>();
+
+        let bracket = SingleEliminationBracket::create(Seeding::new(seeding).unwrap(), true);
+        assert_players_play_each_other_ids(2, 3, &player_ids, &bracket);
+
+        // player 3 reports before TO does
+        let (bracket, _, _) = bracket
+            .report_result(player_ids[3], (0, 2))
+            .expect("matches");
+        let (_, _, _) = bracket
+            .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[3])
+            .expect("matches");
+    }
+
+    #[test]
+    fn higher_seed_reports_before_to_example1() {
         let mut player_ids = vec![ID::new_v4()]; // padding for readability
         let mut seeding = vec![];
         for i in 1..=3 {
@@ -89,7 +145,7 @@ mod player_report_before_organiser {
             .expect("bracket");
     }
     #[test]
-    fn lower_seed_reports_before_to() {
+    fn lower_seed_reports_before_to_example1() {
         let mut player_ids = vec![ID::new_v4()]; // padding for readability
         let mut seeding = vec![];
         for i in 1..=3 {
