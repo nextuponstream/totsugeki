@@ -22,6 +22,7 @@ pub struct SingleEliminationBracket {
     matches: Vec<Match>,
     /// Seeding
     seeding: Seeding,
+    // FIXME use AutomaticMatchValidationMode instead
     /// True when a match should not require tournament organiser to be finalized
     automatic_match_progression: bool,
 }
@@ -56,7 +57,7 @@ impl SingleEliminationBracket {
         self.matches.clone()
     }
 
-    /// Generate matches for bracket using `seeding`  and other configuration
+    /// Generate matches for a new bracket using `seeding` and other configuration
     pub fn create(seeding: Seeding, automatic_match_progression: bool) -> Self {
         let matches = get_balanced_round_matches_top_seed_favored(seeding.clone())
             .expect("initial matches generated");
@@ -71,7 +72,8 @@ impl SingleEliminationBracket {
     /// New single elimination bracket
     ///
     /// # Panics
-    /// When player in seeding is not in any of the matches
+    /// When a well-formed single-elimination bracket cannot be made from
+    /// `matches` and `seeding`
     pub fn new(seeding: Seeding, matches: Vec<Match>, automatic_match_progression: bool) -> Self {
         for player in seeding.get() {
             assert!(
@@ -82,6 +84,7 @@ impl SingleEliminationBracket {
                 "player {player} was not found in matches. Is matches data corrupt?"
             );
         }
+        // TODO more assertions
 
         Self {
             seeding,

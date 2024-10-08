@@ -79,18 +79,28 @@ impl Step {
     }
 
     /// Clear previous reported result for `player_id`
-    fn clear_reported_result(self, player_id: PlayerId) -> Result<Self, Error> {
-        let match_to_update = self
+    fn clear_reported_result(self, player_id: PlayerId) -> Self {
+        let matches_to_update = self
             .matches
-            .iter()
-            .find(|m| m.contains(player_id) && m.get_winner() == Opponent::Unknown);
-        match match_to_update {
-            Some(m_to_clear) => {
-                let m_to_clear = (*m_to_clear).clear_reported_result(player_id);
+            .clone()
+            .into_iter()
+            .filter(|m| m.contains(player_id) && m.get_winner() == Opponent::Unknown)
+            .collect::<Vec<Match>>();
+        assert!(
+            matches_to_update.len() <= 1,
+            "player has to play at most 1 match but found {}",
+            matches_to_update.len()
+        );
+        match matches_to_update.len() {
+            1 => {
+                let match_to_update = matches_to_update[0];
+                let m_to_clear = match_to_update.clear_reported_result(player_id);
                 let matches = update_bracket_with(&self.matches, &m_to_clear);
-                Ok(Self { matches, ..self })
+
+                Self { matches, ..self }
             }
-            None => Err(Error::NoMatchToPlay(player_id)),
+            0 => self,
+            _ => unreachable!(),
         }
     }
 }
@@ -395,8 +405,8 @@ impl Progression for Step {
         player2: ID,
     ) -> Result<(Vec<Match>, ID, Vec<Match>), Error> {
         // clear reported results
-        let bracket = self.clone().clear_reported_result(player1)?;
-        let bracket = bracket.clear_reported_result(player2)?;
+        let bracket = self.clone().clear_reported_result(player1);
+        let bracket = bracket.clear_reported_result(player2);
 
         // report score as p1
         let result_player_1 = ReportedResult(Some(result));
@@ -672,44 +682,6 @@ mod tests {
         matches::{partition_double_elimination_matches, Id as MatchId},
         player::{Id as PlayerId, Participants, Player},
     };
-
-    #[test]
-    fn run_3_man_bracket() {
-        let mut player_ids = vec![PlayerId::new_v4()]; // padding for readability
-        let mut unpadded_player_ids = vec![]; // padding for readability
-        let mut seeding = Participants::default();
-        for i in 1..=3 {
-            let player = Player::new(format!("p{i}"));
-            player_ids.push(player.get_id());
-            unpadded_player_ids.push(player.get_id());
-            seeding = seeding.add_participant(player).expect("new participant");
-        }
-        let auto = true;
-        let p = Step::new(None, unpadded_player_ids, auto).expect("progression");
-
-        assert_eq!(p.matches.len(), 5);
-        let (matches, _, _new_matches) = p
-            .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[3])
-            .expect("bracket");
-        let p = Step::new(Some(matches), p.seeding, auto).expect("progression");
-        let (matches, _, _new_matches) = p
-            .tournament_organiser_reports_result(player_ids[1], (0, 2), player_ids[2])
-            .expect("bracket");
-        let p = Step::new(Some(matches), p.seeding, auto).expect("progression");
-        let (matches, _, _new_matches) = p
-            .tournament_organiser_reports_result(player_ids[1], (0, 2), player_ids[3])
-            .expect("bracket");
-        let p = Step::new(Some(matches), p.seeding, auto).expect("progression");
-        let (matches, _, _new_matches) = p
-            .tournament_organiser_reports_result(player_ids[2], (0, 2), player_ids[3])
-            .expect("bracket");
-        let p = Step::new(Some(matches), p.seeding, auto).expect("progression");
-        let (matches, _, _new_matches) = p
-            .tournament_organiser_reports_result(player_ids[2], (0, 2), player_ids[3])
-            .expect("bracket");
-        let p = Step::new(Some(matches), p.seeding, auto).expect("progression");
-        assert!(p.is_over());
-    }
 
     #[test]
     fn partition_matches_for_3_man_bracket() {

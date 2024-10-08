@@ -20,6 +20,7 @@ pub mod opponent;
 pub mod player;
 pub mod seeding;
 pub mod single_elimination_bracket;
+pub mod validation;
 
 /// ID for bracket, players...
 pub type ID = Uuid;

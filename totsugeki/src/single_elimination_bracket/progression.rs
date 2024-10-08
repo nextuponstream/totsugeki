@@ -2,56 +2,14 @@
 
 use crate::bracket::matches::{bracket_is_over, is_disqualified, Error};
 use crate::bracket::progression::new_matches_to_play_for_bracket;
-use crate::bracket::seeding::Seeding;
 use crate::matches::update_player_reported_result::Error as UpdatePlayerReportError;
 use crate::matches::Error as MatchError;
 use crate::matches::{Id, Match, ReportedResult};
 use crate::opponent::Opponent;
-use crate::opponent::Opponent::Player;
-use crate::seeding::single_elimination_seeded_bracket::SingleEliminationBracketMatchGenerationError;
 use crate::single_elimination_bracket::{
     SingleEliminationBracket, SingleEliminationReportResultError,
 };
 use crate::ID;
-use thiserror::Error;
-
-/// Computes the next step of a single-elimination tournament
-#[derive(Clone, Debug)]
-pub(crate) struct Step {
-    /// Seeding for this bracket
-    seeding: Seeding,
-    /// All matches of single-elimination bracket
-    matches: Vec<Match>,
-    /// True when matches do not need to be validated by the tournament
-    /// organiser
-    automatic_match_progression: bool,
-}
-
-impl Step {
-    /// New step
-    pub fn new(seeding: Seeding, matches: Vec<Match>, automatic_match_progression: bool) -> Self {
-        for player in seeding.get() {
-            // could downgrade to debug_assert but let's verify assumptions, even in release mode
-            assert!(matches
-                .iter()
-                .find(|m| m.players.contains(&Player(player)))
-                .is_some());
-        }
-        Self {
-            seeding,
-            matches,
-            automatic_match_progression,
-        }
-    }
-}
-
-/// All errors when progressing a single elimination bracket
-#[derive(Error, Debug)]
-pub enum StepError {
-    /// Unrecoverable
-    #[error("Unrecoverable seeding error")]
-    UnrecoverableMatchGenerationError(#[from] SingleEliminationBracketMatchGenerationError),
-}
 
 // TODO for consistency, make Progression trait common to single elim and double elim but MAKE IT
 //  CLEAR that the abstraction is only for library DX and it should be taken out once both
@@ -373,22 +331,22 @@ mod tests {
         let seeding = Seeding::new(seeding).unwrap();
         let auto = true;
         let matches = get_balanced_round_matches_top_seed_favored(seeding.clone()).unwrap();
-        let seb = SingleEliminationBracket::new(seeding, matches, auto);
+        let bracket = SingleEliminationBracket::new(seeding, matches, auto);
 
-        assert_eq!(seb.matches.len(), 2);
-        assert_eq!(seb.matches_to_play().len(), 1);
-        assert_players_play_each_other(2, 3, &p, &seb);
-        let (seb, _, new_matches) = seb
+        assert_eq!(bracket.matches.len(), 2);
+        assert_eq!(bracket.matches_to_play().len(), 1);
+        assert_players_play_each_other(2, 3, &p, &bracket);
+        let (bracket, _, new_matches) = bracket
             .tournament_organiser_reports_result(p[2].get_id(), (2, 0), p[3].get_id())
             .expect("bracket");
         assert_eq!(new_matches.len(), 1, "grand finals match generated");
-        assert_players_play_each_other(1, 2, &p, &seb);
-        assert_eq!(seb.matches_to_play().len(), 1);
-        let (seb, _, new_matches) = seb
+        assert_players_play_each_other(1, 2, &p, &bracket);
+        assert_eq!(bracket.matches_to_play().len(), 1);
+        let (bracket, _, new_matches) = bracket
             .tournament_organiser_reports_result(p[1].get_id(), (0, 2), p[2].get_id())
             .expect("bracket");
-        assert!(seb.matches_to_play().is_empty());
+        assert!(bracket.matches_to_play().is_empty());
         assert!(new_matches.is_empty());
-        assert!(seb.is_over());
+        assert!(bracket.is_over());
     }
 }
