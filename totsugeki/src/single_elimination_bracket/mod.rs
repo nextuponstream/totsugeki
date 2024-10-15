@@ -37,13 +37,18 @@ pub enum SingleEliminationReportResultError {
     #[error("Match {0} is unknown")]
     UnknownMatch(ID),
     /// Tournament is already over
+    ///
+    /// Player ID is valid, but there is no matches to play anyway
     #[error("Tournament is over")]
     TournamentIsOver,
     /// Player is disqualified
+    ///
+    /// Player ID is valid but disqualified player are not allowed to report
     #[error("Player {0} is disqualified")]
     ForbiddenDisqualified(ID),
-    /// No match to play for player. May happen if tournament organiser validated right before
-    /// player did for the same match
+    /// No match to play for player
+    ///
+    /// May happen if tournament organiser validated right before player did for the same match
     #[error("There is no matches for player {0}")]
     NoMatchToPlay(ID),
     /// Missing opponent

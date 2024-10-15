@@ -112,8 +112,7 @@ impl Step {
                 Err(Error::UnknownPlayer(player_id, self.seeding.clone()))
             };
         };
-        let current_match_to_play =
-            (*match_of_player_to_disqualify).set_automatic_loser(player_id)?;
+        let current_match_to_play = (*match_of_player_to_disqualify).set_automatic_loser(player_id);
         let bracket = update_bracket_with(&self.matches, &current_match_to_play);
         let bracket = Step::new(bracket, &self.seeding, self.automatic_progression);
         let new_matches = get_new_matches(&old_matches_to_play, &bracket.matches_to_play());
@@ -129,7 +128,7 @@ impl Step {
                 {
                     Some(next_match_of_disqualified_player) => {
                         let match_in_losers =
-                            next_match_of_disqualified_player.set_automatic_loser(player_id)?;
+                            next_match_of_disqualified_player.set_automatic_loser(player_id);
                         update_bracket_with(&bracket, &match_in_losers)
                     }
                     None => bracket,
@@ -167,7 +166,7 @@ impl Step {
             .collect()
     }
 
-    fn next_opponent(&self, player_id: PlayerId) -> Result<(crate::opponent::Opponent, Id), Error> {
+    fn next_opponent(&self, player_id: PlayerId) -> Result<(Opponent, Id), Error> {
         if !self.seeding.contains(&player_id) {
             return Err(Error::PlayerIsNotParticipant(player_id));
         };
@@ -293,7 +292,7 @@ impl Step {
             return Err(Error::UnknownMatch(match_id));
         };
 
-        let updated_match = (*m).update_reported_result(player_id, ReportedResult(Some(result)))?;
+        let updated_match = (*m).update_reported_result(player_id, ReportedResult(Some(result)));
         let matches = self
             .matches
             .clone()

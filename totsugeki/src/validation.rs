@@ -1,7 +1,7 @@
 //! Validation
 
 /// All validation types before automatically progressing a bracket
-#[derive(Copy, Clone)]
+#[derive(Eq, Copy, Clone, PartialEq)]
 pub enum AutomaticMatchValidationMode {
     /// No trust: only TO is allowed to report matches
     ///

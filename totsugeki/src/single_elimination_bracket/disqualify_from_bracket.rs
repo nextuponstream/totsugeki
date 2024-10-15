@@ -18,7 +18,7 @@ impl SingleEliminationBracket {
             .position(|m| m.contains(player_id) && m.get_winner() == Opponent::Unknown)
         {
             let pos = self.matches.len() - 1 - rev_pos_of_match_with_disqualified_player;
-            let updated_match = self.matches[pos].set_automatic_loser(player_id).unwrap();
+            let updated_match = self.matches[pos].set_automatic_loser(player_id);
             let mut updated_matches = self.matches;
             updated_matches[pos] = updated_match;
             let b = Self {

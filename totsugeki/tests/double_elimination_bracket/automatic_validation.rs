@@ -43,4 +43,5 @@ fn run_3_man_bracket() {
     //     .expect("bracket");
     // let p = Step::new(Some(matches), p.seeding, auto).expect("progression");
     // assert!(p.is_over());
+    todo!()
 }

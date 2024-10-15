@@ -2,7 +2,6 @@
 
 use crate::bracket::matches::{bracket_is_over, is_disqualified, Error};
 use crate::bracket::progression::new_matches_to_play_for_bracket;
-use crate::matches::update_player_reported_result::Error as UpdatePlayerReportError;
 use crate::matches::Error as MatchError;
 use crate::matches::{Id, Match, ReportedResult};
 use crate::opponent::Opponent;
@@ -10,6 +9,8 @@ use crate::single_elimination_bracket::{
     SingleEliminationBracket, SingleEliminationReportResultError,
 };
 use crate::ID;
+
+// FIXME add all test for reports from double elimination here too
 
 // TODO for consistency, make Progression trait common to single elim and double elim but MAKE IT
 //  CLEAR that the abstraction is only for library DX and it should be taken out once both
@@ -75,8 +76,6 @@ pub trait ProgressionSEB {
 
     /// Update `match_id` with reported `result` of `player`
     ///
-    /// # Errors
-    /// thrown when `match_id` matches no existing match
     /// # Panics
     /// When `match_id` or `player_id` is unknown
     fn update_player_reported_match_result(
@@ -180,23 +179,12 @@ impl ProgressionSEB for SingleEliminationBracket {
         result: (i8, i8),
         player_id: Id,
     ) -> Result<Vec<Match>, SingleEliminationReportResultError> {
-        // FIXME do check earlier
         let Some(m) = self.matches.iter().find(|m| m.get_id() == match_id) else {
-            return Err(SingleEliminationReportResultError::UnknownMatch(match_id));
+            panic!("unknown match {}", match_id)
         };
+        assert!(m.contains(player_id), "{} is not in match", player_id);
 
-        let updated_match =
-            match (*m).update_reported_result(player_id, ReportedResult(Some(result))) {
-                Ok(m) => m,
-                // FIXME reuse data from error for a better error message
-                // FIXME use #[from] instead of matching, then ?
-                Err(UpdatePlayerReportError::UnknownPlayer(player, _, _)) => {
-                    return Err(SingleEliminationReportResultError::UnknownPlayer(player))
-                }
-                Err(UpdatePlayerReportError::MissingOpponent(match_id, player)) => {
-                    return Err(SingleEliminationReportResultError::MissingOpponent())
-                }
-            };
+        let updated_match = (*m).update_reported_result(player_id, ReportedResult(Some(result)));
         let matches = self
             .matches
             .clone()

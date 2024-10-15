@@ -16,6 +16,7 @@ pub mod progression;
 /// Double elimination bracket
 #[derive(Clone)]
 pub struct DoubleEliminationBracket {
+    // NOTE: not worth using a container. Though I want to do `matches.contains(match_id)`...
     /// Matches
     matches: Vec<Match>,
     /// Seeding

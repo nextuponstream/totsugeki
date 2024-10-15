@@ -10,6 +10,7 @@ use crate::{
     seeding::Error as SeedingError,
     ID,
 };
+use std::fmt::format;
 use thiserror::Error;
 
 pub mod double_elimination_format;
@@ -65,19 +66,6 @@ impl From<GenerationError> for Error {
         Self::MatchUpdate(MatchError::SamePlayer)
     }
 }
-// FIXME remove
-impl From<crate::matches::update_player_reported_result::Error> for Error {
-    fn from(value: crate::matches::update_player_reported_result::Error) -> Self {
-        match value {
-            crate::matches::update_player_reported_result::Error::MissingOpponent(_, players) => {
-                Self::MatchUpdate(MatchError::MissingOpponent(players))
-            }
-            crate::matches::update_player_reported_result::Error::UnknownPlayer(_, p, players) => {
-                Self::MatchUpdate(MatchError::UnknownPlayer(p, players))
-            }
-        }
-    }
-}
 
 /// Returns true if bracket is over
 pub(crate) fn bracket_is_over(bracket_matches: &[Match]) -> bool {
@@ -114,6 +102,7 @@ pub(crate) fn update_bracket_with(bracket: &[Match], updated_match: &Match) -> V
 /// if they are disqualified
 type BracketUpdate = (Vec<Match>, Option<(PlayerId, usize, bool)>);
 
+// FIXME should be made on self and consumed
 /// Takes matches in bracket, validate `match_id` and returns updated winner
 /// bracket, id of loser (if there is one), the seed to use when placing them
 /// in loser's bracket (if there is one) and whether this player is disqualified
@@ -124,16 +113,17 @@ type BracketUpdate = (Vec<Match>, Option<(PlayerId, usize, bool)>);
 /// # Errors
 /// thrown when attempting an update for winner/loser bracket match in
 /// loser/winner bracket
-pub(crate) fn update(bracket: &[Match], match_id: MatchId) -> Result<BracketUpdate, Error> {
-    let Some(m) = bracket.iter().find(|m| m.get_id() == match_id) else {
-        return Err(Error::UnknownMatch(match_id));
-    };
+pub(crate) fn update(bracket_matches: &[Match], match_id: MatchId) -> Result<BracketUpdate, Error> {
+    let m = bracket_matches
+        .iter()
+        .find(|m| m.get_id() == match_id)
+        .expect(format!("match {} updated", match_id).as_str());
     // declare winner if there is one
     let is_disqualified = m.get_automatic_loser() != Opponent::Unknown;
     let (updated_m, winner, loser) = (*m).update_outcome()?;
     let seed_of_expected_winner = updated_m.get_seeds()[0];
     let expected_loser_seed = updated_m.get_seeds()[1];
-    let bracket = update_bracket_with(bracket, &updated_m);
+    let bracket = update_bracket_with(bracket_matches, &updated_m);
 
     let last_match = bracket.last().expect("last match in bracket");
     match (last_match.get_id(), last_match.get_winner()) {
@@ -192,7 +182,10 @@ pub(crate) fn update(bracket: &[Match], match_id: MatchId) -> Result<BracketUpda
         let mut iter = bracket.iter().skip(index + 1);
         let seed_of_expected_winner = updated_match.get_seeds()[0];
         let Opponent::Player(winner) = updated_match.get_winner() else {
-            panic!("no winner in updated match");
+            panic!(
+                "no winner in updated match. Corrupted data for updated match {:?}",
+                updated_match
+            );
         };
         let m = iter
             .find(|m| m.get_seeds().contains(&seed_of_expected_winner))

@@ -105,23 +105,6 @@ impl Step {
     }
 }
 
-/// Place loser from winner's bracket into loser bracket using seed of
-/// `expected_loser_seed`. Returns updated loser bracket
-fn send_to_losers(
-    loser_bracket: &[Match],
-    loser: PlayerId,
-    expected_loser_seed: usize,
-) -> Result<Vec<Match>, Error> {
-    let loser_match = loser_bracket
-        .iter()
-        .find(|m| m.is_first_loser_match(expected_loser_seed))
-        .expect("match");
-    let is_player_1 = expected_loser_seed == loser_match.get_seeds()[0];
-    let loser_match = (*loser_match).insert_player(loser, is_player_1);
-
-    Ok(update_bracket_with(loser_bracket, &loser_match))
-}
-
 /// Update grand finals or reset
 fn update_grand_finals_or_reset(
     match_id: MatchId,
@@ -156,7 +139,7 @@ fn update_grand_finals_or_reset(
                             Opponent::Player(winner_of_winner_bracket),
                         ) if grand_finals_loser == winner_of_winner_bracket => {
                             gf_reset
-                                .set_automatic_loser(grand_finals_loser)?
+                                .set_automatic_loser(grand_finals_loser)
                                 .update_outcome()?
                                 .0
                         }
@@ -202,7 +185,7 @@ impl Progression for Step {
             return Err(Error::ForbiddenDisqualified(player_id));
         };
         // disqualify player then validate match result to update double elimination bracket
-        let current_match_to_play = (*m).set_automatic_loser(player_id)?;
+        let current_match_to_play = (*m).set_automatic_loser(player_id);
         let matches = update_bracket_with(&self.matches, &current_match_to_play);
         let expected_loser_seed = m.get_seeds()[1];
         let (w_bracket, l_bracket, gf, gf_reset) =
@@ -214,7 +197,8 @@ impl Progression for Step {
         {
             l_bracket
         } else {
-            send_to_losers(&l_bracket, disqualified, expected_loser_seed)?
+            todo!();
+            // send_to_losers(&l_bracket, disqualified, expected_loser_seed)?
         };
         let matches = dem_partition(&w_bracket, &l_bracket, gf, gf_reset);
         let p = Step::new(Some(matches), self.seeding.clone(), self.auto)?;
@@ -230,7 +214,7 @@ impl Progression for Step {
                     return Ok((bracket, new_matches));
                 };
                 // DQ them in loser bracket and validate result again
-                let match_in_losers = (*m).set_automatic_loser(player_id)?;
+                let match_in_losers = (*m).set_automatic_loser(player_id);
                 let bracket = update_bracket_with(&bracket, &match_in_losers);
                 let p = Step::new(Some(bracket), self.seeding.clone(), self.auto)?;
 
@@ -434,7 +418,7 @@ impl Progression for Step {
             return Err(Error::UnknownMatch(match_id));
         };
 
-        let updated_match = (*m).update_reported_result(player_id, ReportedResult(Some(result)))?;
+        let updated_match = (*m).update_reported_result(player_id, ReportedResult(Some(result)));
         let matches = self
             .matches
             .clone()
@@ -459,116 +443,117 @@ impl Progression for Step {
         &self,
         match_id: crate::matches::Id,
     ) -> Result<(Vec<Match>, Vec<Match>), Error> {
-        let old_matches = self.matches.clone();
-        let (w_bracket, l_bracket, gf, gf_reset) =
-            partition_double_elimination_matches(&self.matches, self.seeding.len());
-        match super::update(&w_bracket, match_id) {
-            Ok((w_bracket, l_bracket_elements)) => {
-                let l_bracket = match l_bracket_elements {
-                    Some((loser, expected_loser_seed, is_disqualified_from_winners)) => {
-                        update_loser_bracket_after_updating_winners_bracket(
-                            &l_bracket,
-                            loser,
-                            is_disqualified_from_winners,
-                            expected_loser_seed,
-                        )?
-                    }
-                    None => l_bracket,
-                };
-
-                let gf = match winner_of_bracket(&w_bracket) {
-                    Some(winner_of_winner_bracket) => {
-                        gf.insert_player(winner_of_winner_bracket, true)
-                    }
-                    None => gf,
-                };
-                // when loser of winners finals is disqualified, grand finals can be updated
-                let gf = match winner_of_bracket(&l_bracket) {
-                    Some(winner_of_loser_bracket) => {
-                        let gf = gf.insert_player(winner_of_loser_bracket, false);
-
-                        if w_bracket.iter().any(|m| {
-                            m.is_automatic_loser_by_disqualification(winner_of_loser_bracket)
-                        }) {
-                            gf.set_automatic_loser(winner_of_loser_bracket)?
-                                .update_outcome()?
-                                .0
-                        } else {
-                            gf
-                        }
-                    }
-                    None => gf,
-                };
-                // when the winner of winner bracket is disqualified, then reset match should be validated also
-                let gf_reset = match (
-                    gf.get_automatic_loser(),
-                    winner_of_bracket(&w_bracket),
-                    gf.is_over(),
-                ) {
-                    (Opponent::Player(disqualified), Some(winner_of_winner_bracket), true)
-                        if disqualified == winner_of_winner_bracket =>
-                    {
-                        Match::new(gf.get_players(), [1, 2])?
-                            .set_automatic_loser(winner_of_winner_bracket)?
-                            .update_outcome()?
-                            .0
-                    }
-                    _ => gf_reset,
-                };
-
-                let matches = dem_partition(&w_bracket, &l_bracket, gf, gf_reset);
-                let bracket = Step::new(Some(matches.clone()), self.seeding.clone(), self.auto)?;
-                let new_matches =
-                    new_matches_to_play_for_bracket(&old_matches, &bracket.matches_to_play());
-                Ok((matches, new_matches))
-            }
-            Err(Error::UnknownMatch(_bad_winner_match)) => {
-                match super::update(&l_bracket, match_id) {
-                    Ok((l_bracket, _elements)) => {
-                        // send winner of loser bracket to grand finals if
-                        // possible
-                        let gf = match winner_of_bracket(&l_bracket) {
-                            Some(winner_of_loser_bracket) => {
-                                gf.set_player(winner_of_loser_bracket, false)
-                            }
-                            None => gf,
-                        };
-                        let matches = match (gf.get_players(), gf.get_automatic_loser()) {
-                            ([Opponent::Player(_), Opponent::Player(_)], Opponent::Player(_)) => {
-                                update_grand_finals_or_reset(
-                                    gf.get_id(),
-                                    w_bracket,
-                                    l_bracket,
-                                    gf,
-                                    gf_reset,
-                                )
-                                .expect("grand finals updated")
-                            }
-                            _ => dem_partition(&w_bracket, &l_bracket, gf, gf_reset),
-                        };
-                        let bracket = Step::new(Some(matches), self.seeding.clone(), self.auto)?;
-                        let new_matches = new_matches_to_play_for_bracket(
-                            &old_matches,
-                            &bracket.matches_to_play(),
-                        );
-                        Ok((bracket.matches, new_matches))
-                    }
-                    Err(Error::UnknownMatch(_bad_loser_match)) => {
-                        let matches = update_grand_finals_or_reset(
-                            match_id, w_bracket, l_bracket, gf, gf_reset,
-                        )?;
-                        let bracket = Step::new(Some(matches), self.seeding.clone(), self.auto)?;
-                        let new_m = new_matches_to_play_for_bracket(
-                            &old_matches,
-                            &bracket.matches_to_play(),
-                        );
-                        Ok((bracket.matches, new_m))
-                    }
-                    Err(e) => Err(e),
-                }
-            }
-            Err(e) => Err(e),
-        }
+        todo!();
+        // let old_matches = self.matches.clone();
+        // let (w_bracket, l_bracket, gf, gf_reset) =
+        //     partition_double_elimination_matches(&self.matches, self.seeding.len());
+        // match super::update(&w_bracket, match_id) {
+        //     Ok((w_bracket, l_bracket_elements)) => {
+        //         let l_bracket = match l_bracket_elements {
+        //             Some((loser, expected_loser_seed, is_disqualified_from_winners)) => {
+        //                 update_loser_bracket_after_updating_winners_bracket(
+        //                     &l_bracket,
+        //                     loser,
+        //                     is_disqualified_from_winners,
+        //                     expected_loser_seed,
+        //                 )?
+        //             }
+        //             None => l_bracket,
+        //         };
+        //
+        //         let gf = match winner_of_bracket(&w_bracket) {
+        //             Some(winner_of_winner_bracket) => {
+        //                 gf.insert_player(winner_of_winner_bracket, true)
+        //             }
+        //             None => gf,
+        //         };
+        //         // when loser of winners finals is disqualified, grand finals can be updated
+        //         let gf = match winner_of_bracket(&l_bracket) {
+        //             Some(winner_of_loser_bracket) => {
+        //                 let gf = gf.insert_player(winner_of_loser_bracket, false);
+        //
+        //                 if w_bracket.iter().any(|m| {
+        //                     m.is_automatic_loser_by_disqualification(winner_of_loser_bracket)
+        //                 }) {
+        //                     gf.set_automatic_loser(winner_of_loser_bracket)?
+        //                         .update_outcome()?
+        //                         .0
+        //                 } else {
+        //                     gf
+        //                 }
+        //             }
+        //             None => gf,
+        //         };
+        //         // when the winner of winner bracket is disqualified, then reset match should be validated also
+        //         let gf_reset = match (
+        //             gf.get_automatic_loser(),
+        //             winner_of_bracket(&w_bracket),
+        //             gf.is_over(),
+        //         ) {
+        //             (Opponent::Player(disqualified), Some(winner_of_winner_bracket), true)
+        //                 if disqualified == winner_of_winner_bracket =>
+        //             {
+        //                 Match::new(gf.get_players(), [1, 2])?
+        //                     .set_automatic_loser(winner_of_winner_bracket)?
+        //                     .update_outcome()?
+        //                     .0
+        //             }
+        //             _ => gf_reset,
+        //         };
+        //
+        //         let matches = dem_partition(&w_bracket, &l_bracket, gf, gf_reset);
+        //         let bracket = Step::new(Some(matches.clone()), self.seeding.clone(), self.auto)?;
+        //         let new_matches =
+        //             new_matches_to_play_for_bracket(&old_matches, &bracket.matches_to_play());
+        //         Ok((matches, new_matches))
+        //     }
+        //     Err(Error::UnknownMatch(_bad_winner_match)) => {
+        //         match super::update(&l_bracket, match_id) {
+        //             Ok((l_bracket, _elements)) => {
+        //                 // send winner of loser bracket to grand finals if
+        //                 // possible
+        //                 let gf = match winner_of_bracket(&l_bracket) {
+        //                     Some(winner_of_loser_bracket) => {
+        //                         gf.set_player(winner_of_loser_bracket, false)
+        //                     }
+        //                     None => gf,
+        //                 };
+        //                 let matches = match (gf.get_players(), gf.get_automatic_loser()) {
+        //                     ([Opponent::Player(_), Opponent::Player(_)], Opponent::Player(_)) => {
+        //                         update_grand_finals_or_reset(
+        //                             gf.get_id(),
+        //                             w_bracket,
+        //                             l_bracket,
+        //                             gf,
+        //                             gf_reset,
+        //                         )
+        //                         .expect("grand finals updated")
+        //                     }
+        //                     _ => dem_partition(&w_bracket, &l_bracket, gf, gf_reset),
+        //                 };
+        //                 let bracket = Step::new(Some(matches), self.seeding.clone(), self.auto)?;
+        //                 let new_matches = new_matches_to_play_for_bracket(
+        //                     &old_matches,
+        //                     &bracket.matches_to_play(),
+        //                 );
+        //                 Ok((bracket.matches, new_matches))
+        //             }
+        //             Err(Error::UnknownMatch(_bad_loser_match)) => {
+        //                 let matches = update_grand_finals_or_reset(
+        //                     match_id, w_bracket, l_bracket, gf, gf_reset,
+        //                 )?;
+        //                 let bracket = Step::new(Some(matches), self.seeding.clone(), self.auto)?;
+        //                 let new_m = new_matches_to_play_for_bracket(
+        //                     &old_matches,
+        //                     &bracket.matches_to_play(),
+        //                 );
+        //                 Ok((bracket.matches, new_m))
+        //             }
+        //             Err(e) => Err(e),
+        //         }
+        //     }
+        //     Err(e) => Err(e),
+        // }
     }
 
     fn check_all_assertions(&self) {
@@ -596,8 +581,7 @@ fn disqualify_player(
         .rev()
         .find(|m| m.contains(player_id) && m.get_winner() == Opponent::Unknown)
         .expect("match in losers to update"))
-    .set_automatic_loser(player_id)
-    .expect("disqualified player in loser");
+    .set_automatic_loser(player_id);
     let matches = update_bracket_with(&p.matches, &match_to_set_dq);
     let p = Step::new(Some(matches), p.seeding.clone(), p.auto)?;
     Ok((p.matches, new_matches))
@@ -616,63 +600,13 @@ fn disqualify_player_and_update_bracket(
         .iter()
         .find(|m| m.contains(player_id) && m.get_winner() == Opponent::Unknown)
         .expect("match in losers to update"))
-    .set_automatic_loser(player_id)
-    .expect("updated match");
+    .set_automatic_loser(player_id);
     let bracket = update_bracket_with(&p.matches, &match_to_set_dq);
     let p = Step::new(Some(bracket), seeding.to_vec(), auto)?;
     let (bracket, _) = p.validate_match_result(match_to_set_dq.get_id())?;
     let p = Step::new(Some(bracket), p.seeding, auto)?;
     let new_matches = get_new_matches(old_bracket, &p.matches_to_play());
     Ok((p.matches, new_matches))
-}
-
-/// when disqualifying a player and updating winner bracket, you can then
-/// update loser bracket.
-///
-/// First you send disqualified player to loser, move him if he was not
-/// disqualified, then set him as automatic loser in his current loser bracket
-/// match.
-fn update_loser_bracket_after_updating_winners_bracket(
-    l_bracket: &[Match],
-    loser: PlayerId,
-    is_disqualified_from_winners: bool,
-    expected_loser_seed: usize,
-) -> Result<Vec<Match>, Error> {
-    let l_bracket = send_to_losers(l_bracket, loser, expected_loser_seed)?;
-    let l_match = l_bracket
-        .iter()
-        .find(|m| m.contains(loser))
-        .expect("loser match");
-    if is_disqualified_from_winners {
-        let l_bracket = match super::update(&l_bracket, l_match.get_id()) {
-            Ok((matches, _)) => matches,
-            Err(_) => l_bracket.clone(),
-        };
-        let l_bracket = match l_bracket
-            .iter()
-            .find(|m| m.contains(loser) && m.get_winner() == Opponent::Unknown)
-        {
-            Some(match_to_set_dq) => {
-                let match_to_set_dq = (*match_to_set_dq)
-                    .set_automatic_loser(loser)
-                    .expect("match with disqualified player");
-                let l_bracket = update_bracket_with(&l_bracket, &match_to_set_dq);
-                match super::update(&l_bracket, l_match.get_id()) {
-                    Ok((matches, _)) => matches,
-                    Err(_) => l_bracket,
-                }
-            }
-            // loser finishes in GF
-            None => l_bracket,
-        };
-        Ok(l_bracket)
-    } else {
-        let l_bracket = match super::update(&l_bracket.clone(), l_match.get_id()) {
-            Ok((l_bracket_matches, _)) => l_bracket_matches,
-            Err(_) => l_bracket,
-        };
-        Ok(l_bracket)
-    }
 }
 
 #[cfg(test)]

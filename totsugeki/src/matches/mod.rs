@@ -1,6 +1,6 @@
 //! Two players play a match, resulting in a winner and a loser
 
-pub(crate) mod update_player_reported_result;
+#![allow(E0004)]
 
 use crate::{
     matches::Id as MatchId,
@@ -10,7 +10,6 @@ use crate::{
 use serde::{Deserialize, Serialize};
 use std::{num::ParseIntError, str::FromStr};
 use thiserror::Error;
-use update_player_reported_result::Error as MatchUpdatePlayerReportedResultError;
 
 /// Error while interacting with match
 #[derive(Error, Debug, Clone)]
@@ -129,6 +128,12 @@ impl FromStr for ReportedResult {
 pub type MatchPlayers = [Opponent; 2];
 
 /// A match between two players, resulting in a winner and a loser
+///
+/// When updating a bracket, the match state can affect behaviour:
+/// * expected seeding (example: grand finals should be between seed 1 and 2)
+/// * winner of match (who moves on)
+/// * player is disqualified for the match
+/// * player reported results for this match (especially when reports differ)
 #[derive(Debug, Default, PartialEq, Eq, Clone, Serialize, Deserialize, Copy)]
 pub struct Match {
     /// Identifier of match
@@ -205,6 +210,14 @@ impl Match {
             "{:?} {p1_status}{p1:02} VS {p2_status}{p2:02} | match id: {}",
             self.seeds, self.id
         )
+    }
+
+    /// True if all players involved in match have reported a result
+    pub fn has_all_player_reports(&self) -> bool {
+        match self.reported_results {
+            [Some(_r1), Some(_r2)] => true,
+            _ => false,
+        }
     }
 }
 
@@ -425,10 +438,8 @@ impl Match {
     ///
     /// # Errors
     /// thrown when looser is not a participant of the match
-    pub fn set_automatic_loser(self, player_id: PlayerId) -> Result<Self, Error> {
-        if !self.contains(player_id) {
-            return Err(Error::UnknownPlayer(player_id, self.players));
-        }
+    pub fn set_automatic_loser(self, player_id: PlayerId) -> Self {
+        assert!(self.contains(player_id), "player {} in match", player_id);
 
         let loser = match self.players {
             [Opponent::Player(p1), _] if p1 == player_id => self.players[0],
@@ -436,10 +447,10 @@ impl Match {
             _ => Opponent::Unknown,
         };
 
-        Ok(Self {
+        Self {
             automatic_loser: loser,
             ..self
-        })
+        }
     }
 
     /// Set player of match
@@ -514,11 +525,16 @@ impl Match {
     }
 
     /// Set match outcome using reported results. Returns updated match, winner
-    /// id and looser id
+    /// id and looser id.
+    ///
+    /// When a player is disqualified (through `automatic_loser`), then outcome
+    /// can be updated.
     ///
     /// # Errors
     /// Returns an error if reported scores don't agree on the winner
-    pub fn update_outcome(self) -> Result<(Match, PlayerId, PlayerId), Error> {
+    /// # Panics
+    /// When one of the players did not report match result
+    pub(crate) fn update_outcome(self) -> Result<(Match, PlayerId, PlayerId), Error> {
         // if there is a disqualified player, try to set the winner
         if let Opponent::Player(dq_player) = self.automatic_loser {
             return match self.players {
@@ -602,46 +618,38 @@ impl Match {
 
     /// Update match result and return updated match
     ///
-    /// # Errors
-    /// Thrown when referred player is not in the match
-    pub fn update_reported_result(
-        self,
-        player_id: PlayerId,
-        result: ReportedResult,
-    ) -> Result<Match, MatchUpdatePlayerReportedResultError> {
+    /// # Panics
+    /// When referred player is not in the match or opponent has not been defined
+    pub fn update_reported_result(self, player_id: PlayerId, result: ReportedResult) -> Self {
         match self.players {
-            [Opponent::Unknown, _] | [_, Opponent::Unknown] => Err(
-                MatchUpdatePlayerReportedResultError::MissingOpponent(self.id, self.players),
-            ),
+            [Opponent::Unknown, _] | [_, Opponent::Unknown] => {
+                panic!("All opponents must be defined before reporting result")
+            }
             [Opponent::Player(player1), Opponent::Player(_)] if player1 == player_id => {
                 let mut reported_results = self.reported_results;
                 reported_results[0] = result.0;
-                Ok(Match {
+                Match {
                     id: self.id,
                     players: self.players,
                     seeds: self.seeds,
                     winner: self.winner,
                     automatic_loser: self.automatic_loser,
                     reported_results,
-                })
+                }
             }
             [Opponent::Player(_), Opponent::Player(player2)] if player2 == player_id => {
                 let mut reported_results = self.reported_results;
                 reported_results[1] = result.0;
-                Ok(Match {
+                Match {
                     id: self.id,
                     players: self.players,
                     seeds: self.seeds,
                     winner: self.winner,
                     automatic_loser: self.automatic_loser,
                     reported_results,
-                })
+                }
             }
-            _ => Err(MatchUpdatePlayerReportedResultError::UnknownPlayer(
-                self.id,
-                player_id,
-                self.players,
-            )),
+            _ => panic!("unknown player ID reported for match {}", self.id),
         }
     }
 
@@ -750,12 +758,8 @@ mod tests {
         )
         .expect("match");
         assert!(!m.is_over());
-        let m = m
-            .update_reported_result(p1.get_id(), ReportedResult(Some((2, 0))))
-            .expect("match p1 result");
-        let m = m
-            .update_reported_result(p2.get_id(), ReportedResult(Some((0, 2))))
-            .expect("match p2 result");
+        let m = m.update_reported_result(p1.get_id(), ReportedResult(Some((2, 0))));
+        let m = m.update_reported_result(p2.get_id(), ReportedResult(Some((0, 2))));
         let (m, _, _) = m.update_outcome().expect("validation");
         assert!(m.is_over());
         assert!(
@@ -769,12 +773,8 @@ mod tests {
         )
         .expect("match");
         assert!(!m.is_over());
-        let m = m
-            .update_reported_result(p2.get_id(), ReportedResult(Some((2, 0))))
-            .expect("match p2 result");
-        let m = m
-            .update_reported_result(p1.get_id(), ReportedResult(Some((0, 2))))
-            .expect("match p1 result");
+        let m = m.update_reported_result(p2.get_id(), ReportedResult(Some((2, 0))));
+        let m = m.update_reported_result(p1.get_id(), ReportedResult(Some((0, 2))));
         let (m, _, _) = m.update_outcome().expect("validation");
         assert!(m.is_over());
         assert!(
@@ -788,12 +788,8 @@ mod tests {
         )
         .expect("match");
         assert!(!m.is_over());
-        let m = m
-            .update_reported_result(p1.get_id(), ReportedResult(Some((2, 0))))
-            .expect("match p1 result");
-        let m = m
-            .update_reported_result(p2.get_id(), ReportedResult(Some((0, 2))))
-            .expect("match p2 result");
+        let m = m.update_reported_result(p1.get_id(), ReportedResult(Some((2, 0))));
+        let m = m.update_reported_result(p2.get_id(), ReportedResult(Some((0, 2))));
         let (m, _, _) = m.update_outcome().expect("validation");
         assert!(m.is_over());
         assert!(
@@ -807,12 +803,8 @@ mod tests {
         )
         .expect("match");
         assert!(!m.is_over());
-        let m = m
-            .update_reported_result(p2.get_id(), ReportedResult(Some((2, 0))))
-            .expect("match p1 result");
-        let m = m
-            .update_reported_result(p1.get_id(), ReportedResult(Some((0, 2))))
-            .expect("match p1 result");
+        let m = m.update_reported_result(p2.get_id(), ReportedResult(Some((2, 0))));
+        let m = m.update_reported_result(p1.get_id(), ReportedResult(Some((0, 2))));
         let (m, _, _) = m.update_outcome().expect("validation");
         assert!(m.is_over());
         assert!(
