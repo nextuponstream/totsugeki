@@ -2,6 +2,9 @@
 
 #![allow(E0004)]
 
+mod bracket_result;
+pub use bracket_result::{BracketResult, Error as BracketResultGenerationError};
+
 use crate::{
     matches::Id as MatchId,
     opponent::{Opponent, ParsingOpponentError},
@@ -223,6 +226,9 @@ impl Match {
 
 /// Partitions double elimination bracket matches in winner bracket, looser
 /// bracket, grand finals and grand finals reset for `n` players
+///
+/// Assumes `matches` are ordered as follows: [winner bracket, loser bracket,
+/// grand final, grand final reset]
 pub(crate) fn partition_double_elimination_matches(
     matches: &[Match],
     n: usize,
@@ -459,16 +465,19 @@ impl Match {
     /// out like in `insert_player`
     ///
     /// # Panics
-    /// thrown if opponent is already present
-    pub(crate) fn set_player(self, player_id: PlayerId, is_player_1: bool) -> Self {
+    /// * if opponent is already present
+    /// * someone was already set
+    pub(crate) fn set_player(self, player_id: PlayerId, higher_seed: bool) -> Self {
         assert!(
             !self.contains(player_id),
             "cannot set opponent when already in the match"
         );
         let player = Opponent::Player(player_id);
-        let players = if is_player_1 {
+        let players = if higher_seed {
+            assert_eq!(self.players[0], Opponent::Unknown);
             [player, self.players[1]]
         } else {
+            assert_eq!(self.players[1], Opponent::Unknown);
             [self.players[0], player]
         };
         Self { players, ..self }

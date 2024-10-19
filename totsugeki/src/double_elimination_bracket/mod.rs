@@ -6,7 +6,6 @@ use crate::matches::Match;
 use crate::opponent::Opponent;
 use crate::seeding::double_elimination_seeded_bracket::get_loser_bracket_matches_top_seed_favored;
 use crate::validation::AutomaticMatchValidationMode;
-use std::str::RMatches;
 
 mod disqualification;
 // FIXME refactor everything double elimination bracket here
@@ -67,17 +66,14 @@ impl DoubleEliminationBracket {
         automatic_match_validation_mode: AutomaticMatchValidationMode,
     ) -> Self {
         assert!(
-            seeding.len() == 0 && matches.len() > 0,
+            (seeding.len() == 0 && matches.len() == 0) || (seeding.len() > 0 && matches.len() > 0),
             "no seeding for matches generated"
         );
-        let magic = seeding
-            .len()
-            .checked_next_power_of_two()
-            .expect("power of two");
+        let magic = 2_usize * seeding.len();
         assert_eq!(
             matches.len(),
             magic - 1,
-            "expected 2^n - 1 matches for n players"
+            "expected 2*n - 1 matches for n players"
         );
         // TODO more assertions
         Self {

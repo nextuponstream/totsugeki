@@ -42,7 +42,11 @@ pub(crate) fn new_matches_to_play_for_bracket(
     matches_to_play: &[Match],
 ) -> Vec<Match> {
     assert!(matches_to_play.iter().all(|m| m.needs_playing()));
-    assert!(old_matches_to_play.iter().all(|m| m.needs_playing()));
+    assert!(
+        old_matches_to_play.iter().all(|m| m.needs_playing()),
+        "{:?}",
+        old_matches_to_play
+    );
     let new_matches_to_play: Vec<Match> = matches_to_play
         .iter()
         .filter(|m| {

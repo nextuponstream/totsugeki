@@ -17,7 +17,7 @@ fn run_3_man_bracket() {
         seeding = seeding.add_participant(player).expect("new participant");
     }
     let bracket = DoubleEliminationBracket::create(
-        Seeding::new(unpadded_player_ids).unwrap(),
+        Seeding::new(unpadded_player_ids.clone()).unwrap(),
         Some(AutomaticMatchValidationMode::Flexible),
     );
 
@@ -25,23 +25,17 @@ fn run_3_man_bracket() {
     let (bracket, _, _new_matches) = bracket
         .tournament_organiser_reports_result_dangerous(player_ids[2], (2, 0), player_ids[3])
         .expect("bracket");
-    // let p = Step::new(Some(matches), p.seeding, auto).expect("progression");
-    // let (matches, _, _new_matches) = p
-    //     .tournament_organiser_reports_result(player_ids[1], (0, 2), player_ids[2])
-    //     .expect("bracket");
-    // let p = Step::new(Some(matches), p.seeding, auto).expect("progression");
-    // let (matches, _, _new_matches) = p
-    //     .tournament_organiser_reports_result(player_ids[1], (0, 2), player_ids[3])
-    //     .expect("bracket");
-    // let p = Step::new(Some(matches), p.seeding, auto).expect("progression");
-    // let (matches, _, _new_matches) = p
-    //     .tournament_organiser_reports_result(player_ids[2], (0, 2), player_ids[3])
-    //     .expect("bracket");
-    // let p = Step::new(Some(matches), p.seeding, auto).expect("progression");
-    // let (matches, _, _new_matches) = p
-    //     .tournament_organiser_reports_result(player_ids[2], (0, 2), player_ids[3])
-    //     .expect("bracket");
-    // let p = Step::new(Some(matches), p.seeding, auto).expect("progression");
-    // assert!(p.is_over());
-    todo!()
+    let (bracket, _, _new_matches) = bracket
+        .tournament_organiser_reports_result_dangerous(player_ids[1], (0, 2), player_ids[2])
+        .expect("bracket");
+    let (bracket, _, _new_matches) = bracket
+        .tournament_organiser_reports_result_dangerous(player_ids[1], (0, 2), player_ids[3])
+        .expect("bracket");
+    let (bracket, _, _new_matches) = bracket
+        .tournament_organiser_reports_result_dangerous(player_ids[2], (0, 2), player_ids[3])
+        .expect("bracket");
+    let (bracket, _, _new_matches) = bracket
+        .tournament_organiser_reports_result_dangerous(player_ids[2], (0, 2), player_ids[3])
+        .expect("bracket");
+    assert!(bracket.is_over());
 }

@@ -105,60 +105,6 @@ impl Step {
     }
 }
 
-/// Update grand finals or reset
-fn update_grand_finals_or_reset(
-    match_id: MatchId,
-    winner_bracket: Vec<Match>,
-    loser_bracket: Vec<Match>,
-    gf: Match,
-    gf_reset: Match,
-) -> Result<Vec<Match>, Error> {
-    match match_id {
-        id if id == gf.get_id() => {
-            let (gf, _, _) = gf.update_outcome()?;
-            // when a reset happens in grand finals
-            let gf_reset = match (gf.get_winner(), gf.get_players()[1]) {
-                (Opponent::Player(gf_winner), Opponent::Player(player_from_losers))
-                    if gf_winner == player_from_losers =>
-                {
-                    // Set players of gf reset
-                    let gf_reset = match gf.get_players() {
-                        [Opponent::Player(p1), Opponent::Player(p2)] => {
-                            let ggf_reset = gf_reset.insert_player(p1, true);
-                            ggf_reset.insert_player(p2, false)
-                        }
-                        [Opponent::Player(p), _] => gf_reset.insert_player(p, true),
-                        [_, Opponent::Player(p)] => gf_reset.insert_player(p, false),
-                        _ => gf_reset,
-                    };
-
-                    // if player is disqualified in grand finals, update gf reset
-                    match (gf.get_automatic_loser(), gf.get_players()[0]) {
-                        (
-                            Opponent::Player(grand_finals_loser),
-                            Opponent::Player(winner_of_winner_bracket),
-                        ) if grand_finals_loser == winner_of_winner_bracket => {
-                            gf_reset
-                                .set_automatic_loser(grand_finals_loser)
-                                .update_outcome()?
-                                .0
-                        }
-                        (_, _) => gf_reset,
-                    }
-                }
-                _ => gf_reset,
-            };
-
-            Ok(dem_partition(&winner_bracket, &loser_bracket, gf, gf_reset))
-        }
-        id if id == gf_reset.get_id() => {
-            let (gf_reset, _, _) = gf_reset.update_outcome()?;
-            Ok([winner_bracket, loser_bracket, vec![gf, gf_reset]].concat())
-        }
-        _ => panic!("expected GF or GF reset but got other match: {match_id}"),
-    }
-}
-
 impl Progression for Step {
     fn disqualify_participant(
         &self,
