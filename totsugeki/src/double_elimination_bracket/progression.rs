@@ -44,7 +44,7 @@ pub trait ProgressionDEB {
         player2: ID,
     ) -> Result<(DoubleEliminationBracket, Id, Vec<Match>), DoubleEliminationReportResultError>;
 
-    /// Tournament organiser reports result
+    /// Tournament organiser reports result. Returns bracket, affected match ID and new matches
     ///
     /// NOTE: both players are needed, so it is less ambiguous when reading code:
     /// * p1 2-0 is more ambiguous to read than

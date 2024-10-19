@@ -13,7 +13,7 @@ mod disqualification;
 pub mod progression;
 
 /// Double elimination bracket
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DoubleEliminationBracket {
     // NOTE: not worth using a container. Though I want to do `matches.contains(match_id)`...
     /// Matches
@@ -28,11 +28,8 @@ impl DoubleEliminationBracket {
     /// Generate matches for a new bracket using `seeding` and other configuration
     pub fn create(
         seeding: Seeding,
-        automatic_match_validation_mode: Option<AutomaticMatchValidationMode>,
+        automatic_match_validation_mode: AutomaticMatchValidationMode,
     ) -> Self {
-        let automatic_match_validation_mode =
-            automatic_match_validation_mode.unwrap_or(AutomaticMatchValidationMode::default());
-
         // FIXME remove unwrap, this should never panic
         let mut matches = vec![];
         let mut winner_bracket_matches =
