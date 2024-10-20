@@ -1,9 +1,62 @@
+use totsugeki::bracket::matches::Progression;
 use totsugeki::bracket::seeding::Seeding;
 use totsugeki::double_elimination_bracket::progression::ProgressionDEB;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki::opponent::Opponent;
 use totsugeki::player::{Participants, Player};
 use totsugeki::validation::AutomaticMatchValidationMode;
 use totsugeki::ID;
+
+#[cfg(test)]
+pub(crate) fn assert_next_matches(
+    bracket: &DoubleEliminationBracket,
+    players_with_unknown_opponent: &[usize],
+    expected_matches: &[(usize, usize)],
+    players: &[Player],
+) {
+    for p in players_with_unknown_opponent {
+        let player = players[*p].clone();
+        let (next_opponent, _) = bracket
+            .next_opponent(player.get_id())
+            .expect("next opponent")
+            .expect("opponent is not missing");
+        assert_eq!(
+            next_opponent,
+            Opponent::Unknown,
+            "expected unknown opponent for {p} but got {next_opponent}"
+        );
+    }
+
+    for (o1, o2) in expected_matches {
+        let opponent1 = players[*o1].clone();
+        let opponent2 = players[*o2].clone();
+
+        let (next_opponent, _) = bracket
+            .next_opponent(opponent1.get_id())
+            .expect("next opponent")
+            .expect("opponent should not be missing");
+        let Opponent::Player(p) = next_opponent else {
+            panic!("expected player for next opponent");
+        };
+        assert_eq!(
+            p,
+            opponent2.get_id(),
+            "expected {opponent2} for {opponent1} but got {p}"
+        );
+        let (next_opponent, _) = bracket
+            .next_opponent(opponent2.get_id())
+            .expect("next opponent")
+            .expect("opponent should not be missing");
+        let Opponent::Player(p) = next_opponent else {
+            panic!("expected player for next opponent");
+        };
+        assert_eq!(
+            p,
+            opponent1.get_id(),
+            "expected {opponent1} for {opponent2} but got {p}"
+        );
+    }
+}
 
 fn report(
     double_elimination_bracket: DoubleEliminationBracket,
@@ -81,4 +134,83 @@ fn run_8_man_bracket_with_frequent_upsets() {
         .expect("bracket");
     let bracket = bracket.validate_match_result(grand_finals).0;
     assert!(bracket.is_over(), "{bracket:?}");
+}
+
+#[test]
+fn bracket_5_man_with_frequent_upsets() {
+    let mut p = vec![Player::new("don't use".into())];
+    let mut seeding = Participants::default();
+    for i in 1..=5 {
+        let player = Player::new(format!("p{i}"));
+        p.push(player.clone());
+        seeding = seeding.add_participant(player).expect("seeding");
+    }
+    let bracket = DoubleEliminationBracket::create(
+        Seeding::new(seeding.get_seeding()).unwrap(),
+        AutomaticMatchValidationMode::Strict,
+    );
+
+    let (bracket, match_id, _) = bracket
+        .tournament_organiser_reports_result_dangerous(p[4].get_id(), (2, 0), p[5].get_id())
+        .expect("winner 4vs5");
+    let (bracket, new_matches) = bracket.validate_match_result(match_id);
+    assert_eq!(new_matches.len(), 1);
+    assert_next_matches(&bracket, &[5], &[(1, 4), (2, 3)], &p);
+
+    let (bracket, match_id, _) = bracket
+        .tournament_organiser_reports_result_dangerous(p[1].get_id(), (0, 2), p[4].get_id())
+        .expect("winner 1vs4");
+    let (bracket, new_matches) = bracket.validate_match_result(match_id);
+    assert_eq!(new_matches.len(), 1);
+    assert_next_matches(&bracket, &[4], &[(2, 3), (1, 5)], &p);
+
+    let (bracket, match_id, _) = bracket
+        .tournament_organiser_reports_result_dangerous(p[2].get_id(), (2, 0), p[3].get_id())
+        .expect("winner 2vs3");
+    let (bracket, new_matches) = bracket.validate_match_result(match_id);
+    assert_eq!(new_matches.len(), 1);
+    assert_next_matches(&bracket, &[3], &[(1, 5), (2, 4)], &p);
+
+    let (bracket, match_id, _) = bracket
+        .tournament_organiser_reports_result_dangerous(p[1].get_id(), (0, 2), p[5].get_id())
+        .expect("loser 1vs5");
+    let (bracket, new_matches) = bracket.validate_match_result(match_id);
+    assert_eq!(new_matches.len(), 1);
+    assert_next_matches(&bracket, &[], &[(2, 4), (3, 5)], &p);
+
+    let (bracket, match_id, _) = bracket
+        .tournament_organiser_reports_result_dangerous(p[2].get_id(), (2, 0), p[4].get_id())
+        .expect("winner 2vs4");
+    let (bracket, new_matches) = bracket.validate_match_result(match_id);
+    assert_eq!(new_matches.len(), 0);
+    assert_next_matches(&bracket, &[2, 4], &[(3, 5)], &p);
+
+    let (bracket, match_id, _) = bracket
+        .tournament_organiser_reports_result_dangerous(p[3].get_id(), (0, 2), p[5].get_id())
+        .expect("loser 3vs5");
+    let (bracket, new_matches) = bracket.validate_match_result(match_id);
+    assert_eq!(new_matches.len(), 1);
+    assert_next_matches(&bracket, &[2], &[(4, 5)], &p);
+
+    let (bracket, match_id, _) = bracket
+        .tournament_organiser_reports_result_dangerous(p[4].get_id(), (2, 0), p[5].get_id())
+        .expect("loser 4vs5");
+    let (bracket, new_matches) = bracket.validate_match_result(match_id);
+    assert_eq!(new_matches.len(), 1);
+    assert_next_matches(&bracket, &[], &[(2, 4)], &p);
+
+    let (bracket, match_id, _) = bracket
+        .tournament_organiser_reports_result_dangerous(p[2].get_id(), (0, 2), p[4].get_id())
+        .expect("grand finals 2vs4");
+    let (bracket, new_matches) = bracket.validate_match_result(match_id);
+    assert_eq!(new_matches.len(), 1);
+    assert_next_matches(&bracket, &[], &[(2, 4)], &p);
+
+    let (bracket, match_id, _) = bracket
+        .tournament_organiser_reports_result_dangerous(p[2].get_id(), (2, 0), p[4].get_id())
+        .expect("reset 2vs4");
+    let (bracket, new_matches) = bracket.validate_match_result(match_id);
+    assert_eq!(new_matches.len(), 0);
+
+    crate::double_elimination_bracket::assert_no_next_match_after_tournament_is_over(&bracket);
 }

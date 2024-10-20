@@ -8,6 +8,8 @@ use crate::seeding::double_elimination_seeded_bracket::get_loser_bracket_matches
 use crate::validation::AutomaticMatchValidationMode;
 
 mod disqualification;
+mod getters;
+pub mod next_opponent;
 // FIXME refactor everything double elimination bracket here
 
 pub mod progression;

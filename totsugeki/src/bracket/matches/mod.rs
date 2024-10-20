@@ -329,48 +329,6 @@ pub(crate) fn assert_elimination(s: &dyn Progression, players: &[Player], player
 }
 
 #[cfg(test)]
-pub(crate) fn assert_next_matches(
-    s: &dyn Progression,
-    players_with_unknown_opponent: &[usize],
-    expected_matches: &[(usize, usize)],
-    players: &[Player],
-) {
-    for p in players_with_unknown_opponent {
-        let player = players[*p].clone();
-        let (next_opponent, _) = s.next_opponent(player.get_id()).expect("next opponent");
-        assert_eq!(
-            next_opponent,
-            Opponent::Unknown,
-            "expected unknown opponent for {p} but got {next_opponent}"
-        );
-    }
-
-    for (o1, o2) in expected_matches {
-        let opponent1 = players[*o1].clone();
-        let opponent2 = players[*o2].clone();
-
-        let (next_opponent, _) = s.next_opponent(opponent1.get_id()).expect("next opponent");
-        let Opponent::Player(p) = next_opponent else {
-            panic!("expected player for next opponent");
-        };
-        assert_eq!(
-            p,
-            opponent2.get_id(),
-            "expected {opponent2} for {opponent1} but got {p}"
-        );
-        let (next_opponent, _) = s.next_opponent(opponent2.get_id()).expect("next opponent");
-        let Opponent::Player(p) = next_opponent else {
-            panic!("expected player for next opponent");
-        };
-        assert_eq!(
-            p,
-            opponent1.get_id(),
-            "expected {opponent1} for {opponent2} but got {p}"
-        );
-    }
-}
-
-#[cfg(test)]
 /// Assert x wins against y
 fn assert_outcome(matches: &[Match], x: &Player, y: &Player) {
     assert!(

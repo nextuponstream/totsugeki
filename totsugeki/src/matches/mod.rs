@@ -3,6 +3,7 @@
 #![allow(E0004)]
 
 mod bracket_result;
+mod query;
 pub use bracket_result::{BracketResult, Error as BracketResultGenerationError};
 
 use crate::{
