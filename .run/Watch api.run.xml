@@ -1,0 +1,24 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Watch api" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+    <option name="command" value="watch -w totsugeki -w tournament-organiser-api -s &quot;cargo run --package tournament-organiser-api&quot;" />
+    <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+    <envs>
+      <env name="BUILD_PATH_TOURNAMENT_ORGANISER_WEB" value="tournament-organiser-web/dist" />
+      <env name="DB_NAME" value="toa" />
+      <env name="DB_PASSWORD" value="toa" />
+      <env name="DB_USERNAME" value="toa" />
+      <env name="SESSION_DURATION" value="3600" />
+      <env name="DEVELOPMENT" value="true" />
+    </envs>
+    <option name="emulateTerminal" value="true" />
+    <option name="channel" value="DEFAULT" />
+    <option name="requiredFeatures" value="true" />
+    <option name="allFeatures" value="false" />
+    <option name="withSudo" value="false" />
+    <option name="buildTarget" value="REMOTE" />
+    <option name="backtrace" value="SHORT" />
+    <option name="isRedirectInput" value="false" />
+    <option name="redirectInputPath" value="" />
+    <method v="2" />
+  </configuration>
+</component>

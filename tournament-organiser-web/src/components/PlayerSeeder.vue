@@ -1,14 +1,21 @@
 <template>
-  <div class="text-2xl">
-    {{ t('playerSeeder.title') }}
+  <div class="flex gap-10">
+    <div class="text-2xl">
+      {{ t('playerSeeder.title') }}
+    </div>
+    <DangerBtn
+      :disabled="noPlayers"
+      @click="bracketStore.removeAllPlayersInForm"
+      >{{ $t('playerSeeder.removeAllPlayers') }}
+    </DangerBtn>
   </div>
   <div class="text-gray-400">
     {{ t('playerSeeder.hint') }}
   </div>
 
   <draggable
-    v-if="players.length > 0"
-    :list="players"
+    v-if="bracketStore.formCreate.player_names.length > 0"
+    :list="bracketStore.formCreate.player_names"
     :disabled="!enabled"
     item-key="index"
     class="list-group"
@@ -22,7 +29,7 @@
           <div>{{ element.name }}</div>
           <i
             class="pi pi-times text-gray-400 hover:text-gray-800 py-1"
-            @click="removePlayer(element.index)"
+            @click="bracketStore.removePlayerInForm(element.index)"
           />
         </div>
       </div>
@@ -35,33 +42,16 @@
 
 <script setup lang="ts">
 import draggable from 'vuedraggable'
-import { type PropType } from 'vue'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useBracketStore } from '@/stores/bracket'
+import DangerBtn from './ui/buttons/DangerBtn.vue'
 
 const { t } = useI18n({})
-
-interface Player {
-  name: string
-  index: number
-}
-
-const props = defineProps({
-  players: {
-    type: Array as PropType<Player[]>,
-    required: false,
-    default: () => {
-      return []
-    },
-  },
-})
-
-const emit = defineEmits(['removePlayer'])
-
+const bracketStore = useBracketStore()
 const dragging = ref(false)
 const enabled = ref(true)
-
-function removePlayer(index: number) {
-  emit('removePlayer', index)
-}
+const noPlayers = computed(() => {
+  return bracketStore.formCreate.player_names.length === 0
+})
 </script>

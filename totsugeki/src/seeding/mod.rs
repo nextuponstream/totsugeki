@@ -3,6 +3,7 @@
 pub mod double_elimination_seeded_bracket;
 pub mod single_elimination_seeded_bracket;
 
+use crate::bracket::seeding::Seeding;
 use crate::{
     matches::Match,
     opponent::Opponent,
@@ -139,6 +140,33 @@ fn seeding_initial_round(
         )
         .expect("match"),
     );
+}
+
+/// Pushes one seeded match matching top seed and bottom seed onto
+/// `this_round`. Because it's the initial round where either top seed is
+/// present (example: 8 man bracket) or they are not (3 man bracket), then the
+/// number of available players is a multiple of two.
+fn seeding_initial_round2(
+    available_players_by_seeds: &mut Vec<usize>,
+    seeding: &Seeding,
+    this_round: &mut Vec<Match>,
+) {
+    // let top_seed = available_players_by_seeds.remove(0);
+    // let top_seed_player_id = seeding[top_seed - 1];
+    // let bottom_seed = available_players_by_seeds.pop().expect("bottom seed");
+    // let bottom_seed_player_id = seeding[bottom_seed - 1];
+    //
+    // this_round.push(
+    //     Match::new(
+    //         [
+    //             Opponent::Player(top_seed_player_id),
+    //             Opponent::Player(bottom_seed_player_id),
+    //         ],
+    //         [top_seed, bottom_seed],
+    //     )
+    //     .expect("match"),
+    // );
+    todo!()
 }
 
 #[cfg(test)]

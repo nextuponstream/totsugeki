@@ -172,7 +172,7 @@ struct Wave<'a> {
 }
 
 /// Returns wave of players. See `Wave` documentation for more information
-fn form_wave(incoming_players_of_wave: &Vec<uuid::Uuid>) -> Result<Wave, Error> {
+fn form_wave(incoming_players_of_wave: &[uuid::Uuid]) -> Result<Wave, Error> {
     let byes = match (incoming_players_of_wave.len()).checked_next_power_of_two() {
         Some(next_higher_power_of_two) => next_higher_power_of_two - incoming_players_of_wave.len(),
         None => return Err(Error::MathOverflow),
@@ -269,11 +269,7 @@ mod tests {
         let matches = Format::DoubleElimination
             .generate_matches(&participants.get_seeding())
             .expect("matches");
-        let mut match_ids: Vec<MatchId> = matches
-            .iter()
-            .map(crate::matches::Match::get_id)
-            .rev()
-            .collect();
+        let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches,
             vec![
@@ -286,7 +282,7 @@ mod tests {
                     seeds: [2, 3],
                     winner: Opponent::Unknown,
                     automatic_loser: Opponent::Unknown,
-                    reported_results: [(0, 0), (0, 0)],
+                    reported_results: [None, None],
                 },
                 Match {
                     id: match_ids.pop().expect("id"),
@@ -294,7 +290,7 @@ mod tests {
                     seeds: [1, 2],
                     winner: Opponent::Unknown,
                     automatic_loser: Opponent::Unknown,
-                    reported_results: [(0, 0), (0, 0)],
+                    reported_results: [None, None],
                 },
                 Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3]),
                 Match::looser_bracket_match(match_ids.pop().expect("id"), [1, 2]),
@@ -340,18 +336,14 @@ mod tests {
         }
 
         let matches = get_loser_bracket_matches_top_seed_favored(&seeding).expect("matches");
-        let mut match_ids: Vec<MatchId> = matches
-            .iter()
-            .map(crate::matches::Match::get_id)
-            .rev()
-            .collect();
+        let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
             3,
             "matches seeding: {:?}\n got: {matches:?}",
             matches
                 .iter()
-                .map(crate::matches::Match::get_seeds)
+                .map(Match::get_seeds)
                 .collect::<Vec<[usize; 2]>>()
         );
         assert_eq!(
@@ -375,18 +367,14 @@ mod tests {
         }
 
         let matches = get_loser_bracket_matches_top_seed_favored(&seeding).expect("matches");
-        let mut match_ids: Vec<MatchId> = matches
-            .iter()
-            .map(crate::matches::Match::get_id)
-            .rev()
-            .collect();
+        let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
             4,
             "\nmatches seeding: {:?}\n got: {matches:?}",
             matches
                 .iter()
-                .map(crate::matches::Match::get_seeds)
+                .map(Match::get_seeds)
                 .collect::<Vec<[usize; 2]>>()
         );
         let expected_matches = vec![
@@ -402,11 +390,11 @@ mod tests {
             "matches seeding:\ngot     :{:?}\nexpected:{:?}",
             matches
                 .iter()
-                .map(crate::matches::Match::get_seeds)
+                .map(Match::get_seeds)
                 .collect::<Vec<[usize; 2]>>(),
             expected_matches
                 .iter()
-                .map(crate::matches::Match::get_seeds)
+                .map(Match::get_seeds)
                 .collect::<Vec<[usize; 2]>>()
         );
     }
@@ -422,18 +410,14 @@ mod tests {
         }
 
         let matches = get_loser_bracket_matches_top_seed_favored(&seeding).expect("matches");
-        let mut match_ids: Vec<MatchId> = matches
-            .iter()
-            .map(crate::matches::Match::get_id)
-            .rev()
-            .collect();
+        let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
             5,
             "\nmatches seeding: {:?}\ngot: {matches:?}",
             matches
                 .iter()
-                .map(crate::matches::Match::get_seeds)
+                .map(Match::get_seeds)
                 .collect::<Vec<[usize; 2]>>(),
         );
         let expected_matches = vec![
@@ -450,11 +434,11 @@ mod tests {
             "\nmatches seeding:\ngot     :{:?}\nexpected:{:?}",
             matches
                 .iter()
-                .map(crate::matches::Match::get_seeds)
+                .map(Match::get_seeds)
                 .collect::<Vec<[usize; 2]>>(),
             expected_matches
                 .iter()
-                .map(crate::matches::Match::get_seeds)
+                .map(Match::get_seeds)
                 .collect::<Vec<[usize; 2]>>()
         );
     }
@@ -470,18 +454,14 @@ mod tests {
         }
 
         let matches = get_loser_bracket_matches_top_seed_favored(&seeding).expect("matches");
-        let mut match_ids: Vec<MatchId> = matches
-            .iter()
-            .map(crate::matches::Match::get_id)
-            .rev()
-            .collect();
+        let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
             6,
             "\nmatches seeding: {:?}\ngot: {matches:?}",
             matches
                 .iter()
-                .map(crate::matches::Match::get_seeds)
+                .map(Match::get_seeds)
                 .collect::<Vec<[usize; 2]>>(),
         );
         let expected_matches = vec![
@@ -499,11 +479,11 @@ mod tests {
             "matches seeding:\ngot     :{:?}\nexpected:{:?}",
             matches
                 .iter()
-                .map(crate::matches::Match::get_seeds)
+                .map(Match::get_seeds)
                 .collect::<Vec<[usize; 2]>>(),
             expected_matches
                 .iter()
-                .map(crate::matches::Match::get_seeds)
+                .map(Match::get_seeds)
                 .collect::<Vec<[usize; 2]>>()
         );
     }
@@ -519,18 +499,14 @@ mod tests {
         }
 
         let matches = get_loser_bracket_matches_top_seed_favored(&seeding).expect("matches");
-        let mut match_ids: Vec<MatchId> = matches
-            .iter()
-            .map(crate::matches::Match::get_id)
-            .rev()
-            .collect();
+        let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
             7,
             "\nmatches seeding: {:?}\ngot: {matches:?}",
             matches
                 .iter()
-                .map(crate::matches::Match::get_seeds)
+                .map(Match::get_seeds)
                 .collect::<Vec<[usize; 2]>>(),
         );
         let expected_matches = vec![
@@ -549,11 +525,11 @@ mod tests {
             "matches seeding:\ngot     :{:?}\nexpected:{:?}",
             matches
                 .iter()
-                .map(crate::matches::Match::get_seeds)
+                .map(Match::get_seeds)
                 .collect::<Vec<[usize; 2]>>(),
             expected_matches
                 .iter()
-                .map(crate::matches::Match::get_seeds)
+                .map(Match::get_seeds)
                 .collect::<Vec<[usize; 2]>>()
         );
     }
@@ -569,18 +545,14 @@ mod tests {
         }
 
         let matches = get_loser_bracket_matches_top_seed_favored(&seeding).expect("matches");
-        let mut match_ids: Vec<MatchId> = matches
-            .iter()
-            .map(crate::matches::Match::get_id)
-            .rev()
-            .collect();
+        let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
             8,
             "\nmatches seeding: {:?}\ngot: {matches:?}",
             matches
                 .iter()
-                .map(crate::matches::Match::get_seeds)
+                .map(Match::get_seeds)
                 .collect::<Vec<[usize; 2]>>(),
         );
         let expected_matches = vec![
@@ -600,11 +572,11 @@ mod tests {
             "matches seeding:\ngot     :{:?}\nexpected:{:?}",
             matches
                 .iter()
-                .map(crate::matches::Match::get_seeds)
+                .map(Match::get_seeds)
                 .collect::<Vec<[usize; 2]>>(),
             expected_matches
                 .iter()
-                .map(crate::matches::Match::get_seeds)
+                .map(Match::get_seeds)
                 .collect::<Vec<[usize; 2]>>()
         );
     }
@@ -620,18 +592,14 @@ mod tests {
         }
 
         let matches = get_loser_bracket_matches_top_seed_favored(&seeding).expect("matches");
-        let mut match_ids: Vec<MatchId> = matches
-            .iter()
-            .map(crate::matches::Match::get_id)
-            .rev()
-            .collect();
+        let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
             9,
             "\nmatches seeding: {:?}\ngot: {matches:?}",
             matches
                 .iter()
-                .map(crate::matches::Match::get_seeds)
+                .map(Match::get_seeds)
                 .collect::<Vec<[usize; 2]>>(),
         );
         let expected_matches = vec![
@@ -652,11 +620,11 @@ mod tests {
             "matches seeding:\ngot     :{:?}\nexpected:{:?}",
             matches
                 .iter()
-                .map(crate::matches::Match::get_seeds)
+                .map(Match::get_seeds)
                 .collect::<Vec<[usize; 2]>>(),
             expected_matches
                 .iter()
-                .map(crate::matches::Match::get_seeds)
+                .map(Match::get_seeds)
                 .collect::<Vec<[usize; 2]>>()
         );
     }
@@ -672,18 +640,14 @@ mod tests {
         }
 
         let matches = get_loser_bracket_matches_top_seed_favored(&seeding).expect("matches");
-        let mut match_ids: Vec<MatchId> = matches
-            .iter()
-            .map(crate::matches::Match::get_id)
-            .rev()
-            .collect();
+        let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
             10,
             "\nmatches seeding: {:?}\ngot: {matches:?}",
             matches
                 .iter()
-                .map(crate::matches::Match::get_seeds)
+                .map(Match::get_seeds)
                 .collect::<Vec<[usize; 2]>>(),
         );
         let expected_matches = vec![
@@ -705,11 +669,11 @@ mod tests {
             "matches seeding:\ngot     :{:?}\nexpected:{:?}",
             matches
                 .iter()
-                .map(crate::matches::Match::get_seeds)
+                .map(Match::get_seeds)
                 .collect::<Vec<[usize; 2]>>(),
             expected_matches
                 .iter()
-                .map(crate::matches::Match::get_seeds)
+                .map(Match::get_seeds)
                 .collect::<Vec<[usize; 2]>>()
         );
     }
@@ -725,18 +689,14 @@ mod tests {
         }
 
         let matches = get_loser_bracket_matches_top_seed_favored(&seeding).expect("matches");
-        let mut match_ids: Vec<MatchId> = matches
-            .iter()
-            .map(crate::matches::Match::get_id)
-            .rev()
-            .collect();
+        let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
             14,
             "\nmatches seeding: {:?}\ngot: {matches:?}",
             matches
                 .iter()
-                .map(crate::matches::Match::get_seeds)
+                .map(Match::get_seeds)
                 .collect::<Vec<[usize; 2]>>(),
         );
         let expected_matches = vec![
@@ -762,11 +722,11 @@ mod tests {
             "matches seeding:\ngot     :{:?}\nexpected:{:?}",
             matches
                 .iter()
-                .map(crate::matches::Match::get_seeds)
+                .map(Match::get_seeds)
                 .collect::<Vec<[usize; 2]>>(),
             expected_matches
                 .iter()
-                .map(crate::matches::Match::get_seeds)
+                .map(Match::get_seeds)
                 .collect::<Vec<[usize; 2]>>()
         );
     }

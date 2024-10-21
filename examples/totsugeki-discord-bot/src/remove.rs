@@ -45,6 +45,7 @@ async fn remove(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 
         let mut f = std::fs::OpenOptions::new()
             .create(true)
+            .truncate(false)
             .write(true)
             .open(Path::new(config.as_ref()))?;
         f.lock_exclusive().expect("lock"); // prevent concurrent access

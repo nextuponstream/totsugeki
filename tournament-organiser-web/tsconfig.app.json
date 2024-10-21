@@ -1,12 +1,22 @@
 {
   "extends": "@vue/tsconfig/tsconfig.dom.json",
-  "include": ["env.d.ts", "src/**/*", "src/**/*.vue", "vue-i18n.d.ts"],
-  "exclude": ["src/**/__tests__/*"],
+  "include": [
+    "env.d.ts",
+    "src/**/*",
+    "src/**/*.vue",
+    "vue-i18n.d.ts"
+  ],
+  "exclude": [
+    "src/**/__tests__/*"
+  ],
   "compilerOptions": {
+    "target": "ES2022",
     "composite": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
-    },
+      "@/*": [
+        "./src/*"
+      ]
+    }
   }
 }

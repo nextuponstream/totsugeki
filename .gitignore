@@ -6,3 +6,5 @@
 *.pem
 *.crt
 *.key
+.idea
+test.json

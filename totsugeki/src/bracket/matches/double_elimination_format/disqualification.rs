@@ -272,8 +272,9 @@ mod tests {
         let (winner_bracket, loser_bracket, gf, _gf_reset) =
             partition_double_elimination_matches(&s.matches, s.seeding.len());
         for m in &winner_bracket {
-            assert!(
-                m.get_automatic_loser() != Opponent::Unknown,
+            assert_ne!(
+                m.get_automatic_loser(),
+                Opponent::Unknown,
                 "expected winner bracket match to have automatic loser but got none: {m:?}"
             );
         }
@@ -419,10 +420,15 @@ mod tests {
             1,
             "expected 1 match after DQ'ing p3 in 3 player tournament"
         );
-        let (_bracket, _, new_matches) = s
+        let (bracket, _, new_matches) = s
             .tournament_organiser_reports_result(p[1].get_id(), (2, 0), p[2].get_id())
             .expect("to report");
-        assert_eq!(new_matches.len(), 1, "expected 1 new match");
+        assert_eq!(
+            1,
+            new_matches.len(),
+            "expected 1 new match, see bracket {:?}",
+            bracket
+        );
 
         assert!(
             new_matches[0].contains(p[1].get_id()),

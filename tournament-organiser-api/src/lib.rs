@@ -9,83 +9,65 @@
 #![warn(clippy::unwrap_used)]
 #![forbid(unsafe_code)]
 
-mod bracket;
+pub mod brackets;
 pub mod health_check;
-pub mod login;
-pub mod logout;
-pub mod registration;
+pub mod http;
+mod middlewares;
+pub(crate) mod repositories;
+pub mod resources;
+mod router;
 pub mod test_utils;
-pub mod user;
+pub mod users;
 
-use crate::health_check::health_check;
-use crate::login::login;
-use crate::logout::logout;
-use crate::registration::registration;
-use crate::user::profile;
-use axum::{
-    routing::{delete, get, post},
-    Router,
-};
-use bracket::{new_bracket_from_players, report_result};
-use http::StatusCode;
+use crate::router::api;
+use axum::Router;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use std::net::SocketAddr;
 use time::Duration;
 use tokio::net::TcpListener;
+use totsugeki::player::Id;
 use tower_http::{
     services::{ServeDir, ServeFile},
     trace::TraceLayer,
 };
-use tower_sessions::{session_store::ExpiredDeletion, Expiry, SessionManagerLayer};
+use tower_sessions::{ExpiredDeletion, Expiry, SessionManagerLayer};
 use tower_sessions_sqlx_store::PostgresStore;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-use user::delete_user;
 
 /// Name of the app
 static APP: &str = "tournament organiser application";
 /// Port to serve the app. By default, we set what flyio is expecting as
-// default listening port
+/// default listening port
 static PORT: u16 = 8080;
+
+/// Expected env value for boolean configuration variable
+static ENABLED: &str = "true";
 
 // FIXME do not panic when submitting score for match with missing player
 
-/// Router for non-user facing endpoints. Web page makes requests to API
-/// (registration, updating bracket...)
-fn api(pool: Pool<Postgres>) -> Router {
-    Router::new()
-        .route("/health_check", get(health_check))
-        .route("/register", post(registration))
-        .route("/login", post(login))
-        .route("/logout", post(logout))
-        .route("/user", get(profile))
-        .route("/user", delete(delete_user))
-        .route("/bracket-from-players", post(new_bracket_from_players))
-        .route("/report-result-for-bracket", post(report_result))
-        .fallback_service(get(|| async { (StatusCode::NOT_FOUND, "Not found") }))
-        .with_state(pool)
-}
-
 /// Serve web part of the application, using `tournament-organiser-web` build
-/// For development, Cors rule are relaxed
-pub fn app(pool: Pool<Postgres>) -> Router {
-    let web_build_path = match std::env::var("BUILD_PATH_TOURNAMENT_ORGANISER_WEB") {
-        Ok(s) => s,
-        Err(e) => {
-            tracing::info!("BUILD_PATH_TOURNAMENT_ORGANISER_WEB could not be parsed. Defaulting to relative path: {e}");
-            "../tournament-organiser-web/dist".into()
-        }
-    };
+pub fn app(pool: Pool<Postgres>, session_store: PostgresStore) -> Router {
+    let web_build_path = std::env::var("BUILD_PATH_TOURNAMENT_ORGANISER_WEB").unwrap_or_else(|e| {
+        tracing::info!("BUILD_PATH_TOURNAMENT_ORGANISER_WEB could not be parsed. Defaulting to relative path: {e}");
+        "../tournament-organiser-web/dist".into()
+    });
 
     let spa = ServeDir::new(web_build_path.clone())
         // .not_found_service will throw 404, which makes cypress test fail
         .fallback(ServeFile::new(format!("{web_build_path}/index.html")));
-    Router::new()
-        .nest("/api", api(pool))
-        .nest_service("/dist", spa.clone())
-        // Show vue app
-        .fallback_service(spa)
+    if std::env::var("DEVELOPMENT").is_ok_and(|v| v == ENABLED) {
+        // Vite dev server is used. This is to avoid confusion when app is
+        // served at default port AND on the vite dev server
+        Router::new().nest("/api", api(pool, session_store))
+    } else {
+        Router::new()
+            .nest("/api", api(pool, session_store))
+            .nest_service("/dist", spa.clone())
+            // Show vue app
+            .fallback_service(spa)
+    }
 }
 
 /// Serve tournament organiser application. Listening address is:
@@ -119,6 +101,9 @@ pub async fn run() {
                 // example_static_file_server=debug,tower_http=debug
                 // you can append this tower_http=debug to see more details
                 // .unwrap_or_else(|_| "INFO,tower_http=debug".into()),
+                // TODO set session to its own layer at trace level
+                // TODO set pool to its own layer at trace level
+                // use https://docs.rs/tracing-subscriber/latest/tracing_subscriber/layer/index.html#per-layer-filtering
                 .unwrap_or_else(|_| "INFO".into()),
         )
         .with(tracing_subscriber::fmt::layer())
@@ -161,9 +146,20 @@ pub async fn run() {
             .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
     );
 
-    let session_layer = SessionManagerLayer::new(session_store)
+    // could be a utility crate with more features but this suffice
+    // Currently returning 401 only
+    let session_duration = if let Ok(duration) = std::env::var("SESSION_DURATION") {
+        let duration = duration.parse().expect("session duration in seconds");
+        tracing::info!("Session duration {duration}s");
+        duration
+    } else {
+        let default_session_duration = 3600;
+        tracing::warn!("Default session duration set ({default_session_duration})");
+        default_session_duration
+    };
+    let session_layer = SessionManagerLayer::new(session_store.clone())
         .with_secure(false)
-        .with_expiry(Expiry::OnInactivity(Duration::hours(1)));
+        .with_expiry(Expiry::OnInactivity(Duration::seconds(session_duration)));
 
     let port = if let Ok(port) = std::env::var("PORT") {
         port.parse().expect("port")
@@ -171,8 +167,16 @@ pub async fn run() {
         tracing::warn!("PORT not set or error, defaulting to {PORT}");
         PORT
     };
-    tracing::info!("Serving {APP} on http://localhost:{port}");
-    serve(app(pool).layer(session_layer), port).await;
+    if std::env::var("DEVELOPMENT").is_ok_and(|v| v == ENABLED) {
+        tracing::warn!(
+            "Development server used for hosting SPA. Checkout tournament-organiser-web..."
+        );
+    } else {
+        tracing::info!("Serving {APP} on http://localhost:{port}");
+    }
+    tracing::debug!("Serving {APP} API on http://localhost:{port}/api");
+
+    serve(app(pool, session_store).layer(session_layer), port).await;
 }
 
 /// Standard error message

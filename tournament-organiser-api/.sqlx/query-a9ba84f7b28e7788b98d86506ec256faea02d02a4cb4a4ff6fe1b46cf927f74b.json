@@ -1,0 +1,42 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, name, created_at, count(*) OVER() AS total from brackets\n         ORDER BY\n           CASE WHEN $1 = 'ASC' THEN created_at END ASC,\n           CASE WHEN $1 = 'DESC' THEN created_at END DESC\n         LIMIT $2\n         OFFSET $3\n         ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 3,
+        "name": "total",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "a9ba84f7b28e7788b98d86506ec256faea02d02a4cb4a4ff6fe1b46cf927f74b"
+}

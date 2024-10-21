@@ -9,61 +9,21 @@
 #![warn(clippy::unwrap_used)]
 #![forbid(unsafe_code)]
 
-use std::str::FromStr;
-use std::sync::{LockResult, RwLock, RwLockReadGuard};
 use uuid::Uuid;
 
 pub mod bracket;
+pub mod double_elimination_bracket;
 pub mod format;
 pub mod matches;
+pub mod next_opponent;
 pub mod opponent;
 pub mod player;
 pub mod seeding;
+pub mod single_elimination_bracket;
+pub mod validation;
 
-/// Discussion channel identifier
-pub type DiscussionChannelId = Uuid;
-
-/// Read-only lock wrapper
-pub struct ReadLock<T> {
-    // NOTE: needs to be made innaccessible within it's own module so noone can access inner.write()
-    /// underlying lock
-    inner: RwLock<T>,
-}
-
-impl<T> ReadLock<T> {
-    /// Create new read-only guard
-    pub fn new(t: T) -> Self {
-        Self {
-            inner: RwLock::new(t),
-        }
-    }
-
-    /// Give read handle over ressource
-    ///
-    /// # Errors
-    /// Returns an error if lock is poisoned
-    pub fn read(&self) -> LockResult<RwLockReadGuard<'_, T>> {
-        self.inner.read()
-    }
-}
-
-/// Id of service
-pub type ServiceId = Uuid;
-
-/// Discussion channel
-pub trait DiscussionChannel {
-    /// Type of internal id
-    type InternalId: FromStr + ToString;
-
-    /// Get channel id
-    fn get_channel_id(&self) -> Option<DiscussionChannelId>;
-
-    /// Get internal id
-    fn get_internal_id(&self) -> Self::InternalId;
-
-    /// Get type of service
-    fn get_service_type(&self) -> String;
-}
+/// ID for bracket, players...
+pub type ID = Uuid;
 
 #[cfg(test)]
 /// Helper function for test cases with small group of players. Instead of

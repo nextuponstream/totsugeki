@@ -3,11 +3,9 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+use crate::bracket::seeding::Seeding;
 use crate::{
-    bracket::matches::{
-        double_elimination_format::Step as DE_Step, single_elimination_format::Step as SE_Step,
-        Progression,
-    },
+    bracket::matches::{double_elimination_format::Step as DE_Step, Progression},
     matches::Match,
     player::{Id as PlayerId, Participants, Player},
     seeding::{
@@ -32,15 +30,16 @@ impl Format {
     /// # Errors
     /// thrown when math overflow happens
     pub fn generate_matches(self, seeding: &[PlayerId]) -> Result<Vec<Match>, SeedingError> {
+        let seeding = Seeding::new(seeding.into()).unwrap();
         Ok(match self {
             Format::SingleElimination => get_balanced_round_matches_top_seed_favored(seeding)?,
             Format::DoubleElimination => {
                 let mut matches = vec![];
                 let mut winner_bracket_matches =
-                    get_balanced_round_matches_top_seed_favored(seeding)?;
+                    get_balanced_round_matches_top_seed_favored(seeding.clone())?;
                 matches.append(&mut winner_bracket_matches);
                 let mut looser_bracket_matches =
-                    get_loser_bracket_matches_top_seed_favored(seeding)?;
+                    get_loser_bracket_matches_top_seed_favored(&seeding.get())?;
                 matches.append(&mut looser_bracket_matches);
                 let grand_finals: Match = Match::new_empty([1, 2]);
                 matches.push(grand_finals);
@@ -51,11 +50,11 @@ impl Format {
         })
     }
 
-    // TODO remove abstraction? Putting stuff on the heap may not be necessary
+    // FIXME remove abstraction. Putting stuff on the heap may not be necessary
     /// Returns progression implementation for this bracket format
     ///
     /// # Panics
-    /// Panics if match generation of given format cannot generate match
+    /// if match generation of given format cannot generate match
     #[must_use]
     pub fn get_progression(
         &self,
@@ -64,10 +63,9 @@ impl Format {
         automatic_progression: bool,
     ) -> Box<dyn Progression> {
         match self {
-            Format::SingleElimination => Box::new(
-                SE_Step::new(Some(matches), &seeding.get_seeding(), automatic_progression)
-                    .expect("single elimination bracket state"),
-            ),
+            Format::SingleElimination => {
+                panic!()
+            }
             Format::DoubleElimination => Box::new(
                 DE_Step::new(
                     Some(matches),

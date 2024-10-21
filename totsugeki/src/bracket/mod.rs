@@ -6,10 +6,11 @@ mod disqualification;
 pub mod double_elimination_variant;
 mod getter_setter;
 pub mod matches;
-mod participants;
-mod progression;
+mod ongoing;
+pub mod participants;
+pub(crate) mod progression;
 mod query_state;
-mod seeding;
+pub mod seeding;
 pub mod single_elimination_variant;
 mod winner_bracket;
 
@@ -21,11 +22,9 @@ use crate::{
     seeding::{
         Error as SeedingError, Method as SeedingMethod, ParsingError as SeedingParsingError,
     },
-    DiscussionChannelId,
 };
 use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -41,6 +40,7 @@ pub enum Error {
     /// Unknown player provided for seeding
     #[error("Unknown player \"{0}\" cannot be used for seeding. Use the following players: {1} of bracket {2}")]
     UnknownPlayer(PlayerId, Participants, BracketId),
+    // FIXME remove variant
     /// Cannot add player when they are barred from entering
     #[error("Bracket \"{1}\" does not accept new participants")]
     BarredFromEntering(PlayerId, BracketId),
@@ -90,12 +90,6 @@ pub enum Error {
 /// Bracket identifier
 pub type Id = Uuid;
 
-/// Active brackets
-pub type ActiveBrackets = HashMap<DiscussionChannelId, Id>;
-
-/// Finalized brackets
-pub type FinalizedBrackets = HashSet<Id>;
-
 /// Add/remove players to the bracket. Then use methods to make the bracket
 /// progress.
 ///
@@ -105,11 +99,12 @@ pub type FinalizedBrackets = HashSet<Id>;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Bracket {
     /// Identifier of this bracket
-    bracket_id: Id,
+    id: Id,
     /// Name of this bracket
-    bracket_name: String,
+    name: String,
     /// Players of this bracket
     participants: Participants,
+    // FIXME move to instance XXXBracket
     /// Matches from this bracket, sorted by rounds
     matches: Vec<Match>,
     /// Bracket format
@@ -137,8 +132,8 @@ impl Bracket {
         automatic_match_validation: bool,
     ) -> Self {
         Self {
-            bracket_id: BracketId::new_v4(),
-            bracket_name: name.to_string(),
+            id: BracketId::new_v4(), // This is relied in database transaction so avoid changing
+            name: name.to_string(),
             participants: Participants::default(),
             matches: vec![],
             format,
@@ -150,23 +145,26 @@ impl Bracket {
         }
     }
 
+    /// Update name of bracket
+    #[must_use]
+    pub fn update_name(self, name: String) -> Bracket {
+        Self { name, ..self }
+    }
     /// Add participant to bracket
     ///
     /// # Errors
     /// when bracket has started
-    pub fn add_participant(&self, name: &str) -> Result<Bracket, Error> {
+    pub fn add_participant(&self, name: &str) -> Result<(Bracket, Player), Error> {
         if self.accept_match_results {
             return Err(Error::Started(
-                self.bracket_id,
+                self.id,
                 "Bracket has started. You may not enter at this time.".into(),
             ));
         }
-        let participants = self
-            .participants
-            .clone()
-            .add_participant(Player::new(name.into()))?;
+        let p = Player::new(name.into());
+        let participants = self.participants.clone().add_participant(p.clone())?;
         let bracket = self.clone().regenerate_matches(participants)?;
-        Ok(bracket)
+        Ok((bracket, p))
     }
 
     /// Report result for a match in this bracket. Returns updated bracket,
@@ -182,7 +180,7 @@ impl Bracket {
     ) -> Result<(Bracket, MatchId, Vec<Match>), Error> {
         if !self.accept_match_results {
             return Err(Error::NotStarted(
-                self.bracket_id,
+                self.id,
                 ". Match results are not yet accepted".into(),
             ));
         }
@@ -237,7 +235,7 @@ impl Bracket {
     pub fn start(self) -> Result<(Self, Vec<Match>), Error> {
         if self.matches.is_empty() {
             return Err(Error::NotStarted(
-                self.bracket_id,
+                self.id,
                 ". Matches need to be generated yet".into(),
             ));
         }
@@ -266,7 +264,7 @@ impl Bracket {
     /// Summarise bracket state
     #[must_use]
     pub fn summary(&self) -> String {
-        let mut r = self.bracket_name.to_string();
+        let mut r = self.name.to_string();
         for p in self.participants.get_players_list() {
             r = format!("{r}\n\t* {}", p.get_name());
         }
@@ -277,56 +275,56 @@ impl Bracket {
     }
 
     /// Add bracket id to error message and maps player name from player id
-    // NOTE: I hope there will be a better way to add additionnal info to an
+    // NOTE: I hope there will be a better way to add additional info to an
     // error because this does not scale over time
     pub(crate) fn get_from_progression_error(&self, pe: ProgressError) -> Error {
         match pe {
             ProgressError::Disqualified(player_id) => Error::Disqualified(
-                self.bracket_id,
+                self.id,
                 self.participants
                     .get(player_id)
                     .expect("disqualified player id"),
             ),
             ProgressError::NoNextMatch(player_id) => Error::NoNextMatch(
-                self.bracket_id,
+                self.id,
                 self.participants
                     .get(player_id)
                     .expect("player id with no next match"),
             ),
             ProgressError::Eliminated(player_id) => Error::Eliminated(
-                self.bracket_id,
+                self.id,
                 self.participants
                     .get(player_id)
                     .expect("eliminated player id"),
             ),
             ProgressError::PlayerIsNotParticipant(player_id) => Error::PlayerIsNotParticipant(
-                self.bracket_id,
+                self.id,
                 self.participants
                     .get(player_id)
                     .expect("player id of non-participant"),
             ),
             ProgressError::ForbiddenDisqualified(player_id) => Error::ForbiddenDisqualified(
-                self.bracket_id,
+                self.id,
                 self.participants
                     .get(player_id)
                     .expect("disqualified player id for which bracket update cannot be performed"),
             ),
             ProgressError::Seeding(e) => Error::Seeding(e),
-            ProgressError::NoGeneratedMatches => Error::NoGeneratedMatches(self.bracket_id),
-            ProgressError::TournamentIsOver => Error::TournamentIsOver(self.bracket_id),
-            ProgressError::MatchUpdate(me) => Error::MatchUpdate(self.bracket_id, me),
+            ProgressError::NoGeneratedMatches => Error::NoGeneratedMatches(self.id),
+            ProgressError::TournamentIsOver => Error::TournamentIsOver(self.id),
+            ProgressError::MatchUpdate(me) => Error::MatchUpdate(self.id, me),
             ProgressError::UnknownPlayer(player_id, _players) => {
-                Error::UnknownPlayer(player_id, self.participants.clone(), self.bracket_id)
+                Error::UnknownPlayer(player_id, self.participants.clone(), self.id)
             }
             ProgressError::NoMatchToPlay(player_id) => Error::NoMatchToPlay(
-                self.bracket_id,
+                self.id,
                 self.participants
                     .get(player_id)
                     .expect("disqualified player id for which bracket update cannot be performed"),
             ),
-            ProgressError::UnknownMatch(match_id) => Error::UnknownMatch(self.bracket_id, match_id),
+            ProgressError::UnknownMatch(match_id) => Error::UnknownMatch(self.id, match_id),
             ProgressError::NoMatchToUpdate(matches, m) => {
-                Error::NoMatchToUpdate(self.bracket_id, matches, m)
+                Error::NoMatchToUpdate(self.id, matches, m)
             }
         }
     }
@@ -354,50 +352,14 @@ pub enum ParsingError {
 
 impl std::fmt::Display for Bracket {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} ({})", self.bracket_name, self.bracket_id)
-    }
-}
-
-/// Parameters to create a bracket
-pub struct CreateRequest<'b> {
-    /// Automatically validate match if both players agree
-    pub automatic_match_validation: bool,
-    /// requested bracket format
-    pub bracket_format: &'b str,
-    /// requested bracket name
-    pub bracket_name: &'b str,
-    /// Id of internal channel
-    pub internal_channel_id: &'b str,
-    /// Organiser id of requested bracket while using service
-    pub internal_organiser_id: &'b str,
-    /// Organiser name of requested bracket
-    pub organiser_name: &'b str,
-    /// seeding method of requested bracket
-    pub seeding_method: &'b str,
-    /// Type of service used to make request
-    pub service: &'b str,
-    /// Advertised start time
-    pub start_time: &'b str,
-}
-
-impl TryFrom<CreateRequest<'_>> for Bracket {
-    type Error = ParsingError;
-
-    fn try_from(br: CreateRequest) -> Result<Self, Self::Error> {
-        Ok(Bracket::new(
-            br.bracket_name,
-            br.bracket_format.parse()?,
-            br.seeding_method.parse()?,
-            br.start_time.parse()?,
-            br.automatic_match_validation,
-        ))
+        write!(f, "{} ({})", self.name, self.id)
     }
 }
 
 impl Default for Bracket {
     fn default() -> Self {
         Bracket::new(
-            "new bracket",
+            "",
             Format::default(),
             SeedingMethod::default(),
             Utc.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap(),

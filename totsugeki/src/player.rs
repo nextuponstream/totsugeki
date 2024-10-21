@@ -66,16 +66,14 @@ impl Player {
 /// Player identifier
 pub type Id = Uuid;
 
+// FIXME you can use anonymous structure instead
 /// Participants of bracket
 ///
 /// Participants are ordered by seeding position from strongest to weakest
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
-pub struct Participants {
-    /// players from this group
-    participants: Vec<Player>,
-}
+pub struct Participants(Vec<Player>);
 
-/// Error while forming or querying group of players
+/// Error while updating or querying a group of players
 #[derive(Error, Debug, Eq, PartialEq)]
 pub enum Error {
     /// Player already exist in this group of player
@@ -94,19 +92,15 @@ impl Participants {
     ///
     /// # Errors
     /// thrown if player is already present
+    // FIXME only 1 error variant at play in this method, then extract error
+    // enum
     pub fn add_participant(self, new_player: Player) -> Result<Self, Error> {
-        if self
-            .participants
-            .iter()
-            .any(|p| p.get_id() == new_player.get_id())
-        {
+        if self.0.iter().any(|p| p.get_id() == new_player.get_id()) {
             Err(Error::AlreadyPresent)
         } else {
-            let mut updated_participants = self.participants;
+            let mut updated_participants = self.0;
             updated_participants.push(new_player);
-            Ok(Self {
-                participants: updated_participants,
-            })
+            Ok(Self(updated_participants))
         }
     }
 
@@ -130,7 +124,7 @@ impl Participants {
     /// Returns player if present
     #[must_use]
     pub fn get(&self, participant_id: PlayerId) -> Option<Player> {
-        self.participants
+        self.0
             .iter()
             .find(|p| p.get_id() == participant_id)
             .cloned()
@@ -139,16 +133,13 @@ impl Participants {
     /// Return participants as a list of players
     #[must_use]
     pub fn get_players_list(&self) -> Vec<Player> {
-        self.participants.clone()
+        self.0.clone()
     }
 
     /// Returns seeding, which is the players listed by ID
     #[must_use]
     pub fn get_seeding(&self) -> Vec<PlayerId> {
-        self.participants
-            .iter()
-            .map(Player::get_id)
-            .collect::<Vec<_>>()
+        self.0.iter().map(Player::get_id).collect::<Vec<_>>()
     }
 
     /// Returns true if both group of participants have the same players,
@@ -156,14 +147,14 @@ impl Participants {
     #[must_use]
     pub fn have_same_participants(&self, other_group: &Participants) -> bool {
         let mut players = self
-            .participants
+            .0
             .clone()
             .iter()
             .map(Player::get_id)
             .collect::<Vec<Id>>();
         players.sort();
         let mut other_players = other_group
-            .participants
+            .0
             .clone()
             .iter()
             .map(Player::get_id)
@@ -175,13 +166,13 @@ impl Participants {
     /// Returns `true` if there is no participants
     #[must_use]
     pub fn is_empty(&self) -> bool {
-        self.participants.is_empty()
+        self.0.is_empty()
     }
 
     /// Number of participants
     #[must_use]
     pub fn len(&self) -> usize {
-        self.participants.len()
+        self.0.len()
     }
 
     /// Remove participant
@@ -190,13 +181,12 @@ impl Participants {
     /// thrown if participant does not belong to this group
     #[must_use]
     pub fn remove(self, participant_id: PlayerId) -> Self {
-        Self {
-            participants: self
-                .participants
+        Self(
+            self.0
                 .into_iter()
                 .filter(|p| p.get_id() != participant_id)
                 .collect::<Vec<_>>(),
-        }
+        )
     }
 
     /// Add player to participants but does not check if player is already
@@ -207,11 +197,9 @@ impl Participants {
     /// Adding two same players may result in undefined behavior
     #[must_use]
     pub fn unchecked_add_participant(self, new_player: Player) -> Self {
-        let mut updated_participants = self.participants;
+        let mut updated_participants = self.0;
         updated_participants.push(new_player);
-        Self {
-            participants: updated_participants,
-        }
+        Self(updated_participants)
     }
 }
 
@@ -224,7 +212,7 @@ impl std::fmt::Display for Player {
 impl std::fmt::Display for Participants {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Players:")?;
-        for p in &self.participants {
+        for p in &self.0 {
             writeln!(f, "{p}")?;
         }
         Ok(())

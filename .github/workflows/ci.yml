@@ -1,5 +1,5 @@
 # https://github.com/actions-rs/meta/blob/d7602e71e8b4e6054edbeda7732ed0da8fbb8989/recipes/quickstart.md
-on: [push, pull_request]
+on: [ push, pull_request ]
 
 name: CI
 
@@ -62,7 +62,8 @@ jobs:
       # avoid connecting to database when building with SQLX_OFFLINE.
       # Otherwise, it will expect that migrations are ran and relations (like a
       # table 'users') are there to check all queries are valid.
-      - run: SQLX_OFFLINE=true cargo test -- --include-ignored
+      # --test-threads=1 may improve flakiness of sqlx test? https://github.com/launchbadge/sqlx/issues/2888
+      - run: SQLX_OFFLINE=true cargo test -- --include-ignored --test-threads=1
 
   lint-rust:
     name: Rustfmt
@@ -174,7 +175,7 @@ jobs:
         with:
           working-directory: tournament-organiser-web
           install: true
-          build: npm run build:ci 
+          build: npm run build:ci
           start: cargo run --package tournament-organiser-api --release
           wait-on: 'http://localhost:8080'
           wait-on-timeout: 30

@@ -120,7 +120,8 @@ mod tests {
         for i in 1..=n {
             bracket = bracket
                 .add_participant(format!("player {i}").as_str())
-                .expect("bracket");
+                .expect("bracket")
+                .0;
         }
 
         bracket

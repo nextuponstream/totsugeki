@@ -37,12 +37,35 @@ impl Bracket {
 }
 
 /// Get new matches using `old_matches` to play and new matches to play
-pub(crate) fn new_matches(old_matches: &[Match], new_matches: &[Match]) -> Vec<Match> {
-    new_matches
+pub(crate) fn new_matches_to_play_for_bracket(
+    old_matches_to_play: &[Match],
+    matches_to_play: &[Match],
+) -> Vec<Match> {
+    assert!(matches_to_play.iter().all(|m| m.needs_playing()));
+    assert!(
+        old_matches_to_play.iter().all(|m| m.needs_playing()),
+        "{:?}",
+        old_matches_to_play
+    );
+    let new_matches_to_play: Vec<Match> = matches_to_play
         .iter()
-        .filter(|m| !old_matches.iter().any(|old_m| old_m.get_id() == m.get_id()))
-        .map(std::clone::Clone::clone)
-        .collect()
+        .filter(|m| {
+            old_matches_to_play
+                .iter()
+                .all(|old_m| old_m.get_id() != m.get_id())
+        })
+        .map(Clone::clone)
+        .collect();
+
+    if new_matches_to_play.len() > 2 {
+        panic!(
+            "Misuse: when resolving in a bracket, the winner of the match goes to his next match \
+        and same thing for the loser. Therefore, there should be at most two new matches to play \
+         but found ({})",
+            new_matches_to_play.len()
+        )
+    }
+    new_matches_to_play
 }
 
 /// Returns winner of bracket
@@ -95,57 +118,6 @@ mod tests {
             match_id_1, match_id_2,
             "expected player to be playing the same match"
         );
-    }
-
-    #[test]
-    fn player_reports_before_tournament_organiser() {
-        // player 2 reports before TO does
-        let mut bracket = Bracket::new(
-            "",
-            Format::SingleElimination,
-            Method::Strict,
-            Utc.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap(),
-            true,
-        );
-        let mut player_ids = vec![PlayerId::new_v4()]; // padding for readability
-        for i in 1..=3 {
-            let player = Player::new(format!("p{i}"));
-            player_ids.push(player.get_id());
-            bracket = bracket.join(player).expect("bracket");
-        }
-
-        let (bracket, _) = bracket.start().expect("start");
-        assert_players_play_each_other(2, 3, &player_ids, &bracket);
-        let (bracket, _, _) = bracket
-            .report_result(player_ids[2], (2, 0))
-            .expect("bracket");
-        let (_, _, _) = bracket
-            .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[3])
-            .expect("bracket");
-
-        // player 3 reports before TO does
-        let mut bracket = Bracket::new(
-            "",
-            Format::SingleElimination,
-            Method::Strict,
-            Utc.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap(),
-            true,
-        );
-        let mut player_ids = vec![PlayerId::new_v4()]; // padding for readability
-        for i in 1..=3 {
-            let player = Player::new(format!("p{i}"));
-            player_ids.push(player.get_id());
-            bracket = bracket.join(player).expect("bracket");
-        }
-
-        let (bracket, _) = bracket.start().expect("start");
-        assert_players_play_each_other(2, 3, &player_ids, &bracket);
-        let (bracket, _, _) = bracket
-            .report_result(player_ids[3], (0, 2))
-            .expect("bracket");
-        let (_, _, _) = bracket
-            .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[3])
-            .expect("bracket");
     }
 
     #[test]

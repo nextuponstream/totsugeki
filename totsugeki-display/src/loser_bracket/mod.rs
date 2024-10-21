@@ -79,6 +79,10 @@ pub fn reorder(rounds: &mut [Vec<MinimalMatch>]) {
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::too_many_lines)]
 pub fn lines(rounds: Vec<Vec<MinimalMatch>>) -> Option<Vec<Vec<BoxElement>>> {
+    if rounds.is_empty() {
+        return Some(vec![]);
+    }
+
     let mut lines = vec![];
     let total_matches = rounds.iter().flatten().count();
 

@@ -48,6 +48,7 @@ async fn start(ctx: &Context, msg: &Message) -> CommandResult {
 
         let mut f = std::fs::OpenOptions::new()
             .create(true)
+            .truncate(false)
             .write(true)
             .open(Path::new(config.as_ref()))?;
         f.lock_exclusive().expect("lock"); // prevent concurrent access

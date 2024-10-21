@@ -11,6 +11,17 @@ interface Lines {
   bottom_border: boolean
 }
 
+interface Player {
+  id: string
+  name: string
+}
+
+interface RawBracket {
+  id?: string
+  name?: string
+  participants?: Player[]
+}
+
 interface Bracket {
   winner_bracket: Match[][]
   winner_bracket_lines: Lines[][]
@@ -18,5 +29,7 @@ interface Bracket {
   loser_bracket_lines: Lines[][]
   grand_finals: Match | undefined
   grand_finals_reset: Match | undefined
-  bracket: Object | undefined
+  bracket: RawBracket | undefined
+  is_participant: boolean
+  is_tournament_organiser: boolean
 }

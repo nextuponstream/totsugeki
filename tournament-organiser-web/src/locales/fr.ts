@@ -16,8 +16,11 @@ export default {
     confirmPassword: 'Confirmer le mot de passe',
     register: "S'inscrire",
     profile: 'Profil',
-    logout: 'Déconnextion',
+    logout: 'Déconnexion',
     delete: 'Supprimer',
+    name: 'Nom',
+    created_at: 'Date de création',
+    add: 'Ajouter',
   },
   error: {
     invalidEmail: 'Email invalide',
@@ -29,25 +32,38 @@ export default {
     unknownEmail: 'Email inconnu',
     communication:
       'Une erreur de communication est survenue. Veuillez faire une nouvelle tentative',
+    badPassword: 'Le mot de passe ne correspond pas.',
+  },
+  navbar: {
+    myBrackets: 'Mes brackets',
   },
   playerRegistrationForm: {
-    title: 'Enregistrer un nouveau joueur',
+    title: 'Enregistrement expédié',
     newPlayerPlaceholder: 'Nom du joueur',
     minimum: '{min} joueurs minimum',
+    hint: 'Ajouter des joueurs sans comptes...',
   },
   registration: {
     bracketNameLabel: 'Bracket',
-    startBracket: 'Démarrer',
+    startBracket: 'Créer la bracket',
   },
   playerSeeder: {
     title: 'Seeding',
     hint: 'Déplacer les joueurs pour mettre à jour le seeding',
     empty: "Aucun joueur n'a été enregistré...",
+    removeAllPlayers: 'Enlever tous les joueurs',
   },
   bracketView: {
     winnerBracket: 'Winner bracket',
     loserBracket: 'Loser bracket',
     hint: 'Veuillez cliquer un match pour entrer un résultat',
+    unsavedWarning:
+      'Ce tournoi ne sera pas sauvé. Veuillez vous connectez pour sauver le tournoi.',
+    saveBracket: 'Sauvegarder la bracket!',
+    notEnoughPlayersToDisplay:
+      "Il n'y a pas assez de joueurs pour afficher la bracket...",
+    copiedLinkToBracket: 'Lien de la bracket copié dans le presse-papier',
+    join: 'Rejoindre',
   },
   loginModal: {
     title: 'Connection',
@@ -67,5 +83,11 @@ export default {
     title: 'Supprimer le compte?',
     confirmWithMail: 'Veuillez tapez {email} pour continuer.',
     matchError: "L'email fourni n'est pas correspond pas à votre email",
+  },
+  login: 'Vous êtes maintenant connecté',
+  logout: 'Déconnexion réussie',
+  about: 'Totsugeki est un outil pour créer et manager des brackets.',
+  externalLink: {
+    hover: 'Copier le lien dans le presse-papier',
   },
 }

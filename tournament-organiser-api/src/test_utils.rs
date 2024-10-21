@@ -8,13 +8,15 @@ pub struct TestApp {
     /// http address of test app
     pub addr: String,
     /// http client with cookie jar to store sessions.
-    http_client: Client,
+    pub http_client: Client,
 }
 
 use super::*;
+use crate::brackets::{BracketState, CreateBracketForm};
 use reqwest::{Client, Response};
 use serde::Serialize;
 use tokio::net::TcpListener;
+
 /// Returns address to connect to new application (with random available port)
 ///
 /// Example: `http://0.0.0.0:43222`
@@ -33,9 +35,14 @@ pub async fn spawn_app(db: PgPool) -> TestApp {
         .with_expiry(Expiry::OnInactivity(Duration::hours(1)));
 
     tokio::spawn(async move {
-        axum::serve(listener, app(db).layer(session_layer).into_make_service())
-            .await
-            .unwrap();
+        axum::serve(
+            listener,
+            app(db, session_store)
+                .layer(session_layer)
+                .into_make_service(),
+        )
+        .await
+        .unwrap();
     });
 
     TestApp::new(format!("http://{addr}"))
@@ -96,12 +103,105 @@ impl TestApp {
             .expect("request done")
     }
 
-    /// `/api/user DELETE` Delete user if logged in. User deleted is logged in
-    /// user. You must login for this request to succeed.
+    /// `/api/users DELETE` Delete user if logged in. User deleted is logged-in
+    /// user. You must log in for this request to succeed.
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
     pub async fn delete_user(&self) -> Response {
         self.http_client
-            .delete(format!("{}/api/user", self.addr))
+            .delete(format!("{}/api/users", self.addr))
+            .send()
+            .await
+            .expect("request done")
+    }
+
+    /// Chains user registration and user login for a new user.
+    #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
+    pub async fn login_as_test_user(&self) {
+        let response = self
+            .register(&FormUserInput {
+                name: "jean".into(),
+                email: "jean@bon.ch".into(),
+                password: "verySecurePassword#123456789?".into(),
+            })
+            .await;
+
+        let status = response.status();
+        assert!(
+            status.is_success(),
+            "status: {status}, response: \"{}\"",
+            response.text().await.unwrap()
+        );
+
+        let response = self
+            .login(&LoginForm {
+                email: "jean@bon.ch".into(),
+                password: "verySecurePassword#123456789?".into(),
+            })
+            .await;
+
+        let status = response.status();
+        assert!(
+            status.is_success(),
+            "status: {status}, response: \"{}\"",
+            response.text().await.unwrap()
+        );
+    }
+
+    /// `/api/brackets` POST
+    #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
+    pub async fn create_bracket(&self, players: Vec<String>) -> Response {
+        let request = CreateBracketForm {
+            bracket_name: "placeholder".into(),
+            player_names: players,
+        };
+        self.http_client
+            .post(format!("{}/api/brackets", self.addr))
+            .json(&request)
+            .send()
+            .await
+            .expect("request done")
+    }
+
+    /// `/api/brackets/:id` GET
+    #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
+    pub async fn get_bracket(&self, id: Id) -> Response {
+        self.http_client
+            .get(format!("{}/api/brackets/{id}", self.addr))
+            .send()
+            .await
+            .expect("request done")
+    }
+
+    /// `/api/brackets` GET
+    #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
+    pub async fn list_brackets(&self, limit: u32, offset: u32) -> Response {
+        self.http_client
+            .get(format!(
+                "{}/api/brackets?limit={}&offset={}&sort_order=DESC",
+                self.addr, limit, offset
+            ))
+            .send()
+            .await
+            .expect("request done")
+    }
+
+    /// `/api/brackets/save` POST
+    #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
+    pub async fn save_bracket(&self, state: BracketState) -> Response {
+        let request = state;
+        self.http_client
+            .post(format!("{}/api/brackets/save", self.addr))
+            .json(&request)
+            .send()
+            .await
+            .expect("request done")
+    }
+
+    /// `/api/brackets/:bracket_id/join` POST
+    #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
+    pub async fn join_bracket(&self, bracket_id: Id) -> Response {
+        self.http_client
+            .post(format!("{}/api/brackets/{}/join", self.addr, bracket_id))
             .send()
             .await
             .expect("request done")

@@ -1,7 +1,7 @@
 <template>
   <BaseModal
     v-model="showModal"
-    :title="$t('loginModal.title')"
+    :title="t('loginModal.title')"
     @hide="hideModal"
   >
     <form
@@ -11,14 +11,14 @@
       name="login"
       @submit="submitForm"
     >
-      <label>{{ $t('generic.email') }}</label>
+      <label>{{ t('generic.email') }}</label>
       <FormInput name="email" type="email" />
-      <label>{{ $t('generic.password') }}</label>
+      <label>{{ t('generic.password') }}</label>
       <FormInput name="password" type="password" />
       <div class="mt-2">
-        {{ $t('loginModal.text1') }}
+        {{ t('loginModal.text1') }}
         <BaseLink href="/register" class="">
-          {{ $t('loginModal.text2') }}
+          {{ t('loginModal.text2') }}
         </BaseLink>
       </div>
       <SubmitBtn class="self-end" />
@@ -28,18 +28,23 @@
 <script setup lang="ts">
 // NOTE submit button on the left for forms, right for modals (recommendation https://ux.stackexchange.com/a/13539)
 import { useForm } from 'vee-validate'
-import { ref, watchEffect, provide } from 'vue'
-import BaseModal from './ui/BaseModal.vue'
-import router from '@/router'
+import { ref, provide, computed } from 'vue'
+import BaseModal from './ui/modals/BaseModal.vue'
+import router, { RouteNames } from '@/router'
 import { useI18n } from 'vue-i18n'
-import { object, string, ref as yupref } from 'yup'
+import { object, string } from 'yup'
+import { useUserStore } from '@/stores/user'
+import { useBracketStore } from '@/stores/bracket'
+import { useToastStore } from '@/stores/toast'
+import { useModalStore } from '@/stores/modal'
+import { prefixKey } from '@/config'
 
 const { t } = useI18n({})
+const userStore = useUserStore()
+const bracketStore = useBracketStore()
+const modalStore = useModalStore()
+const toastStore = useToastStore()
 
-const props = defineProps<{
-  modelValue: boolean
-}>()
-const showModal = ref(false)
 const schema = object({
   email: string()
     .email(() => t('error.invalidEmail'))
@@ -48,18 +53,9 @@ const schema = object({
     .required(() => t('error.required'))
     .min(8, () => t('error.minimum', { min: 8 })),
 })
-const emits = defineEmits(['update:modelValue', 'login'])
 
 const formErrors = ref({})
 provide('formErrors', formErrors)
-
-watchEffect(() => {
-  showModal.value = props.modelValue
-})
-
-function hideModal() {
-  emits('update:modelValue', false)
-}
 
 const { resetForm, defineField, handleSubmit, setFieldError } = useForm({
   validationSchema: schema,
@@ -72,49 +68,51 @@ function onInvalidSubmit({ values, errors, results }: any) {
   formErrors.value = { ...errors }
   console.error('invalid form data')
 }
+
+const showModal = computed(() => {
+  return modalStore.activeModal === 'login'
+})
+
+function hideModal() {
+  modalStore.activeModal = null
+}
+
 /**
  * @param values validated form data
  */
 async function onSubmit(values: any) {
   formErrors.value = {}
-  try {
-    let response = await fetch(`${import.meta.env.VITE_API_URL}/api/login`, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        Authorization: 'Basic ' + btoa(`${values.email}:${values.password}`),
-      },
-      credentials: 'same-origin',
-      body: JSON.stringify({ ...values }),
-    })
-    if (response.ok) {
-      console.info('successful login')
-      if (response.body) {
-        let body = await response.json()
-        // store user ID and prefer logged in view from now on
-        localStorage.setItem('user_id', body.user_id)
-        router.push({
-          name: 'userDashboard',
-        })
-        emits('login')
+  let response = await userStore.login(values)
+  switch (response) {
+    case 200:
+      modalStore.activeModal = null
+      toastStore.success(t('login'))
+      if (bracketStore.isSaved) {
+        await router.push({ name: RouteNames.user.dashboard })
       } else {
-        throw new Error('expected json response')
+        await router.push({ name: RouteNames.bracket.guest })
       }
-    } else if (response.status === 404) {
+
+      break
+    case 401:
+      setFieldError('password', t('error.badPassword'))
+      break
+    case 404:
       console.warn('unknown email')
       setFieldError('email', t('error.unknownEmail'))
-    } else {
+      break
+    case 500:
       setFieldError('email', t('error.communication'))
-      throw new Error('non-200 response for /api/login')
-    }
-  } catch (e) {
-    setFieldError('email', t('error.communication'))
-    console.error(e)
+      break
+    default:
+      console.error('unreachable')
+      break
   }
 }
 
 const submitForm = handleSubmit((values: any) => {
   onSubmit(values)
 }, onInvalidSubmit)
+
+provide(prefixKey, 'login')
 </script>

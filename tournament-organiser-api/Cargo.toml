@@ -6,10 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axum = "0.7.4"
-axum-extra = "0.9.0"
+axum = { version = "0.7.5", features = ["macros"] }
+axum-extra = "0.9.3"
 http = "1.0.0"
-serde = { version = "1.0.171", features = ["derive"]}
+serde = { version = "1.0.171", features = ["derive"] }
 tokio = { version = "1.0", features = ["full"] }
 tower = { version = "0.4", features = ["util"] }
 tower-http = { version = "0.5.1", features = ["fs", "trace", "cors"] }
@@ -20,7 +20,7 @@ totsugeki-display = { path = "../totsugeki-display" }
 # like in the zero2prod book
 # I don't like that sqlx might have a huge breaking change when going 1.0 but
 # that's life
-sqlx = { version = "0.7.3", features = [ "runtime-tokio", "tls-rustls", "postgres", "uuid", "chrono" ] }
+sqlx = { version = "0.7.3", features = ["runtime-tokio", "tls-rustls", "postgres", "uuid", "chrono", "json"] }
 chrono = "0.4.31"
 reqwest = { version = "0.11.24", features = ["json", "cookies"] }
 secrecy = { version = "0.8.0", features = ["serde"] }
@@ -30,5 +30,8 @@ base64 = "0.21.7"
 zxcvbn = "2.2.2"
 axum-macros = "0.4.1"
 tower-sessions = "0.10.1"
-time = "0.3.32"
+time = "0.3.36"
 tower-sessions-sqlx-store = { version = "0.10.0", features = ["postgres"] }
+validator = { version = "0.16.1", features = ["derive"] }
+async-trait = "0.1.77"
+thiserror = "1.0.57"

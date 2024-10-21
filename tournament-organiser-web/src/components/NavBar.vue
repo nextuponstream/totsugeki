@@ -1,94 +1,51 @@
 <template>
   <div
-    class="flex flex-wrap items-center justify-between px-2 py-2 bg-emerald-700 mb-3"
+    class="grid grid-cols-2 items-center px-2 py-4 bg-emerald-700 mb-3"
+    data-test-id="navbar"
   >
-    <NavLink to="/" text="Home" />
     <div class="flex gap-2 items-center">
-      <select
-        class="my-1 px-1 py-1 block rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-        @input="changeLocale"
+      <NavLink data-test-id="menu" @click="toggleMenu">
+        <i class="pi pi-bars"></i>
+      </NavLink>
+      <NavLink to="/" text="Home" />
+    </div>
+    <div class="flex gap-2 items-center justify-self-end">
+      <SelectLanguage v-if="!showMenu"></SelectLanguage>
+      <NavLink
+        v-if="!showMenu"
+        to="/about"
+        data-test-id="about"
+        class="hidden sm:block"
       >
-        <option
-          v-for="supportedLocale in supportedLocales"
-          :key="supportedLocale"
-          :value="supportedLocale"
-        >
-          {{ supportedLocale }}
-        </option>
-      </select>
-      <NavLink to="/about" data-test-id="about">
         {{ $t('generic.about') }}
       </NavLink>
-      <NavLink v-if="model" to="/user/dashboard">{{
-        $t('generic.profile')
-      }}</NavLink>
-      <NavLink v-if="model" @click="logout">{{ $t('generic.logout') }}</NavLink>
-      <NavLink v-else data-test-id="register" @click="showRegistrationModal">
-        {{ $t('generic.registerLogin') }}
-        <i class="pi pi-user" />
+      <NavLink
+        v-if="userStore.id && !showMenu"
+        to="/user/dashboard"
+        class="hidden sm:block"
+        >{{ $t('generic.profile') }}
       </NavLink>
+      <RegisterLogin v-if="!showMenu"></RegisterLogin>
     </div>
   </div>
-  <UserLoginModal v-model="registrationModal" @login="login" />
+  <UnsavedBracketModal v-model="unsavedBracketModal"></UnsavedBracketModal>
 </template>
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
 import NavLink from './NavLink.vue'
-import { onMounted, ref } from 'vue'
-import UserLoginModal from './UserLoginModal.vue'
-import router from '@/router'
+import { inject, ref } from 'vue'
+import UnsavedBracketModal from './UnsavedBracketModal.vue'
+import { useUserStore } from '@/stores/user'
+import { showMenuKey } from '@/config'
+import SelectLanguage from '@/components/ui/SelectLanguage.vue'
+import RegisterLogin from '@/components/ui/RegisterLogin.vue'
 
-const supportedLocales = ['en', 'fr']
+const userStore = useUserStore()
+const emits = defineEmits(['toggleMenu'])
+const showMenu = inject(showMenuKey)
 
-const { locale } = useI18n({})
-const registrationModal = ref(false)
+const unsavedBracketModal = ref(false)
 
-const model = defineModel()
-
-onMounted(() => {
-  refresh()
-})
-
-function refresh() {
-  let userId = localStorage.getItem('user_id')
-  model.value = userId !== null
-}
-
-function changeLocale(value: any) {
-  locale.value = value.target.value
-}
-
-function showRegistrationModal() {
-  registrationModal.value = true
-}
-
-function login() {
-  registrationModal.value = false
-  refresh()
-}
-
-async function logout() {
-  try {
-    let response = await fetch(`${import.meta.env.VITE_API_URL}/api/logout`, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      credentials: 'same-origin',
-    })
-    if (response.ok) {
-      console.info('successful logout')
-      localStorage.removeItem('user_id')
-      refresh()
-      router.push({
-        name: 'createBracket',
-      })
-    } else {
-      throw new Error('non-200 response for /api/logout')
-    }
-  } catch (e) {
-    console.error(e)
-  }
+function toggleMenu() {
+  emits('toggleMenu')
 }
 </script>

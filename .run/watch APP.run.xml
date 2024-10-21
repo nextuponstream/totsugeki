@@ -1,0 +1,22 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="watch APP" type="ShConfigurationType">
+    <option name="SCRIPT_TEXT" value="cargo watch -w tournament-organiser-web/src -w tournament-organiser-api -s 'npm --prefix tournament-organiser-web run build &amp;&amp; cargo run --package tournament-organiser-api'" />
+    <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
+    <option name="SCRIPT_PATH" value="" />
+    <option name="SCRIPT_OPTIONS" value="" />
+    <option name="INDEPENDENT_SCRIPT_WORKING_DIRECTORY" value="true" />
+    <option name="SCRIPT_WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <option name="INDEPENDENT_INTERPRETER_PATH" value="true" />
+    <option name="INTERPRETER_PATH" value="/usr/bin/zsh" />
+    <option name="INTERPRETER_OPTIONS" value="" />
+    <option name="EXECUTE_IN_TERMINAL" value="true" />
+    <option name="EXECUTE_SCRIPT_FILE" value="false" />
+    <envs>
+      <env name="BUILD_PATH_TOURNAMENT_ORGANISER_WEB" value="tournament-organiser-web/dist" />
+      <env name="DB_PASSWORD" value="toa" />
+      <env name="DB_USERNAME" value="toa" />
+      <env name="DB_NAME" value="toa" />
+    </envs>
+    <method v="2" />
+  </configuration>
+</component>

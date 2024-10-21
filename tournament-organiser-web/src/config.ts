@@ -1,1 +1,4 @@
-export const BASE_URL = import.meta.env.VITE_BASE_URL ?? 'http://localhost:5173'
+import type { InjectionKey, Ref } from 'vue'
+
+export const showMenuKey = Symbol() as InjectionKey<Ref<Boolean | null>>
+export const prefixKey = Symbol() as InjectionKey<string>
