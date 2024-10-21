@@ -30,11 +30,24 @@ impl DoubleEliminationBracket {
             return Err(Error::Eliminated);
         }
 
+        // did they won grand final as the highest seed? That means tournament
+        // is over
+        let grand_final = self.matches[self.matches.len() - 2];
+        if let Opponent::Player(winner) = grand_final.winner {
+            if let Opponent::Player(higher_seed) = grand_final.players[0] {
+                if player_id == higher_seed && higher_seed == winner {
+                    return Err(Error::TournamentWon);
+                }
+            }
+        }
+
+        // Let's look at the next match if any
         let next_match = self
             .matches
             .iter()
             .find(|m| m.contains(player_id) && m.get_winner() == Opponent::Unknown);
         let Some(relevant_match) = next_match else {
+            // No next match? Did they win through bracket reset?
             let last_match = self.matches.iter().last().expect("last match");
             return match last_match.get_winner() {
                 Opponent::Player(p) if p == player_id => Err(Error::TournamentWon),
@@ -42,6 +55,7 @@ impl DoubleEliminationBracket {
             };
         };
 
+        // Determine opponent by taking the other player
         let opponent = match relevant_match.get_players() {
             [Opponent::Player(p1), Opponent::Player(p2)] if p1 == player_id => Opponent::Player(p2),
             [Opponent::Player(p1), Opponent::Player(p2)] if p2 == player_id => Opponent::Player(p1),
