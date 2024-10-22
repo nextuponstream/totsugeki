@@ -216,10 +216,19 @@ impl Match {
         )
     }
 
-    /// True if all players involved in match have reported a result
+    /// Returns `true` when all players involved in match have reported a
+    /// result, `false` otherwise
     pub fn has_all_player_reports(&self) -> bool {
         match self.reported_results {
             [Some(_r1), Some(_r2)] => true,
+            _ => false,
+        }
+    }
+
+    /// Returns `true` when both players are present, `false` otherwise
+    pub fn both_opponents_are_present(&self) -> bool {
+        match self.players {
+            [Opponent::Player(_), Opponent::Player(_)] => true,
             _ => false,
         }
     }
@@ -441,6 +450,21 @@ impl Match {
         }
     }
 
+    /// Set looser of this match (when disqualified)
+    ///
+    /// # Panics
+    /// * looser is not a participant of the match
+    pub fn set_automatic_loser_(&mut self, player_id: PlayerId) {
+        assert!(self.contains(player_id), "player {} in match", player_id);
+
+        let loser = match self.players {
+            [Opponent::Player(p1), _] if p1 == player_id => self.players[0],
+            [_, Opponent::Player(p2)] if p2 == player_id => self.players[1],
+            _ => Opponent::Unknown,
+        };
+
+        self.automatic_loser = loser;
+    }
     /// Set looser of this match (when disqualified)
     ///
     /// # Errors

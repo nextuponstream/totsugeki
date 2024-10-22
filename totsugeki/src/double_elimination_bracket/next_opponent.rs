@@ -65,7 +65,8 @@ impl DoubleEliminationBracket {
         Ok(Some((opponent, relevant_match.get_id())))
     }
 
-    fn is_eliminated(&self, player_id: ID) -> bool {
+    /// Returns `true` if player is eliminated from bracket
+    pub fn is_eliminated(&self, player_id: ID) -> bool {
         let losses = self
             .matches
             .iter()
