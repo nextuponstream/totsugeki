@@ -10,6 +10,7 @@ use crate::{
     matches::Id as MatchId,
     opponent::{Opponent, ParsingOpponentError},
     player::{Id as PlayerId, Participants, Player},
+    ID,
 };
 use serde::{Deserialize, Serialize};
 use std::{num::ParseIntError, str::FromStr};
@@ -239,7 +240,7 @@ impl Match {
 ///
 /// Assumes `matches` are ordered as follows: [winner bracket, loser bracket,
 /// grand final, grand final reset]
-pub(crate) fn partition_double_elimination_matches(
+pub fn partition_double_elimination_matches(
     matches: &[Match],
     n: usize,
 ) -> (Vec<Match>, Vec<Match>, Match, Match) {
@@ -559,7 +560,7 @@ impl Match {
     }
 
     /// Set match outcome using reported results. Returns updated match, winner
-    /// id and looser id.
+    /// id (if possible) and looser id.
     ///
     /// When a player is disqualified (through `automatic_loser`), then outcome
     /// can be updated.
@@ -568,7 +569,7 @@ impl Match {
     /// Returns an error if reported scores don't agree on the winner
     /// # Panics
     /// When one of the players did not report match result
-    pub(crate) fn update_outcome(self) -> Result<(Match, PlayerId, PlayerId), Error> {
+    pub(crate) fn update_outcome(self) -> Result<(Match, Option<ID>, PlayerId), Error> {
         // if there is a disqualified player, try to set the winner
         if let Opponent::Player(dq_player) = self.automatic_loser {
             return match self.players {
@@ -577,7 +578,7 @@ impl Match {
                         winner: Opponent::Player(p2),
                         ..self
                     },
-                    p2,
+                    Some(p2),
                     dq_player,
                 )),
                 [Opponent::Player(p1), Opponent::Player(p2)] if p2 == dq_player => Ok((
@@ -585,11 +586,26 @@ impl Match {
                         winner: Opponent::Player(p1),
                         ..self
                     },
-                    p1,
+                    Some(p1),
                     dq_player,
                 )),
-                // TODO add test for bracket of 3 person, 1st seed is DQ'ed
-                _ => Err(Error::MissingOpponent(self.players)),
+                [Opponent::Player(p1), Opponent::Unknown] if p1 == dq_player => Ok((
+                    Self {
+                        winner: Opponent::Unknown,
+                        ..self
+                    },
+                    None,
+                    dq_player,
+                )),
+                [Opponent::Unknown, Opponent::Player(p2)] if p2 == dq_player => Ok((
+                    Self {
+                        winner: Opponent::Unknown,
+                        ..self
+                    },
+                    None,
+                    dq_player,
+                )),
+                _ => unreachable!(),
             };
         }
 
@@ -645,7 +661,7 @@ impl Match {
                 automatic_loser: self.automatic_loser,
                 reported_results: self.reported_results,
             },
-            winner,
+            Some(winner),
             loser,
         ))
     }

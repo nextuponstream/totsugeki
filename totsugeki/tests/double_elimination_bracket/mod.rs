@@ -3,7 +3,7 @@
 use totsugeki::double_elimination_bracket::next_opponent::Error;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
 
-mod disqualify_from_bracket;
+pub mod disqualify_from_bracket;
 mod flexible_validation;
 mod strict_validation;
 

@@ -7,7 +7,7 @@ use crate::opponent::Opponent;
 use crate::seeding::double_elimination_seeded_bracket::get_loser_bracket_matches_top_seed_favored;
 use crate::validation::AutomaticMatchValidationMode;
 
-mod disqualification;
+pub mod disqualification;
 mod getters;
 pub mod next_opponent;
 // FIXME refactor everything double elimination bracket here

@@ -10,7 +10,6 @@ use crate::{
     seeding::Error as SeedingError,
     ID,
 };
-use std::fmt::format;
 use thiserror::Error;
 
 pub mod double_elimination_format;
@@ -125,15 +124,9 @@ pub(crate) fn update(bracket_matches: &[Match], match_id: MatchId) -> Result<Bra
     let expected_loser_seed = updated_m.get_seeds()[1];
     let bracket = update_bracket_with(bracket_matches, &updated_m);
 
-    let last_match = bracket.last().expect("last match in bracket");
-    match (last_match.get_id(), last_match.get_winner()) {
-        (id, Opponent::Player(_)) if id == match_id => {
-            return Ok((bracket, Some((loser, expected_loser_seed, is_disqualified))))
-        }
-        (id, Opponent::Unknown) if id == match_id => {
-            panic!("No winner of bracket declared when updating bracket finalists match")
-        }
-        _ => {}
+    let last_match = bracket.last().expect("there should be matches in bracket");
+    if last_match.get_id() == m.id {
+        return Ok((bracket, Some((loser, expected_loser_seed, is_disqualified))));
     }
 
     // winner moves forward in bracket
@@ -142,11 +135,17 @@ pub(crate) fn update(bracket_matches: &[Match], match_id: MatchId) -> Result<Bra
         .position(|m| m.get_id() == updated_m.get_id())
         .expect("reference to updated match");
     let mut iter = bracket.iter().skip(index + 1);
-    let m = iter
-        .find(|m| m.get_seeds().contains(&seed_of_expected_winner))
-        .expect("match where winner of updated match plays next");
-    let updated_match = (*m).insert_player(winner, m.get_seeds()[0] == seed_of_expected_winner);
-    let mut bracket = update_bracket_with(&bracket, &updated_match);
+    let mut bracket = match winner {
+        Some(winner_id) => {
+            let m = iter
+                .find(|m| m.get_seeds().contains(&seed_of_expected_winner))
+                .expect("match where winner of updated match plays next");
+            let updated_match =
+                (*m).insert_player(winner_id, m.get_seeds()[0] == seed_of_expected_winner);
+            update_bracket_with(&bracket, &updated_match)
+        }
+        None => bracket,
+    };
 
     // looser drops to loser bracket in double elimination format
 
