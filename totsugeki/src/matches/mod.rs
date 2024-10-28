@@ -235,6 +235,7 @@ impl Match {
     }
 }
 
+// FIXME should belong only to double elimination bracket struct
 /// Partitions double elimination bracket matches in winner bracket, looser
 /// bracket, grand finals and grand finals reset for `n` players
 ///
