@@ -1,7 +1,5 @@
 //! Manage matches from double elimination bracket
 
-mod disqualification;
-
 use super::{
     assert_disqualified_at_most_once, assert_match_is_well_formed, update_bracket_with, Error,
     Progression,
