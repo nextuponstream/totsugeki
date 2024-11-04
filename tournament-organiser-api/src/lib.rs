@@ -17,6 +17,7 @@ pub(crate) mod repositories;
 pub mod resources;
 mod router;
 pub mod test_utils;
+pub mod tournaments;
 pub mod users;
 
 use crate::router::api;

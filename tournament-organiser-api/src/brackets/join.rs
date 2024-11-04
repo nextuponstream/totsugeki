@@ -2,7 +2,7 @@
 
 use crate::brackets::breakdown;
 use crate::http::{internal_error, ErrorSlug};
-use crate::repositories::brackets::{BracketRepository, Error};
+use crate::repositories::brackets::{Error, TournamentService};
 use crate::repositories::users::UserRepository;
 use crate::users::session::Keys::UserId;
 use axum::extract::{Path, State};
@@ -17,10 +17,10 @@ use tracing::instrument;
 #[instrument(name = "join_bracket", skip(session, pool))]
 pub(crate) async fn join_bracket(
     session: Session,
-    Path(bracket_id): Path<Id>,
+    Path(tournament_id): Path<Id>,
     State(pool): State<PgPool>,
 ) -> impl IntoResponse {
-    tracing::debug!("bracket {bracket_id}");
+    tracing::debug!("tournament {tournament_id}");
     let user_id: totsugeki::player::Id = session
         .get(&UserId.to_string())
         .await
@@ -39,10 +39,10 @@ pub(crate) async fn join_bracket(
             return Err(ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR));
         }
     };
-    let (bracket, is_tournament_organiser) =
+    let (tournament, bracket, is_tournament_organiser) =
         // FIXME make all errors from totsugeki library simple to parse and not a big enum when some
         //  enum variants are simply irrelevant for some methods
-        match BracketRepository::join(&mut transaction, bracket_id, user).await {
+        match TournamentService::join(&mut transaction, tournament_id, user).await {
             Ok(Some(data)) => data,
             Ok(None) => return Err(ErrorSlug::from(StatusCode::NOT_FOUND)),
             Err(Error::PlayerAlreadyPresent)=> {
@@ -54,5 +54,10 @@ pub(crate) async fn join_bracket(
             }
         };
 
-    Ok(breakdown(bracket, Some(user_id), is_tournament_organiser))
+    Ok(breakdown(
+        tournament,
+        bracket,
+        Some(user_id),
+        is_tournament_organiser,
+    ))
 }

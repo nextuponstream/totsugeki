@@ -2,7 +2,7 @@
 
 use crate::brackets::{breakdown, ReportResultInput};
 use crate::http::{internal_error, ErrorSlug};
-use crate::repositories::brackets::BracketRepository;
+use crate::repositories::brackets::TournamentService;
 use axum::extract::{Path, State};
 use axum::response::IntoResponse;
 use axum::Json;
@@ -26,21 +26,24 @@ use tracing::instrument;
 #[instrument(name = "update_with_result", skip(report, pool))]
 pub async fn update_with_result(
     State(pool): State<PgPool>,
-    Path(bracket_id): Path<Id>,
+    Path(tournament_id): Path<Id>,
     Json(report): Json<ReportResultInput>,
 ) -> impl IntoResponse {
     // FIXME check if user can edit bracket using tournament_organisers table
     tracing::debug!("new reported result");
     let mut transaction = pool.begin().await.map_err(internal_error)?;
-    let bracket =
-        match BracketRepository::update_with_result(&mut transaction, bracket_id, &report).await {
+    let (tournament, bracket) =
+        match TournamentService::update_with_result(&mut transaction, tournament_id, &report).await
+        {
             Ok(Some(bracket)) => bracket,
             Ok(None) => return Err(ErrorSlug::from(StatusCode::NOT_FOUND)),
             Err(e) => {
-                tracing::warn!("Cannot update bracket {bracket_id} with result {report:?}: {e:?}");
+                tracing::warn!(
+                    "Cannot update bracket {tournament_id} with result {report:?}: {e:?}"
+                );
                 return Err(ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR));
             }
         };
     transaction.commit().await.map_err(internal_error)?;
-    Ok(breakdown(bracket, None, true))
+    Ok(breakdown(tournament, bracket, None, true))
 }

@@ -1,3 +1,3 @@
 -- Add down migration script here
-ALTER TABLE brackets
-DROP COLUMN participants;
+ALTER TABLE tournaments
+    DROP COLUMN participants;

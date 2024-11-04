@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO brackets (id, name, matches, participants) VALUES ($1, $2, $3, $4)",
+  "query": "INSERT INTO tournaments (id, name, matches, participants) VALUES ($1, $2, $3, $4)",
   "describe": {
     "columns": [],
     "parameters": {
@@ -13,5 +13,5 @@
     },
     "nullable": []
   },
-  "hash": "bf476267c114cf5c6e4cbb7052c6a7d9e78ba9e604f1630b10a3377699d1ad32"
+  "hash": "f09129e9636f31a1a83f920efffe51c012ad7cf391291306a33d82be22a595c5"
 }

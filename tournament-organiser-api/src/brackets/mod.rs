@@ -22,15 +22,17 @@ pub(crate) use crate::brackets::update_with_result::*;
 pub(crate) use crate::brackets::user_brackets::*;
 
 use crate::repositories::brackets::MatchesRaw;
+use crate::tournaments::Tournament;
 use axum::{response::IntoResponse, Json as AxumJson};
 use chrono::prelude::*;
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::types::Json as SqlxJson;
-use totsugeki::bracket::{
-    double_elimination_variant::Variant as DoubleEliminationVariant, Bracket, Id,
-};
+use totsugeki::bracket::seeding::Seeding;
+use totsugeki::bracket::{Bracket, Id};
+use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki::player::{Id as PlayerId, Participants, Player};
+use totsugeki::validation::AutomaticMatchValidationMode;
 use totsugeki_display::loser_bracket::lines as loser_bracket_lines;
 use totsugeki_display::loser_bracket::reorder as reorder_loser_bracket;
 use totsugeki_display::winner_bracket::lines as winner_bracket_lines;
@@ -42,7 +44,9 @@ use validator::Validate;
 #[derive(Debug, Deserialize)]
 pub struct ReportResultInput {
     /// current state of the bracket
-    pub bracket: Bracket,
+    pub bracket: DoubleEliminationBracket,
+    /// tournament
+    pub tournament: Tournament,
     /// First player
     pub p1_id: PlayerId,
     /// Second player
@@ -70,7 +74,7 @@ pub struct BracketDisplay {
     /// Grand finals reset
     pub grand_finals_reset: Option<MinimalMatch>,
     /// Bracket object to update
-    pub bracket: Bracket,
+    pub bracket: DoubleEliminationBracket,
     /// true if user requesting the data is also a TO
     pub is_tournament_organiser: bool,
     /// true if user requesting the data participates
@@ -117,21 +121,19 @@ pub struct BracketState {
 
 /// Breaks down bracket in small parts to be presented by UI
 fn breakdown(
-    bracket: Bracket,
+    tournament: Tournament,
+    bracket: DoubleEliminationBracket,
     user_id: Option<totsugeki::player::Id>,
     is_tournament_organiser: bool,
 ) -> impl IntoResponse {
-    let dev: DoubleEliminationVariant = bracket.clone().try_into().expect("partition");
-
     // TODO test if tracing shows from which methods it was called
-    let winner_bracket_matches = dev.partition_winner_bracket();
-    let winner_bracket_rounds = match winner_bracket_matches.clone() {
-        Some(winner_bracket_matches) => {
+    let winner_bracket_rounds = match bracket.partition_winner_bracket() {
+        Ok(winner_bracket_matches) => {
             let mut winner_bracket_rounds = vec![];
             for r in winner_bracket_matches {
                 let round = r
                     .iter()
-                    .map(|m| from_participants(m, &bracket.get_participants()))
+                    .map(|m| from_participants(m, &tournament.get_participants().0))
                     .collect();
                 winner_bracket_rounds.push(round);
             }
@@ -139,45 +141,44 @@ fn breakdown(
             reorder_winner_bracket(&mut winner_bracket_rounds);
             Some(winner_bracket_rounds)
         }
-        None => None,
+        Err(totsugeki::bracket::PartitionError::NotEnoughPlayersInBracket) => None,
     };
     let maybe_winner_bracket_lines = match winner_bracket_rounds.clone() {
         Some(winner_bracket_rounds) => winner_bracket_lines(&winner_bracket_rounds),
         None => None,
     };
 
-    let lower_bracket_matches = dev.partition_loser_bracket();
-    let loser_bracket_rounds = match lower_bracket_matches {
-        Some(lower_bracket_matches) => {
+    let loser_bracket_rounds = match bracket.partition_loser_bracket() {
+        Ok(lower_bracket_matches) => {
             let mut loser_bracket_rounds: Vec<Vec<MinimalMatch>> = vec![];
             for r in lower_bracket_matches {
                 let round = r
                     .iter()
-                    .map(|m| from_participants(m, &bracket.get_participants()))
+                    .map(|m| from_participants(m, &tournament.get_participants().0))
                     .collect();
                 loser_bracket_rounds.push(round);
             }
             reorder_loser_bracket(&mut loser_bracket_rounds);
             Some(loser_bracket_rounds)
         }
-        None => None,
+        Err(totsugeki::bracket::PartitionError::NotEnoughPlayersInBracket) => None,
     };
     let maybe_loser_bracket_lines = match loser_bracket_rounds.clone() {
         Some(loser_bracket_rounds) => loser_bracket_lines(loser_bracket_rounds),
         None => None,
     };
 
-    let (gf, gf_reset) = match dev.grand_finals_and_reset() {
-        Some((gf, gf_reset)) => {
-            let gf = from_participants(&gf, &bracket.get_participants());
-            let gf_reset = from_participants(&gf_reset, &bracket.get_participants());
+    let (gf, gf_reset) = match bracket.grand_finals_and_reset() {
+        Ok((gf, gf_reset)) => {
+            let gf = from_participants(&gf, &tournament.get_participants().0);
+            let gf_reset = from_participants(&gf_reset, &tournament.get_participants().0);
             (Some(gf), Some(gf_reset))
         }
-        None => (None, None),
+        Err(totsugeki::bracket::PartitionError::NotEnoughPlayersInBracket) => (None, None),
     };
 
     let is_participant = match user_id {
-        Some(participant_id) => bracket.get_participants().get(participant_id).is_some(),
+        Some(participant_id) => bracket.get_seeding().contains(participant_id),
         None => false,
     };
 
@@ -192,7 +193,7 @@ fn breakdown(
         is_participant,
         is_tournament_organiser,
     };
-    tracing::info!("displaying bracket {}", bracket.bracket.get_id());
+    tracing::info!("displaying bracket {}", tournament.get_id());
     tracing::debug!("displaying bracket {:?}", bracket);
     (StatusCode::OK, AxumJson(bracket)).into_response()
 }
@@ -204,17 +205,35 @@ pub struct GenericResourceCreated {
     pub id: Id,
 }
 
-/// Bracket in database
+/// Deserialize in tournament information and double elimination bracket
 #[derive(Serialize, Deserialize, sqlx::FromRow)]
-pub(crate) struct BracketRecord {
+pub(crate) struct TournamentRecord {
     /// bracket ID
     pub id: Id,
     /// name
     pub name: String,
     /// creation date
     pub created_at: DateTime<Utc>,
-    /// matches
+    /// matches (agnostic to tournament format)
     pub matches: SqlxJson<MatchesRaw>,
     /// participants
     pub participants: SqlxJson<Participants>,
+}
+
+impl TournamentRecord {
+    /// Retrieve data from tournament record
+    pub fn parse(self) -> (Tournament, DoubleEliminationBracket) {
+        let tournament = Tournament::new_from_database_record(
+            self.id,
+            self.name,
+            self.participants.0.get_players_list(),
+        );
+        let bracket = DoubleEliminationBracket::new(
+            self.matches.0 .0,
+            Seeding::new(self.participants.0.get_seeding()).unwrap(),
+            AutomaticMatchValidationMode::Flexible, // FIXME should be in tournament record
+        );
+
+        (tournament, bracket)
+    }
 }

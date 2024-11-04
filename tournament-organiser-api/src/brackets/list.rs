@@ -2,7 +2,7 @@
 
 use crate::http::internal_error;
 use crate::middlewares::validation::ValidatedRequest;
-use crate::repositories::brackets::BracketRepository;
+use crate::repositories::brackets::TournamentService;
 use crate::resources::{Pagination, PaginationResult};
 use axum::extract::State;
 use axum::Json;
@@ -21,7 +21,7 @@ pub(crate) async fn list_brackets(
 
     let mut transaction = pool.begin().await.map_err(internal_error)?;
     let brackets =
-        BracketRepository::list(&mut transaction, pagination.sort_order, limit, offset).await?;
+        TournamentService::list(&mut transaction, pagination.sort_order, limit, offset).await?;
     let data = brackets;
     let pagination_result = PaginationResult { total: 100, data };
     transaction.commit().await.map_err(internal_error)?;

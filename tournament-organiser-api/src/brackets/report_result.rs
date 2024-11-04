@@ -5,6 +5,7 @@ use crate::http::ErrorSlug;
 use axum::response::IntoResponse;
 use axum::Json;
 use http::StatusCode;
+use totsugeki::double_elimination_bracket::progression::ProgressionDEB;
 use tracing::instrument;
 
 /// Returns updated bracket with result. Because there is no persistence, it's
@@ -23,8 +24,9 @@ use tracing::instrument;
 pub async fn report_result(Json(report): Json<ReportResultInput>) -> impl IntoResponse {
     tracing::debug!("new reported result");
     let bracket = report.bracket;
+    let tournament = report.tournament;
 
-    let Ok((bracket, _, _)) = bracket.tournament_organiser_reports_result(
+    let Ok((bracket, _, _)) = bracket.tournament_organiser_reports_result_dangerous(
         report.p1_id,
         (report.score_p1, report.score_p2),
         report.p2_id,
@@ -33,5 +35,5 @@ pub async fn report_result(Json(report): Json<ReportResultInput>) -> impl IntoRe
         return Err(ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR));
     };
     // People allowed to report are tournament organiser
-    Ok((StatusCode::OK, breakdown(bracket, None, true)))
+    Ok((StatusCode::OK, breakdown(tournament, bracket, None, true)))
 }

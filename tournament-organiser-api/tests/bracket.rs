@@ -11,7 +11,7 @@ use tournament_organiser_api::resources::PaginationResult;
 use tournament_organiser_api::test_utils::spawn_app;
 
 #[sqlx::test]
-async fn bracket_is_searchable(db: PgPool) {
+async fn tournament_is_searchable(db: PgPool) {
     let app = spawn_app(db).await;
     app.login_as_test_user().await;
 
@@ -23,7 +23,7 @@ async fn bracket_is_searchable(db: PgPool) {
     };
     let response = app
         .http_client
-        .post(format!("{}/api/brackets", app.addr))
+        .post(format!("{}/api/tournaments", app.addr))
         .json(&request)
         .send()
         .await
@@ -39,7 +39,7 @@ async fn bracket_is_searchable(db: PgPool) {
 }
 
 #[sqlx::test]
-async fn create_bracket(db: PgPool) {
+async fn create_tournament(db: PgPool) {
     let app = spawn_app(db).await;
     app.login_as_test_user().await;
 
@@ -57,13 +57,13 @@ async fn create_bracket(db: PgPool) {
     let _id: GenericResourceCreated = response.json().await.unwrap();
 }
 #[sqlx::test]
-async fn cannot_create_bracket_without_data(db: PgPool) {
+async fn cannot_create_tournament_without_data(db: PgPool) {
     let app = spawn_app(db).await;
     app.login_as_test_user().await;
 
     let response = app
         .http_client
-        .post(format!("{}/api/brackets", app.addr))
+        .post(format!("{}/api/tournaments", app.addr))
         .send()
         .await
         .expect("response");
@@ -78,7 +78,7 @@ async fn cannot_create_bracket_without_data(db: PgPool) {
 }
 
 #[sqlx::test]
-async fn cannot_create_bracket_when_unauthenticated(db: PgPool) {
+async fn cannot_create_tournament_when_unauthenticated(db: PgPool) {
     let app = spawn_app(db).await;
 
     let players = vec![];
@@ -95,7 +95,7 @@ async fn cannot_create_bracket_when_unauthenticated(db: PgPool) {
 }
 
 #[sqlx::test]
-async fn get_bracket(db: PgPool) {
+async fn get_tournament(db: PgPool) {
     let app = spawn_app(db).await;
     app.login_as_test_user().await;
 
@@ -112,7 +112,7 @@ async fn get_bracket(db: PgPool) {
     );
     let r: GenericResourceCreated = response.json().await.unwrap();
 
-    let response = app.get_bracket(r.id).await;
+    let response = app.get_tournament(r.id).await;
 
     let status = response.status();
     assert_eq!(
@@ -130,7 +130,7 @@ async fn get_bracket(db: PgPool) {
 }
 
 #[sqlx::test(fixtures("brackets"))]
-async fn list_brackets(db: PgPool) {
+async fn list_tournaments(db: PgPool) {
     let app = spawn_app(db).await;
     app.login_as_test_user().await;
 
@@ -153,7 +153,7 @@ async fn list_brackets(db: PgPool) {
     assert_eq!(brackets.total, 100);
 }
 #[sqlx::test]
-async fn save_bracket(db: PgPool) {
+async fn save_tournament(db: PgPool) {
     let app = spawn_app(db).await;
     app.login_as_test_user().await;
 
@@ -208,7 +208,7 @@ async fn save_bracket(db: PgPool) {
     );
 }
 #[sqlx::test]
-async fn join_bracket(db: PgPool) {
+async fn join_tournament(db: PgPool) {
     let app = spawn_app(db).await;
     app.login_as_test_user().await;
 

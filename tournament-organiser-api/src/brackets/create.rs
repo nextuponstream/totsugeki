@@ -4,7 +4,8 @@ use crate::brackets::{CreateBracketForm, GenericResourceCreated};
 use crate::http::internal_error;
 use crate::http::Error;
 use crate::middlewares::validation::ValidatedJson;
-use crate::repositories::brackets::BracketRepository;
+use crate::repositories::brackets::TournamentService;
+use crate::tournaments::Tournament;
 use crate::users::session::Keys::UserId;
 use axum::extract::State;
 use axum::response::IntoResponse;
@@ -12,7 +13,11 @@ use axum::Json as AxumJson;
 use axum_macros::debug_handler;
 use http::StatusCode;
 use sqlx::PgPool;
+use totsugeki::bracket::seeding::Seeding;
 use totsugeki::bracket::Bracket;
+use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki::player::Player;
+use totsugeki::validation::AutomaticMatchValidationMode;
 use tower_sessions::Session;
 use tracing::instrument;
 
@@ -30,28 +35,39 @@ pub(crate) async fn create_bracket(
     // TODO refactor user_id key in SESSION_KEY enum
     let user_id: totsugeki::player::Id =
         session.get(&UserId.to_string()).await.expect("").expect("");
-    let mut bracket = Bracket::default();
+    let mut tournament = Tournament::default();
     for name in form.player_names {
         // FIXME actual error handling
-        let tmp = bracket
-            .add_participant(name.as_str())
+        tournament
+            .add_participant(Player::new(name))
             .map_err(internal_error)?;
-        bracket = tmp.0;
     }
-    let bracket = bracket.update_name(form.bracket_name);
+    tournament.set_name(form.bracket_name);
+    let bracket = DoubleEliminationBracket::create(
+        Seeding::new(
+            tournament
+                .get_participants()
+                .0
+                .iter()
+                .map(|p| p.get_id())
+                .collect(),
+        )
+        .unwrap(),
+        AutomaticMatchValidationMode::default(),
+    );
 
-    BracketRepository::create(&mut transaction, &bracket, user_id).await?;
+    TournamentService::create(&mut transaction, &tournament, &bracket, user_id).await?;
 
     transaction.commit().await.map_err(internal_error)?;
 
     // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
-    tracing::info!("new bracket {}", bracket.get_id());
+    tracing::info!("new bracket {}", tournament.get_id().0);
 
     tracing::debug!("new bracket {:?}", bracket);
     Ok::<(StatusCode, axum::Json<GenericResourceCreated>), Error>((
         StatusCode::CREATED,
         AxumJson(GenericResourceCreated {
-            id: bracket.get_id(),
+            id: tournament.get_id().0,
         }),
     ))
 }

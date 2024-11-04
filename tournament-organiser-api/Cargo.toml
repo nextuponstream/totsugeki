@@ -35,3 +35,4 @@ tower-sessions-sqlx-store = { version = "0.10.0", features = ["postgres"] }
 validator = { version = "0.16.1", features = ["derive"] }
 async-trait = "0.1.77"
 thiserror = "1.0.57"
+uuid = { version = "1.1.2", features = ["v4", "serde"] }

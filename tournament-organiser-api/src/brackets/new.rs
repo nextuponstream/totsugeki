@@ -1,10 +1,15 @@
 //! New unsaved bracket
 
 use crate::brackets::{breakdown, CreateBracketForm};
+use crate::tournaments::Tournament;
 use axum::response::IntoResponse;
 use axum::Json;
 use http::StatusCode;
+use totsugeki::bracket::seeding::Seeding;
 use totsugeki::bracket::Bracket;
+use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki::player::Player;
+use totsugeki::validation::AutomaticMatchValidationMode;
 use tracing::instrument;
 
 /// Return a newly instantiated bracket from ordered (=seeded) player names for
@@ -19,16 +24,18 @@ use tracing::instrument;
 pub async fn new_bracket(Json(form): Json<CreateBracketForm>) -> impl IntoResponse {
     tracing::debug!("new bracket");
 
-    let mut bracket = Bracket::default();
-    bracket = bracket.update_name(form.bracket_name);
+    let mut tournament = Tournament::default();
+    tournament.set_name(form.bracket_name);
     for name in form.player_names {
-        // FIXME into
-        let Ok(tmp) = bracket.add_participant(name.as_str()) else {
+        let Ok(_) = tournament.add_participant(Player::new(name)) else {
             // FIXME actual error handling
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         };
-        bracket = tmp.0;
     }
+    let bracket = DoubleEliminationBracket::create(
+        Seeding::new(tournament.get_participants().get_seeding()).unwrap(),
+        AutomaticMatchValidationMode::Flexible, // FIXME from form
+    );
 
-    Ok(breakdown(bracket, None, false))
+    Ok(breakdown(tournament, bracket, None, false))
 }

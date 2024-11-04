@@ -147,7 +147,7 @@ impl TestApp {
         );
     }
 
-    /// `/api/brackets` POST
+    /// `/api/tournaments` POST
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
     pub async fn create_bracket(&self, players: Vec<String>) -> Response {
         let request = CreateBracketForm {
@@ -155,29 +155,29 @@ impl TestApp {
             player_names: players,
         };
         self.http_client
-            .post(format!("{}/api/brackets", self.addr))
+            .post(format!("{}/api/tournaments", self.addr))
             .json(&request)
             .send()
             .await
             .expect("request done")
     }
 
-    /// `/api/brackets/:id` GET
+    /// `/api/tournaments/:id` GET
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
-    pub async fn get_bracket(&self, id: Id) -> Response {
+    pub async fn get_tournament(&self, id: Id) -> Response {
         self.http_client
-            .get(format!("{}/api/brackets/{id}", self.addr))
+            .get(format!("{}/api/tournaments/{id}", self.addr))
             .send()
             .await
             .expect("request done")
     }
 
-    /// `/api/brackets` GET
+    /// `/api/tournaments` GET
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
     pub async fn list_brackets(&self, limit: u32, offset: u32) -> Response {
         self.http_client
             .get(format!(
-                "{}/api/brackets?limit={}&offset={}&sort_order=DESC",
+                "{}/api/tournaments?limit={}&offset={}&sort_order=DESC",
                 self.addr, limit, offset
             ))
             .send()
@@ -185,23 +185,23 @@ impl TestApp {
             .expect("request done")
     }
 
-    /// `/api/brackets/save` POST
+    /// `/api/tournaments/save` POST
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
     pub async fn save_bracket(&self, state: BracketState) -> Response {
         let request = state;
         self.http_client
-            .post(format!("{}/api/brackets/save", self.addr))
+            .post(format!("{}/api/tournaments/save", self.addr))
             .json(&request)
             .send()
             .await
             .expect("request done")
     }
 
-    /// `/api/brackets/:bracket_id/join` POST
+    /// `/api/tournaments/:bracket_id/join` POST
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
     pub async fn join_bracket(&self, bracket_id: Id) -> Response {
         self.http_client
-            .post(format!("{}/api/brackets/{}/join", self.addr, bracket_id))
+            .post(format!("{}/api/tournaments/{}/join", self.addr, bracket_id))
             .send()
             .await
             .expect("request done")

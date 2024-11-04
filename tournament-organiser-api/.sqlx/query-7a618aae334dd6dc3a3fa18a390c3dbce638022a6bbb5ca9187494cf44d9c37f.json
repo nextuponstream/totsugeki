@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, name, matches as \"matches: SqlxJson<MatchesRaw>\", created_at, participants as \"participants: SqlxJson<Participants>\" from brackets WHERE id = $1",
+  "query": "SELECT id, name, matches as \"matches: SqlxJson<MatchesRaw>\", created_at, participants as \"participants: SqlxJson<Participants>\"  from tournaments WHERE id = $1",
   "describe": {
     "columns": [
       {
@@ -42,5 +42,5 @@
       false
     ]
   },
-  "hash": "b93c9cd261ac9f775c55f3548bc9f3023c4d1b091d6a0a872ecd304a2a5eb023"
+  "hash": "7a618aae334dd6dc3a3fa18a390c3dbce638022a6bbb5ca9187494cf44d9c37f"
 }

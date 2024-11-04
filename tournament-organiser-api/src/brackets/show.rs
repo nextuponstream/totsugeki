@@ -2,7 +2,7 @@
 
 use crate::brackets::breakdown;
 use crate::http::{internal_error, ErrorSlug};
-use crate::repositories::brackets::BracketRepository;
+use crate::repositories::brackets::TournamentService;
 use crate::users::session::Keys::UserId;
 use axum::extract::{Path, State};
 use axum::response::IntoResponse;
@@ -22,19 +22,19 @@ use tracing::instrument;
 #[instrument(name = "show_bracket", skip(session, pool))]
 pub async fn show_bracket(
     session: Session,
-    Path(bracket_id): Path<Id>,
+    Path(tournament_id): Path<Id>,
     State(pool): State<PgPool>,
 ) -> impl IntoResponse {
-    tracing::debug!("bracket {bracket_id}");
+    tracing::debug!("tournament {tournament_id}");
     let user_id: Option<totsugeki::player::Id> = session
         .get(&UserId.to_string())
         .await
         .expect("maybe id of user");
 
     let mut transaction = pool.begin().await.map_err(internal_error)?;
-    let (bracket, is_tournament_organiser) =
+    let (tournament, bracket, is_tournament_organiser) =
     // FIXME wrong error type
-        match BracketRepository::read_for_user(&mut transaction, bracket_id, user_id).await {
+        match TournamentService::read_for_user(&mut transaction, tournament_id, user_id).await {
             Ok(Some(data)) => data,
             Ok(None) => return Err(ErrorSlug::from(StatusCode::NOT_FOUND)),
             Err(e) => {
@@ -46,6 +46,6 @@ pub async fn show_bracket(
     transaction.commit().await.map_err(internal_error)?;
     Ok((
         StatusCode::OK,
-        breakdown(bracket, user_id, is_tournament_organiser),
+        breakdown(tournament, bracket, user_id, is_tournament_organiser),
     ))
 }
