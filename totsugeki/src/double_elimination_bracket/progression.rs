@@ -10,23 +10,27 @@ use crate::matches::{
 use crate::opponent::Opponent;
 use crate::validation::AutomaticMatchValidationMode;
 use crate::ID;
+use thiserror::Error;
 
 /// Error while reporting for a double elimination bracket
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum DoubleEliminationReportResultError {
     /// Player is disqualified
     ///
     /// Player ID is valid but disqualified player are not allowed to report
     // FIXME add test When a player is DQ'd for the match, he cannot report that match
+    #[error("Player was disqualified {0}")]
     ForbiddenDisqualified(ID),
     /// No match to play for player
     ///
     /// May happen if tournament organiser validated right before player did for the same match
     // FIXME add test where player has won grand finals but him reporting results in a message that
     //  they won
+    #[error("Player has no match to play yet")]
     NoMatchToPlay(ID),
     /// Match result was reported and validated already.
     // FIXME add test where reporting twice for match results in error
+    #[error("Match results already validated")]
     ResultValidatedAlready,
 }
 

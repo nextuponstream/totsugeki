@@ -6,16 +6,18 @@ use crate::matches::Match;
 use crate::opponent::Opponent;
 use crate::seeding::double_elimination_seeded_bracket::get_loser_bracket_matches_top_seed_favored;
 use crate::validation::AutomaticMatchValidationMode;
+use serde::{Deserialize, Serialize};
 
 pub mod disqualification;
 mod getters;
 pub mod next_opponent;
 // FIXME refactor everything double elimination bracket here
+mod partition;
 
 pub mod progression;
 
 /// Double elimination bracket
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DoubleEliminationBracket {
     // NOTE: not worth using a container. Though I want to do `matches.contains(match_id)`...
     /// Matches
@@ -26,25 +28,37 @@ pub struct DoubleEliminationBracket {
     automatic_match_validation_mode: AutomaticMatchValidationMode,
 }
 
+impl Default for DoubleEliminationBracket {
+    fn default() -> Self {
+        Self {
+            matches: vec![],
+            seeding: Seeding::default(),
+            automatic_match_validation_mode: AutomaticMatchValidationMode::default(),
+        }
+    }
+}
+
 impl DoubleEliminationBracket {
     /// Generate matches for a new bracket using `seeding` and other configuration
     pub fn create(
         seeding: Seeding,
         automatic_match_validation_mode: AutomaticMatchValidationMode,
     ) -> Self {
-        // FIXME remove unwrap, this should never panic
         let mut matches = vec![];
-        let mut winner_bracket_matches =
-            crate::seeding::single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored(seeding.clone()).unwrap();
-        matches.append(&mut winner_bracket_matches);
-        let mut looser_bracket_matches =
-            get_loser_bracket_matches_top_seed_favored(&seeding.get()).unwrap();
+        if seeding.len() >= 3 {
+            // FIXME remove unwrap, this should never panic
+            let mut winner_bracket_matches =
+                crate::seeding::single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored(seeding.clone()).unwrap();
+            matches.append(&mut winner_bracket_matches);
+            let mut looser_bracket_matches =
+                get_loser_bracket_matches_top_seed_favored(&seeding.get()).unwrap();
 
-        matches.append(&mut looser_bracket_matches);
-        let grand_finals: Match = Match::new_empty([1, 2]);
-        matches.push(grand_finals);
-        let grand_finals_reset: Match = Match::new_empty([1, 2]);
-        matches.push(grand_finals_reset);
+            matches.append(&mut looser_bracket_matches);
+            let grand_finals: Match = Match::new_empty([1, 2]);
+            matches.push(grand_finals);
+            let grand_finals_reset: Match = Match::new_empty([1, 2]);
+            matches.push(grand_finals_reset);
+        }
 
         Self {
             seeding,
@@ -69,10 +83,9 @@ impl DoubleEliminationBracket {
             "no seeding for matches generated"
         );
         let magic = 2_usize * seeding.len();
-        assert_eq!(
-            matches.len(),
-            magic - 1,
-            "expected 2*n - 1 matches for n players"
+        assert!(
+            seeding.len() == 0 || matches.len() == magic - 1,
+            "expected 2*n - 1 matches for n players (n > 0)"
         );
         // TODO more assertions
         Self {

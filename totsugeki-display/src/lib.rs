@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use totsugeki::matches::{Id as MatchId, Match, ReportedResult};
 use totsugeki::opponent::Opponent;
 use totsugeki::player::Id as PlayerId;
-use totsugeki::player::{Participants, Player};
+use totsugeki::player::Player;
 
 pub mod loser_bracket;
 pub mod winner_bracket;
@@ -128,10 +128,9 @@ impl BoxElement {
 /// Convert match struct from Totsugeki library into minimal struct, using
 /// `participants` to fill in name of players.
 #[must_use]
-pub fn from_participants(m: &Match, participants: &Participants) -> MinimalMatch {
-    let list = participants.get_players_list();
+pub fn from_participants(m: &Match, seeding: &Vec<Player>) -> MinimalMatch {
     let players: Vec<(PlayerId, String)> =
-        list.iter().map(|p| (p.get_id(), p.get_name())).collect();
+        seeding.iter().map(|p| (p.get_id(), p.get_name())).collect();
 
     // TODO find out if storing both player name and id is better than storing
     // only the id and doing some work to get back id and name.

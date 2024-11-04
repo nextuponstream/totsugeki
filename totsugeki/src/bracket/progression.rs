@@ -124,7 +124,7 @@ mod tests {
     fn partition_matches_for_3_man_bracket() {
         let mut bracket = Bracket::new(
             "",
-            Format::DoubleElimination,
+            Format::DoubleEliminationBracket,
             Method::Strict,
             Utc.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap(),
             true,

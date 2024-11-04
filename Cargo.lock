@@ -818,6 +818,7 @@ dependencies = [
  "log",
  "totsugeki",
  "totsugeki-display",
+ "uuid",
 ]
 
 [[package]]
@@ -3502,6 +3503,7 @@ dependencies = [
  "tower-sessions-sqlx-store",
  "tracing",
  "tracing-subscriber",
+ "uuid",
  "validator",
  "zxcvbn",
 ]

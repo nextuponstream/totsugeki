@@ -6,12 +6,19 @@ use crate::{
     seeding::seed,
     ID,
 };
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use thiserror::Error;
 
 /// Seeding is an ordered list of player. All players IDs are guaranteed unique
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Seeding(Vec<PlayerId>);
+
+impl Default for Seeding {
+    fn default() -> Self {
+        Seeding(vec![])
+    }
+}
 
 /// Error while creating seeding
 #[derive(Error, Debug, PartialEq)]
@@ -118,7 +125,7 @@ mod tests {
     fn seeding_single_elimination_bracket_with_wrong_players_fails() {
         let unknown_player = PlayerId::new_v4();
         let bracket = Builder::default()
-            .set_format(Format::SingleElimination)
+            .set_format(Format::SingleEliminationBracket)
             .set_new_players(3)
             .build()
             .expect("bracket");
@@ -168,7 +175,7 @@ mod tests {
     #[test]
     fn updating_seeding_changes_matches_of_3_man_bracket() {
         let bracket = Builder::default()
-            .set_format(Format::SingleElimination)
+            .set_format(Format::SingleEliminationBracket)
             .set_new_players(3)
             .build()
             .expect("bracket");
@@ -215,7 +222,7 @@ mod tests {
     #[test]
     fn updating_seeding_changes_matches_of_5_man_bracket() {
         let bracket = Builder::default()
-            .set_format(Format::SingleElimination)
+            .set_format(Format::SingleEliminationBracket)
             .set_new_players(5)
             .build()
             .expect("bracket");

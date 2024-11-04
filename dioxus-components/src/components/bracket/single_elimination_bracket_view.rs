@@ -1,5 +1,6 @@
 //! View of a single elimination bracket
 use super::{ui_primitives::BracketPrimitives, ui_primitives::ConnectMatchesBetweenRounds};
+use crate::tournaments::Tournament;
 use crate::{
     components::bracket::displayable_round::Round, components::bracket::match_edit::MatchEditModal,
     Modal,
@@ -7,6 +8,8 @@ use crate::{
 use dioxus::prelude::*;
 use totsugeki::bracket::single_elimination_variant::Variant as SingleEliminationVariant;
 use totsugeki::bracket::Bracket;
+use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki::single_elimination_bracket::SingleEliminationBracket;
 use totsugeki_display::from_participants;
 use totsugeki_display::winner_bracket::lines;
 use totsugeki_display::winner_bracket::reorder;
@@ -17,16 +20,19 @@ pub(crate) fn View(cx: Scope) -> Element {
     // FIXME problem switching from deb to seb, panics
     let modal = use_shared_state::<Option<Modal>>(cx).expect("modal to show");
     let isMatchEditModalHidden = !matches!(*modal.read(), Some(Modal::EnterMatchResult(_, _, _)));
-    let bracket = match use_shared_state::<Bracket>(cx) {
-        Some(bracket_ref) => bracket_ref.read().clone(),
-        None => Bracket::default(),
+    let bracket = match use_shared_state::<SingleEliminationBracket>(cx) {
+        Some(t) => t.read().clone(),
+        None => SingleEliminationBracket::default(),
     };
-    let sev: SingleEliminationVariant = bracket.clone().try_into().expect("partition");
+    let tournament = match use_shared_state::<Tournament>(cx) {
+        Some(t) => t.read().clone(),
+        None => Tournament::default(),
+    };
 
-    let participants = bracket.get_participants();
+    let participants = tournament.get_participants();
 
     // let mut rounds = winner_bracket(matches, &participants);
-    let match_by_rounds = sev.partition_by_round().expect("rounds");
+    let match_by_rounds = bracket.partition_by_round().expect("rounds");
     let mut rounds = vec![];
     // FIXME find a way to map vec of vec from one type to another
     // Note: did not find a way to map a vec of vec of Match into vec of vec of
@@ -34,7 +40,7 @@ pub(crate) fn View(cx: Scope) -> Element {
     for r in match_by_rounds {
         let round = r
             .iter()
-            .map(|m| from_participants(m, &participants))
+            .map(|m| from_participants(m, &participants.0))
             .collect();
         rounds.push(round);
     }

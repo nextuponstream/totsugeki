@@ -1,7 +1,9 @@
 //! Validation
 
+use serde::{Deserialize, Serialize};
+
 /// All validation types before automatically progressing a bracket
-#[derive(Eq, Copy, Clone, PartialEq, Debug)]
+#[derive(Eq, Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub enum AutomaticMatchValidationMode {
     /// No trust: only TO is allowed to report matches
     ///

@@ -69,7 +69,7 @@ mod tests {
     #[test]
     fn cannot_disqualify_player_before_bracket_starts() {
         let mut bracket = Bracket {
-            format: Format::SingleElimination,
+            format: Format::SingleEliminationBracket,
             ..Bracket::default()
         };
 

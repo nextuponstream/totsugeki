@@ -1,12 +1,12 @@
 //! Winner bracket
 
-use crate::{matches::Match, player::Participants};
-
+use crate::bracket::seeding::Seeding;
+use crate::matches::Match;
 // FIXME create error enum and handle math errors
 
 /// Partition list of matches into rounds for a winner bracket
-pub(crate) fn winner_bracket(matches: Vec<Match>, participants: &Participants) -> Vec<Vec<Match>> {
-    let n = participants.len();
+pub(crate) fn winner_bracket(matches: Vec<Match>, seeding: &Seeding) -> Vec<Vec<Match>> {
+    let n = seeding.len();
     let Some(mut npo2) = n.checked_next_power_of_two() else {
         panic!("MATH");
     };
@@ -44,7 +44,7 @@ pub(crate) fn winner_bracket(matches: Vec<Match>, participants: &Participants) -
             // 2 players play
             // 1 match
 
-            let remaining_players = participants.len() - byes;
+            let remaining_players = seeding.len() - byes;
             let split = remaining_players / 2;
             // TODO use drain
             let tmp = remaining_matches.clone();
@@ -79,27 +79,24 @@ pub(crate) fn winner_bracket(matches: Vec<Match>, participants: &Participants) -
 #[cfg(test)]
 mod tests {
     use super::winner_bracket;
-    use crate::{
-        matches::Match,
-        player::{Participants, Player},
-    };
+    use crate::bracket::seeding::Seeding;
+    use crate::{matches::Match, ID};
 
-    fn get_matches_and_participant(n: usize) -> (Vec<Match>, Participants) {
+    fn get_matches_and_seeding(n: usize) -> (Vec<Match>, Seeding) {
         let mut matches = vec![];
-        let mut players = vec![];
+        let mut seeding = vec![];
         for _ in 0..n {
             matches.push(Match::default());
         }
         for i in 1..=n {
-            players.push(Player::new(format!("p{i}")));
+            seeding.push(ID::new_v4());
         }
-        let participants = Participants::try_from(players).expect("participants");
-        (matches, participants)
+        (matches, Seeding::new(seeding).unwrap())
     }
 
     #[test]
     fn split_winner_bracket_3_participants() {
-        let (matches, participants) = get_matches_and_participant(3);
+        let (matches, participants) = get_matches_and_seeding(3);
         let partition = winner_bracket(matches, &participants);
 
         assert_eq!(partition[0].len(), 1, "first round");
@@ -108,7 +105,7 @@ mod tests {
 
     #[test]
     fn split_winner_bracket_4_participants() {
-        let (matches, participants) = get_matches_and_participant(4);
+        let (matches, participants) = get_matches_and_seeding(4);
         let partition = winner_bracket(matches, &participants);
 
         assert_eq!(partition[0].len(), 2, "first round, 1-4 + 2-3");
@@ -117,7 +114,7 @@ mod tests {
 
     #[test]
     fn split_winner_bracket_5_participants() {
-        let (matches, participants) = get_matches_and_participant(5);
+        let (matches, participants) = get_matches_and_seeding(5);
         let partition = winner_bracket(matches, &participants);
 
         assert_eq!(partition[0].len(), 1, "first round, 4-5");
@@ -127,7 +124,7 @@ mod tests {
 
     #[test]
     fn split_winner_bracket_6_participants() {
-        let (matches, participants) = get_matches_and_participant(6);
+        let (matches, participants) = get_matches_and_seeding(6);
         let partition = winner_bracket(matches, &participants);
 
         assert_eq!(partition[0].len(), 2, "first round, 3-6 + 4-5");
@@ -137,7 +134,7 @@ mod tests {
 
     #[test]
     fn split_winner_bracket_7_participants() {
-        let (matches, participants) = get_matches_and_participant(7);
+        let (matches, participants) = get_matches_and_seeding(7);
         let partition = winner_bracket(matches, &participants);
 
         assert_eq!(partition[0].len(), 3, "first round, 2-7 + 3-6 + 4-5");
@@ -147,7 +144,7 @@ mod tests {
 
     #[test]
     fn split_winner_bracket_8_participants() {
-        let (matches, participants) = get_matches_and_participant(8);
+        let (matches, participants) = get_matches_and_seeding(8);
         let partition = winner_bracket(matches, &participants);
 
         assert_eq!(partition[0].len(), 4, "first round, 1-8 + 2-7 + 3-6 + 4-5");
@@ -157,7 +154,7 @@ mod tests {
 
     #[test]
     fn split_winner_bracket_9_participants() {
-        let (matches, participants) = get_matches_and_participant(9);
+        let (matches, participants) = get_matches_and_seeding(9);
         let partition = winner_bracket(matches, &participants);
 
         assert_eq!(partition[0].len(), 1, "first round, 8-9");
@@ -168,7 +165,7 @@ mod tests {
 
     #[test]
     fn split_winner_bracket_10_participants() {
-        let (matches, participants) = get_matches_and_participant(10);
+        let (matches, participants) = get_matches_and_seeding(10);
         let partition = winner_bracket(matches, &participants);
 
         assert_eq!(partition[0].len(), 2, "first round, 7-10 + 8-9");

@@ -266,7 +266,7 @@ mod tests {
         players.push(Player::new("don't use".into()));
         players.reverse();
 
-        let matches = Format::DoubleElimination
+        let matches = Format::DoubleEliminationBracket
             .generate_matches(&participants.get_seeding())
             .expect("matches");
         let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();

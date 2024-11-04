@@ -112,7 +112,7 @@ mod tests {
     fn get_data(n: usize) -> Bracket {
         let mut bracket = Bracket::new(
             "",
-            totsugeki::format::Format::SingleElimination,
+            totsugeki::format::Format::SingleEliminationBracket,
             totsugeki::seeding::Method::Strict,
             DateTime::default(),
             true,

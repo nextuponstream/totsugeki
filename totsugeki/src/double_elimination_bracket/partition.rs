@@ -1,19 +1,11 @@
 //! Double elimination bracket with methods you would only call on a double
 //! elimination bracket
 
-use super::winner_bracket::winner_bracket;
-use crate::bracket::Bracket;
+use crate::bracket::winner_bracket::winner_bracket;
 use crate::bracket::PartitionError;
-use crate::format::Format;
+use crate::double_elimination_bracket::DoubleEliminationBracket;
 use crate::matches::partition_double_elimination_matches as partition;
 use crate::matches::Match;
-
-/// Double elimination bracket
-#[derive(Debug)]
-pub struct Variant {
-    /// Some bracket
-    bracket: Bracket,
-}
 
 /// Error with double elimination brackets
 #[derive(Debug)]
@@ -22,29 +14,7 @@ pub enum TryIntoError {
     ExpectedDoubleEliminationFormat,
 }
 
-impl TryFrom<Bracket> for Variant {
-    type Error = TryIntoError;
-
-    fn try_from(bracket: Bracket) -> Result<Self, Self::Error> {
-        if bracket.format != Format::DoubleElimination {
-            return Err(TryIntoError::ExpectedDoubleEliminationFormat);
-        }
-
-        Ok(Variant { bracket })
-    }
-}
-
-impl std::default::Default for Variant {
-    fn default() -> Self {
-        let bracket = Bracket {
-            format: Format::DoubleElimination,
-            ..Default::default()
-        };
-        Self { bracket }
-    }
-}
-
-impl Variant {
+impl DoubleEliminationBracket {
     /// Returns winner bracket, loser bracket, grand finals and grand final reset
     ///
     /// # Errors
@@ -52,13 +22,10 @@ impl Variant {
     pub fn partition_matches(
         &self,
     ) -> Result<(Vec<Match>, Vec<Match>, Match, Match), PartitionError> {
-        if self.bracket.participants.len() < 3 {
+        if self.seeding.len() < 3 {
             return Err(PartitionError::NotEnoughPlayersInBracket);
         }
-        Ok(partition(
-            &self.bracket.matches,
-            self.bracket.participants.len(),
-        ))
+        Ok(partition(&self.matches, self.seeding.len()))
     }
 
     /// Returns winner bracket partitionned by round
@@ -66,13 +33,12 @@ impl Variant {
     /// # Errors
     /// When there is not enough players in the bracket for matches
     pub fn partition_winner_bracket(&self) -> Result<Vec<Vec<Match>>, PartitionError> {
-        if self.bracket.participants.len() < 3 {
+        if self.seeding.len() < 3 {
             return Err(PartitionError::NotEnoughPlayersInBracket);
         }
-        let (wb_matches, _, _, _) =
-            partition(&self.bracket.matches, self.bracket.participants.len());
+        let (wb_matches, _, _, _) = partition(&self.matches, self.seeding.len());
 
-        Ok(winner_bracket(wb_matches, &self.bracket.participants))
+        Ok(winner_bracket(wb_matches, &self.seeding))
     }
 
     /// Returns loser bracket partitionned by round
@@ -80,11 +46,10 @@ impl Variant {
     /// # Errors
     /// When there is not enough players in the bracket for matches
     pub fn partition_loser_bracket(&self) -> Result<Vec<Vec<Match>>, PartitionError> {
-        if self.bracket.participants.len() < 3 {
+        if self.seeding.len() < 3 {
             return Err(PartitionError::NotEnoughPlayersInBracket);
         }
-        let (_, lb_matches, _, _) =
-            partition(&self.bracket.matches, self.bracket.participants.len());
+        let (_, lb_matches, _, _) = partition(&self.matches, self.seeding.len());
         Ok(loser_bracket(lb_matches))
     }
 
@@ -93,11 +58,10 @@ impl Variant {
     /// # Errors
     /// When there is not enough players in the bracket for matches
     pub fn grand_finals_and_reset(&self) -> Result<(Match, Match), PartitionError> {
-        if self.bracket.participants.len() < 3 {
+        if self.seeding.len() < 3 {
             return Err(PartitionError::NotEnoughPlayersInBracket);
         }
-        let (_, _, gf, gf_reset) =
-            partition(&self.bracket.matches, self.bracket.participants.len());
+        let (_, _, gf, gf_reset) = partition(&self.matches, self.seeding.len());
         Ok((gf, gf_reset))
     }
 }
@@ -140,13 +104,16 @@ fn loser_bracket(lb_matches: Vec<Match>) -> Vec<Vec<Match>> {
 #[cfg(test)]
 mod tests {
     use super::PartitionError;
-    use crate::bracket::double_elimination_variant::Variant;
+    use crate::bracket::seeding::Seeding;
+    use crate::double_elimination_bracket::DoubleEliminationBracket;
+    use crate::validation::AutomaticMatchValidationMode;
+    use crate::ID;
 
     #[test]
     fn less_than_3_participants_throws_error() {
-        let deb = Variant::default();
+        let bracket = DoubleEliminationBracket::default();
 
-        let rounds = deb.partition_loser_bracket();
+        let rounds = bracket.partition_loser_bracket();
 
         match rounds {
             Err(PartitionError::NotEnoughPlayersInBracket) => {}
@@ -154,17 +121,17 @@ mod tests {
         }
 
         // 1
-        let deb = Variant::default();
-        let mut bracket = deb.bracket;
-        for i in 1..=1 {
-            bracket = bracket
-                .add_participant(format!("p{i}").as_str())
-                .expect("player added");
+        let mut seeding = vec![];
+        for _ in 1..=1 {
+            seeding.push(ID::new_v4());
         }
-        let deb = Variant { bracket };
-        assert_eq!(deb.bracket.participants.len(), 1);
+        let bracket = DoubleEliminationBracket::create(
+            Seeding::new(seeding).unwrap(),
+            AutomaticMatchValidationMode::Flexible,
+        );
+        assert_eq!(bracket.get_seeding().len(), 1);
 
-        let rounds = deb.partition_loser_bracket();
+        let rounds = bracket.partition_loser_bracket();
 
         match rounds {
             Err(PartitionError::NotEnoughPlayersInBracket) => {}
@@ -172,17 +139,17 @@ mod tests {
         }
 
         // 2
-        let deb = Variant::default();
-        let mut bracket = deb.bracket;
+        let mut seeding = vec![];
         for i in 1..=2 {
-            bracket = bracket
-                .add_participant(format!("p{i}").as_str())
-                .expect("player added");
+            seeding.push(ID::new_v4());
         }
-        let deb = Variant { bracket };
-        assert_eq!(deb.bracket.participants.len(), 2);
+        let bracket = DoubleEliminationBracket::create(
+            Seeding::new(seeding).unwrap(),
+            AutomaticMatchValidationMode::Flexible,
+        );
+        assert_eq!(bracket.get_seeding().len(), 2);
 
-        let rounds = deb.partition_loser_bracket();
+        let rounds = bracket.partition_loser_bracket();
 
         match rounds {
             Err(PartitionError::NotEnoughPlayersInBracket) => {}
@@ -192,88 +159,84 @@ mod tests {
 
     #[test]
     fn _3_participants_bracket() {
-        let deb = Variant::default();
-        let mut bracket = deb.bracket;
         let n = 3;
+        let mut seeding = vec![];
         for i in 1..=n {
-            bracket = bracket
-                .add_participant(format!("p{i}").as_str())
-                .expect("player added");
+            seeding.push(ID::new_v4());
         }
-        let deb = Variant { bracket };
+        let bracket = DoubleEliminationBracket::create(
+            Seeding::new(seeding).unwrap(),
+            AutomaticMatchValidationMode::Flexible,
+        );
+        assert_eq!(bracket.get_seeding().len(), n);
 
-        assert_eq!(deb.bracket.participants.len(), n);
-
-        let rounds = deb.partition_loser_bracket().expect("partition");
+        let rounds = bracket.partition_loser_bracket().expect("partition");
 
         assert_eq!(rounds.len(), 1, "expected 1 round");
         assert_eq!(rounds[0].len(), 1, "expected 1 match in round 1 LB");
-        assert_eq!(rounds[0][0].get_id(), deb.bracket.matches[2].get_id());
+        assert_eq!(rounds[0][0].get_id(), bracket.matches[2].get_id());
     }
 
     #[test]
     fn _4_participants_bracket() {
-        let deb = Variant::default();
-        let mut bracket = deb.bracket;
         let n = 4;
+        let mut seeding = vec![];
         for i in 1..=n {
-            bracket = bracket
-                .add_participant(format!("p{i}").as_str())
-                .expect("player added");
+            seeding.push(ID::new_v4());
         }
-        let deb = Variant { bracket };
+        let bracket = DoubleEliminationBracket::create(
+            Seeding::new(seeding).unwrap(),
+            AutomaticMatchValidationMode::Flexible,
+        );
+        assert_eq!(bracket.get_seeding().len(), n);
 
-        assert_eq!(deb.bracket.participants.len(), n);
-
-        let rounds = deb.partition_loser_bracket().expect("partition");
+        let rounds = bracket.partition_loser_bracket().expect("partition");
 
         assert_eq!(rounds.len(), 2, "expected 2 round");
         assert_eq!(rounds[0].len(), 1, "expected 1 match in round 1 LB");
         assert_eq!(rounds[1].len(), 1, "expected 1 match in round 2 LB");
-        assert_eq!(rounds[0][0].get_id(), deb.bracket.matches[3].get_id(),);
-        assert_eq!(rounds[1][0].get_id(), deb.bracket.matches[4].get_id(),);
+        assert_eq!(rounds[0][0].get_id(), bracket.matches[3].get_id(),);
+        assert_eq!(rounds[1][0].get_id(), bracket.matches[4].get_id(),);
     }
 
     #[test]
     fn _5_participants_bracket() {
-        let deb = Variant::default();
-        let mut bracket = deb.bracket;
         let n = 5;
+        let mut seeding = vec![];
         for i in 1..=n {
-            bracket = bracket
-                .add_participant(format!("p{i}").as_str())
-                .expect("player added");
+            seeding.push(ID::new_v4());
         }
-        let deb = Variant { bracket };
+        let bracket = DoubleEliminationBracket::create(
+            Seeding::new(seeding).unwrap(),
+            AutomaticMatchValidationMode::Flexible,
+        );
+        assert_eq!(bracket.get_seeding().len(), n);
 
-        assert_eq!(deb.bracket.participants.len(), n);
-
-        let rounds = deb.partition_loser_bracket().expect("partition");
+        let rounds = bracket.partition_loser_bracket().expect("partition");
 
         assert_eq!(rounds.len(), 3, "expected 3 round");
         assert_eq!(rounds[0].len(), 1, "expected 1 match in round 1 LB");
         assert_eq!(rounds[1].len(), 1, "expected 1 match in round 2 LB");
         assert_eq!(rounds[2].len(), 1, "expected 1 match in round 3 LB");
-        assert_eq!(rounds[0][0].get_id(), deb.bracket.matches[4].get_id(),);
-        assert_eq!(rounds[1][0].get_id(), deb.bracket.matches[5].get_id(),);
-        assert_eq!(rounds[2][0].get_id(), deb.bracket.matches[6].get_id(),);
+        assert_eq!(rounds[0][0].get_id(), bracket.matches[4].get_id(),);
+        assert_eq!(rounds[1][0].get_id(), bracket.matches[5].get_id(),);
+        assert_eq!(rounds[2][0].get_id(), bracket.matches[6].get_id(),);
     }
 
     #[test]
     fn _6_participants_bracket() {
-        let deb = Variant::default();
-        let mut bracket = deb.bracket;
         let n = 6;
+        let mut seeding = vec![];
         for i in 1..=n {
-            bracket = bracket
-                .add_participant(format!("p{i}").as_str())
-                .expect("player added");
+            seeding.push(ID::new_v4());
         }
-        let deb = Variant { bracket };
+        let bracket = DoubleEliminationBracket::create(
+            Seeding::new(seeding).unwrap(),
+            AutomaticMatchValidationMode::Flexible,
+        );
+        assert_eq!(bracket.get_seeding().len(), n);
 
-        assert_eq!(deb.bracket.participants.len(), n);
-
-        let rounds = deb.partition_loser_bracket().expect("partition");
+        let rounds = bracket.partition_loser_bracket().expect("partition");
 
         assert_eq!(rounds.len(), 3, "expected 3 round");
         assert_eq!(rounds[0].len(), 2, "expected 2 match in round 1 LB");
@@ -281,42 +244,29 @@ mod tests {
         assert_eq!(rounds[2].len(), 1, "expected 1 match in round 3 LB");
         assert_eq!(
             rounds[0][0].get_id(),
-            deb.bracket.matches[5].get_id(),
+            bracket.matches[5].get_id(),
             "3-6 {}",
-            deb.bracket.matches[5].summary(),
+            bracket.matches[5].summary(),
         );
-        assert_eq!(
-            rounds[0][1].get_id(),
-            deb.bracket.matches[6].get_id(),
-            "4-5"
-        );
-        assert_eq!(
-            rounds[1][0].get_id(),
-            deb.bracket.matches[7].get_id(),
-            "3-4"
-        );
-        assert_eq!(
-            rounds[2][0].get_id(),
-            deb.bracket.matches[8].get_id(),
-            "2-3"
-        );
+        assert_eq!(rounds[0][1].get_id(), bracket.matches[6].get_id(), "4-5");
+        assert_eq!(rounds[1][0].get_id(), bracket.matches[7].get_id(), "3-4");
+        assert_eq!(rounds[2][0].get_id(), bracket.matches[8].get_id(), "2-3");
     }
 
     #[test]
     fn _7_participants_bracket() {
-        let deb = Variant::default();
-        let mut bracket = deb.bracket;
         let n = 7;
+        let mut seeding = vec![];
         for i in 1..=n {
-            bracket = bracket
-                .add_participant(format!("p{i}").as_str())
-                .expect("player added");
+            seeding.push(ID::new_v4());
         }
-        let deb = Variant { bracket };
+        let bracket = DoubleEliminationBracket::create(
+            Seeding::new(seeding).unwrap(),
+            AutomaticMatchValidationMode::Flexible,
+        );
+        assert_eq!(bracket.get_seeding().len(), n);
 
-        assert_eq!(deb.bracket.participants.len(), n);
-
-        let rounds = deb.partition_loser_bracket().expect("partition");
+        let rounds = bracket.partition_loser_bracket().expect("partition");
 
         assert_eq!(rounds.len(), 4, "expected 3 round");
         assert_eq!(rounds[0].len(), 1, "expected 2 match in round 1 LB, 6-7");
@@ -329,47 +279,30 @@ mod tests {
         assert_eq!(rounds[3].len(), 1, "expected 1 match in round 4 LB, 2-3");
         assert_eq!(
             rounds[0][0].get_id(),
-            deb.bracket.matches[6].get_id(),
+            bracket.matches[6].get_id(),
             "6-7 {}",
-            deb.bracket.matches[6].summary(),
+            bracket.matches[6].summary(),
         );
-        assert_eq!(
-            rounds[1][0].get_id(),
-            deb.bracket.matches[7].get_id(),
-            "3-6"
-        );
-        assert_eq!(
-            rounds[1][1].get_id(),
-            deb.bracket.matches[8].get_id(),
-            "4-5"
-        );
-        assert_eq!(
-            rounds[2][0].get_id(),
-            deb.bracket.matches[9].get_id(),
-            "3-4"
-        );
-        assert_eq!(
-            rounds[3][0].get_id(),
-            deb.bracket.matches[10].get_id(),
-            "2-3"
-        );
+        assert_eq!(rounds[1][0].get_id(), bracket.matches[7].get_id(), "3-6");
+        assert_eq!(rounds[1][1].get_id(), bracket.matches[8].get_id(), "4-5");
+        assert_eq!(rounds[2][0].get_id(), bracket.matches[9].get_id(), "3-4");
+        assert_eq!(rounds[3][0].get_id(), bracket.matches[10].get_id(), "2-3");
     }
 
     #[test]
     fn _8_participants_bracket() {
-        let deb = Variant::default();
-        let mut bracket = deb.bracket;
         let n = 8;
+        let mut seeding = vec![];
         for i in 1..=n {
-            bracket = bracket
-                .add_participant(format!("p{i}").as_str())
-                .expect("player added");
+            seeding.push(ID::new_v4());
         }
-        let deb = Variant { bracket };
+        let bracket = DoubleEliminationBracket::create(
+            Seeding::new(seeding).unwrap(),
+            AutomaticMatchValidationMode::Flexible,
+        );
+        assert_eq!(bracket.get_seeding().len(), n);
 
-        assert_eq!(deb.bracket.participants.len(), n);
-
-        let rounds = deb.partition_loser_bracket().expect("partition");
+        let rounds = bracket.partition_loser_bracket().expect("partition");
 
         assert_eq!(rounds.len(), 4);
         assert_eq!(
@@ -386,53 +319,36 @@ mod tests {
         assert_eq!(rounds[3].len(), 1, "expected 1 match in round 4 LB, 2-3");
         assert_eq!(
             rounds[0][0].get_id(),
-            deb.bracket.matches[7].get_id(),
+            bracket.matches[7].get_id(),
             "5-8 {}",
-            deb.bracket.matches[7].summary(),
+            bracket.matches[7].summary(),
         );
         assert_eq!(
             rounds[0][1].get_id(),
-            deb.bracket.matches[8].get_id(),
+            bracket.matches[8].get_id(),
             "6-7 {}",
-            deb.bracket.matches[8].summary(),
+            bracket.matches[8].summary(),
         );
-        assert_eq!(
-            rounds[1][0].get_id(),
-            deb.bracket.matches[9].get_id(),
-            "3-6"
-        );
-        assert_eq!(
-            rounds[1][1].get_id(),
-            deb.bracket.matches[10].get_id(),
-            "4-5"
-        );
-        assert_eq!(
-            rounds[2][0].get_id(),
-            deb.bracket.matches[11].get_id(),
-            "3-4"
-        );
-        assert_eq!(
-            rounds[3][0].get_id(),
-            deb.bracket.matches[12].get_id(),
-            "2-3"
-        );
+        assert_eq!(rounds[1][0].get_id(), bracket.matches[9].get_id(), "3-6");
+        assert_eq!(rounds[1][1].get_id(), bracket.matches[10].get_id(), "4-5");
+        assert_eq!(rounds[2][0].get_id(), bracket.matches[11].get_id(), "3-4");
+        assert_eq!(rounds[3][0].get_id(), bracket.matches[12].get_id(), "2-3");
     }
 
     #[test]
     fn _9_participants_bracket() {
-        let deb = Variant::default();
-        let mut bracket = deb.bracket;
         let n = 9;
+        let mut seeding = vec![];
         for i in 1..=n {
-            bracket = bracket
-                .add_participant(format!("p{i}").as_str())
-                .expect("player added");
+            seeding.push(ID::new_v4());
         }
-        let deb = Variant { bracket };
+        let bracket = DoubleEliminationBracket::create(
+            Seeding::new(seeding).unwrap(),
+            AutomaticMatchValidationMode::Flexible,
+        );
+        assert_eq!(bracket.get_seeding().len(), n);
 
-        assert_eq!(deb.bracket.participants.len(), n);
-
-        let rounds = deb.partition_loser_bracket().expect("partition");
+        let rounds = bracket.partition_loser_bracket().expect("partition");
 
         assert_eq!(rounds.len(), 5);
         assert_eq!(rounds[0].len(), 1, "expected 1 match in round 1 LB, 8-9");
@@ -450,41 +366,25 @@ mod tests {
         assert_eq!(rounds[4].len(), 1, "expected 1 match in round 5 LB, 2-3");
         assert_eq!(
             rounds[0][0].get_id(),
-            deb.bracket.matches[8].get_id(),
+            bracket.matches[8].get_id(),
             "5-8 {}",
-            deb.bracket.matches[8].summary(),
+            bracket.matches[8].summary(),
         );
         assert_eq!(
             rounds[1][0].get_id(),
-            deb.bracket.matches[9].get_id(),
+            bracket.matches[9].get_id(),
             "5-8 {}",
-            deb.bracket.matches[9].summary(),
+            bracket.matches[9].summary(),
         );
         assert_eq!(
             rounds[1][1].get_id(),
-            deb.bracket.matches[10].get_id(),
+            bracket.matches[10].get_id(),
             "6-7 {}",
-            deb.bracket.matches[10].summary(),
+            bracket.matches[10].summary(),
         );
-        assert_eq!(
-            rounds[2][0].get_id(),
-            deb.bracket.matches[11].get_id(),
-            "3-6"
-        );
-        assert_eq!(
-            rounds[2][1].get_id(),
-            deb.bracket.matches[12].get_id(),
-            "4-5"
-        );
-        assert_eq!(
-            rounds[3][0].get_id(),
-            deb.bracket.matches[13].get_id(),
-            "3-4"
-        );
-        assert_eq!(
-            rounds[4][0].get_id(),
-            deb.bracket.matches[14].get_id(),
-            "2-3"
-        );
+        assert_eq!(rounds[2][0].get_id(), bracket.matches[11].get_id(), "3-6");
+        assert_eq!(rounds[2][1].get_id(), bracket.matches[12].get_id(), "4-5");
+        assert_eq!(rounds[3][0].get_id(), bracket.matches[13].get_id(), "3-4");
+        assert_eq!(rounds[4][0].get_id(), bracket.matches[14].get_id(), "2-3");
     }
 }

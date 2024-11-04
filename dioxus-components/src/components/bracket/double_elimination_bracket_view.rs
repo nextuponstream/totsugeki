@@ -5,10 +5,11 @@ use crate::components::bracket::displayable_match::DisplayMatch;
 use crate::components::bracket::displayable_round::Round;
 use crate::components::bracket::match_edit::MatchEditModal;
 use crate::components::bracket::ui_primitives::ConnectMatchesBetweenRounds;
+use crate::tournaments::Tournament;
 use crate::Modal;
+use dioxus::html::br;
 use dioxus::prelude::*;
-use totsugeki::bracket::double_elimination_variant::Variant as DoubleEliminationVariant;
-use totsugeki::bracket::Bracket;
+use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki_display::loser_bracket::lines as loser_bracket_lines;
 use totsugeki_display::loser_bracket::reorder as reorder_loser_bracket;
 use totsugeki_display::winner_bracket::lines as winner_bracket_lines;
@@ -24,24 +25,23 @@ pub(crate) fn View(cx: Scope) -> Element {
     };
     let isMatchEditModalHidden = !matches!(*modal.read(), Some(Modal::EnterMatchResult(_, _, _)));
 
-    let bracket = match use_shared_state::<Bracket>(cx) {
-        Some(bracket) => bracket.read().clone(),
-        None => Bracket::default(),
+    let bracket = match use_shared_state::<DoubleEliminationBracket>(cx) {
+        Some(t) => t.read().clone(),
+        None => DoubleEliminationBracket::default(),
     };
-    let Ok(dev) = std::convert::TryInto::<DoubleEliminationVariant>::try_into(bracket.clone())
-    else {
-        log::error!("double elimination variant");
-        return None;
+    let tournament = match use_shared_state::<Tournament>(cx) {
+        Some(t) => t.read().clone(),
+        None => Tournament::default(),
     };
 
-    let participants = bracket.get_participants();
+    let participants = tournament.get_participants();
 
-    let wb_rounds_matches = dev.partition_winner_bracket()?;
+    let wb_rounds_matches = bracket.partition_winner_bracket().unwrap();
     let mut wb_rounds = vec![];
     for r in wb_rounds_matches {
         let round = r
             .iter()
-            .map(|m| from_participants(m, &participants))
+            .map(|m| from_participants(m, &participants.0))
             .collect();
         wb_rounds.push(round);
     }
@@ -71,12 +71,12 @@ pub(crate) fn View(cx: Scope) -> Element {
     let wb_columns = wb_elements.len();
 
     // TODO extract function for wb + lb Match to DisplayableMatch organised by rounds
-    let lb_rounds_matches = dev.partition_loser_bracket()?;
+    let lb_rounds_matches = bracket.partition_loser_bracket().unwrap();
     let mut lb_rounds: Vec<Vec<MinimalMatch>> = vec![];
     for r in lb_rounds_matches {
         let round = r
             .iter()
-            .map(|m| from_participants(m, &participants))
+            .map(|m| from_participants(m, &tournament.get_participants().0.clone()))
             .collect();
         lb_rounds.push(round);
     }
@@ -105,12 +105,12 @@ pub(crate) fn View(cx: Scope) -> Element {
     ));
     let lb_columns = lb_elements.len();
 
-    let Some((gf, gf_reset)) = dev.grand_finals_and_reset() else {
+    let Ok((gf, gf_reset)) = bracket.grand_finals_and_reset() else {
         log::error!("grand finals+reset");
         return None;
     };
-    let gf = from_participants(&gf, &participants);
-    let gf_reset = from_participants(&gf_reset, &participants);
+    let gf = from_participants(&gf, &participants.0);
+    let gf_reset = from_participants(&gf_reset, &participants.0);
 
     cx.render(rsx!(
         MatchEditModal { isHidden: isMatchEditModalHidden }

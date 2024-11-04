@@ -2,6 +2,7 @@
 
 mod disqualify_from_bracket;
 mod next_opponent_in_bracket;
+mod partition;
 pub mod progression;
 
 use crate::bracket::matches::{Error, Progression};
@@ -25,6 +26,16 @@ pub struct SingleEliminationBracket {
     // FIXME use AutomaticMatchValidationMode instead
     /// True when a match should not require tournament organiser to be finalized
     automatic_match_progression: bool,
+}
+
+impl Default for SingleEliminationBracket {
+    fn default() -> Self {
+        Self {
+            matches: vec![],
+            seeding: Seeding::default(),
+            automatic_match_progression: true,
+        }
+    }
 }
 
 /// All errors you might come across when players reports match result

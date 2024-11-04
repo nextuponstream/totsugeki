@@ -114,8 +114,8 @@ pub fn View(cx: Scope) -> Element {
         None => Bracket::default().get_format(),
     };
     let view = match format {
-        Format::SingleElimination => SingleEliminationBracketView(cx),
-        Format::DoubleElimination => DoubleEliminationBracketView(cx),
+        Format::SingleEliminationBracket => SingleEliminationBracketView(cx),
+        Format::DoubleEliminationBracket => DoubleEliminationBracketView(cx),
     };
 
     cx.render(rsx!(

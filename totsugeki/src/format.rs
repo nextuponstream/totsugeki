@@ -15,13 +15,13 @@ use crate::{
     },
 };
 
-/// All bracket formats
+/// All tournament formats
 #[derive(PartialEq, Eq, Copy, Clone, Deserialize, Serialize, Debug)]
 pub enum Format {
     /// Players are eliminated after their first loss
-    SingleElimination,
+    SingleEliminationBracket,
     /// Players are eliminated after their second loss
-    DoubleElimination,
+    DoubleEliminationBracket,
 }
 
 impl Format {
@@ -32,8 +32,10 @@ impl Format {
     pub fn generate_matches(self, seeding: &[PlayerId]) -> Result<Vec<Match>, SeedingError> {
         let seeding = Seeding::new(seeding.into()).unwrap();
         Ok(match self {
-            Format::SingleElimination => get_balanced_round_matches_top_seed_favored(seeding)?,
-            Format::DoubleElimination => {
+            Format::SingleEliminationBracket => {
+                get_balanced_round_matches_top_seed_favored(seeding)?
+            }
+            Format::DoubleEliminationBracket => {
                 let mut matches = vec![];
                 let mut winner_bracket_matches =
                     get_balanced_round_matches_top_seed_favored(seeding.clone())?;
@@ -63,10 +65,10 @@ impl Format {
         automatic_progression: bool,
     ) -> Box<dyn Progression> {
         match self {
-            Format::SingleElimination => {
+            Format::SingleEliminationBracket => {
                 panic!()
             }
-            Format::DoubleElimination => Box::new(
+            Format::DoubleEliminationBracket => Box::new(
                 DE_Step::new(
                     Some(matches),
                     seeding
@@ -85,8 +87,8 @@ impl Format {
 impl std::fmt::Display for Format {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Format::SingleElimination => write!(f, "single-elimination"),
-            Format::DoubleElimination => write!(f, "double-elimination"),
+            Format::SingleEliminationBracket => write!(f, "single-elimination"),
+            Format::DoubleEliminationBracket => write!(f, "double-elimination"),
         }
     }
 }
@@ -96,8 +98,8 @@ impl std::str::FromStr for Format {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "single-elimination" => Ok(Format::SingleElimination),
-            "double-elimination" => Ok(Format::DoubleElimination),
+            "single-elimination" => Ok(Format::SingleEliminationBracket),
+            "double-elimination" => Ok(Format::DoubleEliminationBracket),
             _ => Err(ParsingError::Unknown(s.to_string())),
         }
     }
@@ -105,7 +107,7 @@ impl std::str::FromStr for Format {
 
 impl Default for Format {
     fn default() -> Self {
-        Self::DoubleElimination
+        Self::DoubleEliminationBracket
     }
 }
 

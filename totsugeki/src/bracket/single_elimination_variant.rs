@@ -1,5 +1,6 @@
 //! Single elimination bracket
 
+use crate::bracket::seeding::Seeding;
 use crate::bracket::Bracket;
 use crate::format::Format;
 use crate::matches::Match;
@@ -28,7 +29,7 @@ impl TryFrom<Bracket> for Variant {
     // trying to coerce smth into smth else is a sign that a fallible process
     // should be made not fallible
     fn try_from(bracket: Bracket) -> Result<Self, Self::Error> {
-        if bracket.format != Format::SingleElimination {
+        if bracket.format != Format::SingleEliminationBracket {
             return Err(TryIntoError::ExpectedSingleEliminationFormat);
         }
 
@@ -42,7 +43,10 @@ impl Variant {
     /// # Errors
     /// Returns an error when there is less than 3 players in the bracket
     pub fn partition_by_round(&self) -> Result<Vec<Vec<Match>>, PartitionError> {
-        let wb = winner_bracket(self.bracket.matches.clone(), &self.bracket.participants);
+        let wb = winner_bracket(
+            self.bracket.matches.clone(),
+            &Seeding::new(self.bracket.participants.get_seeding()).unwrap(),
+        );
 
         Ok(wb)
     }

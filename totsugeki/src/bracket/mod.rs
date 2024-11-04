@@ -3,7 +3,6 @@
 mod assertions;
 pub mod builder;
 mod disqualification;
-pub mod double_elimination_variant;
 mod getter_setter;
 pub mod matches;
 mod ongoing;
@@ -12,7 +11,7 @@ pub(crate) mod progression;
 mod query_state;
 pub mod seeding;
 pub mod single_elimination_variant;
-mod winner_bracket;
+pub(crate) mod winner_bracket;
 
 use crate::{
     bracket::{matches::Error as ProgressError, Id as BracketId},

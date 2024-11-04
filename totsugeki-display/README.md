@@ -4,7 +4,7 @@ Core library for displaying a bracket in a web page with Tailwind CSS. Tied to
 `totsugeki` library as it takes output and reorders it to produce a new ordered
 output for displaying.
 
-Main responsibilties of this library are:
+Main responsibilities of this library are:
 
 - partition matches per round
 - give row hint to matches (to be used with Tailwind CSS dependency)

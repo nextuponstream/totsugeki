@@ -12,6 +12,7 @@ use crate::components::bracket::displayable_match::EMPTY_NAME;
 use totsugeki::matches::Id as MatchId;
 
 pub mod components;
+mod tournaments;
 
 /// Maximum size for name
 const MAX_NAME_SIZE: usize = 64;
