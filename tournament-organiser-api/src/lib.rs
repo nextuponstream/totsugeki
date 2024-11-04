@@ -9,7 +9,6 @@
 #![warn(clippy::unwrap_used)]
 #![forbid(unsafe_code)]
 
-pub mod brackets;
 pub mod health_check;
 pub mod http;
 mod middlewares;

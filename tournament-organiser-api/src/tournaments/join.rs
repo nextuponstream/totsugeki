@@ -1,9 +1,9 @@
 //! Register player in bracket
 
-use crate::brackets::breakdown;
 use crate::http::{internal_error, ErrorSlug};
 use crate::repositories::brackets::{Error, TournamentService};
 use crate::repositories::users::UserRepository;
+use crate::tournaments::breakdown;
 use crate::users::session::Keys::UserId;
 use axum::extract::{Path, State};
 use axum::response::IntoResponse;

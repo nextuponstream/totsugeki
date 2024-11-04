@@ -10,9 +10,9 @@ use totsugeki::matches::Match;
 use totsugeki::player::Participants;
 use totsugeki::player::{Id, Player};
 
-use crate::brackets::{ReportResultInput, TournamentRecord};
 use crate::resources::PaginatedGenericResource;
 use crate::tournaments::{ParticipantError, Tournament};
+use crate::tournaments::{ReportResultInput, TournamentRecord};
 use crate::users::registration::UserRecord;
 use thiserror::Error;
 use totsugeki::bracket::seeding::Seeding;
@@ -216,7 +216,7 @@ impl TournamentService {
         Ok(brackets)
     }
     /// List all brackets belonging to `user_id`
-    pub async fn user_brackets(
+    pub async fn user_tournaments(
         transaction: &mut Transaction<'_, Postgres>,
         sort_order: String,
         limit: i64,

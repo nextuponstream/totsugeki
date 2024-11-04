@@ -1,4 +1,5 @@
 //! bracket management
+//! Tournament description for players on how to participate
 
 mod create;
 mod join;
@@ -8,36 +9,38 @@ mod report_result;
 mod save_bracket_from_steps;
 mod show;
 mod update_with_result;
-mod user_brackets;
+mod user_tournaments;
 
 // Flatten exports when reusing
-pub(crate) use crate::brackets::create::*;
-pub(crate) use crate::brackets::join::*;
-pub(crate) use crate::brackets::list::*;
-pub(crate) use crate::brackets::new::*;
-pub(crate) use crate::brackets::report_result::*;
-pub(crate) use crate::brackets::save_bracket_from_steps::*;
-pub(crate) use crate::brackets::show::*;
-pub(crate) use crate::brackets::update_with_result::*;
-pub(crate) use crate::brackets::user_brackets::*;
-
 use crate::repositories::brackets::MatchesRaw;
-use crate::tournaments::Tournament;
+pub(crate) use crate::tournaments::create::*;
+pub(crate) use crate::tournaments::join::*;
+pub(crate) use crate::tournaments::list::*;
+pub(crate) use crate::tournaments::new::*;
+pub(crate) use crate::tournaments::report_result::*;
+pub(crate) use crate::tournaments::save_bracket_from_steps::*;
+pub(crate) use crate::tournaments::show::*;
+pub(crate) use crate::tournaments::update_with_result::*;
+pub(crate) use crate::tournaments::user_tournaments::*;
 use axum::{response::IntoResponse, Json as AxumJson};
-use chrono::prelude::*;
+use chrono::{DateTime, Utc};
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::types::Json as SqlxJson;
+use std::cmp::PartialEq;
+use std::fmt::{Display, Formatter};
 use totsugeki::bracket::seeding::Seeding;
-use totsugeki::bracket::{Bracket, Id};
+use totsugeki::bracket::Id;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
-use totsugeki::player::{Id as PlayerId, Participants, Player};
+use totsugeki::format::Format;
+use totsugeki::player::{Id as PlayerId, Participants as TotsugekiParticipants, Player};
 use totsugeki::validation::AutomaticMatchValidationMode;
 use totsugeki_display::loser_bracket::lines as loser_bracket_lines;
 use totsugeki_display::loser_bracket::reorder as reorder_loser_bracket;
 use totsugeki_display::winner_bracket::lines as winner_bracket_lines;
 use totsugeki_display::winner_bracket::reorder as reorder_winner_bracket;
 use totsugeki_display::{from_participants, BoxElement, MinimalMatch};
+use uuid::Uuid;
 use validator::Validate;
 
 /// List of players from which a bracket can be created
@@ -217,7 +220,7 @@ pub(crate) struct TournamentRecord {
     /// matches (agnostic to tournament format)
     pub matches: SqlxJson<MatchesRaw>,
     /// participants
-    pub participants: SqlxJson<Participants>,
+    pub participants: SqlxJson<TotsugekiParticipants>,
 }
 
 impl TournamentRecord {
@@ -235,5 +238,129 @@ impl TournamentRecord {
         );
 
         (tournament, bracket)
+    }
+}
+
+/// Identifier
+pub type ID = Uuid;
+
+/// ID format for tournament
+#[derive(Default, Debug, Copy, Clone, Serialize, Deserialize)]
+pub struct TournamentID(pub ID);
+
+impl Display for TournamentID {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+/// Tournament . Mostly common information such as
+/// * bracket name
+/// * start+end time
+/// * location
+///
+/// These information may not be necessary to running the bracket, but they are
+/// necessary for player
+#[derive(Clone, Debug, Deserialize)]
+pub struct Tournament {
+    /// Identifier of this bracket
+    id: TournamentID,
+    /// Name of tournament
+    name: String,
+    /// Advertised start time
+    start_time: Option<DateTime<Utc>>,
+    /// Advertised end time
+    end_time: Option<DateTime<Utc>>,
+    /// Format
+    format: Format,
+    /// Participants
+    participants: Participants,
+}
+
+impl Default for Tournament {
+    fn default() -> Self {
+        Self {
+            id: TournamentID(ID::new_v4()),
+            name: "".into(),
+            start_time: None,
+            end_time: None,
+            format: Format::default(),
+            participants: Participants::default(),
+        }
+    }
+}
+
+impl Tournament {
+    /// New tournament from database record
+    pub fn new_from_database_record(id: ID, name: String, participants: Vec<Player>) -> Self {
+        Self {
+            id: TournamentID(id),
+            name,
+            start_time: None,
+            end_time: None,
+            format: Default::default(),
+            participants: Participants(participants),
+        }
+    }
+}
+
+/// Player ID
+#[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq)]
+struct PlayerID(pub ID);
+
+/// Error
+#[derive(Debug)]
+pub enum ParticipantError {
+    /// Player is already present
+    AlreadyPresent,
+}
+
+/// Participants of tournament
+///
+/// Participants are ordered by seeding position from strongest to weakest
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+pub struct Participants(pub Vec<Player>);
+
+impl Participants {
+    /// Ordered list for seeding
+    pub fn get_seeding(&self) -> Vec<ID> {
+        self.0.iter().map(|p| p.get_id()).collect()
+    }
+}
+
+impl Tournament {
+    /// Add player to tournament
+    pub fn add_participant(&mut self, player: Player) -> Result<(), ParticipantError> {
+        if self
+            .participants
+            .0
+            .iter()
+            .any(|p| p.get_id() == player.get_id())
+        {
+            Err(ParticipantError::AlreadyPresent)
+        } else {
+            self.participants.0.push(player);
+            Ok(())
+        }
+    }
+
+    /// Get ID
+    pub fn get_id(&self) -> TournamentID {
+        self.id
+    }
+
+    /// Get name
+    pub fn get_name(&self) -> String {
+        self.name.clone()
+    }
+
+    /// Get participants
+    pub fn get_participants(&self) -> Participants {
+        self.participants.clone()
+    }
+
+    /// Set name of tournament
+    pub fn set_name(&mut self, name: impl Into<String>) {
+        self.name = name.into();
     }
 }

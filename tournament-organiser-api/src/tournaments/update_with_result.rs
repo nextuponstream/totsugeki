@@ -1,8 +1,8 @@
 //! Update bracket with result
 
-use crate::brackets::{breakdown, ReportResultInput};
 use crate::http::{internal_error, ErrorSlug};
 use crate::repositories::brackets::TournamentService;
+use crate::tournaments::{breakdown, ReportResultInput};
 use axum::extract::{Path, State};
 use axum::response::IntoResponse;
 use axum::Json;

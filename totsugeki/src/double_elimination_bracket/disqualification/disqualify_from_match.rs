@@ -1,5 +1,5 @@
-use crate::ID;
 use crate::double_elimination_bracket::DoubleEliminationBracket;
+use crate::ID;
 
 impl DoubleEliminationBracket {
     /// Disqualify participant from current match and only current match, allowing player to play

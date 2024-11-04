@@ -1,7 +1,7 @@
 //! New unsaved bracket
 
-use crate::brackets::{breakdown, CreateBracketForm};
 use crate::tournaments::Tournament;
+use crate::tournaments::{breakdown, CreateBracketForm};
 use axum::response::IntoResponse;
 use axum::Json;
 use http::StatusCode;

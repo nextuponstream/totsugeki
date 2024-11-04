@@ -1,8 +1,8 @@
 //! Show bracket
 
-use crate::brackets::breakdown;
 use crate::http::{internal_error, ErrorSlug};
 use crate::repositories::brackets::TournamentService;
+use crate::tournaments::breakdown;
 use crate::users::session::Keys::UserId;
 use axum::extract::{Path, State};
 use axum::response::IntoResponse;

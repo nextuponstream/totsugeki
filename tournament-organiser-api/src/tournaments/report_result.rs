@@ -1,7 +1,7 @@
 //! Report result without saving to database
 
-use crate::brackets::{breakdown, ReportResultInput};
 use crate::http::ErrorSlug;
+use crate::tournaments::{breakdown, ReportResultInput};
 use axum::response::IntoResponse;
 use axum::Json;
 use http::StatusCode;

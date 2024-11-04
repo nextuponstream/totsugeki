@@ -1,11 +1,11 @@
 //! Create brackets
 
-use crate::brackets::{CreateBracketForm, GenericResourceCreated};
 use crate::http::internal_error;
 use crate::http::Error;
 use crate::middlewares::validation::ValidatedJson;
 use crate::repositories::brackets::TournamentService;
 use crate::tournaments::Tournament;
+use crate::tournaments::{CreateBracketForm, GenericResourceCreated};
 use crate::users::session::Keys::UserId;
 use axum::extract::State;
 use axum::response::IntoResponse;

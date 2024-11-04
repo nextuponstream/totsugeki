@@ -1,9 +1,9 @@
 //! Save bracket from steps
 
-use crate::brackets::{breakdown, BracketState};
 use crate::http::{internal_error, ErrorSlug};
 use crate::repositories::brackets::TournamentService;
 use crate::tournaments::Tournament;
+use crate::tournaments::{breakdown, BracketState};
 use crate::users::session::Keys;
 use axum::extract::State;
 use axum::response::IntoResponse;

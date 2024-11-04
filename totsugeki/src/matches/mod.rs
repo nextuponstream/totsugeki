@@ -1,7 +1,5 @@
 //! Two players play a match, resulting in a winner and a loser
 
-#![allow(E0004)]
-
 mod bracket_result;
 mod query;
 pub use bracket_result::{BracketResult, Error as BracketResultGenerationError};
@@ -649,7 +647,7 @@ impl Match {
                 return Err(Error::MissingReport(self.id, self.reported_results));
             }
             (_, _, r) => {
-                unreachable!("{r:?}")
+                unreachable!("{:?}", r)
             }
         };
 

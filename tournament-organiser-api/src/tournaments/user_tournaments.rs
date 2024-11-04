@@ -11,9 +11,9 @@ use totsugeki::bracket::Id;
 use tracing::instrument;
 
 /// `/:user_id/brackets` GET to view brackets managed by user
-#[instrument(name = "user_brackets", skip(pool))]
+#[instrument(name = "user_tournaments", skip(pool))]
 #[debug_handler]
-pub(crate) async fn user_brackets(
+pub(crate) async fn user_tournaments(
     Path(user_id): Path<Id>,
     State(pool): State<PgPool>,
     ValidatedRequest(pagination): ValidatedRequest<Pagination>,
@@ -22,7 +22,7 @@ pub(crate) async fn user_brackets(
     let offset: i64 = pagination.offset.try_into().expect("ok");
 
     let mut transaction = pool.begin().await?;
-    let brackets = TournamentService::user_brackets(
+    let brackets = TournamentService::user_tournaments(
         &mut transaction,
         pagination.sort_order,
         limit,

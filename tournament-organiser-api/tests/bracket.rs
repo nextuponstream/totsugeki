@@ -4,11 +4,11 @@ use reqwest::StatusCode;
 use sqlx::PgPool;
 use totsugeki::matches::Match;
 use totsugeki::player::Player;
-use tournament_organiser_api::brackets::{
-    BracketDisplay, BracketState, GenericResourceCreated, PlayerMatchResultReport,
-};
 use tournament_organiser_api::resources::PaginationResult;
 use tournament_organiser_api::test_utils::spawn_app;
+use tournament_organiser_api::tournaments::{
+    BracketDisplay, BracketState, GenericResourceCreated, PlayerMatchResultReport,
+};
 
 #[sqlx::test]
 async fn tournament_is_searchable(db: PgPool) {
@@ -17,7 +17,7 @@ async fn tournament_is_searchable(db: PgPool) {
 
     let players = vec![];
 
-    let request = tournament_organiser_api::brackets::CreateBracketForm {
+    let request = tournament_organiser_api::tournaments::CreateBracketForm {
         bracket_name: "".into(),
         player_names: players,
     };

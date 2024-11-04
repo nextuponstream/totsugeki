@@ -12,7 +12,7 @@ pub struct TestApp {
 }
 
 use super::*;
-use crate::brackets::{BracketState, CreateBracketForm};
+use crate::tournaments::{BracketState, CreateBracketForm};
 use reqwest::{Client, Response};
 use serde::Serialize;
 use tokio::net::TcpListener;
