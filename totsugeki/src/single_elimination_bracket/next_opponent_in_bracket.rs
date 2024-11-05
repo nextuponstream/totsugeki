@@ -1,3 +1,5 @@
+//! Inspect next opponent for a given player in single elimination bracket
+
 use crate::next_opponent::NextOpponentInBracket;
 use crate::opponent::Opponent;
 use crate::single_elimination_bracket::SingleEliminationBracket;

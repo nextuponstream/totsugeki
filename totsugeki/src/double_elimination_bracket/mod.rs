@@ -100,6 +100,8 @@ impl DoubleEliminationBracket {
         self.matches.clone()
     }
 
+    /// Remove player reported results from match. For internal use because validating a match with
+    /// automatic validation on may trigger a cascading update
     fn clear_reported_result(self, player_id: crate::player::Id) -> Self {
         let matches_to_update = self
             .matches

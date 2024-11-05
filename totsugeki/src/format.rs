@@ -5,7 +5,7 @@ use thiserror::Error;
 
 use crate::bracket::seeding::Seeding;
 use crate::{
-    bracket::matches::{double_elimination_format::Step as DE_Step, Progression},
+    bracket::matches::Progression,
     matches::Match,
     player::{Id as PlayerId, Participants, Player},
     seeding::{
@@ -50,37 +50,6 @@ impl Format {
                 matches
             }
         })
-    }
-
-    // FIXME remove abstraction. Putting stuff on the heap may not be necessary
-    /// Returns progression implementation for this bracket format
-    ///
-    /// # Panics
-    /// if match generation of given format cannot generate match
-    #[must_use]
-    pub fn get_progression(
-        &self,
-        matches: Vec<Match>,
-        seeding: &Participants,
-        automatic_progression: bool,
-    ) -> Box<dyn Progression> {
-        match self {
-            Format::SingleEliminationBracket => {
-                panic!()
-            }
-            Format::DoubleEliminationBracket => Box::new(
-                DE_Step::new(
-                    Some(matches),
-                    seeding
-                        .get_players_list()
-                        .iter()
-                        .map(Player::get_id)
-                        .collect(),
-                    automatic_progression,
-                )
-                .expect("double elimination bracket state"),
-            ),
-        }
     }
 }
 

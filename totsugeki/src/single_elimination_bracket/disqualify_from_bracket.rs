@@ -1,3 +1,5 @@
+//! Disqualify player with no chance to play again.
+
 use crate::opponent::Opponent;
 use crate::single_elimination_bracket::progression::ProgressionSEB;
 use crate::single_elimination_bracket::SingleEliminationBracket;

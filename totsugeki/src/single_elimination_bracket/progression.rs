@@ -275,6 +275,8 @@ impl ProgressionSEB for SingleEliminationBracket {
         Ok((bracket, first_affected_match, new_matches_2))
     }
 }
+
+#[cfg(test)]
 mod tests {
     use crate::bracket::seeding::Seeding;
     use crate::opponent::Opponent;

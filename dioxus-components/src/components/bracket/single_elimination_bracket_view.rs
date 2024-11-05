@@ -6,9 +6,6 @@ use crate::{
     Modal,
 };
 use dioxus::prelude::*;
-use totsugeki::bracket::single_elimination_variant::Variant as SingleEliminationVariant;
-use totsugeki::bracket::Bracket;
-use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki::single_elimination_bracket::SingleEliminationBracket;
 use totsugeki_display::from_participants;
 use totsugeki_display::winner_bracket::lines;
@@ -40,7 +37,7 @@ pub(crate) fn View(cx: Scope) -> Element {
     for r in match_by_rounds {
         let round = r
             .iter()
-            .map(|m| from_participants(m, &participants.0))
+            .map(|m| from_participants(m, &participants.get_players_list()))
             .collect();
         rounds.push(round);
     }

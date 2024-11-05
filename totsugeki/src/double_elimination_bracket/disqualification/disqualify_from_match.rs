@@ -1,3 +1,5 @@
+//! Disqualify player from single match (if they were in winners, they still have a change to play)
+
 use crate::double_elimination_bracket::DoubleEliminationBracket;
 use crate::ID;
 

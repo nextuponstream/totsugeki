@@ -324,12 +324,14 @@ pub struct Participants(pub Vec<Player>);
 impl Participants {
     /// Ordered list for seeding
     pub fn get_seeding(&self) -> Vec<ID> {
-        self.0.iter().map(|p| p.get_id()).collect()
+        self.0.iter().map(Player::get_id).collect()
     }
 }
 
 impl Tournament {
     /// Add player to tournament
+    /// # Errors
+    /// when player is duplicate
     pub fn add_participant(&mut self, player: Player) -> Result<(), ParticipantError> {
         if self
             .participants
@@ -345,16 +347,19 @@ impl Tournament {
     }
 
     /// Get ID
+    #[must_use]
     pub fn get_id(&self) -> TournamentID {
         self.id
     }
 
     /// Get name
+    #[must_use]
     pub fn get_name(&self) -> String {
         self.name.clone()
     }
 
     /// Get participants
+    #[must_use]
     pub fn get_participants(&self) -> Participants {
         self.participants.clone()
     }

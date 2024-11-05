@@ -106,6 +106,8 @@ mod tests {
     use super::PartitionError;
     use crate::bracket::seeding::Seeding;
     use crate::double_elimination_bracket::DoubleEliminationBracket;
+    use crate::matches::partition_double_elimination_matches;
+    use crate::player::{Participants, Player};
     use crate::validation::AutomaticMatchValidationMode;
     use crate::ID;
 
@@ -386,5 +388,25 @@ mod tests {
         assert_eq!(rounds[2][1].get_id(), bracket.matches[12].get_id(), "4-5");
         assert_eq!(rounds[3][0].get_id(), bracket.matches[13].get_id(), "3-4");
         assert_eq!(rounds[4][0].get_id(), bracket.matches[14].get_id(), "2-3");
+    }
+
+    #[test]
+    fn partition_matches_for_3_man_bracket() {
+        let mut player_ids = vec![crate::player::Id::new_v4()]; // padding for readability
+        let mut unpadded_player_ids = vec![];
+        for i in 1..=3 {
+            let player = Player::new(format!("p{i}"));
+            player_ids.push(player.get_id());
+            unpadded_player_ids.push(player.get_id());
+        }
+        let bracket = DoubleEliminationBracket::create(
+            Seeding::new(unpadded_player_ids).unwrap(),
+            AutomaticMatchValidationMode::Flexible,
+        );
+
+        let (winner_bracket, loser_bracket, _gf, _gfr) = bracket.partition_matches().unwrap();
+        assert_eq!(winner_bracket.len(), 2);
+        assert_eq!(loser_bracket.len(), 1);
+        assert_eq!(loser_bracket[0].get_seeds(), [2, 3]);
     }
 }

@@ -13,8 +13,6 @@ use crate::{
 use thiserror::Error;
 
 pub mod double_elimination_format;
-pub mod single_elimination_format;
-
 /// Error while managing matches of bracket
 #[derive(Error, Debug)]
 pub enum Error {

@@ -1,9 +1,15 @@
 //! Modal component to edit match
 #![allow(non_snake_case)]
 
+use crate::tournaments::Tournament;
 use crate::{components::SUBMIT_CLASS, Modal, ShortName};
 use dioxus::prelude::*;
-use totsugeki::{bracket::Bracket, matches::Id as MatchId, opponent::Opponent};
+use totsugeki::double_elimination_bracket::progression::ProgressionDEB;
+use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki::format::Format;
+use totsugeki::single_elimination_bracket::progression::ProgressionSEB;
+use totsugeki::single_elimination_bracket::SingleEliminationBracket;
+use totsugeki::{matches::Id as MatchId, opponent::Opponent};
 
 #[derive(PartialEq, Props)]
 /// Props for match edit modal
@@ -18,7 +24,11 @@ pub(crate) struct FormProps {
 
 /// Component to edit match in modal
 pub(crate) fn MatchEdit(cx: Scope<FormProps>) -> Element {
-    let bracket = use_shared_state::<Bracket>(cx).expect("bracket");
+    let tournament = use_shared_state::<Tournament>(cx).expect("tournament");
+    let single_elimination_bracket =
+        use_shared_state::<SingleEliminationBracket>(cx).expect("single elimination bracket");
+    let double_elimination_bracket =
+        use_shared_state::<DoubleEliminationBracket>(cx).expect("double elimination bracket");
 
     let result_1 = use_state(cx, || 0);
     let result_2 = use_state(cx, || 0);
@@ -27,7 +37,7 @@ pub(crate) fn MatchEdit(cx: Scope<FormProps>) -> Element {
         form {
             prevent_default: "submit",
             onsubmit: move |event| {
-                update_bracket_with_match_result(cx, bracket, event);
+                update_bracket_with_match_result(cx, tournament, single_elimination_bracket, double_elimination_bracket, event);
                 result_1.set(0);
                 result_2.set(0);
             },
@@ -130,7 +140,9 @@ fn RoundWonByPlayer<'a>(cx: Scope<'a, RoundWonByPlayerProps<'a>>) -> Element<'a>
 /// Update bracket with match result using input values in match edit modal
 fn update_bracket_with_match_result(
     cx: Scope<FormProps>,
-    bracket: &UseSharedState<Bracket>,
+    tournament: &UseSharedState<Tournament>,
+    single_elimination_bracket: &UseSharedState<SingleEliminationBracket>,
+    double_elimination_bracket: &UseSharedState<DoubleEliminationBracket>,
     e: Event<FormData>,
 ) {
     log::trace!("Updating match result...");
@@ -141,8 +153,15 @@ fn update_bracket_with_match_result(
         log::error!("no modal");
         return;
     };
-    let b = bracket.write().clone();
-    let matches = b.get_matches();
+    let tournament = tournament.read().clone();
+    let matches = match tournament.get_format() {
+        totsugeki::format::Format::SingleEliminationBracket => {
+            single_elimination_bracket.read().clone().get_matches()
+        }
+        totsugeki::format::Format::DoubleEliminationBracket => {
+            double_elimination_bracket.read().clone().get_matches()
+        }
+    };
 
     let Some(m) = matches.iter().find(|m| m.get_id() == cx.props.match_id) else {
         log::error!("no match found");
@@ -184,15 +203,32 @@ fn update_bracket_with_match_result(
     log::debug!("{result:?}");
     log::debug!("{e:?}");
     // log::debug!("before {b:?}");
-    let b = match b.tournament_organiser_reports_result(p1, result, p2) {
-        Ok(b) => b.0,
-        Err(e) => {
-            log::error!("{e}");
-            return;
+    match tournament.get_format() {
+        Format::SingleEliminationBracket => {
+            let bracket = single_elimination_bracket.read().clone();
+            let b = match bracket.tournament_organiser_reports_result(p1, result, p2) {
+                Ok(b) => b.0,
+                Err(e) => {
+                    log::error!("{e}");
+                    return;
+                }
+            };
+            // log::debug!("after {b:?}");
+            *single_elimination_bracket.write() = b;
         }
-    };
-    // log::debug!("after {b:?}");
-    *bracket.write() = b;
+        Format::DoubleEliminationBracket => {
+            let bracket = double_elimination_bracket.read().clone();
+            let b = match bracket.tournament_organiser_reports_result_dangerous(p1, result, p2) {
+                Ok(b) => b.0,
+                Err(e) => {
+                    log::error!("{e}");
+                    return;
+                }
+            };
+            // log::debug!("after {b:?}");
+            *double_elimination_bracket.write() = b;
+        }
+    }
     *modal.write() = None;
 
     log::trace!("finished updating match results");

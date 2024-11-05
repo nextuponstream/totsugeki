@@ -7,7 +7,6 @@ use crate::components::bracket::match_edit::MatchEditModal;
 use crate::components::bracket::ui_primitives::ConnectMatchesBetweenRounds;
 use crate::tournaments::Tournament;
 use crate::Modal;
-use dioxus::html::br;
 use dioxus::prelude::*;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki_display::loser_bracket::lines as loser_bracket_lines;
@@ -36,16 +35,17 @@ pub(crate) fn View(cx: Scope) -> Element {
 
     let participants = tournament.get_participants();
 
-    let wb_rounds_matches = bracket.partition_winner_bracket().unwrap();
     let mut wb_rounds = vec![];
-    for r in wb_rounds_matches {
-        let round = r
-            .iter()
-            .map(|m| from_participants(m, &participants.0))
-            .collect();
-        wb_rounds.push(round);
+    if let Ok(wb_rounds_matches) = bracket.partition_winner_bracket() {
+        for r in wb_rounds_matches {
+            let round = r
+                .iter()
+                .map(|m| from_participants(m, &participants.get_players_list()))
+                .collect();
+            wb_rounds.push(round);
+        }
+        reorder_winner_bracket(&mut wb_rounds);
     }
-    reorder_winner_bracket(&mut wb_rounds);
     let Some(wb_lines) = winner_bracket_lines(&wb_rounds) else {
         log::error!("winner bracket connecting lines");
         return None;
@@ -71,16 +71,19 @@ pub(crate) fn View(cx: Scope) -> Element {
     let wb_columns = wb_elements.len();
 
     // TODO extract function for wb + lb Match to DisplayableMatch organised by rounds
-    let lb_rounds_matches = bracket.partition_loser_bracket().unwrap();
     let mut lb_rounds: Vec<Vec<MinimalMatch>> = vec![];
-    for r in lb_rounds_matches {
-        let round = r
-            .iter()
-            .map(|m| from_participants(m, &tournament.get_participants().0.clone()))
-            .collect();
-        lb_rounds.push(round);
+    if let Ok(lb_rounds_matches) = bracket.partition_loser_bracket() {
+        for r in lb_rounds_matches {
+            let round = r
+                .iter()
+                .map(|m| {
+                    from_participants(m, &tournament.get_participants().get_players_list().clone())
+                })
+                .collect();
+            lb_rounds.push(round);
+        }
+        reorder_loser_bracket(&mut lb_rounds);
     }
-    reorder_loser_bracket(&mut lb_rounds);
     let mut lb_elements: Vec<BracketPrimitives> = vec![];
     let Some(lb_lines) = loser_bracket_lines(lb_rounds.clone()) else {
         log::error!("loser bracket connecting lines");
@@ -109,8 +112,8 @@ pub(crate) fn View(cx: Scope) -> Element {
         log::error!("grand finals+reset");
         return None;
     };
-    let gf = from_participants(&gf, &participants.0);
-    let gf_reset = from_participants(&gf_reset, &participants.0);
+    let gf = from_participants(&gf, &participants.get_players_list());
+    let gf_reset = from_participants(&gf_reset, &participants.get_players_list());
 
     cx.render(rsx!(
         MatchEditModal { isHidden: isMatchEditModalHidden }
