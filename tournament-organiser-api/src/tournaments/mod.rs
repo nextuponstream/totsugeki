@@ -124,7 +124,7 @@ pub struct BracketState {
 
 /// Breaks down bracket in small parts to be presented by UI
 fn breakdown(
-    tournament: Tournament,
+    tournament: &Tournament,
     bracket: DoubleEliminationBracket,
     user_id: Option<totsugeki::player::Id>,
     is_tournament_organiser: bool,
@@ -233,7 +233,8 @@ impl TournamentRecord {
         );
         let bracket = DoubleEliminationBracket::new(
             self.matches.0 .0,
-            Seeding::new(self.participants.0.get_seeding()).unwrap(),
+            Seeding::new(self.participants.0.get_seeding())
+                .expect("use seeding from database record"),
             AutomaticMatchValidationMode::Flexible, // FIXME should be in tournament record
         );
 
@@ -281,7 +282,7 @@ impl Default for Tournament {
     fn default() -> Self {
         Self {
             id: TournamentID(ID::new_v4()),
-            name: "".into(),
+            name: String::new(),
             start_time: None,
             end_time: None,
             format: Format::default(),
@@ -292,13 +293,14 @@ impl Default for Tournament {
 
 impl Tournament {
     /// New tournament from database record
+    #[must_use]
     pub fn new_from_database_record(id: ID, name: String, participants: Vec<Player>) -> Self {
         Self {
             id: TournamentID(id),
             name,
             start_time: None,
             end_time: None,
-            format: Default::default(),
+            format: Format::default(),
             participants: Participants(participants),
         }
     }

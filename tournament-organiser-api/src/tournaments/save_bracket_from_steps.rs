@@ -52,7 +52,8 @@ pub async fn save_bracket_from_steps(
         safe_player_mapping.push((player, safe_player));
     }
     let mut bracket = DoubleEliminationBracket::create(
-        Seeding::new(tournament.get_participants().get_seeding()).unwrap(),
+        Seeding::new(tournament.get_participants().get_seeding())
+            .expect("should use seeding from tournament organiser input"),
         AutomaticMatchValidationMode::Flexible, // FIXME get from form
     );
     for r in bracket_state.results {
@@ -97,6 +98,6 @@ pub async fn save_bracket_from_steps(
 
     Ok((
         StatusCode::CREATED,
-        breakdown(tournament, bracket, None, true),
+        breakdown(&tournament, bracket, None, true),
     ))
 }

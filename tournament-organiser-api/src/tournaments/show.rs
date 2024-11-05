@@ -46,6 +46,6 @@ pub async fn show_bracket(
     transaction.commit().await.map_err(internal_error)?;
     Ok((
         StatusCode::OK,
-        breakdown(tournament, bracket, user_id, is_tournament_organiser),
+        breakdown(&tournament, bracket, user_id, is_tournament_organiser),
     ))
 }

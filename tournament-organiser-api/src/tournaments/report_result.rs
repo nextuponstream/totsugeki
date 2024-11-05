@@ -35,5 +35,5 @@ pub async fn report_result(Json(report): Json<ReportResultInput>) -> impl IntoRe
         return Err(ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR));
     };
     // People allowed to report are tournament organiser
-    Ok((StatusCode::OK, breakdown(tournament, bracket, None, true)))
+    Ok((StatusCode::OK, breakdown(&tournament, bracket, None, true)))
 }

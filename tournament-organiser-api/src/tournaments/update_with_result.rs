@@ -45,5 +45,5 @@ pub async fn update_with_result(
             }
         };
     transaction.commit().await.map_err(internal_error)?;
-    Ok(breakdown(tournament, bracket, None, true))
+    Ok(breakdown(&tournament, bracket, None, true))
 }

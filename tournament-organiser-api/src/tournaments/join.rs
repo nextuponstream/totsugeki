@@ -55,7 +55,7 @@ pub(crate) async fn join_bracket(
         };
 
     Ok(breakdown(
-        tournament,
+        &tournament,
         bracket,
         Some(user_id),
         is_tournament_organiser,

@@ -49,7 +49,7 @@ pub(crate) async fn create_bracket(
                 .get_participants()
                 .0
                 .iter()
-                .map(|p| p.get_id())
+                .map(Player::get_id)
                 .collect(),
         )
         .unwrap(),

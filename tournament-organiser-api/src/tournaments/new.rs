@@ -27,15 +27,16 @@ pub async fn new_bracket(Json(form): Json<CreateBracketForm>) -> impl IntoRespon
     let mut tournament = Tournament::default();
     tournament.set_name(form.bracket_name);
     for name in form.player_names {
-        let Ok(_) = tournament.add_participant(Player::new(name)) else {
+        let Ok(()) = tournament.add_participant(Player::new(name)) else {
             // FIXME actual error handling
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         };
     }
     let bracket = DoubleEliminationBracket::create(
-        Seeding::new(tournament.get_participants().get_seeding()).unwrap(),
+        Seeding::new(tournament.get_participants().get_seeding())
+            .expect("should use seeding from tournament organiser input"),
         AutomaticMatchValidationMode::Flexible, // FIXME from form
     );
 
-    Ok(breakdown(tournament, bracket, None, false))
+    Ok(breakdown(&tournament, bracket, None, false))
 }
