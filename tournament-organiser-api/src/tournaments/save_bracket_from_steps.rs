@@ -16,6 +16,7 @@ use totsugeki::double_elimination_bracket::progression::ProgressionDEB;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki::player::Player;
 use totsugeki::validation::AutomaticMatchValidationMode;
+use totsugeki::ID;
 use tower_sessions::Session;
 use tracing::instrument;
 
@@ -79,7 +80,7 @@ pub async fn save_bracket_from_steps(
     }
 
     let mut transaction = pool.begin().await.map_err(internal_error)?;
-    let user_id: totsugeki::player::Id = session
+    let user_id: ID = session
         .get(&Keys::UserId.to_string())
         .await
         .expect("value from store")

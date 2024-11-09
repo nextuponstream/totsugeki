@@ -5,11 +5,11 @@ use crate::bracket::progression::{new_matches_to_play_for_bracket, winner_of_bra
 use crate::double_elimination_bracket::DoubleEliminationBracket;
 use crate::matches::{
     double_elimination_matches_from_partition, partition_double_elimination_matches, BracketResult,
-    Id, Match, ReportedResult,
+    Id, Match, MatchID, ReportedResult,
 };
 use crate::opponent::Opponent;
+use crate::player::PlayerID;
 use crate::validation::AutomaticMatchValidationMode;
-use crate::ID;
 use thiserror::Error;
 
 /// Error while reporting for a double elimination bracket
@@ -20,18 +20,18 @@ pub enum DoubleEliminationReportResultError {
     /// Player ID is valid but disqualified player are not allowed to report
     // FIXME add test When a player is DQ'd for the match, he cannot report that match
     #[error("Player was disqualified {0}")]
-    ForbiddenDisqualified(ID),
+    ForbiddenDisqualified(PlayerID),
     /// No match to play for player
     ///
     /// May happen if tournament organiser validated right before player did for the same match
     // FIXME add test where player has won grand finals but him reporting results in a message that
     //  they won
-    #[error("Player has no match to play yet")]
-    NoMatchToPlay(ID),
-    /// Match result was reported and validated already.
-    // FIXME add test where reporting twice for match results in error
-    #[error("Match results already validated")]
-    ResultValidatedAlready,
+    #[error("Player has no match to play yet {0}")]
+    NoMatchToPlay(PlayerID),
+    // /// Match result was reported and validated already.
+    // // FIXME add test where reporting twice for match results in error
+    // #[error("Match results already validated")]
+    // ResultValidatedAlready,
 }
 
 /// All methods to update matches of an ongoing double elimination bracket
@@ -42,10 +42,10 @@ pub trait ProgressionDEB {
     /// FIXME add test Reporting twice the same results
     fn tournament_organiser_reports_result(
         self,
-        match_id: ID,
-        player1: ID,
+        match_id: MatchID,
+        player1: PlayerID,
         bracket_result: BracketResult,
-        player2: ID,
+        player2: PlayerID,
     ) -> Result<(DoubleEliminationBracket, Id, Vec<Match>), DoubleEliminationReportResultError>;
 
     /// Tournament organiser reports result. Returns bracket, affected match ID and new matches
@@ -69,10 +69,10 @@ pub trait ProgressionDEB {
     /// FIXME add test Reporting result for people that are not playing each other
     fn tournament_organiser_reports_result_dangerous(
         self,
-        player1: ID,
+        player1: PlayerID,
         result: (i8, i8),
-        player2: ID,
-    ) -> Result<(DoubleEliminationBracket, Id, Vec<Match>), DoubleEliminationReportResultError>;
+        player2: PlayerID,
+    ) -> Result<(DoubleEliminationBracket, MatchID, Vec<Match>), DoubleEliminationReportResultError>;
 
     /// Tournament organiser reports `result` for match where `player` is involved.
     ///
@@ -87,9 +87,9 @@ pub trait ProgressionDEB {
     /// FIXME use struct BracketResult (Unsigned integer x2)
     fn tournament_organiser_reports_result_for_single_player_dangerous(
         self,
-        player: ID,
+        player: PlayerID,
         bracket_result: BracketResult,
-    ) -> Result<(DoubleEliminationBracket, Id, Vec<Match>), DoubleEliminationReportResultError>;
+    ) -> Result<(DoubleEliminationBracket, MatchID, Vec<Match>), DoubleEliminationReportResultError>;
 
     /// Report result of player.
     ///
@@ -97,26 +97,26 @@ pub trait ProgressionDEB {
     /// meant to send it once, you can accidentally update two matches.
     ///
     /// # Panics
-    /// FIXME add test When player is unknown
-    /// FIXME use struct BracketResult (Unsigned integer x2)
+    /// * FIXME add test When player is unknown
+    /// * FIXME use struct BracketResult (Unsigned integer x2)
     fn report_result_dangerous(
         self,
-        player_id: ID,
+        player_id: PlayerID,
         result: (i8, i8),
-    ) -> Result<(Vec<Match>, ID, Vec<Match>), DoubleEliminationReportResultError>;
+    ) -> Result<(Vec<Match>, MatchID, Vec<Match>), DoubleEliminationReportResultError>;
 
     /// Update `match_id` with reported `result` of `player`
     ///
     /// # Panics
     /// * FIXME add test When `match_id` is unknown
     /// * FIXME add test When `player_id` is unknown
-    /// FIXME use struct BracketResult (Unsigned integer x2)
-    /// FIXME add test (0, 0)
+    /// * FIXME use struct BracketResult (Unsigned integer x2)
+    /// * FIXME add test (0, 0)
     fn update_player_reported_match_result(
         self,
-        match_id: ID,
+        match_id: MatchID,
         result: (i8, i8),
-        player_id: ID,
+        player_id: PlayerID,
     ) -> Self;
 
     // FIXME doc
@@ -138,7 +138,7 @@ pub trait ProgressionDEB {
     /// # Error
     /// * FIXME add test When `match_id` is unknown
     /// * FIXME add test When validating `match_id` is not possible
-    fn validate_match_result(self, match_id: ID) -> (DoubleEliminationBracket, Vec<Match>);
+    fn validate_match_result(self, match_id: MatchID) -> (DoubleEliminationBracket, Vec<Match>);
 
     /// List all matches that can be played out
     fn matches_to_play(&self) -> Vec<Match>;
@@ -150,10 +150,10 @@ pub trait ProgressionDEB {
 impl ProgressionDEB for DoubleEliminationBracket {
     fn tournament_organiser_reports_result(
         self,
-        match_id: ID,
-        player1: ID,
+        match_id: MatchID,
+        player1: PlayerID,
         bracket_result: BracketResult,
-        player2: ID,
+        player2: PlayerID,
     ) -> Result<(DoubleEliminationBracket, Id, Vec<Match>), DoubleEliminationReportResultError>
     {
         todo!()
@@ -161,10 +161,10 @@ impl ProgressionDEB for DoubleEliminationBracket {
 
     fn tournament_organiser_reports_result_dangerous(
         self,
-        player1: ID,
+        player1: PlayerID,
         result: (i8, i8),
-        player2: ID,
-    ) -> Result<(DoubleEliminationBracket, Id, Vec<Match>), DoubleEliminationReportResultError>
+        player2: PlayerID,
+    ) -> Result<(DoubleEliminationBracket, MatchID, Vec<Match>), DoubleEliminationReportResultError>
     {
         assert!(
             self.seeding.contains(player1),
@@ -233,18 +233,18 @@ impl ProgressionDEB for DoubleEliminationBracket {
 
     fn tournament_organiser_reports_result_for_single_player_dangerous(
         self,
-        player_left: ID,
+        player_left: PlayerID,
         bracket_result: BracketResult,
-    ) -> Result<(DoubleEliminationBracket, Id, Vec<Match>), DoubleEliminationReportResultError>
+    ) -> Result<(DoubleEliminationBracket, MatchID, Vec<Match>), DoubleEliminationReportResultError>
     {
         todo!()
     }
 
     fn report_result_dangerous(
         self,
-        player_id: ID,
+        player_id: PlayerID,
         result: (i8, i8),
-    ) -> Result<(Vec<Match>, ID, Vec<Match>), DoubleEliminationReportResultError> {
+    ) -> Result<(Vec<Match>, MatchID, Vec<Match>), DoubleEliminationReportResultError> {
         assert!(self.seeding.contains(player_id));
         if crate::bracket::matches::is_disqualified(player_id, &self.matches) {
             return Err(DoubleEliminationReportResultError::ForbiddenDisqualified(
@@ -256,7 +256,7 @@ impl ProgressionDEB for DoubleEliminationBracket {
         let Some(m) = self
             .matches
             .iter()
-            .find(|m| m.contains(player_id) && m.get_winner() == Opponent::Unknown)
+            .find(|m| m.contains(player_id) && m.get_winner() == Opponent(None))
         else {
             return Err(DoubleEliminationReportResultError::NoMatchToPlay(player_id));
         };
@@ -289,9 +289,9 @@ impl ProgressionDEB for DoubleEliminationBracket {
 
     fn update_player_reported_match_result(
         self,
-        match_id: ID,
+        match_id: MatchID,
         result: (i8, i8),
-        player_id: ID,
+        player_id: PlayerID,
     ) -> Self {
         let Some(m) = self.matches.iter().find(|m| m.get_id() == match_id) else {
             panic!("unknown match")
@@ -314,7 +314,7 @@ impl ProgressionDEB for DoubleEliminationBracket {
         Self { matches, ..self }
     }
 
-    fn validate_match_result(self, match_id: ID) -> (DoubleEliminationBracket, Vec<Match>) {
+    fn validate_match_result(self, match_id: MatchID) -> (DoubleEliminationBracket, Vec<Match>) {
         assert_eq!(self.matches.iter().filter(|m| m.id == match_id).count(), 1);
         // NOTE: w_bracket -> winner bracket
         //       l_bracket -> loser bracket
@@ -371,7 +371,7 @@ impl ProgressionDEB for DoubleEliminationBracket {
                 winner_of_bracket(&w_bracket),
                 gf.is_over(),
             ) {
-                (Opponent::Player(disqualified), Some(winner_of_winner_bracket), true)
+                (Opponent(Some(disqualified)), Some(winner_of_winner_bracket), true)
                     if disqualified == winner_of_winner_bracket =>
                 {
                     Match::new(gf.get_players(), [1, 2])
@@ -404,7 +404,7 @@ impl ProgressionDEB for DoubleEliminationBracket {
                 None => gf,
             };
             let matches = match (gf.get_players(), gf.get_automatic_loser()) {
-                ([Opponent::Player(_), Opponent::Player(_)], Opponent::Player(_)) => {
+                ([Opponent(Some(_)), Opponent(Some(_))], Opponent(Some(_))) => {
                     update_grand_finals_or_reset(gf.get_id(), w_bracket, l_bracket, gf, gf_reset)
                         .expect("grand finals updated")
                 }
@@ -464,7 +464,7 @@ impl ProgressionDEB for DoubleEliminationBracket {
 /// match.
 fn update_loser_bracket_after_updating_winners_bracket(
     l_bracket: &[Match],
-    loser: ID,
+    loser: PlayerID,
     is_disqualified_from_winners: bool,
     expected_loser_seed: usize,
 ) -> Vec<Match> {
@@ -480,7 +480,7 @@ fn update_loser_bracket_after_updating_winners_bracket(
         };
         let l_bracket = match l_bracket
             .iter()
-            .find(|m| m.contains(loser) && m.get_winner() == Opponent::Unknown)
+            .find(|m| m.contains(loser) && m.get_winner() == Opponent(None))
         {
             Some(match_to_set_dq) => {
                 let match_to_set_dq = (*match_to_set_dq).set_automatic_loser(loser);
@@ -508,7 +508,7 @@ fn update_loser_bracket_after_updating_winners_bracket(
 /// `expected_loser_seed`. Returns updated loser bracket
 fn send_to_losers(
     loser_bracket: &[Match],
-    loser: crate::player::Id,
+    loser: PlayerID,
     expected_loser_seed: usize,
 ) -> Vec<Match> {
     let loser_match = loser_bracket
@@ -523,7 +523,7 @@ fn send_to_losers(
 
 /// Update grand finals or reset
 fn update_grand_finals_or_reset(
-    match_id: crate::matches::Id,
+    match_id: MatchID,
     winner_bracket: Vec<Match>,
     loser_bracket: Vec<Match>,
     gf: Match,
@@ -534,25 +534,25 @@ fn update_grand_finals_or_reset(
             let (gf, _, _) = gf.update_outcome()?;
             // when a reset happens in grand finals
             let gf_reset = match (gf.get_winner(), gf.get_players()[1]) {
-                (Opponent::Player(gf_winner), Opponent::Player(player_from_losers))
+                (Opponent(Some(gf_winner)), Opponent(Some(player_from_losers)))
                     if gf_winner == player_from_losers =>
                 {
                     // Set players of gf reset
                     let gf_reset = match gf.get_players() {
-                        [Opponent::Player(p1), Opponent::Player(p2)] => {
+                        [Opponent(Some(p1)), Opponent(Some(p2))] => {
                             let ggf_reset = gf_reset.insert_player(p1, true);
                             ggf_reset.insert_player(p2, false)
                         }
-                        [Opponent::Player(p), _] => gf_reset.insert_player(p, true),
-                        [_, Opponent::Player(p)] => gf_reset.insert_player(p, false),
+                        [Opponent(Some(p)), _] => gf_reset.insert_player(p, true),
+                        [_, Opponent(Some(p))] => gf_reset.insert_player(p, false),
                         _ => gf_reset,
                     };
 
                     // if player is disqualified in grand finals, update gf reset
                     match (gf.get_automatic_loser(), gf.get_players()[0]) {
                         (
-                            Opponent::Player(grand_finals_loser),
-                            Opponent::Player(winner_of_winner_bracket),
+                            Opponent(Some(grand_finals_loser)),
+                            Opponent(Some(winner_of_winner_bracket)),
                         ) if grand_finals_loser == winner_of_winner_bracket => {
                             gf_reset
                                 .set_automatic_loser(grand_finals_loser)

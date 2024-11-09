@@ -9,7 +9,7 @@ pub fn assert_outcome(matches: &[Match], winner: &Player, loser: &Player) {
                 m.contains(winner.get_id()),
                 m.contains(loser.get_id()),
                 m.get_winner()
-            ), (true, true, Opponent::Player(match_winner)) if match_winner == winner.get_id())),
+            ), (true, true, Opponent(Some(match_winner))) if match_winner == winner.get_id())),
         "No match where {} wins against {}",
         winner.get_name(),
         loser.get_name()

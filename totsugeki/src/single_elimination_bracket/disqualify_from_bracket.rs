@@ -1,23 +1,24 @@
 //! Disqualify player with no chance to play again.
 
 use crate::opponent::Opponent;
+use crate::player::PlayerID;
 use crate::single_elimination_bracket::progression::ProgressionSEB;
 use crate::single_elimination_bracket::SingleEliminationBracket;
-use crate::ID;
 
 impl SingleEliminationBracket {
     /// Disqualify participant from bracket completely
     ///
     /// Usually done when the player is unable to attend the bracket at all (missed flight, money
     /// problem...) and warned TO's about it
-    pub fn disqualify_participant_from_bracket(self, player_id: ID) -> Self {
+    #[must_use]
+    pub fn disqualify_participant_from_bracket(self, player_id: PlayerID) -> Self {
         // in the case where all players are disqualified, the last player being disqualified
         // results in a no-op
         if let Some(rev_pos_of_match_with_disqualified_player) = self
             .matches
             .iter()
             .rev()
-            .position(|m| m.contains(player_id) && m.get_winner() == Opponent::Unknown)
+            .position(|m| m.contains(player_id) && m.get_winner() == Opponent(None))
         {
             let pos = self.matches.len() - 1 - rev_pos_of_match_with_disqualified_player;
             let updated_match = self.matches[pos].set_automatic_loser(player_id);

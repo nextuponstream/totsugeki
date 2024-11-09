@@ -1,7 +1,8 @@
 //! Upon match validation, bracket progress by moving winners forward and
 //! handling loosers
 
-use crate::{matches::Match, opponent::Opponent, player::Id as PlayerId};
+use crate::player::PlayerID;
+use crate::{matches::Match, opponent::Opponent};
 
 /// Get new matches using `old_matches` to play and new matches to play
 pub(crate) fn new_matches_to_play_for_bracket(
@@ -36,11 +37,11 @@ pub(crate) fn new_matches_to_play_for_bracket(
 }
 
 /// Returns winner of bracket
-pub(crate) fn winner_of_bracket(bracket: &[Match]) -> Option<PlayerId> {
+pub(crate) fn winner_of_bracket(bracket: &[Match]) -> Option<PlayerID> {
     match bracket.last() {
         Some(m) => match m.get_winner() {
-            Opponent::Player(p) => Some(p),
-            Opponent::Unknown => None,
+            Opponent(Some(p)) => Some(p),
+            Opponent(None) => None,
         },
         None => None,
     }

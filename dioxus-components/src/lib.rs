@@ -9,7 +9,7 @@
 #![warn(clippy::unwrap_used)]
 
 use crate::components::bracket::displayable_match::EMPTY_NAME;
-use totsugeki::matches::Id as MatchId;
+use totsugeki::matches::MatchID;
 
 pub mod components;
 mod tournaments;
@@ -70,7 +70,7 @@ pub enum Modal {
     /// Add player to bracket
     AddPlayer,
     /// Enter result for given `MatchId` between player 1 and player 2
-    EnterMatchResult(MatchId, Name, Name),
+    EnterMatchResult(MatchID, Name, Name),
     /// Disqualify player from bracket
     Disqualify,
 }

@@ -4,7 +4,7 @@ use crate::single_elimination_bracket::{
 use totsugeki::bracket::seeding::Seeding;
 use totsugeki::next_opponent::NextOpponentInBracket;
 use totsugeki::opponent::Opponent;
-use totsugeki::player::{Participants, Player};
+use totsugeki::player::{Participants, Player, PlayerID};
 use totsugeki::single_elimination_bracket::progression::ProgressionSEB;
 use totsugeki::single_elimination_bracket::SingleEliminationBracket;
 use totsugeki::ID;
@@ -16,14 +16,14 @@ fn assert_players_play_each_other(
     player_ids: &[Player],
     bracket: &SingleEliminationBracket,
 ) {
-    let Some((Some(Opponent::Player(next_opponent)), match_id_1)) =
+    let Ok((Opponent(Some(next_opponent)), match_id_1)) =
         bracket.next_opponent_in_bracket(player_ids[player_1].get_id())
     else {
         panic!("No next opponent")
     };
     assert_eq!(next_opponent, player_ids[player_2].get_id());
 
-    let Some((Some(Opponent::Player(next_opponent)), match_id_2)) =
+    let Ok((Opponent(Some(next_opponent)), match_id_2)) =
         bracket.next_opponent_in_bracket(player_ids[player_2].get_id())
     else {
         panic!("No next opponent")
@@ -40,20 +40,20 @@ fn assert_players_play_each_other(
 fn assert_players_play_each_other_ids(
     player_1: usize,
     player_2: usize,
-    player_ids: &[ID],
+    player_ids: &[PlayerID],
     bracket: &SingleEliminationBracket,
 ) {
     let (next_opponent, match_id_1) = bracket
         .next_opponent(player_ids[player_1])
         .expect("next opponent");
-    let Opponent::Player(next_opponent) = next_opponent else {
+    let Opponent(Some(next_opponent)) = next_opponent else {
         panic!("expected player")
     };
     assert_eq!(next_opponent, player_ids[player_2]);
     let (next_opponent, match_id_2) = bracket
         .next_opponent(player_ids[player_2])
         .expect("next opponent");
-    let Opponent::Player(next_opponent) = next_opponent else {
+    let Opponent(Some(next_opponent)) = next_opponent else {
         panic!("expected player")
     };
     assert_eq!(next_opponent, player_ids[player_1]);
@@ -71,7 +71,7 @@ mod player_report_before_organiser {
     fn higher_seed_reports_before_to_example2() {
         // in 3 man tournament
         let mut seeding = Participants::default();
-        let mut player_ids = vec![ID::new_v4()]; // padding
+        let mut player_ids = vec![PlayerID::create()]; // padding
         for i in 1..=3 {
             let player = Player::new(format!("p{i}"));
             player_ids.push(player.get_id());
@@ -99,7 +99,7 @@ mod player_report_before_organiser {
     fn lower_seed_reports_before_to_example2() {
         // in 3 man tournament
         let mut seeding = Participants::default();
-        let mut player_ids = vec![ID::new_v4()]; // padding
+        let mut player_ids = vec![PlayerID::create()]; // padding
         for i in 1..=3 {
             let player = Player::new(format!("p{i}"));
             player_ids.push(player.get_id());
@@ -125,7 +125,7 @@ mod player_report_before_organiser {
 
     #[test]
     fn higher_seed_reports_before_to_example1() {
-        let mut player_ids = vec![ID::new_v4()]; // padding for readability
+        let mut player_ids = vec![PlayerID::create()]; // padding for readability
         let mut seeding = vec![];
         for i in 1..=3 {
             let player = Player::new(format!("p{i}"));
@@ -146,7 +146,7 @@ mod player_report_before_organiser {
     }
     #[test]
     fn lower_seed_reports_before_to_example1() {
-        let mut player_ids = vec![ID::new_v4()]; // padding for readability
+        let mut player_ids = vec![PlayerID::create()]; // padding for readability
         let mut seeding = vec![];
         for i in 1..=3 {
             let player = Player::new(format!("p{i}"));
@@ -199,7 +199,7 @@ mod bracket_with_3_participants {
     #[test]
     fn example2() {
         let mut seeding = Participants::default();
-        let mut player_ids = vec![ID::new_v4()]; // padding
+        let mut player_ids = vec![PlayerID::create()]; // padding
         for i in 1..=3 {
             let player = Player::new(format!("p{i}"));
             player_ids.push(player.get_id());
@@ -218,7 +218,7 @@ mod bracket_with_3_participants {
         let (bracket, _, new_matches) = bracket
             .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[3])
             .expect("matches");
-        assert_ne!(bracket.get_matches()[0].get_winner(), Opponent::Unknown);
+        assert_ne!(bracket.get_matches()[0].get_winner(), Opponent(None));
         assert_eq!(new_matches.len(), 1, "grand finals match generated");
         assert_players_play_each_other_ids(1, 2, &player_ids, &bracket);
         assert_eq!(bracket.matches_to_play().len(), 1);
@@ -305,7 +305,7 @@ mod bracket_with_5_participants {
     #[test]
     fn example3() {
         let mut bad_seeding = Participants::default();
-        let mut player_ids = vec![ID::new_v4()]; // padding
+        let mut player_ids = vec![PlayerID::create()]; // padding
         for i in 1..=5 {
             let player = Player::new(format!("p{i}"));
             player_ids.push(player.get_id());
@@ -349,7 +349,6 @@ mod bracket_with_5_participants {
     #[test]
     fn example4() {
         let mut p = vec![Player::new("don't use".into())];
-        let mut bad_seeding = Participants::default();
         let mut seeding = vec![];
         for i in 1..=5 {
             let player = Player::new(format!("p{i}"));

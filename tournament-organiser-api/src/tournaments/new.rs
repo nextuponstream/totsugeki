@@ -6,7 +6,6 @@ use axum::response::IntoResponse;
 use axum::Json;
 use http::StatusCode;
 use totsugeki::bracket::seeding::Seeding;
-use totsugeki::bracket::Bracket;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki::player::Player;
 use totsugeki::validation::AutomaticMatchValidationMode;

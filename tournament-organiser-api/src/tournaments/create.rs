@@ -14,10 +14,10 @@ use axum_macros::debug_handler;
 use http::StatusCode;
 use sqlx::PgPool;
 use totsugeki::bracket::seeding::Seeding;
-use totsugeki::bracket::Bracket;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki::player::Player;
 use totsugeki::validation::AutomaticMatchValidationMode;
+use totsugeki::ID;
 use tower_sessions::Session;
 use tracing::instrument;
 
@@ -33,8 +33,7 @@ pub(crate) async fn create_bracket(
 
     let mut transaction = pool.begin().await.map_err(internal_error)?;
     // TODO refactor user_id key in SESSION_KEY enum
-    let user_id: totsugeki::player::Id =
-        session.get(&UserId.to_string()).await.expect("").expect("");
+    let user_id: ID = session.get(&UserId.to_string()).await.expect("").expect("");
     let mut tournament = Tournament::default();
     for name in form.player_names {
         // FIXME actual error handling
@@ -52,7 +51,7 @@ pub(crate) async fn create_bracket(
                 .map(Player::get_id)
                 .collect(),
         )
-        .unwrap(),
+        .expect("should form seeding with new player"),
         AutomaticMatchValidationMode::default(),
     );
 

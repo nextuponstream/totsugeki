@@ -9,6 +9,8 @@ use axum::response::IntoResponse;
 use http::StatusCode;
 use sqlx::PgPool;
 use totsugeki::bracket::Id;
+use totsugeki::player::PlayerID;
+use totsugeki::ID;
 use tower_sessions::Session;
 use tracing::instrument;
 
@@ -26,7 +28,7 @@ pub async fn show_bracket(
     State(pool): State<PgPool>,
 ) -> impl IntoResponse {
     tracing::debug!("tournament {tournament_id}");
-    let user_id: Option<totsugeki::player::Id> = session
+    let user_id: Option<ID> = session
         .get(&UserId.to_string())
         .await
         .expect("maybe id of user");
@@ -44,8 +46,12 @@ pub async fn show_bracket(
         };
 
     transaction.commit().await.map_err(internal_error)?;
+    let player_id = match user_id {
+        Some(id) => Some(PlayerID::new(id)),
+        None => None,
+    };
     Ok((
         StatusCode::OK,
-        breakdown(&tournament, bracket, user_id, is_tournament_organiser),
+        breakdown(&tournament, bracket, player_id, is_tournament_organiser),
     ))
 }

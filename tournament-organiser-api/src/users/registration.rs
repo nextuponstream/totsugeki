@@ -11,7 +11,7 @@ use http::StatusCode;
 use secrecy::{ExposeSecret, Secret};
 use serde::Deserialize;
 use sqlx::postgres::PgPool;
-use totsugeki::player::Id;
+use totsugeki::ID;
 use tracing::instrument;
 use zxcvbn::zxcvbn;
 
@@ -33,7 +33,7 @@ pub struct FormInput {
 #[derive(sqlx::FromRow, Clone, Debug)]
 pub struct User {
     /// Id of user
-    pub id: Id,
+    pub id: ID,
     /// user name
     pub name: String,
     /// user email address
@@ -49,7 +49,7 @@ pub struct User {
 #[derive(sqlx::FromRow, Clone, Debug)]
 pub struct UserRecord {
     /// Id of user
-    pub id: Id,
+    pub id: ID,
     /// user name
     pub name: String,
     /// user email address

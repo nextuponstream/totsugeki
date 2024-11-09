@@ -13,11 +13,12 @@ pub mod seeding;
 pub mod single_elimination_variant;
 pub(crate) mod winner_bracket;
 
+use crate::player::PlayerID;
 use crate::{
-    bracket::{matches::Error as ProgressError, Id as BracketId},
+    bracket::Id as BracketId,
     format::{Format, ParsingError as FormatParsingError},
     matches::{Error as MatchError, Id as MatchId, Match, MatchParsingError},
-    player::{Error as PlayerError, Id as PlayerId, Participants, Player},
+    player::{Error as PlayerError, Participants, Player},
     seeding::{
         Error as SeedingError, Method as SeedingMethod, ParsingError as SeedingParsingError,
     },
@@ -38,11 +39,11 @@ pub enum Error {
     PlayerUpdate(#[from] PlayerError),
     /// Unknown player provided for seeding
     #[error("Unknown player \"{0}\" cannot be used for seeding. Use the following players: {1} of bracket {2}")]
-    UnknownPlayer(PlayerId, Participants, BracketId),
+    UnknownPlayer(PlayerID, Participants, BracketId),
     // FIXME remove variant
     /// Cannot add player when they are barred from entering
     #[error("Bracket \"{1}\" does not accept new participants")]
-    BarredFromEntering(PlayerId, BracketId),
+    BarredFromEntering(PlayerID, BracketId),
     /// Bracket has started. Inform user with suggested action.
     #[error("Bracket {0} has started{1}")]
     Started(BracketId, String),

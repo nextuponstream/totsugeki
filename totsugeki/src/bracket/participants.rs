@@ -2,7 +2,7 @@
 //! join/forfeit
 
 use super::{Bracket, BracketId, Error as TotsugekiError};
-use crate::player::{Error as PlayerError, Id as PlayerId, Participants, Player};
+use crate::player::{Error as PlayerError, Participants, Player, PlayerID};
 use crate::seeding::Error as SeedingError;
 use thiserror::Error;
 
@@ -11,7 +11,7 @@ use thiserror::Error;
 pub enum Error {
     /// Bracket does not allow participant to enter
     #[error("Bracket \"{1}\" does not accept new participants")]
-    BarredFromEntering(PlayerId, BracketId),
+    BarredFromEntering(PlayerID, BracketId),
     /// Adding participant to bracket is impossible
     #[error("Cannot add participant to bracket {0}")]
     ParticipantError(#[from] PlayerError),
@@ -56,7 +56,7 @@ impl Bracket {
     /// By default, most methods of this library generates matches. This incurs
     /// some slowness when testing. An egregious example is having 7000 people
     /// join the bracket (and regenerating the bracket 7000 times). This
-    /// methods is useful if you skipped match generation with methods like
+    /// method is useful if you skipped match generation with methods like
     /// `unchecked_join_skip_matches_generation`.
     ///
     /// # Errors
@@ -117,7 +117,7 @@ impl Bracket {
     ///
     /// # Errors
     /// thrown if referred participant does not belong in bracket
-    pub fn remove_participant(self, participant_id: PlayerId) -> Result<Self, TotsugekiError> {
+    pub fn remove_participant(self, participant_id: PlayerID) -> Result<Self, TotsugekiError> {
         if self.accept_match_results {
             return Err(TotsugekiError::Started(
                 self.id,

@@ -4,6 +4,7 @@ use crate::bracket::matches::update_bracket_with;
 use crate::bracket::seeding::Seeding;
 use crate::matches::Match;
 use crate::opponent::Opponent;
+use crate::player::PlayerID;
 use crate::seeding::double_elimination_seeded_bracket::get_loser_bracket_matches_top_seed_favored;
 use crate::validation::AutomaticMatchValidationMode;
 use serde::{Deserialize, Serialize};
@@ -48,7 +49,7 @@ impl DoubleEliminationBracket {
         if seeding.len() >= 3 {
             // FIXME remove unwrap, this should never panic
             let mut winner_bracket_matches =
-                crate::seeding::single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored(seeding.clone()).unwrap();
+                crate::seeding::single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored(&seeding);
             matches.append(&mut winner_bracket_matches);
             let mut looser_bracket_matches =
                 get_loser_bracket_matches_top_seed_favored(&seeding.get()).unwrap();
@@ -102,12 +103,12 @@ impl DoubleEliminationBracket {
 
     /// Remove player reported results from match. For internal use because validating a match with
     /// automatic validation on may trigger a cascading update
-    fn clear_reported_result(self, player_id: crate::player::Id) -> Self {
+    fn clear_reported_result(self, player_id: PlayerID) -> Self {
         let matches_to_update = self
             .matches
             .clone()
             .into_iter()
-            .filter(|m| m.contains(player_id) && m.get_winner() == Opponent::Unknown)
+            .filter(|m| m.contains(player_id) && m.get_winner() == Opponent(None))
             .collect::<Vec<Match>>();
         assert!(
             matches_to_update.len() <= 1,

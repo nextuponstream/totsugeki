@@ -11,10 +11,9 @@
 #![forbid(unsafe_code)]
 
 use serde::{Deserialize, Serialize};
-use totsugeki::matches::{Id as MatchId, Match, ReportedResult};
+use totsugeki::matches::{Id as MatchId, Match, MatchID, ReportedResult};
 use totsugeki::opponent::Opponent;
-use totsugeki::player::Id as PlayerId;
-use totsugeki::player::Player;
+use totsugeki::player::{Player, PlayerID};
 
 pub mod loser_bracket;
 pub mod winner_bracket;
@@ -23,7 +22,7 @@ pub mod winner_bracket;
 /// Strict necessary information to use when displaying a match in UI
 pub struct MinimalMatch {
     /// Match identifier
-    id: MatchId,
+    id: MatchID,
     /// Names of players participating in match
     players: [Player; 2],
     /// Score of match
@@ -37,7 +36,7 @@ pub struct MinimalMatch {
 impl Default for MinimalMatch {
     fn default() -> Self {
         MinimalMatch {
-            id: MatchId::new_v4(),
+            id: MatchID::new(),
             players: [
                 Player::new(String::default()),
                 Player::new(String::default()),
@@ -89,7 +88,7 @@ impl MinimalMatch {
 
     /// Get ID of match
     #[must_use]
-    pub fn get_id(&self) -> MatchId {
+    pub fn get_id(&self) -> MatchID {
         self.id
     }
 }
@@ -128,19 +127,19 @@ impl BoxElement {
 /// Convert match struct from Totsugeki library into minimal struct, using
 /// `participants` to fill in name of players.
 #[must_use]
-pub fn from_participants(m: &Match, seeding: &Vec<Player>) -> MinimalMatch {
-    let players: Vec<(PlayerId, String)> =
+pub fn from_participants(m: &Match, seeding: &[Player]) -> MinimalMatch {
+    let players: Vec<(PlayerID, String)> =
         seeding.iter().map(|p| (p.get_id(), p.get_name())).collect();
 
     // TODO find out if storing both player name and id is better than storing
     // only the id and doing some work to get back id and name.
     let p1 = match m.get_players()[0] {
-        Opponent::Player(id) => id,
-        Opponent::Unknown => PlayerId::new_v4(),
+        Opponent(Some(id)) => id,
+        Opponent(None) => PlayerID::create(),
     };
     let p2 = match m.get_players()[1] {
-        Opponent::Player(id) => id,
-        Opponent::Unknown => PlayerId::new_v4(),
+        Opponent(Some(id)) => id,
+        Opponent(None) => PlayerID::create(),
     };
     let top_seed = m.get_players()[0].get_name(&players);
     let bottom_seed = m.get_players()[1].get_name(&players);

@@ -10,6 +10,8 @@ use axum::response::IntoResponse;
 use http::StatusCode;
 use sqlx::PgPool;
 use totsugeki::bracket::Id;
+use totsugeki::player::PlayerID;
+use totsugeki::ID;
 use tower_sessions::Session;
 use tracing::instrument;
 
@@ -21,7 +23,7 @@ pub(crate) async fn join_bracket(
     State(pool): State<PgPool>,
 ) -> impl IntoResponse {
     tracing::debug!("tournament {tournament_id}");
-    let user_id: totsugeki::player::Id = session
+    let user_id: ID = session
         .get(&UserId.to_string())
         .await
         .map_err(internal_error)?
@@ -57,7 +59,7 @@ pub(crate) async fn join_bracket(
     Ok(breakdown(
         &tournament,
         bracket,
-        Some(user_id),
+        Some(PlayerID::new(user_id)),
         is_tournament_organiser,
     ))
 }

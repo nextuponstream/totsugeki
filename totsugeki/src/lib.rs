@@ -58,7 +58,7 @@ pub(crate) fn legible_uuids_order(n: usize) -> Vec<Uuid> {
             _ => unreachable!(),
         };
         let p = format!("00000000-0000-0000-0000-0000000000{id}");
-        r.push(p.parse::<crate::player::Id>().expect("id"));
+        r.push(p.parse::<ID>().expect("id"));
     }
 
     r

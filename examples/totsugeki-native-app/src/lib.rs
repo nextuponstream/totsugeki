@@ -132,7 +132,7 @@ impl ShortName {
     }
 }
 
-impl std::default::Default for ShortName {
+impl Default for ShortName {
     fn default() -> Self {
         let mut value = String::default()
             .into_bytes()

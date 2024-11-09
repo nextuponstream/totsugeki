@@ -7,7 +7,7 @@ use crate::matches::{
     double_elimination_matches_from_partition, partition_double_elimination_matches, Match,
 };
 use crate::opponent::Opponent;
-use crate::ID;
+use crate::player::PlayerID;
 use thiserror::Error;
 
 /// Cannot disqualify player from bracket
@@ -28,7 +28,7 @@ impl DoubleEliminationBracket {
     /// Disqualifying player is impossible at this time
     /// # Panics
     /// * player does not belong in bracket
-    pub fn disqualify_participant_from_bracket(&self, player_id: ID) -> Result<Self, Error> {
+    pub fn disqualify_participant_from_bracket(&self, player_id: PlayerID) -> Result<Self, Error> {
         assert!(self.seeding.contains(player_id), "player is not in bracket");
         if self.is_eliminated(player_id) {
             return Err(Error::Eliminated);
@@ -40,8 +40,8 @@ impl DoubleEliminationBracket {
         let mut matches_to_update = self.matches.clone();
         let Some(m) = matches_to_update.iter_mut().rev().find(|m| {
             m.contains(player_id)
-                && m.get_winner() == Opponent::Unknown
-                && m.get_automatic_loser() == Opponent::Unknown
+                && m.get_winner() == Opponent(None)
+                && m.get_automatic_loser() == Opponent(None)
         }) else {
             panic!("Could not find match to disqualify player")
         };
@@ -77,7 +77,7 @@ impl DoubleEliminationBracket {
         let mut matches_to_update = bracket.get_matches();
         let Some(match_in_losers) = matches_to_update
             .iter_mut()
-            .find(|m| m.contains(player_id) && m.get_winner() == Opponent::Unknown)
+            .find(|m| m.contains(player_id) && m.get_winner() == Opponent(None))
         else {
             return Ok(bracket);
         };
@@ -98,30 +98,6 @@ impl DoubleEliminationBracket {
         } else {
             Ok(bracket)
         }
-        // Err(bracket_e) => {
-        //     // if no winner can be declared because there is a
-        //     // missing player, then don't throw an error
-        //     let Error::MatchUpdate(ref e) = bracket_e else {
-        //         return Err(bracket_e);
-        //     };
-        //     match e {
-        //         MatchError::MissingOpponent(_) => {
-        //             disqualify_player(&p, player_id, &old_matches)
-        //         }
-        //         MatchError::PlayersReportedDifferentMatchOutcome(_, _) => {
-        //             // Can't update match in losers where disqualified player is in.
-        //             // Set disqualified player as loser and update
-        //             disqualify_player_and_update_bracket(
-        //                 &p,
-        //                 player_id,
-        //                 &self.seeding,
-        //                 self.auto,
-        //                 &old_matches,
-        //             )
-        //         }
-        //         _ => Err(bracket_e),
-        //     }
-        // }
     }
 }
 
@@ -129,7 +105,7 @@ impl DoubleEliminationBracket {
 /// `expected_loser_seed`. Returns updated loser bracket
 fn send_to_losers(
     loser_bracket: &[Match],
-    loser: crate::player::Id,
+    loser: PlayerID,
     expected_loser_seed: usize,
 ) -> Vec<Match> {
     let loser_match = loser_bracket

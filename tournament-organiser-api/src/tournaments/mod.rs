@@ -8,7 +8,7 @@ mod new;
 mod report_result;
 mod save_bracket_from_steps;
 mod show;
-mod update_with_result;
+pub(crate) mod update_with_result;
 mod user_tournaments;
 
 // Flatten exports when reusing
@@ -27,13 +27,12 @@ use chrono::{DateTime, Utc};
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::types::Json as SqlxJson;
-use std::cmp::PartialEq;
 use std::fmt::{Display, Formatter};
 use totsugeki::bracket::seeding::Seeding;
 use totsugeki::bracket::Id;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki::format::Format;
-use totsugeki::player::{Id as PlayerId, Participants as TotsugekiParticipants, Player};
+use totsugeki::player::{Participants as TotsugekiParticipants, Player, PlayerID};
 use totsugeki::validation::AutomaticMatchValidationMode;
 use totsugeki_display::loser_bracket::lines as loser_bracket_lines;
 use totsugeki_display::loser_bracket::reorder as reorder_loser_bracket;
@@ -51,9 +50,9 @@ pub struct ReportResultInput {
     /// tournament
     pub tournament: Tournament,
     /// First player
-    pub p1_id: PlayerId,
+    pub p1_id: PlayerID,
     /// Second player
-    pub p2_id: PlayerId,
+    pub p2_id: PlayerID,
     /// player 1 score
     pub score_p1: i8,
     /// player 2 score
@@ -102,9 +101,9 @@ pub struct CreateBracketForm {
 #[derive(Deserialize, Serialize, Debug)]
 pub struct PlayerMatchResultReport {
     /// high seed player
-    pub p1_id: PlayerId,
+    pub p1_id: PlayerID,
     /// low seed player
-    pub p2_id: PlayerId,
+    pub p2_id: PlayerID,
     /// score of player 1
     pub score_p1: i8,
     /// score of player 2
@@ -126,7 +125,7 @@ pub struct BracketState {
 fn breakdown(
     tournament: &Tournament,
     bracket: DoubleEliminationBracket,
-    user_id: Option<totsugeki::player::Id>,
+    user_id: Option<PlayerID>,
     is_tournament_organiser: bool,
 ) -> impl IntoResponse {
     // TODO test if tracing shows from which methods it was called
@@ -263,6 +262,7 @@ impl Display for TournamentID {
 /// These information may not be necessary to running the bracket, but they are
 /// necessary for player
 #[derive(Clone, Debug, Deserialize)]
+#[allow(unused)]
 pub struct Tournament {
     /// Identifier of this bracket
     id: TournamentID,
@@ -306,10 +306,6 @@ impl Tournament {
     }
 }
 
-/// Player ID
-#[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq)]
-struct PlayerID(pub ID);
-
 /// Error
 #[derive(Debug)]
 pub enum ParticipantError {
@@ -325,7 +321,7 @@ pub struct Participants(pub Vec<Player>);
 
 impl Participants {
     /// Ordered list for seeding
-    pub fn get_seeding(&self) -> Vec<ID> {
+    pub fn get_seeding(&self) -> Vec<PlayerID> {
         self.0.iter().map(Player::get_id).collect()
     }
 }

@@ -7,15 +7,16 @@ use dioxus::prelude::*;
 use totsugeki::double_elimination_bracket::progression::ProgressionDEB;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki::format::Format;
+use totsugeki::matches::MatchID;
+use totsugeki::opponent::Opponent;
 use totsugeki::single_elimination_bracket::progression::ProgressionSEB;
 use totsugeki::single_elimination_bracket::SingleEliminationBracket;
-use totsugeki::{matches::Id as MatchId, opponent::Opponent};
 
 #[derive(PartialEq, Props)]
 /// Props for match edit modal
 pub(crate) struct FormProps {
     /// match identifier
-    pub match_id: MatchId,
+    pub match_id: MatchID,
     /// name of player 1
     pub player1: String,
     /// name of player 2
@@ -169,7 +170,7 @@ fn update_bracket_with_match_result(
     };
 
     let (p1, p2) = match m.get_players() {
-        [Opponent::Player(p1), Opponent::Player(p2)] => (p1, p2),
+        [Opponent(Some(p1)), Opponent(Some(p2))] => (p1, p2),
         _ => {
             log::info!("No players found");
             return;
@@ -250,7 +251,7 @@ pub(crate) fn MatchEditModal(cx: Scope<Props>) -> Element {
             ShortName { value: player2 },
         ),
         _ => (
-            MatchId::new_v4(),
+            MatchID::new(),
             "hidden",
             ShortName::default(),
             ShortName::default(),

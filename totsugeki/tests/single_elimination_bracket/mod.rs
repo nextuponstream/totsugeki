@@ -1,14 +1,12 @@
-use totsugeki::bracket::matches::{Error, Progression};
+use totsugeki::bracket::matches::Progression;
 use totsugeki::single_elimination_bracket::progression::ProgressionSEB;
 mod automatic_validation;
 mod disqualify_from_bracket;
 mod manual_validation;
 
-use totsugeki::bracket::seeding::Seeding;
 use totsugeki::opponent::Opponent;
-use totsugeki::player::{Participants, Player};
+use totsugeki::player::Player;
 use totsugeki::single_elimination_bracket::SingleEliminationBracket;
-use totsugeki::ID;
 
 fn assert_next_matches(
     bracket: &SingleEliminationBracket,
@@ -23,7 +21,7 @@ fn assert_next_matches(
             .expect("next opponent");
         assert_eq!(
             next_opponent,
-            Opponent::Unknown,
+            Opponent(None),
             "expected unknown opponent for {p} but got {next_opponent}"
         );
     }
@@ -35,7 +33,7 @@ fn assert_next_matches(
         let (next_opponent, _) = bracket
             .next_opponent(opponent1.get_id())
             .expect("next opponent");
-        let Opponent::Player(p) = next_opponent else {
+        let Opponent(Some(p)) = next_opponent else {
             panic!("expected player for next opponent");
         };
         assert_eq!(
@@ -46,7 +44,7 @@ fn assert_next_matches(
         let (next_opponent, _) = bracket
             .next_opponent(opponent2.get_id())
             .expect("next opponent");
-        let Opponent::Player(p) = next_opponent else {
+        let Opponent(Some(p)) = next_opponent else {
             panic!("expected player for next opponent");
         };
         assert_eq!(

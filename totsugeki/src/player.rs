@@ -1,15 +1,47 @@
 //! player
 
-use crate::player::Id as PlayerId;
+use crate::ID;
 use serde::{Deserialize, Serialize};
+use std::fmt::{Display, Formatter};
+use std::str::FromStr;
 use thiserror::Error;
-use uuid::Uuid;
+
+/// Player ID
+#[derive(Hash, Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Ord, PartialOrd, Copy)]
+pub struct PlayerID(ID);
+
+impl PlayerID {
+    /// Create player ID
+    pub fn create() -> Self {
+        Self(ID::new_v4())
+    }
+
+    /// New player ID
+    pub fn new(id: ID) -> Self {
+        Self(id)
+    }
+}
+
+impl FromStr for PlayerID {
+    type Err = uuid::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let id = ID::parse_str(s)?;
+        Ok(PlayerID(id))
+    }
+}
+
+impl Display for PlayerID {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Player ID: {}", self.0)
+    }
+}
 
 /// A player is referenced by their ID and their username
 #[derive(Hash, Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub struct Player {
     /// Player identifier
-    id: Id,
+    id: PlayerID,
     /// Player name
     name: String,
 }
@@ -19,20 +51,20 @@ impl TryFrom<(&str, &str)> for Player {
 
     fn try_from((id, name): (&str, &str)) -> Result<Self, Self::Error> {
         Ok(Player {
-            id: id.parse::<Id>()?,
+            id: id.parse::<PlayerID>()?,
             name: name.into(),
         })
     }
 }
 
-impl From<(Id, String)> for Player {
-    fn from((id, name): (Id, String)) -> Self {
+impl From<(PlayerID, String)> for Player {
+    fn from((id, name): (PlayerID, String)) -> Self {
         Player { id, name }
     }
 }
 
-impl From<(Id, &str)> for Player {
-    fn from((id, name): (Id, &str)) -> Self {
+impl From<(PlayerID, &str)> for Player {
+    fn from((id, name): (PlayerID, &str)) -> Self {
         Player {
             id,
             name: name.to_string(),
@@ -45,15 +77,15 @@ impl Player {
     #[must_use]
     pub fn new(name: String) -> Self {
         Self {
-            id: Id::new_v4(),
+            id: PlayerID(ID::new_v4()),
             name,
         }
     }
 
     /// Get player id
     #[must_use]
-    pub fn get_id(&self) -> Id {
-        self.id
+    pub fn get_id(&self) -> PlayerID {
+        self.id.clone()
     }
 
     /// Get player name
@@ -62,9 +94,6 @@ impl Player {
         self.name.clone()
     }
 }
-
-/// Player identifier
-pub type Id = Uuid;
 
 // FIXME you can use anonymous structure instead
 /// Participants of bracket
@@ -84,7 +113,7 @@ pub enum Error {
     PlayerId(#[from] uuid::Error),
     /// Referenced player is unknown in this group of participants
     #[error("Player {0} is not in this group")]
-    Unknown(PlayerId),
+    Unknown(PlayerID),
 }
 
 impl Participants {
@@ -111,7 +140,7 @@ impl Participants {
     pub fn from_raw_id(players_to_add: Vec<(String, String)>) -> Result<Participants, Error> {
         let mut players = Participants::default();
         for p in players_to_add {
-            let id = Id::parse_str(&p.0)?;
+            let id = p.0.as_str().parse::<PlayerID>()?;
             let p = Player { id, name: p.1 };
             players = match players.add_participant(p) {
                 Ok(updated_players) => updated_players,
@@ -123,7 +152,7 @@ impl Participants {
 
     /// Returns player if present
     #[must_use]
-    pub fn get(&self, participant_id: PlayerId) -> Option<Player> {
+    pub fn get(&self, participant_id: PlayerID) -> Option<Player> {
         self.0
             .iter()
             .find(|p| p.get_id() == participant_id)
@@ -138,7 +167,7 @@ impl Participants {
 
     /// Returns seeding, which is the players listed by ID
     #[must_use]
-    pub fn get_seeding(&self) -> Vec<PlayerId> {
+    pub fn get_seeding(&self) -> Vec<PlayerID> {
         self.0.iter().map(Player::get_id).collect::<Vec<_>>()
     }
 
@@ -151,14 +180,14 @@ impl Participants {
             .clone()
             .iter()
             .map(Player::get_id)
-            .collect::<Vec<Id>>();
+            .collect::<Vec<PlayerID>>();
         players.sort();
         let mut other_players = other_group
             .0
             .clone()
             .iter()
             .map(Player::get_id)
-            .collect::<Vec<Id>>();
+            .collect::<Vec<PlayerID>>();
         other_players.sort();
         players == other_players
     }
@@ -180,7 +209,7 @@ impl Participants {
     /// # Errors
     /// thrown if participant does not belong to this group
     #[must_use]
-    pub fn remove(self, participant_id: PlayerId) -> Self {
+    pub fn remove(self, participant_id: PlayerID) -> Self {
         Self(
             self.0
                 .into_iter()
@@ -203,14 +232,14 @@ impl Participants {
     }
 }
 
-impl std::fmt::Display for Player {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Display for Player {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "({}) {}", self.id, self.name)
     }
 }
 
-impl std::fmt::Display for Participants {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Display for Participants {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Players:")?;
         for p in &self.0 {
             writeln!(f, "{p}")?;
@@ -231,14 +260,14 @@ impl TryFrom<Vec<Player>> for Participants {
     }
 }
 
-impl TryFrom<Vec<(&Id, &String)>> for Participants {
+impl TryFrom<Vec<(&ID, &String)>> for Participants {
     type Error = Error;
 
-    fn try_from(players: Vec<(&Id, &String)>) -> Result<Self, Self::Error> {
+    fn try_from(players: Vec<(&ID, &String)>) -> Result<Self, Self::Error> {
         let mut result = Participants::default();
         for p in players {
             let p = Player {
-                id: *p.0,
+                id: PlayerID(*p.0),
                 name: p.1.to_string(),
             };
             result = result.add_participant(p)?;

@@ -5,15 +5,12 @@ mod next_opponent_in_bracket;
 mod partition;
 pub mod progression;
 
-use crate::bracket::matches::{Error, Progression};
 use crate::bracket::seeding::Seeding;
-use crate::matches::Match;
+use crate::matches::{Match, MatchID};
 use crate::opponent::Opponent;
-use crate::opponent::Opponent::Player;
+use crate::player::PlayerID;
 use crate::seeding::single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored;
-use crate::seeding::Error as SeedingError;
 use crate::single_elimination_bracket::progression::ProgressionSEB;
-use crate::ID;
 use thiserror::Error;
 
 /// Single elimination bracket
@@ -38,15 +35,9 @@ impl Default for SingleEliminationBracket {
     }
 }
 
-/// All errors you might come across when players reports match result
+/// Input is invalid because of current bracket state
 #[derive(Error, Debug)]
 pub enum SingleEliminationReportResultError {
-    /// Player is unknown, user provided a wrong player
-    #[error("Player {0} is unknown")]
-    UnknownPlayer(ID),
-    /// Match is unknown, user provided a wrong match
-    #[error("Match {0} is unknown")]
-    UnknownMatch(ID),
     /// Tournament is already over
     ///
     /// Player ID is valid, but there is no matches to play anyway
@@ -55,32 +46,30 @@ pub enum SingleEliminationReportResultError {
     /// Player is disqualified
     ///
     /// Player ID is valid but disqualified player are not allowed to report
-    #[error("Player {0} is disqualified")]
-    ForbiddenDisqualified(ID),
+    #[error("{0} is disqualified")]
+    ForbiddenDisqualified(PlayerID),
     /// No match to play for player
     ///
     /// May happen if tournament organiser validated right before player did for the same match
-    #[error("There is no matches for player {0}")]
-    NoMatchToPlay(ID),
-    /// Missing opponent
-    #[error("Missing opponent")]
-    MissingOpponent(),
+    #[error("There is no matches for {0}")]
+    NoMatchToPlay(PlayerID),
 }
 
 impl SingleEliminationBracket {
     /// Get matches
+    #[must_use]
     pub fn get_matches(&self) -> Vec<Match> {
         self.matches.clone()
     }
 
     /// Generate matches for a new bracket using `seeding` and other configuration
+    #[must_use]
     pub fn create(seeding: Seeding, automatic_match_progression: bool) -> Self {
-        let matches = get_balanced_round_matches_top_seed_favored(seeding.clone())
-            .expect("initial matches generated");
+        let matches = get_balanced_round_matches_top_seed_favored(&seeding);
 
         Self {
-            seeding,
             matches,
+            seeding,
             automatic_match_progression,
         }
     }
@@ -90,26 +79,27 @@ impl SingleEliminationBracket {
     /// # Panics
     /// When a well-formed single-elimination bracket cannot be made from
     /// `matches` and `seeding`
+    #[must_use]
     pub fn new(seeding: Seeding, matches: Vec<Match>, automatic_match_progression: bool) -> Self {
         for player in seeding.get() {
             assert!(
                 matches
                     .iter()
-                    .find(|m| m.players.contains(&Player(player)))
-                    .is_some(),
+                    .any(|m| m.players.contains(&Opponent(Some(player)))),
                 "player {player} was not found in matches. Is matches data corrupt?"
             );
         }
         // TODO more assertions
 
         Self {
-            seeding,
             matches,
+            seeding,
             automatic_match_progression,
         }
     }
 
     /// Seeding of bracket
+    #[must_use]
     pub fn get_seeding(&self) -> Seeding {
         self.seeding.clone()
     }
@@ -128,9 +118,9 @@ impl SingleEliminationBracket {
     /// When `player_id` is unknown
     pub fn report_result(
         self,
-        player_id: ID,
+        player_id: PlayerID,
         result: (i8, i8),
-    ) -> Result<(SingleEliminationBracket, ID, Vec<Match>), SingleEliminationReportResultError>
+    ) -> Result<(SingleEliminationBracket, MatchID, Vec<Match>), SingleEliminationReportResultError>
     {
         assert!(
             self.seeding.contains(player_id),
@@ -148,7 +138,7 @@ impl SingleEliminationBracket {
         let match_to_update = self
             .matches
             .iter()
-            .find(|m| m.contains(player_id) && m.get_winner() == Opponent::Unknown);
+            .find(|m| m.contains(player_id) && m.get_winner() == Opponent(None));
         let seeding = self.seeding.clone();
         let automatic_match_progression = self.automatic_match_progression;
         match match_to_update {
@@ -178,18 +168,18 @@ impl SingleEliminationBracket {
     }
 
     /// Clear previous reported result for `player_id`
-    fn clear_reported_result(self, player_id: ID) -> Self {
+    fn clear_reported_result(self, player_id: PlayerID) -> Self {
         debug_assert!(
             self.matches
                 .iter()
-                .filter(|m| m.contains(player_id) && m.get_winner() == Opponent::Unknown)
+                .filter(|m| m.contains(player_id) && m.get_winner() == Opponent(None))
                 .count()
                 <= 1
         );
         let match_to_update = self
             .matches
             .iter()
-            .find(|m| m.contains(player_id) && m.get_winner() == Opponent::Unknown);
+            .find(|m| m.contains(player_id) && m.get_winner() == Opponent(None));
         match match_to_update {
             Some(m_to_clear) => {
                 let m_to_clear = (*m_to_clear).clear_reported_result(player_id);

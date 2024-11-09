@@ -2,10 +2,11 @@ use crate::double_elimination_bracket::assert_no_next_match_after_tournament_is_
 use totsugeki::bracket::seeding::Seeding;
 use totsugeki::double_elimination_bracket::progression::ProgressionDEB;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki::matches::MatchID;
+use totsugeki::next_opponent::NextOpponentInBracket;
 use totsugeki::opponent::Opponent;
-use totsugeki::player::{Participants, Player};
+use totsugeki::player::{Participants, Player, PlayerID};
 use totsugeki::validation::AutomaticMatchValidationMode;
-use totsugeki::ID;
 
 #[cfg(test)]
 pub(crate) fn assert_next_matches(
@@ -17,12 +18,11 @@ pub(crate) fn assert_next_matches(
     for p in players_with_unknown_opponent {
         let player = players[*p].clone();
         let (next_opponent, _) = bracket
-            .next_opponent(player.get_id())
-            .expect("next opponent")
-            .expect("opponent is not missing");
+            .next_opponent_in_bracket(player.get_id())
+            .expect("next opponent");
         assert_eq!(
             next_opponent,
-            Opponent::Unknown,
+            Opponent(None),
             "expected unknown opponent for {p} but got {next_opponent}"
         );
     }
@@ -32,10 +32,9 @@ pub(crate) fn assert_next_matches(
         let opponent2 = players[*o2].clone();
 
         let (next_opponent, _) = bracket
-            .next_opponent(opponent1.get_id())
-            .expect("next opponent")
-            .expect("opponent should not be missing");
-        let Opponent::Player(p) = next_opponent else {
+            .next_opponent_in_bracket(opponent1.get_id())
+            .expect("next opponent");
+        let Opponent(Some(p)) = next_opponent else {
             panic!("expected player for next opponent");
         };
         assert_eq!(
@@ -44,10 +43,9 @@ pub(crate) fn assert_next_matches(
             "expected {opponent2} for {opponent1} but got {p}"
         );
         let (next_opponent, _) = bracket
-            .next_opponent(opponent2.get_id())
-            .expect("next opponent")
-            .expect("opponent should not be missing");
-        let Opponent::Player(p) = next_opponent else {
+            .next_opponent_in_bracket(opponent2.get_id())
+            .expect("next opponent");
+        let Opponent(Some(p)) = next_opponent else {
             panic!("expected player for next opponent");
         };
         assert_eq!(
@@ -60,10 +58,10 @@ pub(crate) fn assert_next_matches(
 
 fn report(
     double_elimination_bracket: DoubleEliminationBracket,
-    player1: ID,
+    player1: PlayerID,
     result: (i8, i8),
-    player2: ID,
-) -> (DoubleEliminationBracket, ID) {
+    player2: PlayerID,
+) -> (DoubleEliminationBracket, MatchID) {
     let (bracket, m_id, _new_matches) = double_elimination_bracket
         .tournament_organiser_reports_result_dangerous(player1, result, player2)
         .expect("bracket");
@@ -152,7 +150,7 @@ fn bracket_5_man_with_frequent_upsets() {
 #[test]
 fn run_8_man_bracket_with_frequent_upsets() {
     // every 2 matches, there is an upset
-    let mut player_ids = vec![ID::new_v4()]; // padding for readability
+    let mut player_ids = vec![PlayerID::create()]; // padding for readability
     let mut unpadded_player_ids = vec![]; // padding for readability
     let mut seeding = Participants::default();
     for i in 1..=8 {

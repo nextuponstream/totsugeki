@@ -11,8 +11,8 @@ pub struct TestApp {
     pub http_client: Client,
 }
 
-use super::*;
-use crate::tournaments::{BracketState, CreateBracketForm};
+use super::{app, Duration, Expiry, PgPool, PostgresStore, SessionManagerLayer, SocketAddr};
+use crate::tournaments::{BracketState, CreateBracketForm, ID};
 use reqwest::{Client, Response};
 use serde::Serialize;
 use tokio::net::TcpListener;
@@ -164,7 +164,7 @@ impl TestApp {
 
     /// `/api/tournaments/:id` GET
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
-    pub async fn get_tournament(&self, id: Id) -> Response {
+    pub async fn get_tournament(&self, id: ID) -> Response {
         self.http_client
             .get(format!("{}/api/tournaments/{id}", self.addr))
             .send()
@@ -199,9 +199,9 @@ impl TestApp {
 
     /// `/api/tournaments/:bracket_id/join` POST
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
-    pub async fn join_bracket(&self, bracket_id: Id) -> Response {
+    pub async fn join_bracket(&self, tournament_id: ID) -> Response {
         self.http_client
-            .post(format!("{}/api/tournaments/{}/join", self.addr, bracket_id))
+            .post(format!("{}/api/tournaments/{}/join", self.addr, tournament_id))
             .send()
             .await
             .expect("request done")

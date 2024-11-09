@@ -1,8 +1,9 @@
 //! Update seeding of bracket
 
+use crate::player::PlayerID;
 use crate::{
     bracket::{Bracket, Error as BracketError},
-    player::{Id as PlayerId, Participants, Player},
+    player::{Participants, Player},
     seeding::seed,
     ID,
 };
@@ -12,7 +13,7 @@ use thiserror::Error;
 
 /// Seeding is an ordered list of player. All players IDs are guaranteed unique
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Seeding(Vec<PlayerId>);
+pub struct Seeding(Vec<PlayerID>);
 
 impl Default for Seeding {
     fn default() -> Self {
@@ -25,28 +26,28 @@ impl Default for Seeding {
 pub enum SeedingError {
     /// Duplicate player
     #[error("Duplicate player {0}")]
-    DuplicatePlayer(PlayerId),
+    DuplicatePlayer(PlayerID),
 }
 
 impl Seeding {
     /// Creates a unique player list, ordered for seeding
-    pub fn new(player_ids: Vec<ID>) -> Result<Self, SeedingError> {
+    pub fn new(player_ids: Vec<PlayerID>) -> Result<Self, SeedingError> {
         let mut set = HashSet::new();
         for player_id in &player_ids {
             if !set.insert(player_id) {
-                return Err(SeedingError::DuplicatePlayer(*player_id));
+                return Err(SeedingError::DuplicatePlayer(player_id.clone()));
             }
         }
         Ok(Self(player_ids))
     }
 
     /// Get seeding
-    pub fn get(&self) -> Vec<ID> {
+    pub fn get(&self) -> Vec<PlayerID> {
         self.0.clone()
     }
 
     /// Contains player
-    pub fn contains(&self, player_id: ID) -> bool {
+    pub fn contains(&self, player_id: PlayerID) -> bool {
         self.0.contains(&player_id)
     }
 
@@ -62,7 +63,7 @@ impl Bracket {
     ///
     /// # Errors
     /// thrown when provided players do not match current players in bracket
-    pub fn update_seeding(self, players: &[PlayerId]) -> Result<Self, BracketError> {
+    pub fn update_seeding(self, players: &[PlayerID]) -> Result<Self, BracketError> {
         if self.accept_match_results {
             return Err(BracketError::Started(self.id, String::new()));
         }
@@ -97,24 +98,21 @@ impl Bracket {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        bracket::builder::Builder,
-        format::Format,
-        matches::{Id as MatchId, Match},
-        opponent::Opponent,
-        player::Error as PlayerError,
-        seeding::Error as OldSeedingError,
-    };
 
     #[test]
     fn seed_many_players() {
-        let players = vec![ID::new_v4(), ID::new_v4()];
+        let players = vec![PlayerID::create(), PlayerID::create()];
         assert!(Seeding::new(players).is_ok())
     }
     #[test]
     fn seeding_throws_error_for_duplicate_id() {
-        let duplicate_id = ID::new_v4();
-        let players = vec![ID::new_v4(), ID::new_v4(), duplicate_id, duplicate_id];
+        let duplicate_id = PlayerID::create();
+        let players = vec![
+            PlayerID::create(),
+            PlayerID::create(),
+            duplicate_id,
+            duplicate_id,
+        ];
         assert_eq!(
             Seeding::new(players),
             Err(SeedingError::DuplicatePlayer(duplicate_id))

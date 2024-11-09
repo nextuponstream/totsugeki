@@ -1,29 +1,26 @@
 //! Inspect next opponent for a given player in single elimination bracket
 
-use crate::next_opponent::NextOpponentInBracket;
+use crate::matches::MatchID;
+use crate::next_opponent::{Error, NextOpponentInBracket};
 use crate::opponent::Opponent;
+use crate::player::PlayerID;
 use crate::single_elimination_bracket::SingleEliminationBracket;
-use crate::ID;
 
 impl NextOpponentInBracket for SingleEliminationBracket {
-    fn next_opponent_in_bracket(&self, player_id: ID) -> Option<(Option<Opponent>, ID)> {
+    fn next_opponent_in_bracket(&self, player_id: PlayerID) -> Result<(Opponent, MatchID), Error> {
         let next_match = self
             .matches
             .iter()
-            .find(|m| m.contains(player_id) && m.get_winner() == Opponent::Unknown);
+            .find(|m| m.contains(player_id) && m.get_winner() == Opponent(None));
         let Some(relevant_match) = next_match else {
-            return None;
+            panic!()
         };
 
         let opponent = match &relevant_match.get_players() {
-            [Opponent::Player(p1), Opponent::Player(p2)] if *p1 == player_id => {
-                Opponent::Player(*p2)
-            }
-            [Opponent::Player(p1), Opponent::Player(p2)] if *p2 == player_id => {
-                Opponent::Player(*p1)
-            }
-            _ => Opponent::Unknown,
+            [Opponent(Some(p1)), Opponent(Some(p2))] if *p1 == player_id => Opponent(Some(*p2)),
+            [Opponent(Some(p1)), Opponent(Some(p2))] if *p2 == player_id => Opponent(Some(*p1)),
+            _ => Opponent(None),
         };
-        Some((Some(opponent), relevant_match.get_id()))
+        Ok((opponent, relevant_match.get_id()))
     }
 }

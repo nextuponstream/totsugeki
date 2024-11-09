@@ -1,23 +1,21 @@
 //! Bracket repository
 
+use crate::resources::PaginatedGenericResource;
+use crate::tournaments::ID;
+use crate::tournaments::{ParticipantError, Tournament};
+use crate::tournaments::{ReportResultInput, TournamentRecord};
+use crate::users::registration::UserRecord;
 use serde::{Deserialize, Serialize};
 use sqlx::error::Error as SqlxError;
 use sqlx::types::Json as SqlxJson;
 use sqlx::{Postgres, Transaction};
-
-use totsugeki::bracket::Bracket;
-use totsugeki::matches::Match;
-use totsugeki::player::Participants;
-use totsugeki::player::{Id, Player};
-
-use crate::resources::PaginatedGenericResource;
-use crate::tournaments::{ParticipantError, Tournament};
-use crate::tournaments::{ReportResultInput, TournamentRecord};
-use crate::users::registration::UserRecord;
 use thiserror::Error;
 use totsugeki::bracket::seeding::Seeding;
 use totsugeki::double_elimination_bracket::progression::ProgressionDEB;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki::matches::Match;
+use totsugeki::player::Player;
+use totsugeki::player::{Participants, PlayerID};
 use totsugeki::validation::AutomaticMatchValidationMode;
 use tracing::error;
 
@@ -52,7 +50,7 @@ impl TournamentService {
         transaction: &mut Transaction<'_, Postgres>,
         tournament: &Tournament,
         double_elimination_bracket: &DoubleEliminationBracket,
-        user_id: Id,
+        user_id: ID,
     ) -> Result<(), SqlxError> {
         let _ = sqlx::query!(
             "INSERT INTO tournaments (id, name, matches, participants) VALUES ($1, $2, $3, $4)",
@@ -77,7 +75,7 @@ impl TournamentService {
     /// User joins bracket
     pub async fn join(
         transaction: &mut Transaction<'_, Postgres>,
-        tournament_id: Id,
+        tournament_id: ID,
         user: UserRecord,
     ) -> Result<Option<(Tournament, DoubleEliminationBracket, bool)>, Error> {
         let Some(tournament_record) = sqlx::query_as!(
@@ -97,7 +95,9 @@ impl TournamentService {
 
         let (mut tournament, _) = tournament_record.parse();
 
-        if let Err(e) = tournament.add_participant(Player::from((user.id, user.name))) {
+        if let Err(e) =
+            tournament.add_participant(Player::from((PlayerID::new(user.id), user.name)))
+        {
             return match e {
                 ParticipantError::AlreadyPresent => Err(Error::PlayerAlreadyPresent),
             };
@@ -109,10 +109,10 @@ impl TournamentService {
                     .get_participants()
                     .0
                     .iter()
-                    .map(|p| p.get_id())
+                    .map(Player::get_id)
                     .collect(),
             )
-            .unwrap(),
+            .expect("should update seeding of bracket with tournament valid seeding"),
             AutomaticMatchValidationMode::Flexible,
         );
 
@@ -122,8 +122,8 @@ impl TournamentService {
     /// Returns bracket in database and boolean if user is a tournament organiser of that bracket
     pub async fn read_for_user(
         transaction: &mut Transaction<'_, Postgres>,
-        tournament_id: Id,
-        user_id: Option<Id>,
+        tournament_id: ID,
+        user_id: Option<ID>,
     ) -> Result<Option<(Tournament, DoubleEliminationBracket, bool)>, Error> {
         let Some(tournament_record) = sqlx::query_as!(
         TournamentRecord,
@@ -153,9 +153,12 @@ impl TournamentService {
     /// Update bracket with result
     pub async fn update_with_result(
         transaction: &mut Transaction<'_, Postgres>,
-        tournament_id: Id,
+        tournament_id: ID,
         report: &ReportResultInput,
-    ) -> Result<Option<(Tournament, DoubleEliminationBracket)>, SqlxError> {
+    ) -> Result<
+        Option<(Tournament, DoubleEliminationBracket)>,
+        crate::tournaments::update_with_result::Error,
+    > {
         let Some(tournament_record) = sqlx::query_as!(
         TournamentRecord,
         r#"SELECT id, name, matches as "matches: SqlxJson<MatchesRaw>", created_at, participants as "participants: SqlxJson<Participants>" from tournaments WHERE id = $1"#,
@@ -170,13 +173,11 @@ impl TournamentService {
         let (tournament, bracket) = tournament_record.parse();
 
         // FIXME actual error handling
-        let (bracket, _, _) = bracket
-            .tournament_organiser_reports_result_dangerous(
-                report.p1_id,
-                (report.score_p1, report.score_p2),
-                report.p2_id,
-            )
-            .unwrap();
+        let (bracket, _, _) = bracket.tournament_organiser_reports_result_dangerous(
+            report.p1_id,
+            (report.score_p1, report.score_p2),
+            report.p2_id,
+        )?;
         let _r = sqlx::query!(
             r#"
         UPDATE tournaments 
@@ -221,7 +222,7 @@ impl TournamentService {
         sort_order: String,
         limit: i64,
         offset: i64,
-        user_id: Id,
+        user_id: ID,
     ) -> Result<Vec<PaginatedGenericResource>, SqlxError> {
         // paginated results with total count: https://stackoverflow.com/a/28888696
         // not optimal : each rows contains the total

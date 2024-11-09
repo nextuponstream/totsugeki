@@ -1,12 +1,6 @@
 //! Disqualification of player in bracket and all side-effects
 
-use crate::{
-    bracket::{Bracket, Error},
-    matches::Match,
-    player::Id as PlayerId,
-};
-
-use super::matches::is_disqualified;
+use crate::matches::Match;
 
 /// Returns new matches when comparing old bracket and new bracket
 pub(crate) fn get_new_matches(old_bracket: &[Match], new_bracket: &[Match]) -> Vec<Match> {
@@ -23,12 +17,11 @@ pub(crate) fn get_new_matches(old_bracket: &[Match], new_bracket: &[Match]) -> V
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::bracket::seeding::Seeding;
     use crate::double_elimination_bracket::DoubleEliminationBracket;
     use crate::player::Participants;
+    use crate::player::Player;
     use crate::validation::AutomaticMatchValidationMode;
-    use crate::{format::Format, player::Player};
     use std::time::Instant;
 
     // cargo t disqualify_8000 -- --include-ignored --nocapture

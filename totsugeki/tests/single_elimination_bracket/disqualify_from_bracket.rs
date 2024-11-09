@@ -1,7 +1,7 @@
 use crate::common::assert_outcome;
 use totsugeki::bracket::seeding::Seeding;
 use totsugeki::opponent::Opponent;
-use totsugeki::player::Player;
+use totsugeki::player::{Player, PlayerID};
 use totsugeki::single_elimination_bracket::progression::ProgressionSEB;
 use totsugeki::single_elimination_bracket::SingleEliminationBracket;
 use totsugeki::ID;
@@ -45,12 +45,12 @@ fn disqualifying_everyone() {
 fn disqualifying_unknown_player_is_a_no_op() {
     let mut seeding = vec![];
     for i in 1..=3 {
-        seeding.push(ID::new_v4())
+        seeding.push(PlayerID::create())
     }
     let seeding = Seeding::new(seeding).unwrap();
     let bracket = SingleEliminationBracket::create(seeding, false);
 
-    let unknown_player = ID::new_v4();
+    let unknown_player = PlayerID::create();
     bracket.disqualify_participant_from_bracket(unknown_player);
 }
 
@@ -67,14 +67,14 @@ fn opponent_of_disqualified_player_can_play_their_next_match() {
 
     assert!(
         !bracket.get_matches().iter().any(
-            |m| matches!(m.get_automatic_loser(), Opponent::Player(loser) if loser == p[1].get_id())
+            |m| matches!(m.get_automatic_loser(), Opponent(Some(loser)) if loser == p[1].get_id())
         ),
         "expected player 1 not to be declared looser in any match"
     );
     let bracket = bracket.disqualify_participant_from_bracket(p[1].get_id());
     assert!(
         bracket.get_matches().iter().any(
-            |m| matches!(m.get_automatic_loser(), Opponent::Player(loser) if loser == p[1].get_id())
+            |m| matches!(m.get_automatic_loser(), Opponent(Some(loser)) if loser == p[1].get_id())
         ),
         "expected match where player 1 is declared loser"
     );
@@ -105,7 +105,7 @@ fn disqualifying_player_sets_looser_of_their_current_match() {
 
     assert!(
         !bracket.get_matches().iter().any(
-            |m| matches!(m.get_automatic_loser(), Opponent::Player(loser) if loser == p[2].get_id())
+            |m| matches!(m.get_automatic_loser(), Opponent(Some(loser)) if loser == p[2].get_id())
         ),
         "expected player 2 not to be declared looser in any match"
     );
@@ -113,7 +113,7 @@ fn disqualifying_player_sets_looser_of_their_current_match() {
     assert!(
         bracket.get_matches().iter().any(|m| matches!(
                     (m.get_automatic_loser(), m.get_winner()),
-                    (Opponent::Player(loser), Opponent::Player(winner)) 
+                    (Opponent(Some(loser)), Opponent(Some(winner))) 
                     if loser == p[2].get_id() && winner == p[1].get_id())),
         "expected player 1 winning match where player 2 is disqualified, got {:?}",
         bracket.get_matches()
@@ -122,7 +122,7 @@ fn disqualifying_player_sets_looser_of_their_current_match() {
         bracket
             .get_matches()
             .iter()
-            .all(|m| m.get_winner() != Opponent::Unknown),
+            .all(|m| m.get_winner() != Opponent(None)),
         "expected all matches were played"
     );
 }
@@ -140,14 +140,14 @@ fn disqualifying_player_sets_their_opponent_as_the_winner_and_they_move_to_their
 
     assert!(
         !bracket.get_matches().iter().any(
-            |m| matches!(m.get_automatic_loser(), Opponent::Player(loser) if loser == p[2].get_id())
+            |m| matches!(m.get_automatic_loser(), Opponent(Some(loser)) if loser == p[2].get_id())
         ),
         "expected player 2 not to be declared looser in any match"
     );
     let bracket = bracket.disqualify_participant_from_bracket(p[2].get_id());
     assert!(
         bracket.get_matches().iter().any(
-            |m| matches!(m.get_automatic_loser(), Opponent::Player(loser) if loser == p[2].get_id())
+            |m| matches!(m.get_automatic_loser(), Opponent(Some(loser)) if loser == p[2].get_id())
         ),
         "expected match where player 2 is declared looser"
     );

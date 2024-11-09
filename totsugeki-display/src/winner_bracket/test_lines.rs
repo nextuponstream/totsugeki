@@ -5,13 +5,14 @@
 #[cfg(test)]
 mod tests {
     use totsugeki::bracket::seeding::Seeding;
+    use totsugeki::player::PlayerID;
     use totsugeki::single_elimination_bracket::SingleEliminationBracket;
     use totsugeki::ID;
 
     fn get_data(n: usize) -> SingleEliminationBracket {
         let mut seeding = vec![];
         for _ in 0..n {
-            seeding.push(ID::new_v4());
+            seeding.push(PlayerID::create());
         }
         SingleEliminationBracket::create(Seeding::new(seeding).unwrap(), true)
     }

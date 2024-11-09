@@ -4,10 +4,9 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::bracket::seeding::Seeding;
+use crate::player::PlayerID;
 use crate::{
-    bracket::matches::Progression,
     matches::Match,
-    player::{Id as PlayerId, Participants, Player},
     seeding::{
         double_elimination_seeded_bracket::get_loser_bracket_matches_top_seed_favored,
         single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored,
@@ -29,16 +28,16 @@ impl Format {
     ///
     /// # Errors
     /// thrown when math overflow happens
-    pub fn generate_matches(self, seeding: &[PlayerId]) -> Result<Vec<Match>, SeedingError> {
+    pub fn generate_matches(self, seeding: &[PlayerID]) -> Result<Vec<Match>, SeedingError> {
         let seeding = Seeding::new(seeding.into()).unwrap();
         Ok(match self {
             Format::SingleEliminationBracket => {
-                get_balanced_round_matches_top_seed_favored(seeding)?
+                get_balanced_round_matches_top_seed_favored(&seeding)
             }
             Format::DoubleEliminationBracket => {
                 let mut matches = vec![];
                 let mut winner_bracket_matches =
-                    get_balanced_round_matches_top_seed_favored(seeding.clone())?;
+                    get_balanced_round_matches_top_seed_favored(&seeding);
                 matches.append(&mut winner_bracket_matches);
                 let mut looser_bracket_matches =
                     get_loser_bracket_matches_top_seed_favored(&seeding.get())?;

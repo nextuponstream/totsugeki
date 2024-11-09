@@ -5,7 +5,7 @@ use axum::extract::Request;
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
 use http::StatusCode;
-use totsugeki::player::Id;
+use totsugeki::ID;
 use tower_sessions::Session;
 
 /// Auth layer checking for presence of key `user_id` in session, set by login
@@ -22,7 +22,7 @@ pub(crate) async fn auth_layer(
     request: Request,
     next: Next,
 ) -> Response {
-    let v: Option<Id> = session
+    let v: Option<ID> = session
         .get(&Keys::UserId.to_string())
         .await
         .expect("value from store");
@@ -50,7 +50,7 @@ pub(crate) async fn maybe_auth_layer(
     request: Request,
     next: Next,
 ) -> Response {
-    let _v: Option<Id> = session
+    let _v: Option<ID> = session
         .get(&Keys::UserId.to_string())
         .await
         .expect("value from store");

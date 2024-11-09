@@ -3,7 +3,7 @@ use totsugeki::double_elimination_bracket::progression::ProgressionDEB;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki::matches::{partition_double_elimination_matches, Match};
 use totsugeki::opponent::Opponent;
-use totsugeki::player::{Participants, Player};
+use totsugeki::player::{Participants, Player, PlayerID};
 use totsugeki::validation::AutomaticMatchValidationMode;
 use totsugeki::ID; // Note: we don't test panics. If a panic occurs, it's a bug that needs
                    // programmer attention. If UI sends bad data to backend and violate assertions,
@@ -42,8 +42,8 @@ fn assert_player_drops_to_losers(bracket: &DoubleEliminationBracket, n: usize, p
         partition_double_elimination_matches(&bracket.get_matches(), bracket.get_seeding().len());
     assert!(
         !winners.iter().any(|m| m.contains(p[n].get_id())
-            && m.get_winner() == Opponent::Unknown
-            && m.get_automatic_loser() == Opponent::Unknown),
+            && m.get_winner() == Opponent(None)
+            && m.get_automatic_loser() == Opponent(None)),
         "expected player {n} having no matches in winners"
     );
     assert!(
@@ -68,7 +68,7 @@ fn disqualifying_player_that_could_not_make_it() {
 
     assert!(
         !bracket.get_matches().iter().any(
-            |m| matches!(m.get_automatic_loser(), Opponent::Player(loser) if loser == p[1].get_id())
+            |m| matches!(m.get_automatic_loser(), Opponent(Some(loser)) if loser == p[1].get_id())
         ),
         "expected player 1 not to be declared looser in any match"
     );
@@ -77,7 +77,7 @@ fn disqualifying_player_that_could_not_make_it() {
         .expect("bracket with player 1 disqualified");
     assert!(
         bracket.get_matches().iter().any(
-            |m| matches!(m.get_automatic_loser(), Opponent::Player(loser) if loser == p[1].get_id())
+            |m| matches!(m.get_automatic_loser(), Opponent(Some(loser)) if loser == p[1].get_id())
         ),
         "expected match where player 1 is declared looser"
     );
@@ -111,7 +111,7 @@ fn disqualifying_player_sets_looser_of_their_current_match() {
 
     assert!(
         !bracket.get_matches().iter().any(
-            |m| matches!(m.get_automatic_loser(), Opponent::Player(loser) if loser == p[2].get_id())
+            |m| matches!(m.get_automatic_loser(), Opponent(Some(loser)) if loser == p[2].get_id())
         ),
         "expected player 2 not to be declared looser in any match"
     );
@@ -124,7 +124,7 @@ fn disqualifying_player_sets_looser_of_their_current_match() {
             .get_matches()
             .iter()
             .any(|m| match (m.get_automatic_loser(), m.get_winner()) {
-                (Opponent::Player(loser), Opponent::Player(winner)) if loser == p[2].get_id() => {
+                (Opponent(Some(loser)), Opponent(Some(winner))) if loser == p[2].get_id() => {
                     winner == p[1].get_id()
                 }
                 _ => false,
@@ -163,7 +163,7 @@ fn disqualifying_player_sets_their_opponent_as_the_winner_and_they_move_to_their
 
     assert!(
         !bracket.get_matches().iter().any(
-            |m| matches!(m.get_automatic_loser(), Opponent::Player(loser) if loser == p[2].get_id())
+            |m| matches!(m.get_automatic_loser(), Opponent(Some(loser)) if loser == p[2].get_id())
         ),
         "expected player 2 not to be declared looser in any match"
     );
@@ -171,10 +171,9 @@ fn disqualifying_player_sets_their_opponent_as_the_winner_and_they_move_to_their
         .disqualify_participant_from_bracket(p[2].get_id())
         .expect("bracket with player 2 disqualified");
     assert!(
-        bracket
-            .get_matches()
-            .iter()
-            .any(|m| matches!(m.get_automatic_loser(), Opponent::Player(player) if player == p[2].get_id())),
+        bracket.get_matches().iter().any(
+            |m| matches!(m.get_automatic_loser(), Opponent(Some(player)) if player == p[2].get_id())
+        ),
         "expected match where player 2 is declared looser"
     );
     assert!(
@@ -209,7 +208,7 @@ fn assert_outcome(bracket: &DoubleEliminationBracket, x: &Player, y: &Player) {
                 m.contains(x.get_id()),
                 m.contains(y.get_id()),
                 m.get_winner()
-            ), (true, true, Opponent::Player(winner)) if winner == x.get_id())),
+            ), (true, true, Opponent(Some(winner))) if winner == x.get_id())),
         "No match where {} wins against {}",
         x.get_name(),
         y.get_name()
@@ -221,7 +220,7 @@ fn assert_outcome_in_matches(matches: &[Match], x: &Player, y: &Player) {
                 m.contains(x.get_id()),
                 m.contains(y.get_id()),
                 m.get_winner()
-            ), (true, true, Opponent::Player(winner)) if winner == x.get_id())),
+            ), (true, true, Opponent(Some(winner))) if winner == x.get_id())),
         "No match where {} wins against {}",
         x.get_name(),
         y.get_name()
@@ -286,7 +285,7 @@ fn disqualifying_everyone_is_impossible_because_the_last_player_remaining_wins_g
         .iter()
         .find(|m| m.contains(p[7].get_id()) && m.get_seeds() == [2, 3])
         .expect("m");
-    let Opponent::Player(loser) = m.get_automatic_loser() else {
+    let Opponent(Some(loser)) = m.get_automatic_loser() else {
         panic!("expected loser but found none {m:?}");
     };
     assert_eq!(loser, p[7].get_id());
@@ -317,14 +316,14 @@ fn disqualifying_everyone_is_impossible_because_the_last_player_remaining_wins_g
     for m in &winner_bracket {
         assert_ne!(
             m.get_automatic_loser(),
-            Opponent::Unknown,
+            Opponent(None),
             "expected winner bracket match to have automatic loser but got none: {m:?}"
         );
     }
     for m in &loser_bracket {
         assert_ne!(
             m.get_automatic_loser(),
-            Opponent::Unknown,
+            Opponent(None),
             "expected loser bracket match to have automatic loser but got none: {m:?}"
         );
     }
@@ -347,7 +346,7 @@ fn disqualifying_everyone_is_impossible_because_the_last_player_remaining_wins_g
 #[test]
 fn disqualifying_most_in_double_elimination_tournament_and_lowest_expected_seed_in_winners_final() {
     let mut players = vec![Player::new("don't use".into())];
-    let mut p = vec![ID::new_v4()];
+    let mut p = vec![PlayerID::create()];
     let mut bad_seeding = Participants::default();
     for i in 1..=8 {
         let player = Player::new(format!("p{i}"));
@@ -375,7 +374,7 @@ fn disqualifying_most_in_double_elimination_tournament_and_lowest_expected_seed_
         partition_double_elimination_matches(&bracket.get_matches(), bad_seeding.len());
     assert!(
         l_bracket.iter().any(|m| {
-            let Opponent::Player(auto) = m.get_automatic_loser() else {
+            let Opponent(Some(auto)) = m.get_automatic_loser() else {
                 return false;
             };
             auto == p[7]
@@ -406,19 +405,19 @@ fn disqualifying_most_in_double_elimination_tournament_and_lowest_expected_seed_
     assert!(bracket.get_matches()[bracket.get_matches().len() - 2].contains(players[2].get_id()),);
     assert_eq!(
         bracket.get_matches()[bracket.get_matches().len() - 1].get_players(),
-        [Opponent::Unknown, Opponent::Unknown],
+        [Opponent(None), Opponent(None)],
         "expected no p in reset but got {:?}",
         bracket.get_matches()[bracket.get_matches().len() - 1].get_players()
     );
     assert_eq!(
         bracket.get_matches()[bracket.get_matches().len() - 2].get_automatic_loser(),
-        Opponent::Player(players[2].get_id()),
+        Opponent(Some(players[2].get_id())),
         "expected automatic loser of grand finals to be {}",
         players[2]
     );
     assert_eq!(
         bracket.get_matches()[bracket.get_matches().len() - 2].get_winner(),
-        Opponent::Player(players[1].get_id()),
+        Opponent(Some(players[1].get_id())),
         "expected winner of grand finals to be {}\n{:?}",
         players[1],
         bracket.get_matches()[bracket.get_matches().len() - 2],
@@ -432,7 +431,7 @@ fn disqualifying_most_in_double_elimination_tournament_and_lowest_expected_seed_
 fn assert_x_wins_against_y(p1: &Player, p2: &Player, matches: &[Match]) {
     assert!(
         matches.iter().any(|m| {
-            matches!((m.get_winner(), m.contains(p2.get_id())), (Opponent::Player(winner), true) if winner == p1.get_id())
+            matches!((m.get_winner(), m.contains(p2.get_id())), (Opponent(Some(winner)), true) if winner == p1.get_id())
         }),
         "no matches where {} wins against {}",
         p1.get_name(),
@@ -635,13 +634,13 @@ fn disqualifying_everyone_in_double_elimination_tournament_is_imposible() {
     assert!(bracket.get_matches()[bracket.get_matches().len() - 2].contains(p[2].get_id()),);
     assert_eq!(
         bracket.get_matches()[bracket.get_matches().len() - 2].get_automatic_loser(),
-        Opponent::Player(p[2].get_id()),
+        Opponent(Some(p[2].get_id())),
         "expected automatic loser of grand finals to be {}",
         p[2]
     );
     assert_eq!(
         bracket.get_matches()[bracket.get_matches().len() - 2].get_winner(),
-        Opponent::Player(p[1].get_id()),
+        Opponent(Some(p[1].get_id())),
         "expected winner of grand finals to be {}\n{:?}",
         p[1],
         bracket.get_matches()[bracket.get_matches().len() - 2],
@@ -702,26 +701,26 @@ fn disqualifying_most_in_double_elimination_tournament_and_grand_finalist_from_w
     assert!(bracket.get_matches()[bracket.get_matches().len() - 1].contains(p[2].get_id()),);
     assert_eq!(
         bracket.get_matches()[bracket.get_matches().len() - 2].get_automatic_loser(),
-        Opponent::Player(p[1].get_id()),
+        Opponent(Some(p[1].get_id())),
         "expected automatic loser of grand finals to be {}",
         p[2]
     );
     assert_eq!(
         bracket.get_matches()[bracket.get_matches().len() - 2].get_winner(),
-        Opponent::Player(p[2].get_id()),
+        Opponent(Some(p[2].get_id())),
         "expected winner of grand finals to be {}\n{:?}",
         p[1],
         bracket.get_matches()[bracket.get_matches().len() - 2]
     );
     assert_eq!(
         bracket.get_matches()[bracket.get_matches().len() - 1].get_automatic_loser(),
-        Opponent::Player(p[1].get_id()),
+        Opponent(Some(p[1].get_id())),
         "expected automatic loser of reset to be {}",
         p[1]
     );
     assert_eq!(
         bracket.get_matches()[bracket.get_matches().len() - 1].get_winner(),
-        Opponent::Player(p[2].get_id()),
+        Opponent(Some(p[2].get_id())),
         "expected winner of reset to be {}\n{:?}",
         p[2],
         bracket.get_matches()[bracket.get_matches().len() - 2],
@@ -776,17 +775,17 @@ fn disqualifying_most_in_double_elimination_tournament_and_grand_finalist_from_l
     assert!(bracket.get_matches()[bracket.get_matches().len() - 2].contains(p[2].get_id()),);
     assert_eq!(
         bracket.get_matches()[bracket.get_matches().len() - 1].get_players(),
-        [Opponent::Unknown, Opponent::Unknown]
+        [Opponent(None), Opponent(None)]
     );
     assert_eq!(
         bracket.get_matches()[bracket.get_matches().len() - 2].get_automatic_loser(),
-        Opponent::Player(p[2].get_id()),
+        Opponent(Some(p[2].get_id())),
         "expected automatic loser of grand finals to be {}",
         p[2]
     );
     assert_eq!(
         bracket.get_matches()[bracket.get_matches().len() - 2].get_winner(),
-        Opponent::Player(p[1].get_id()),
+        Opponent(Some(p[1].get_id())),
         "expected winner of grand finals to be {}\n{:?}",
         p[1],
         bracket.get_matches()[bracket.get_matches().len() - 2],
@@ -838,22 +837,19 @@ fn disqualifying_most_in_double_elimination_tournament_and_highest_expected_seed
     assert!(bracket.get_matches()[bracket.get_matches().len() - 2].contains(p[2].get_id()),);
     assert_eq!(
         bracket.get_matches()[bracket.get_matches().len() - 2].get_players(),
-        [
-            Opponent::Player(p[2].get_id()),
-            Opponent::Player(p[1].get_id())
-        ],
+        [Opponent(Some(p[2].get_id())), Opponent(Some(p[1].get_id()))],
         "expected player 1 and 2 in grand finals but got {:?}",
         bracket.get_matches()[bracket.get_matches().len() - 2].get_players()
     );
     assert_eq!(
         bracket.get_matches()[bracket.get_matches().len() - 2].get_automatic_loser(),
-        Opponent::Player(p[1].get_id()),
+        Opponent(Some(p[1].get_id())),
         "expected automatic loser of grand finals to be {}",
         p[2]
     );
     assert_eq!(
         bracket.get_matches()[bracket.get_matches().len() - 2].get_winner(),
-        Opponent::Player(p[2].get_id()),
+        Opponent(Some(p[2].get_id())),
         "expected winner of reset to be {}\n{:?}",
         p[2],
         bracket.get_matches()[bracket.get_matches().len() - 2],
@@ -888,10 +884,10 @@ fn fuzzer_incident_01() {
     // * [2, 3] Lp3 VS Wp2
     // * [1, 2] -p4 VS -p2
     // * [1, 2] -?  VS -?
-    let mut p = vec![ID::new_v4()];
+    let mut p = vec![PlayerID::create()];
     let mut seeding = vec![];
     for _ in 1..=4 {
-        let id = ID::new_v4();
+        let id = PlayerID::create();
         p.push(id);
         seeding.push(id);
     }
@@ -950,10 +946,10 @@ fn fuzzer_incident_02() {
     // * [2, 3] Lp7 VS -?
     // * [1, 2] -p1 VS -?
     // * [1, 2] -?  VS -?
-    let mut p = vec![ID::new_v4()];
+    let mut p = vec![PlayerID::create()];
     let mut seeding = vec![];
     for _ in 1..=8 {
-        let id = ID::new_v4();
+        let id = PlayerID::create();
         p.push(id);
         seeding.push(id);
     }
@@ -1028,10 +1024,10 @@ fn fuzzer_incident_03() {
     // 	* [2, 3] Wp2 VS Lp3 | match id: ac034a6c-1a4d-4cba-9bd9-2acca62c5142
     // 	* [1, 2] Lp1 VS -p2 | match id: b725b8fd-b436-43d7-ba03-30ca9ac49c43
     // 	* [1, 2] -?  VS -?  | match id: a61b5bd7-dcad-44c4-bf83-48ebd34b9e30
-    let mut p = vec![ID::new_v4()];
+    let mut p = vec![PlayerID::create()];
     let mut seeding = vec![];
     for _ in 1..=3 {
-        let id = ID::new_v4();
+        let id = PlayerID::create();
         p.push(id);
         seeding.push(id);
     }

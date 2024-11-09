@@ -2,10 +2,11 @@
 
 use std::ops::ControlFlow;
 
-use crate::{matches::Match, player::Id as PlayerId, seeding::Error};
+use crate::player::PlayerID;
+use crate::{matches::Match, seeding::Error};
 
 /// Get seed of player from seeding
-fn get_seed_of(player: &PlayerId, seeding: &[PlayerId]) -> usize {
+fn get_seed_of(player: &PlayerID, seeding: &[PlayerID]) -> usize {
     assert!(seeding.contains(player));
     for (i, p) in seeding.iter().enumerate() {
         if p == player {
@@ -36,9 +37,9 @@ fn get_seed_of(player: &PlayerId, seeding: &[PlayerId]) -> usize {
 /// # Errors
 /// thrown when math overflow happens
 pub fn get_loser_bracket_matches_top_seed_favored(
-    seeding: &[PlayerId],
+    seeding: &[PlayerID],
 ) -> Result<Vec<Match>, Error> {
-    let losers_by_round = match partition_players_of_loser_bracket(seeding) {
+    let losers_by_round = match partition_players_of_loser_bracket(&seeding) {
         Ok(value) => value,
         Err(value) => return value,
     };
@@ -62,7 +63,7 @@ pub fn get_loser_bracket_matches_top_seed_favored(
         let tmp = incoming_players_of_this_wave.clone();
         let wave = form_wave(&tmp)?;
         let (p_with_bye, p_without_bye) =
-            generate_matches_of_first_round_in_wave(wave, seeding, &mut matches);
+            generate_matches_of_first_round_in_wave(wave, &seeding, &mut matches);
 
         let Some(remaining) = fun_name(
             p_without_bye,
@@ -112,11 +113,11 @@ pub fn get_loser_bracket_matches_top_seed_favored(
 
 /// qiej
 fn fun_name(
-    p_without_bye: &[uuid::Uuid],
-    p_with_bye: &[uuid::Uuid],
+    p_without_bye: &[PlayerID],
+    p_with_bye: &[PlayerID],
     initial_wave: &mut bool,
-    incoming_players_of_this_wave: &mut Vec<uuid::Uuid>,
-) -> Option<Vec<uuid::Uuid>> {
+    incoming_players_of_this_wave: &mut Vec<PlayerID>,
+) -> Option<Vec<PlayerID>> {
     #[allow(clippy::bool_to_int_with_if)]
     let at_least_half = p_without_bye.len() / 2 + if p_without_bye.len() % 2 == 0 { 0 } else { 1 };
     let (winners_of_p_without_bye, _) = p_without_bye.split_at(at_least_half);
@@ -135,9 +136,9 @@ fn fun_name(
 /// the expected loser
 fn generate_matches_of_first_round_in_wave<'a>(
     wave: Wave<'a>,
-    seeding: &'a [uuid::Uuid],
+    seeding: &'a [PlayerID],
     matches: &'a mut Vec<Match>,
-) -> (&'a [uuid::Uuid], &'a [uuid::Uuid]) {
+) -> (&'a [PlayerID], &'a [PlayerID]) {
     let p_with_bye = wave.players_with_bye;
     let p_without_bye = wave.players_without_bye;
     let expected_winners = wave.expected_winners;
@@ -160,19 +161,19 @@ fn generate_matches_of_first_round_in_wave<'a>(
 /// are the
 struct Wave<'a> {
     /// oqiwje
-    players_with_bye: &'a [uuid::Uuid],
+    players_with_bye: &'a [PlayerID],
     /// owqijeh
-    players_without_bye: &'a [uuid::Uuid],
+    players_without_bye: &'a [PlayerID],
     /// players that are expected to move on in the matches between players
     /// without byes for this wave
-    expected_winners: &'a [uuid::Uuid],
+    expected_winners: &'a [PlayerID],
     /// players that are not expected to move on in the matches between players
     /// without byes for this wave
-    expected_losers: Vec<uuid::Uuid>,
+    expected_losers: Vec<PlayerID>,
 }
 
 /// Returns wave of players. See `Wave` documentation for more information
-fn form_wave(incoming_players_of_wave: &[uuid::Uuid]) -> Result<Wave, Error> {
+fn form_wave(incoming_players_of_wave: &[PlayerID]) -> Result<Wave, Error> {
     let byes = match (incoming_players_of_wave.len()).checked_next_power_of_two() {
         Some(next_higher_power_of_two) => next_higher_power_of_two - incoming_players_of_wave.len(),
         None => return Err(Error::MathOverflow),
@@ -193,8 +194,8 @@ fn form_wave(incoming_players_of_wave: &[uuid::Uuid]) -> Result<Wave, Error> {
 /// Returns `ControlFlow::Break` when the players from the initial wave should
 /// be group together with the player for the next wave
 fn fill_incoming_wave(
-    incoming_wave: &mut Vec<uuid::Uuid>,
-    losers_for_this_round: &[uuid::Uuid],
+    incoming_wave: &mut Vec<PlayerID>,
+    losers_for_this_round: &[PlayerID],
     initial_wave: &mut bool,
     skip_initial_wave_match_generation: bool,
 ) -> ControlFlow<()> {
@@ -213,8 +214,8 @@ fn fill_incoming_wave(
 /// loser bracket round and the incoming player from the winner bracket (who
 /// lost a mathc)
 fn partition_players_of_loser_bracket(
-    seeding: &[uuid::Uuid],
-) -> Result<Vec<Vec<uuid::Uuid>>, Result<Vec<Match>, Error>> {
+    seeding: &[PlayerID],
+) -> Result<Vec<Vec<PlayerID>>, Result<Vec<Match>, Error>> {
     let mut remaining_loosers = seeding.to_vec();
     remaining_loosers.reverse();
     remaining_loosers.pop();
@@ -247,7 +248,7 @@ fn partition_players_of_loser_bracket(
 #[cfg(test)]
 mod tests {
     use crate::format::Format;
-    use crate::matches::{Id as MatchId, Match};
+    use crate::matches::{Match, MatchID};
     use crate::opponent::Opponent;
     use crate::player::{Participants, Player};
     use crate::seeding::double_elimination_seeded_bracket::get_loser_bracket_matches_top_seed_favored;
@@ -269,27 +270,27 @@ mod tests {
         let matches = Format::DoubleEliminationBracket
             .generate_matches(&participants.get_seeding())
             .expect("matches");
-        let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches,
             vec![
                 Match {
                     id: match_ids.pop().expect("id"),
                     players: [
-                        Opponent::Player(players[2].get_id()),
-                        Opponent::Player(players[3].get_id())
+                        Opponent(Some(players[2].get_id())),
+                        Opponent(Some(players[3].get_id()))
                     ],
                     seeds: [2, 3],
-                    winner: Opponent::Unknown,
-                    automatic_loser: Opponent::Unknown,
+                    winner: Opponent(None),
+                    automatic_loser: Opponent(None),
                     reported_results: [None, None],
                 },
                 Match {
                     id: match_ids.pop().expect("id"),
-                    players: [Opponent::Player(players[1].get_id()), Opponent::Unknown],
+                    players: [Opponent(Some(players[1].get_id())), Opponent(None)],
                     seeds: [1, 2],
-                    winner: Opponent::Unknown,
-                    automatic_loser: Opponent::Unknown,
+                    winner: Opponent(None),
+                    automatic_loser: Opponent(None),
                     reported_results: [None, None],
                 },
                 Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3]),
@@ -312,7 +313,7 @@ mod tests {
         }
 
         let matches = get_loser_bracket_matches_top_seed_favored(&seeding).expect("matches");
-        let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(matches.len(), 2, "expected 2 matches, got: {matches:?}");
         assert_eq!(
             matches,
@@ -336,7 +337,7 @@ mod tests {
         }
 
         let matches = get_loser_bracket_matches_top_seed_favored(&seeding).expect("matches");
-        let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
             3,
@@ -367,7 +368,7 @@ mod tests {
         }
 
         let matches = get_loser_bracket_matches_top_seed_favored(&seeding).expect("matches");
-        let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
             4,
@@ -410,7 +411,7 @@ mod tests {
         }
 
         let matches = get_loser_bracket_matches_top_seed_favored(&seeding).expect("matches");
-        let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
             5,
@@ -454,7 +455,7 @@ mod tests {
         }
 
         let matches = get_loser_bracket_matches_top_seed_favored(&seeding).expect("matches");
-        let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
             6,
@@ -499,7 +500,7 @@ mod tests {
         }
 
         let matches = get_loser_bracket_matches_top_seed_favored(&seeding).expect("matches");
-        let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
             7,
@@ -545,7 +546,7 @@ mod tests {
         }
 
         let matches = get_loser_bracket_matches_top_seed_favored(&seeding).expect("matches");
-        let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
             8,
@@ -592,7 +593,7 @@ mod tests {
         }
 
         let matches = get_loser_bracket_matches_top_seed_favored(&seeding).expect("matches");
-        let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
             9,
@@ -640,7 +641,7 @@ mod tests {
         }
 
         let matches = get_loser_bracket_matches_top_seed_favored(&seeding).expect("matches");
-        let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
             10,
@@ -689,7 +690,7 @@ mod tests {
         }
 
         let matches = get_loser_bracket_matches_top_seed_favored(&seeding).expect("matches");
-        let mut match_ids: Vec<MatchId> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
             14,

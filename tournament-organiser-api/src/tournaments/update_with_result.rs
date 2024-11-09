@@ -7,9 +7,25 @@ use axum::extract::{Path, State};
 use axum::response::IntoResponse;
 use axum::Json;
 use http::StatusCode;
+use sqlx::Error as SqlxError;
 use sqlx::PgPool;
+use thiserror::Error;
 use totsugeki::bracket::Id;
 use tracing::instrument;
+
+/// Cannot update double elimination bracket with result
+#[derive(Error, Debug)]
+pub(crate) enum Error {
+    /// Potentially recoverable
+    #[error("{0}")]
+    App(
+        #[from]
+        totsugeki::double_elimination_bracket::progression::DoubleEliminationReportResultError,
+    ),
+    /// Unrecoverable
+    #[error("{0}")]
+    SqlxError(#[from] SqlxError),
+}
 
 /// Returns updated bracket with result. Because there is no persistence, it's
 /// obviously limited in that TO can manipulate localStorage to change the
@@ -37,11 +53,19 @@ pub async fn update_with_result(
         {
             Ok(Some(bracket)) => bracket,
             Ok(None) => return Err(ErrorSlug::from(StatusCode::NOT_FOUND)),
-            Err(e) => {
-                tracing::warn!(
-                    "Cannot update bracket {tournament_id} with result {report:?}: {e:?}"
+            Err(Error::SqlxError(e)) => {
+                tracing::error!(
+                    "Cannot update tournament {tournament_id} with result {report:?}: {e:?}"
                 );
                 return Err(ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR));
+            }
+            Err(Error::App(e)) => {
+                tracing::warn!(
+                "Cannot use reported result to update tournament {}. Is frontend up to date?: {}",
+                tournament_id,
+                e
+            );
+                return Err(ErrorSlug::new(StatusCode::BAD_REQUEST, e.to_string()));
             }
         };
     transaction.commit().await.map_err(internal_error)?;

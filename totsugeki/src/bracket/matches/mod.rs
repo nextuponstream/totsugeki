@@ -1,18 +1,17 @@
 //! Manage matches from bracket
 
-use crate::matches::GenerationError;
+use crate::matches::{GenerationError, MatchID};
 #[cfg(test)]
 use crate::player::Player;
+use crate::player::PlayerID;
 use crate::{
     matches::{Error as MatchError, Id as MatchId, Match},
     opponent::Opponent,
-    player::Id as PlayerId,
     seeding::Error as SeedingError,
     ID,
 };
 use thiserror::Error;
 
-pub mod double_elimination_format;
 /// Error while managing matches of bracket
 #[derive(Error, Debug)]
 pub enum Error {
@@ -21,19 +20,19 @@ pub enum Error {
     Seeding(#[from] SeedingError),
     /// Cannot request information from unknown player
     #[error("Player {0} is unknown in this bracket")]
-    PlayerIsNotParticipant(PlayerId),
+    PlayerIsNotParticipant(PlayerID),
     /// There is no generated matches at this time
     #[error("No matches were generated yet")]
     NoGeneratedMatches,
     /// Player has been disqualified
     #[error("{0} is disqualified")]
-    Disqualified(PlayerId),
+    Disqualified(PlayerID),
     /// Player has won the tournament and has no match left to play
     #[error("{0} won the tournament and has no matches left to play")]
-    NoNextMatch(PlayerId),
+    NoNextMatch(PlayerID),
     /// Player is eliminated from tournament and has no matches left to play
     #[error("{0} has been eliminated from the tournament and has no matches left to play")]
-    Eliminated(PlayerId),
+    Eliminated(PlayerID),
     /// Tournament is over
     #[error("Tournament is over")]
     TournamentIsOver,
@@ -42,10 +41,10 @@ pub enum Error {
     MatchUpdate(#[from] MatchError),
     /// Player is unknown in this bracket
     #[error("{0} is unknown. Use one of the following: {1:?}")]
-    UnknownPlayer(PlayerId, Vec<PlayerId>),
+    UnknownPlayer(PlayerID, Vec<PlayerID>),
     /// No match to play for player
     #[error("There is no matches for you to play")]
-    NoMatchToPlay(PlayerId),
+    NoMatchToPlay(PlayerID),
     /// Referred match is unknown
     #[error("Match {0} is unknown")]
     UnknownMatch(MatchId),
@@ -54,7 +53,7 @@ pub enum Error {
     NoMatchToUpdate(Vec<Match>, MatchId),
     /// Fordidden action because player has been disqualified
     #[error("{0} is disqualified")]
-    ForbiddenDisqualified(PlayerId),
+    ForbiddenDisqualified(PlayerID),
 }
 
 // FIXME remove
@@ -71,7 +70,7 @@ pub(crate) fn bracket_is_over(bracket_matches: &[Match]) -> bool {
 
 /// Returns true when `player_id` has been disqualified by looking into all
 /// `matches` in the bracket
-pub(crate) fn is_disqualified(player_id: PlayerId, matches: &[Match]) -> bool {
+pub(crate) fn is_disqualified(player_id: PlayerID, matches: &[Match]) -> bool {
     matches
         .iter()
         .any(|m| m.is_automatic_loser_by_disqualification(player_id))
@@ -97,7 +96,7 @@ pub(crate) fn update_bracket_with(bracket: &[Match], updated_match: &Match) -> V
 /// if applicable, the loser of updated match, the expected loser seed that
 /// should be used when sending them in lower bracket and a boolean to indicate
 /// if they are disqualified
-type BracketUpdate = (Vec<Match>, Option<(PlayerId, usize, bool)>);
+type BracketUpdate = (Vec<Match>, Option<(PlayerID, usize, bool)>);
 
 // FIXME should be made on self and consumed
 /// Takes matches in bracket, validate `match_id` and returns updated winner
@@ -110,13 +109,13 @@ type BracketUpdate = (Vec<Match>, Option<(PlayerId, usize, bool)>);
 /// # Errors
 /// thrown when attempting an update for winner/loser bracket match in
 /// loser/winner bracket
-pub(crate) fn update(bracket_matches: &[Match], match_id: MatchId) -> Result<BracketUpdate, Error> {
+pub(crate) fn update(bracket_matches: &[Match], match_id: MatchID) -> Result<BracketUpdate, Error> {
     let m = bracket_matches
         .iter()
         .find(|m| m.get_id() == match_id)
         .expect(format!("match {} updated", match_id).as_str());
     // declare winner if there is one
-    let is_disqualified = m.get_automatic_loser() != Opponent::Unknown;
+    let is_disqualified = m.get_automatic_loser() != Opponent(None);
     let (updated_m, winner, loser) = (*m).update_outcome()?;
     let seed_of_expected_winner = updated_m.get_seeds()[0];
     let expected_loser_seed = updated_m.get_seeds()[1];
@@ -178,7 +177,7 @@ pub(crate) fn update(bracket_matches: &[Match], match_id: MatchId) -> Result<Bra
             .expect("reference to updated match");
         let mut iter = bracket.iter().skip(index + 1);
         let seed_of_expected_winner = updated_match.get_seeds()[0];
-        let Opponent::Player(winner) = updated_match.get_winner() else {
+        let Opponent(Some(winner)) = updated_match.get_winner() else {
             panic!(
                 "no winner in updated match. Corrupted data for updated match {:?}",
                 updated_match
@@ -195,14 +194,12 @@ pub(crate) fn update(bracket_matches: &[Match], match_id: MatchId) -> Result<Bra
 }
 
 /// Assert any players set as disqualified at most once
-pub(crate) fn assert_disqualified_at_most_once(matches: &[Match], seeding: &[PlayerId]) {
+pub(crate) fn assert_disqualified_at_most_once(matches: &[Match], seeding: &[PlayerID]) {
     for player in seeding {
         assert!(
             matches
                 .iter()
-                .filter(
-                    |m| matches!(m.get_automatic_loser(), Opponent::Player(id) if id == *player)
-                )
+                .filter(|m| matches!(m.get_automatic_loser(), Opponent(Some(id)) if id == *player))
                 .count()
                 < 2
         );
@@ -212,7 +209,7 @@ pub(crate) fn assert_disqualified_at_most_once(matches: &[Match], seeding: &[Pla
 /// Assert if both opponent are not the same player
 pub(crate) fn assert_match_is_well_formed(m: &Match) {
     assert!(
-        !matches!(m.get_players(), [Opponent::Player(p1), Opponent::Player(p2)] if p1 == p2),
+        !matches!(m.get_players(), [Opponent(Some(p1)), Opponent(Some(p2))] if p1 == p2),
         "match {m} is not well formed"
     );
 }
@@ -242,10 +239,10 @@ pub trait Progression {
     /// # Errors
     /// Thrown when matches have yet to be generated or player has won/been
     /// eliminated
-    fn next_opponent(&self, player_id: PlayerId) -> Result<(Opponent, MatchId), Error>;
+    fn next_opponent(&self, player_id: PlayerID) -> Result<(Opponent, MatchId), Error>;
 
     /// Returns true if player is disqualified
-    fn is_disqualified(&self, player_id: PlayerId) -> bool;
+    fn is_disqualified(&self, player_id: PlayerID) -> bool;
 
     /// Report result of match. Returns updated matches, affected match and new
     /// matches to play
@@ -255,7 +252,7 @@ pub trait Progression {
     /// When player does not belong in bracket
     fn report_result(
         &self,
-        player_id: PlayerId,
+        player_id: PlayerID,
         result: (i8, i8),
     ) -> Result<(Vec<Match>, MatchId, Vec<Match>), Error>;
 
@@ -271,9 +268,9 @@ pub trait Progression {
     /// thrown when player does not belong in bracket
     fn tournament_organiser_reports_result(
         &self,
-        player1: PlayerId,
+        player1: PlayerID,
         result: (i8, i8),
-        player2: PlayerId,
+        player2: PlayerID,
     ) -> Result<(Vec<Match>, MatchId, Vec<Match>), Error>;
 
     /// Update `match_id` with reported `result` of `player`
@@ -284,7 +281,7 @@ pub trait Progression {
         &self,
         match_id: MatchId,
         result: (i8, i8),
-        player_id: PlayerId,
+        player_id: PlayerID,
     ) -> Result<Vec<Match>, Error>;
 
     /// Returns updated matches and matches to play. Uses `match_id` as the
@@ -333,7 +330,7 @@ fn assert_outcome(matches: &[Match], x: &Player, y: &Player) {
                 m.contains(x.get_id()),
                 m.contains(y.get_id()),
                 m.get_winner()
-            ), (true, true, Opponent::Player(winner)) if winner == x.get_id())),
+            ), (true, true, Opponent(Some(winner))) if winner == x.get_id())),
         "No match where {} wins against {}",
         x.get_name(),
         y.get_name()
@@ -344,7 +341,7 @@ fn assert_outcome(matches: &[Match], x: &Player, y: &Player) {
 fn assert_x_wins_against_y(p1: &Player, p2: &Player, matches: &[Match]) {
     assert!(
         matches.iter().any(|m| {
-            matches!((m.get_winner(), m.contains(p2.get_id())), (Opponent::Player(winner), true) if winner == p1.get_id())
+            matches!((m.get_winner(), m.contains(p2.get_id())), (Opponent(Some(winner)), true) if winner == p1.get_id())
         }),
         "no matches where {} wins against {}",
         p1.get_name(),

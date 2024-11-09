@@ -6,7 +6,7 @@ use axum::{response::IntoResponse, Json};
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPool;
-use totsugeki::player::Id;
+use totsugeki::ID;
 use tower_sessions::Session;
 use tracing::instrument;
 
@@ -27,7 +27,7 @@ pub struct Infos {
 /// `/api/user/profile` GET to check user information
 #[instrument(name = "user_dashboard", skip(pool, session))]
 pub(crate) async fn profile(session: Session, State(pool): State<PgPool>) -> impl IntoResponse {
-    let user_id: Id = session
+    let user_id: ID = session
         .get(&Keys::UserId.to_string())
         .await
         .expect("session store maybe value")
@@ -54,7 +54,7 @@ pub(crate) async fn profile(session: Session, State(pool): State<PgPool>) -> imp
 /// `/api/user` DELETE
 #[instrument(name = "user_account_deletion", skip(pool, session))]
 pub(crate) async fn delete_user(session: Session, State(pool): State<PgPool>) -> impl IntoResponse {
-    let user_id: Id = session
+    let user_id: ID = session
         .get(&Keys::UserId.to_string())
         .await
         .expect("session store maybe value")
