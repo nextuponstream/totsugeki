@@ -43,14 +43,14 @@ fn assert_players_play_each_other_ids(
     bracket: &SingleEliminationBracket,
 ) {
     let (next_opponent, match_id_1) = bracket
-        .next_opponent(player_ids[player_1])
+        .next_opponent_in_bracket(player_ids[player_1])
         .expect("next opponent");
     let Opponent(Some(next_opponent)) = next_opponent else {
         panic!("expected player")
     };
     assert_eq!(next_opponent, player_ids[player_2]);
     let (next_opponent, match_id_2) = bracket
-        .next_opponent(player_ids[player_2])
+        .next_opponent_in_bracket(player_ids[player_2])
         .expect("next opponent");
     let Opponent(Some(next_opponent)) = next_opponent else {
         panic!("expected player")

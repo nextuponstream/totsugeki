@@ -1,6 +1,6 @@
 //! Progression of a single elimination bracket
 
-use crate::bracket::matches::{bracket_is_over, is_disqualified, Error};
+use crate::bracket::matches::{bracket_is_over, Error};
 use crate::bracket::progression::new_matches_to_play_for_bracket;
 use crate::matches::{Error as MatchError, MatchID};
 use crate::matches::{Match, ReportedResult};
@@ -272,6 +272,7 @@ impl ProgressionSEB for SingleEliminationBracket {
 #[cfg(test)]
 mod tests {
     use crate::bracket::seeding::Seeding;
+    use crate::next_opponent::NextOpponentInBracket;
     use crate::opponent::Opponent;
     use crate::player::Player;
     use crate::seeding::single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored;
@@ -282,15 +283,19 @@ mod tests {
         player_1: usize,
         player_2: usize,
         player_ids: &[Player],
-        s: &dyn ProgressionSEB,
+        s: &SingleEliminationBracket,
     ) {
-        let (next_opponent, match_id_1) = s.next_opponent(player_ids[player_1].get_id()).unwrap();
+        let (next_opponent, match_id_1) = s
+            .next_opponent_in_bracket(player_ids[player_1].get_id())
+            .unwrap();
         let Opponent(Some(next_opponent)) = next_opponent else {
             panic!("expected player");
         };
         assert_eq!(next_opponent, player_ids[player_2].get_id());
 
-        let (next_opponent, match_id_2) = s.next_opponent(player_ids[player_2].get_id()).unwrap();
+        let (next_opponent, match_id_2) = s
+            .next_opponent_in_bracket(player_ids[player_2].get_id())
+            .unwrap();
         let Opponent(Some(next_opponent)) = next_opponent else {
             panic!("expected player")
         };

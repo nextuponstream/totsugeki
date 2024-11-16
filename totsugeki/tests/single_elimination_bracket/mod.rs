@@ -1,3 +1,5 @@
+use totsugeki::matches::MatchID;
+use totsugeki::next_opponent::{Error, NextOpponentInBracket};
 use totsugeki::single_elimination_bracket::progression::ProgressionSEB;
 mod automatic_validation;
 mod disqualify_from_bracket;
@@ -16,7 +18,7 @@ fn assert_next_matches(
     for p in players_with_unknown_opponent {
         let player = players[*p].clone();
         let (next_opponent, _) = bracket
-            .next_opponent(player.get_id())
+            .next_opponent_in_bracket(player.get_id())
             .expect("next opponent");
         assert_eq!(
             next_opponent,
@@ -30,7 +32,7 @@ fn assert_next_matches(
         let opponent2 = players[*o2].clone();
 
         let (next_opponent, _) = bracket
-            .next_opponent(opponent1.get_id())
+            .next_opponent_in_bracket(opponent1.get_id())
             .expect("next opponent");
         let Opponent(Some(p)) = next_opponent else {
             panic!("expected player for next opponent");
@@ -41,7 +43,7 @@ fn assert_next_matches(
             "expected {opponent2} for {opponent1} but got {p}"
         );
         let (next_opponent, _) = bracket
-            .next_opponent(opponent2.get_id())
+            .next_opponent_in_bracket(opponent2.get_id())
             .expect("next opponent");
         let Opponent(Some(p)) = next_opponent else {
             panic!("expected player for next opponent");
@@ -56,8 +58,11 @@ fn assert_next_matches(
 
 fn assert_no_next_match_after_tournament_is_over(bracket: &SingleEliminationBracket) {
     for player in bracket.get_seeding().get().iter() {
-        if let Some(next_opponent) = bracket.next_opponent(*player) {
-            panic!("expected no next match when tournament is over but got {next_opponent:?}",)
+        match bracket.next_opponent_in_bracket(*player) {
+            Ok(_) => {
+                panic!()
+            }
+            Err(_) => {}
         }
     }
 }
