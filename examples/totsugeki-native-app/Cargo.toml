@@ -23,6 +23,7 @@ totsugeki = { path = "../../totsugeki" }
 dioxus = { git = "https://github.com/DioxusLabs/dioxus", rev = "0f684f056762a0dee05c321290b6cc4fc5299d72" }
 dioxus-desktop = { git = "https://github.com/DioxusLabs/dioxus", rev = "0f684f056762a0dee05c321290b6cc4fc5299d72" }
 chrono = { version = "0.4.33", features = ["serde"] }
+uuid = { version = "1.7.0", features = ["v4"] }
 # fluent-bundle = "0.15.2"
 # chrono = { version = "0.4.21", features = ["serde"] }
 # dioxus = "0.3.2"

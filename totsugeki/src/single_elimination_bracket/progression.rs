@@ -3,13 +3,12 @@
 use crate::bracket::matches::{bracket_is_over, is_disqualified, Error};
 use crate::bracket::progression::new_matches_to_play_for_bracket;
 use crate::matches::{Error as MatchError, MatchID};
-use crate::matches::{Id, Match, ReportedResult};
+use crate::matches::{Match, ReportedResult};
 use crate::opponent::Opponent;
 use crate::player::PlayerID;
 use crate::single_elimination_bracket::{
     SingleEliminationBracket, SingleEliminationReportResultError,
 };
-use crate::ID;
 // FIXME add all test for reports from double elimination here too
 
 // TODO for consistency, make Progression trait common to single elim and double elim but MAKE IT
@@ -33,13 +32,6 @@ pub trait ProgressionSEB {
     /// List all matches that can be played out
     fn matches_to_play(&self) -> Vec<Match>;
 
-    /// Return next opponent for `player_id` and relevant match ID
-    ///
-    /// # Errors
-    /// Thrown when matches have yet to be generated or player has won/been
-    /// eliminated
-    fn next_opponent(&self, player_id: PlayerID) -> Option<(Opponent, MatchID)>;
-
     /// Returns true if player is disqualified
     fn is_disqualified(&self, player_id: PlayerID) -> bool;
 
@@ -55,7 +47,8 @@ pub trait ProgressionSEB {
         result: (i8, i8),
     ) -> Result<(Vec<Match>, MatchID, Vec<Match>), SingleEliminationReportResultError>;
 
-    /// Tournament organiser reports result
+    /// Tournament organiser reports result. Returns updated bracket, affected
+    /// `match_id` and new matches to play (that weren't playable before)
     ///
     /// NOTE: both players are needed, so it is less ambiguous when reading code:
     /// * p1 2-0 is more ambiguous to read than
@@ -205,12 +198,13 @@ impl ProgressionSEB for SingleEliminationBracket {
     fn validate_match_result(self, match_id: MatchID) -> (SingleEliminationBracket, Vec<Match>) {
         let old_matches_to_play = self.matches_to_play();
         // FIXME remove unreachable
+        // FIXME should return an error because it's used by a library => there must be some
+        //  valid input that becomes invalid depending on the state the bracket is in
         let (matches, _) = match crate::bracket::matches::update(&self.matches, match_id) {
             Ok(t) => t,
-            Err(
-                Error::MatchUpdate(MatchError::MissingOpponent(_))
-                | Error::MatchUpdate(MatchError::MissingReport(_, _)),
-            ) => return (self, vec![]),
+            Err(Error::MatchUpdate(
+                MatchError::MissingOpponent(_) | MatchError::MissingReport(_, _),
+            )) => return (self, vec![]),
             Err(e) => unreachable!("{e:?}"),
         };
 
@@ -229,30 +223,31 @@ impl ProgressionSEB for SingleEliminationBracket {
             .collect()
     }
 
-    fn next_opponent(&self, player_id: PlayerID) -> Option<(Opponent, MatchID)> {
-        assert!(self.seeding.contains(player_id), "unknown player");
-
-        if self.matches.is_empty() {
-            unreachable!()
-        }
-
-        if is_disqualified(player_id, &self.matches) {
-            return None;
-        }
-
-        let next_match = self
-            .matches
-            .iter()
-            .find(|m| m.contains(player_id) && m.get_winner() == Opponent(None));
-        let relevant_match = next_match?;
-
-        let opponent = match &relevant_match.get_players() {
-            [Opponent(Some(p1)), Opponent(Some(p2))] if *p1 == player_id => Opponent(Some(*p2)),
-            [Opponent(Some(p1)), Opponent(Some(p2))] if *p2 == player_id => Opponent(Some(*p1)),
-            _ => Opponent(None),
-        };
-        Some((opponent, relevant_match.get_id()))
-    }
+    // // FIXME redundant with next_opponent_in_bracket
+    // fn next_opponent(&self, player_id: PlayerID) -> Option<(Opponent, MatchID)> {
+    //     assert!(self.seeding.contains(player_id), "unknown player");
+    //
+    //     if self.matches.is_empty() {
+    //         unreachable!()
+    //     }
+    //
+    //     if is_disqualified(player_id, &self.matches) {
+    //         return None;
+    //     }
+    //
+    //     let next_match = self
+    //         .matches
+    //         .iter()
+    //         .find(|m| m.contains(player_id) && m.get_winner() == Opponent(None));
+    //     let relevant_match = next_match?;
+    //
+    //     let opponent = match &relevant_match.get_players() {
+    //         [Opponent(Some(p1)), Opponent(Some(p2))] if *p1 == player_id => Opponent(Some(*p2)),
+    //         [Opponent(Some(p1)), Opponent(Some(p2))] if *p2 == player_id => Opponent(Some(*p1)),
+    //         _ => Opponent(None),
+    //     };
+    //     Some((opponent, relevant_match.get_id()))
+    // }
 
     // FIXME return self and consume...
     fn tournament_organiser_reports_result(

@@ -105,26 +105,19 @@ pub(crate) fn lines(rounds: Vec<Vec<MinimalMatch>>) -> Option<Vec<Vec<BoxElement
 
 #[cfg(test)]
 mod tests {
-    use chrono::prelude::*;
-    use totsugeki::bracket::single_elimination_variant::Variant;
-    use totsugeki::bracket::Bracket;
+    use totsugeki::player::{Participants, Player};
+    use totsugeki::single_elimination_bracket::SingleEliminationBracket;
 
-    fn get_data(n: usize) -> Bracket {
-        let mut bracket = Bracket::new(
-            "",
-            totsugeki::format::Format::SingleEliminationBracket,
-            totsugeki::seeding::Method::Strict,
-            DateTime::default(),
-            true,
-        );
+    fn get_data(n: usize) -> (SingleEliminationBracket, Participants) {
+        let mut participants = Participants::default();
         for i in 1..=n {
-            bracket = bracket
-                .add_participant(format!("player {i}").as_str())
-                .expect("bracket")
-                .0;
+            participants = participants
+                .add_participant(Player::new(format!("p{i}")))
+                .unwrap();
         }
+        let bracket = SingleEliminationBracket::create(participants.get_seeding(), true);
 
-        bracket
+        (bracket, participants)
     }
 
     use super::{lines, BoxElement};
@@ -158,10 +151,8 @@ mod tests {
 
     #[test]
     fn _3_participants_bracket() {
-        let bracket = get_data(3);
-        let participants = bracket.get_participants();
-        let sev: Variant = bracket.try_into().expect("single elimination bracket");
-        let matches_by_rounds = sev.partition_by_round().expect("rounds");
+        let (bracket, participants) = get_data(3);
+        let matches_by_rounds = bracket.partition_by_round().expect("rounds");
         let mut rounds = vec![];
         for r in matches_by_rounds {
             let round = r
@@ -214,10 +205,8 @@ mod tests {
 
     #[test]
     fn _4_participants_bracket() {
-        let bracket = get_data(4);
-        let participants = bracket.get_participants();
-        let sev: Variant = bracket.try_into().expect("single elimination bracket");
-        let matches_by_rounds = sev.partition_by_round().expect("rounds");
+        let (bracket, participants) = get_data(4);
+        let matches_by_rounds = bracket.partition_by_round().expect("rounds");
         let mut rounds = vec![];
         for r in matches_by_rounds {
             let round = r
@@ -243,10 +232,8 @@ mod tests {
 
     #[test]
     fn _5_participants_bracket() {
-        let bracket = get_data(5);
-        let participants = bracket.get_participants();
-        let sev: Variant = bracket.try_into().expect("single elimination bracket");
-        let matches_by_rounds = sev.partition_by_round().expect("rounds");
+        let (bracket, participants) = get_data(5);
+        let matches_by_rounds = bracket.partition_by_round().expect("rounds");
         let mut rounds = vec![];
         for r in matches_by_rounds {
             let round = r

@@ -33,6 +33,7 @@ pub enum SingleEliminationBracketMatchGenerationError {
 /// We do not expect any panics here because we take the top and bottom seed to
 /// form a new match, or we use the players with byes and give them an "unknown"
 /// Opponent.
+#[must_use]
 pub fn get_balanced_round_matches_top_seed_favored(seeding: &Seeding) -> Vec<Match> {
     // FIXME seeding should be a struct that has been well constructed
     // Matches are built bottom-up:
@@ -194,11 +195,7 @@ mod tests {
         )
         .unwrap();
         let matches = get_balanced_round_matches_top_seed_favored(&seeding);
-        let mut match_ids: Vec<MatchID> = matches
-            .iter()
-            .map(Match::get_id)
-            .rev()
-            .collect();
+        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         let expected_matches = vec![
             Match {
                 id: match_ids.pop().expect("match id"),

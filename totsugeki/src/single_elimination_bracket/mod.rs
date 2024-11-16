@@ -11,10 +11,11 @@ use crate::opponent::Opponent;
 use crate::player::PlayerID;
 use crate::seeding::single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored;
 use crate::single_elimination_bracket::progression::ProgressionSEB;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 /// Single elimination bracket
-#[derive(Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SingleEliminationBracket {
     /// Matches
     matches: Vec<Match>,
@@ -199,5 +200,10 @@ impl SingleEliminationBracket {
             }
             None => self,
         }
+    }
+
+    /// Get validation
+    pub fn get_automatic_validation(&self) -> bool {
+        self.automatic_match_progression
     }
 }

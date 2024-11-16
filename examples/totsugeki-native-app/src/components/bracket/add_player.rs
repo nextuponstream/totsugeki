@@ -2,12 +2,21 @@
 
 #![allow(non_snake_case)]
 use crate::components::SUBMIT_CLASS;
+use crate::tournaments::Tournament;
 use dioxus::prelude::*;
-use totsugeki::bracket::Bracket;
+use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki::format::Format;
+use totsugeki::player::Player;
+use totsugeki::single_elimination_bracket::SingleEliminationBracket;
+use totsugeki::validation::AutomaticMatchValidationMode;
 
 /// Form to add player to the bracket
 pub fn Form(cx: Scope) -> Element {
-    let bracket = use_shared_state::<Bracket>(cx).expect("bracket");
+    let single_elimination_bracket =
+        use_shared_state::<SingleEliminationBracket>(cx).expect("bracket");
+    let double_elimination_bracket =
+        use_shared_state::<DoubleEliminationBracket>(cx).expect("bracket");
+    let tournament = use_shared_state::<Tournament>(cx).expect("tournament");
 
     cx.render(rsx!(
         h2 {
@@ -17,7 +26,7 @@ pub fn Form(cx: Scope) -> Element {
 
         form {
             onsubmit: move |event| {
-                add_player(bracket, event);
+                add_player(tournament, single_elimination_bracket, double_elimination_bracket, event);
             },
 
             div {
@@ -40,24 +49,44 @@ pub fn Form(cx: Scope) -> Element {
 }
 
 /// Update stored bracket with new player using `Form`
-fn add_player(bracket: &UseSharedState<Bracket>, e: Event<FormData>) {
+fn add_player(
+    tournament: &UseSharedState<Tournament>,
+    single_elimination_bracket: &UseSharedState<SingleEliminationBracket>,
+    double_elimination_bracket: &UseSharedState<DoubleEliminationBracket>,
+    e: Event<FormData>,
+) {
     let Some(name) = e.values.get("name") else {
         return;
     };
     let Some(name) = name.first() else { return };
     let name = if name.is_empty() {
-        let i = bracket.read().get_participants().len() + 1;
+        let i = tournament.read().get_participants().len() + 1;
         format!("player {}", i)
     } else {
         name.to_string()
     };
-    let b = match bracket.write().clone().add_participant(&name) {
+    let t = tournament.read().clone();
+    let participants = t.get_participants();
+    let participants = match participants.add_participant(Player::new(name)) {
         Ok(b) => b,
         Err(e) => {
             println!("{e}"); // TODO use a logging library
             return;
         }
     };
-
-    *bracket.write() = b.0;
+    let mut t_update = Tournament::default();
+    t_update.set_participants(participants);
+    *tournament.write() = t_update;
+    match t.format {
+        Format::SingleEliminationBracket => {
+            *single_elimination_bracket.write() =
+                SingleEliminationBracket::create(t.get_participants().get_seeding(), true);
+        }
+        Format::DoubleEliminationBracket => {
+            *double_elimination_bracket.write() = DoubleEliminationBracket::create(
+                t.get_participants().get_seeding(),
+                AutomaticMatchValidationMode::Flexible,
+            );
+        }
+    }
 }

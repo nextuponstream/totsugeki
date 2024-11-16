@@ -8,7 +8,12 @@ use serenity::{
     model::channel::Message,
 };
 use std::{io::prelude::*, path::Path};
+use totsugeki::bracket::seeding::Seeding;
+use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki::format::Format;
 use totsugeki::player::Player;
+use totsugeki::single_elimination_bracket::SingleEliminationBracket;
+use totsugeki::validation::AutomaticMatchValidationMode;
 use tracing::{info, span, warn, Level};
 
 #[command]
@@ -23,7 +28,8 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
         let config = data.get::<Config>().expect("filename").clone();
         let bracket_data = data.get::<Data>().expect("data").clone();
         let mut bracket_data = bracket_data.write().await;
-        let (mut bracket, mut users) = bracket_data.clone();
+        let (format, mut users, single_elimination_bracket, double_elimination_bracket) =
+            bracket_data.clone();
 
         let player = match users.get(&user_id) {
             Some(p) => p.clone(),
@@ -31,23 +37,69 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
         };
         users.insert(user_id, player.clone());
 
-        match bracket.clone().join(player.clone()) {
-            Ok(b) => {
-                bracket = b;
+        let data = match format {
+            Format::SingleEliminationBracket => {
+                let seeding = single_elimination_bracket.get_seeding();
+                let mut players = seeding.get();
+                players.push(player.get_id());
+                let seeding = match Seeding::new(players) {
+                    Ok(r) => r,
+                    Err(e) => {
+                        warn!("{e}");
+                        msg.reply(ctx, format!("{e}")).await?;
+                        return Ok::<CommandResult, CommandError>(Ok(()));
+                    }
+                };
+                let seb = SingleEliminationBracket::create(
+                    seeding, true, // FIXME should be user provided
+                );
+                users.insert(user_id, player.clone());
+                *bracket_data = (
+                    format,
+                    users.clone(),
+                    seb.clone(),
+                    double_elimination_bracket.clone(),
+                );
+                Data {
+                    users,
+                    format,
+                    single_elimination_bracket: Some(seb),
+                    double_elimination_bracket: None,
+                }
             }
-            Err(e) => {
-                warn!("{e}");
-                msg.reply(ctx, format!("{e}")).await?;
-                return Ok::<CommandResult, CommandError>(Ok(()));
+            Format::DoubleEliminationBracket => {
+                let seeding = double_elimination_bracket.get_seeding();
+                let mut players = seeding.get();
+                players.push(player.get_id());
+                let seeding = match Seeding::new(players) {
+                    Ok(r) => r,
+                    Err(e) => {
+                        warn!("{e}");
+                        msg.reply(ctx, format!("{e}")).await?;
+                        return Ok::<CommandResult, CommandError>(Ok(()));
+                    }
+                };
+                let deb = DoubleEliminationBracket::create(
+                    seeding,
+                    AutomaticMatchValidationMode::Flexible, // FIXME should be user provided
+                );
+                users.insert(user_id, player.clone());
+                *bracket_data = (
+                    format,
+                    users.clone(),
+                    single_elimination_bracket.clone(),
+                    deb.clone(),
+                );
+                Data {
+                    users,
+                    format,
+                    single_elimination_bracket: None,
+                    double_elimination_bracket: Some(deb),
+                }
             }
         };
-        *bracket_data = (bracket.clone(), users.clone());
 
-        let d = Data {
-            bracket: bracket.clone(),
-            users: users.clone(),
-        };
-        let j = serde_json::to_string(&d).expect("bracket");
+        let j = serde_json::to_string(&data).expect("bracket");
 
         let mut f = std::fs::OpenOptions::new()
             .write(true)

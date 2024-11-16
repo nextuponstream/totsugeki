@@ -1,7 +1,5 @@
 //! Bracket domain
 
-mod assertions;
-pub mod builder;
 mod disqualification;
 mod getter_setter;
 pub mod matches;
@@ -10,7 +8,6 @@ pub mod participants;
 pub(crate) mod progression;
 mod query_state;
 pub mod seeding;
-pub mod single_elimination_variant;
 pub(crate) mod winner_bracket;
 
 use crate::player::PlayerID;

@@ -89,7 +89,7 @@ mod tests {
         for _ in 0..n {
             matches.push(Match::default());
         }
-        for i in 1..=n {
+        for _i in 1..=n {
             seeding.push(PlayerID::create());
         }
         (matches, Seeding::new(seeding).unwrap())

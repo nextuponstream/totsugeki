@@ -1,5 +1,6 @@
 //! player
 
+use crate::bracket::seeding::Seeding;
 use crate::ID;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
@@ -8,15 +9,18 @@ use thiserror::Error;
 
 /// Player ID
 #[derive(Hash, Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Ord, PartialOrd, Copy)]
+#[allow(clippy::module_name_repetitions)]
 pub struct PlayerID(ID);
 
 impl PlayerID {
     /// Create player ID
+    #[must_use]
     pub fn create() -> Self {
         Self(ID::new_v4())
     }
 
     /// New player ID
+    #[must_use]
     pub fn new(id: ID) -> Self {
         Self(id)
     }
@@ -85,7 +89,7 @@ impl Player {
     /// Get player id
     #[must_use]
     pub fn get_id(&self) -> PlayerID {
-        self.id.clone()
+        self.id
     }
 
     /// Get player name
@@ -165,9 +169,19 @@ impl Participants {
         self.0.clone()
     }
 
+    /// Returns seeding. Default seeding is first participant registered gets
+    /// the highest seed
+    ///
+    /// # Panics
+    /// Participant player list is corrupted
+    #[must_use]
+    pub fn get_seeding(&self) -> Seeding {
+        Seeding::new(self.0.iter().map(Player::get_id).collect::<Vec<_>>())
+            .expect("seeding from participants")
+    }
     /// Returns seeding, which is the players listed by ID
     #[must_use]
-    pub fn get_seeding(&self) -> Vec<PlayerID> {
+    pub fn get_player_list(&self) -> Vec<PlayerID> {
         self.0.iter().map(Player::get_id).collect::<Vec<_>>()
     }
 

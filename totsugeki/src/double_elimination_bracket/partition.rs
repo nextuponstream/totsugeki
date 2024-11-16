@@ -4,18 +4,12 @@
 use crate::bracket::winner_bracket::winner_bracket;
 use crate::bracket::PartitionError;
 use crate::double_elimination_bracket::DoubleEliminationBracket;
-use crate::matches::partition_double_elimination_matches as partition;
 use crate::matches::Match;
 
-/// Error with double elimination brackets
-#[derive(Debug)]
-pub enum TryIntoError {
-    /// Expected format to be double-elimination
-    ExpectedDoubleEliminationFormat,
-}
-
 impl DoubleEliminationBracket {
-    /// Returns winner bracket, loser bracket, grand finals and grand final reset
+    /// Partitions double elimination bracket matches in winner bracket, looser
+    /// bracket, grand finals and grand finals reset for `n` players
+    /// (inferred from seeding)
     ///
     /// # Errors
     /// Returns an error when there is less than 3 players in the bracket
@@ -25,7 +19,27 @@ impl DoubleEliminationBracket {
         if self.seeding.len() < 3 {
             return Err(PartitionError::NotEnoughPlayersInBracket);
         }
-        Ok(partition(&self.matches, self.seeding.len()))
+
+        let n = self.seeding.len();
+        assert_eq!(
+            self.matches.len(),
+            2 * n - 1,
+            "expected (2 * n) - 1 matches, where n is the number of players but got: {}",
+            self.matches.len()
+        );
+        let total_winner_bracket_matches = n - 1;
+
+        // Assumes `matches` are ordered as follows: [winner bracket, loser bracket, grand final,
+        // grand final reset]
+        let (winner_bracket, other) = self.matches.split_at(total_winner_bracket_matches);
+        let (grand_finals_reset, other) = other.split_last().expect("grand finals reset");
+        let (grand_finals, loser_bracket) = other.split_last().expect("grand finals");
+        Ok((
+            winner_bracket.to_vec(),
+            loser_bracket.to_vec(),
+            *grand_finals,
+            *grand_finals_reset,
+        ))
     }
 
     /// Returns winner bracket partitionned by round
@@ -33,10 +47,7 @@ impl DoubleEliminationBracket {
     /// # Errors
     /// When there is not enough players in the bracket for matches
     pub fn partition_winner_bracket(&self) -> Result<Vec<Vec<Match>>, PartitionError> {
-        if self.seeding.len() < 3 {
-            return Err(PartitionError::NotEnoughPlayersInBracket);
-        }
-        let (wb_matches, _, _, _) = partition(&self.matches, self.seeding.len());
+        let (wb_matches, _, _, _) = self.partition_matches()?;
 
         Ok(winner_bracket(wb_matches, &self.seeding))
     }
@@ -46,10 +57,7 @@ impl DoubleEliminationBracket {
     /// # Errors
     /// When there is not enough players in the bracket for matches
     pub fn partition_loser_bracket(&self) -> Result<Vec<Vec<Match>>, PartitionError> {
-        if self.seeding.len() < 3 {
-            return Err(PartitionError::NotEnoughPlayersInBracket);
-        }
-        let (_, lb_matches, _, _) = partition(&self.matches, self.seeding.len());
+        let (_, lb_matches, _, _) = self.partition_matches()?;
         Ok(loser_bracket(lb_matches))
     }
 
@@ -58,10 +66,7 @@ impl DoubleEliminationBracket {
     /// # Errors
     /// When there is not enough players in the bracket for matches
     pub fn grand_finals_and_reset(&self) -> Result<(Match, Match), PartitionError> {
-        if self.seeding.len() < 3 {
-            return Err(PartitionError::NotEnoughPlayersInBracket);
-        }
-        let (_, _, gf, gf_reset) = partition(&self.matches, self.seeding.len());
+        let (_, _, gf, gf_reset) = self.partition_matches()?;
         Ok((gf, gf_reset))
     }
 }
@@ -140,7 +145,7 @@ mod tests {
 
         // 2
         let mut seeding = vec![];
-        for i in 1..=2 {
+        for _i in 1..=2 {
             seeding.push(PlayerID::create());
         }
         let bracket = DoubleEliminationBracket::create(
@@ -161,7 +166,7 @@ mod tests {
     fn _3_participants_bracket() {
         let n = 3;
         let mut seeding = vec![];
-        for i in 1..=n {
+        for _i in 1..=n {
             seeding.push(PlayerID::create());
         }
         let bracket = DoubleEliminationBracket::create(
@@ -181,7 +186,7 @@ mod tests {
     fn _4_participants_bracket() {
         let n = 4;
         let mut seeding = vec![];
-        for i in 1..=n {
+        for _i in 1..=n {
             seeding.push(PlayerID::create());
         }
         let bracket = DoubleEliminationBracket::create(
@@ -203,7 +208,7 @@ mod tests {
     fn _5_participants_bracket() {
         let n = 5;
         let mut seeding = vec![];
-        for i in 1..=n {
+        for _i in 1..=n {
             seeding.push(PlayerID::create());
         }
         let bracket = DoubleEliminationBracket::create(
@@ -227,7 +232,7 @@ mod tests {
     fn _6_participants_bracket() {
         let n = 6;
         let mut seeding = vec![];
-        for i in 1..=n {
+        for _i in 1..=n {
             seeding.push(PlayerID::create());
         }
         let bracket = DoubleEliminationBracket::create(
@@ -257,7 +262,7 @@ mod tests {
     fn _7_participants_bracket() {
         let n = 7;
         let mut seeding = vec![];
-        for i in 1..=n {
+        for _i in 1..=n {
             seeding.push(PlayerID::create());
         }
         let bracket = DoubleEliminationBracket::create(
@@ -293,7 +298,7 @@ mod tests {
     fn _8_participants_bracket() {
         let n = 8;
         let mut seeding = vec![];
-        for i in 1..=n {
+        for _i in 1..=n {
             seeding.push(PlayerID::create());
         }
         let bracket = DoubleEliminationBracket::create(
@@ -339,7 +344,7 @@ mod tests {
     fn _9_participants_bracket() {
         let n = 9;
         let mut seeding = vec![];
-        for i in 1..=n {
+        for _i in 1..=n {
             seeding.push(PlayerID::create());
         }
         let bracket = DoubleEliminationBracket::create(

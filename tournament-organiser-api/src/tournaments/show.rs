@@ -46,10 +46,7 @@ pub async fn show_bracket(
         };
 
     transaction.commit().await.map_err(internal_error)?;
-    let player_id = match user_id {
-        Some(id) => Some(PlayerID::new(id)),
-        None => None,
-    };
+    let player_id = user_id.map(PlayerID::new);
     Ok((
         StatusCode::OK,
         breakdown(&tournament, bracket, player_id, is_tournament_organiser),

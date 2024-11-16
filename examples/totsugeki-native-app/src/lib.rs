@@ -9,13 +9,13 @@
 #![warn(clippy::unwrap_used)]
 
 use crate::components::bracket::displayable_match::EMPTY_NAME;
-use totsugeki::{
-    matches::{Id as MatchId, Match},
-    player::{Id as PlayerId, Participants},
-};
+use totsugeki::matches::MatchID;
+use totsugeki::player::PlayerID;
+use totsugeki::{matches::Match, player::Participants};
 
 pub mod components;
 pub mod ordering;
+pub(crate) mod tournaments;
 
 /// Maximum size for name
 const MAX_NAME_SIZE: usize = 64;
@@ -26,7 +26,7 @@ type Name = [u8; MAX_NAME_SIZE];
 /// Strict necessary information to use when displaying a match in UI
 pub struct MinimalMatch {
     /// Match identifier
-    id: MatchId,
+    id: MatchID,
     /// Names of players participating in match
     pub(crate) players: [Name; 2],
     /// Score of match
@@ -40,7 +40,7 @@ pub struct MinimalMatch {
 impl Default for MinimalMatch {
     fn default() -> Self {
         MinimalMatch {
-            id: MatchId::new_v4(),
+            id: MatchID::new(),
             players: [ShortName::default().value, ShortName::default().value],
             score: (0, 0),
             seeds: [0, 0],
@@ -151,14 +151,14 @@ impl Default for ShortName {
 ///
 fn from_participants(m: &Match, participants: &Participants) -> MinimalMatch {
     let list = participants.get_players_list();
-    let players: Vec<(PlayerId, String)> =
+    let players: Vec<(PlayerID, String)> =
         list.iter().map(|p| (p.get_id(), p.get_name())).collect();
     let player1 = convert_to_displayable_name(m.get_players()[0].get_name(&players));
     let player2 = convert_to_displayable_name(m.get_players()[1].get_name(&players));
     MinimalMatch {
         id: m.get_id(),
         players: [player1, player2],
-        score: m.get_score(),
+        score: m.get_score().unwrap_or((0, 0)),
         seeds: m.get_seeds(),
         row_hint: None,
     }
@@ -187,7 +187,7 @@ pub enum Modal {
     /// Add player to bracket
     AddPlayer,
     /// Enter result for given `MatchId` between player 1 and player 2
-    EnterMatchResult(MatchId, Name, Name),
+    EnterMatchResult(MatchID, Name, Name),
     /// Disqualify player from bracket
     Disqualify,
 }

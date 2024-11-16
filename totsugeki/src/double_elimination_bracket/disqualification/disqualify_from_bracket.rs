@@ -1,11 +1,8 @@
 //! Disqualify from bracket. For people that cannot physically make it
 
-use crate::bracket::matches::update_bracket_with;
 use crate::double_elimination_bracket::progression::ProgressionDEB;
 use crate::double_elimination_bracket::DoubleEliminationBracket;
-use crate::matches::{
-    double_elimination_matches_from_partition, partition_double_elimination_matches, Match,
-};
+use crate::matches::Match;
 use crate::opponent::Opponent;
 use crate::player::PlayerID;
 use thiserror::Error;
@@ -22,20 +19,26 @@ pub enum Error {
 }
 
 impl DoubleEliminationBracket {
-    /// Disqualify participant from bracket and update matches
+    /// Disqualify participant from bracket. Returns updated bracket and new playable matches
     ///
     /// # Errors
     /// Disqualifying player is impossible at this time
     /// # Panics
     /// * player does not belong in bracket
-    pub fn disqualify_participant_from_bracket(&self, player_id: PlayerID) -> Result<Self, Error> {
+    /// * enough player in bracket
+    pub fn disqualify_participant_from_bracket(
+        &self,
+        player_id: PlayerID,
+    ) -> Result<(Self, Option<Vec<Match>>), Error> {
         assert!(self.seeding.contains(player_id), "player is not in bracket");
+        assert!(self.seeding.len() >= 3, "enough player in bracket");
+
+        let old_playable_matches = self.matches_to_play();
         if self.is_eliminated(player_id) {
             return Err(Error::Eliminated);
         } else if self.is_over() {
             return Err(Error::WonTournament);
         }
-        let disqualified = player_id;
 
         let mut matches_to_update = self.matches.clone();
         let Some(m) = matches_to_update.iter_mut().rev().find(|m| {
@@ -48,27 +51,12 @@ impl DoubleEliminationBracket {
 
         // disqualify player then validate match result to update double elimination bracket
         m.set_automatic_loser_(player_id);
-        let expected_loser_seed = m.get_seeds()[1];
         let initial_match_for_disqualification_id = m.id;
         let bracket = DoubleEliminationBracket::new(
             matches_to_update,
             self.seeding.clone(),
             self.automatic_match_validation_mode,
         );
-
-        let (w_bracket, l_bracket, gf, gf_reset) =
-            partition_double_elimination_matches(&bracket.get_matches(), self.seeding.len());
-        // don't send to loser if the disqualified player is in gf or gf_reset
-        let l_bracket = if gf.contains(disqualified)
-            || gf.contains(disqualified)
-            || l_bracket.iter().any(|m| m.contains(disqualified))
-        {
-            l_bracket
-        } else {
-            send_to_losers(&l_bracket, disqualified, expected_loser_seed)
-        };
-        let matches =
-            double_elimination_matches_from_partition(&w_bracket, &l_bracket, gf, gf_reset);
 
         // move disqualified player as far as possible
         let (bracket, _) = bracket.validate_match_result(initial_match_for_disqualification_id);
@@ -79,7 +67,10 @@ impl DoubleEliminationBracket {
             .iter_mut()
             .find(|m| m.contains(player_id) && m.get_winner() == Opponent(None))
         else {
-            return Ok(bracket);
+            return Ok((
+                bracket.clone(),
+                bracket.new_playable_matches(old_playable_matches),
+            ));
         };
         // DQ them in loser bracket and validate result again
         match_in_losers.set_automatic_loser_(player_id);
@@ -94,26 +85,31 @@ impl DoubleEliminationBracket {
 
         if match_in_loser_can_be_validated {
             let (bracket, _) = bracket.validate_match_result(match_in_loser_id);
-            Ok(bracket)
+            Ok((
+                bracket.clone(),
+                bracket.new_playable_matches(old_playable_matches),
+            ))
         } else {
-            Ok(bracket)
+            Ok((
+                bracket.clone(),
+                bracket.new_playable_matches(old_playable_matches),
+            ))
         }
     }
 }
 
-/// Place loser from winner's bracket into loser bracket using seed of
-/// `expected_loser_seed`. Returns updated loser bracket
-fn send_to_losers(
-    loser_bracket: &[Match],
-    loser: PlayerID,
-    expected_loser_seed: usize,
-) -> Vec<Match> {
-    let loser_match = loser_bracket
-        .iter()
-        .find(|m| m.is_first_loser_match(expected_loser_seed))
-        .expect("match");
-    let is_player_1 = expected_loser_seed == loser_match.get_seeds()[0];
-    let loser_match = (*loser_match).insert_player(loser, is_player_1);
-
-    update_bracket_with(loser_bracket, &loser_match)
+impl DoubleEliminationBracket {
+    /// Returns playable matches from previous state
+    fn new_playable_matches(&self, old_playable_matches: Vec<Match>) -> Option<Vec<Match>> {
+        let matches_to_play = self.matches_to_play();
+        let new_playable_matches = matches_to_play
+            .into_iter()
+            .filter(|new| old_playable_matches.iter().any(|old| old.id == new.id))
+            .collect::<Vec<Match>>();
+        if new_playable_matches.is_empty() {
+            None
+        } else {
+            Some(new_playable_matches)
+        }
+    }
 }

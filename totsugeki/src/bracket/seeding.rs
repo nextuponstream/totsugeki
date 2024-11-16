@@ -3,25 +3,18 @@
 use crate::player::PlayerID;
 use crate::{
     bracket::{Bracket, Error as BracketError},
-    player::{Participants, Player},
+    player::Participants,
     seeding::seed,
-    ID,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use thiserror::Error;
 
 /// Seeding is an ordered list of player. All players IDs are guaranteed unique
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct Seeding(Vec<PlayerID>);
 
-impl Default for Seeding {
-    fn default() -> Self {
-        Seeding(vec![])
-    }
-}
-
-/// Error while creating seeding
+/// Provided input is unsuitable for seeding
 #[derive(Error, Debug, PartialEq)]
 pub enum SeedingError {
     /// Duplicate player
@@ -31,6 +24,9 @@ pub enum SeedingError {
 
 impl Seeding {
     /// Creates a unique player list, ordered for seeding
+    ///
+    /// # Errors
+    /// Player list is unsuitable for seeding
     pub fn new(player_ids: Vec<PlayerID>) -> Result<Self, SeedingError> {
         let mut set = HashSet::new();
         for player_id in &player_ids {
@@ -47,13 +43,20 @@ impl Seeding {
     }
 
     /// Contains player
+    #[must_use]
     pub fn contains(&self, player_id: PlayerID) -> bool {
         self.0.contains(&player_id)
     }
 
     /// Number of players
+    #[must_use]
     pub fn len(&self) -> usize {
         self.0.len()
+    }
+
+    /// Returns `true` if no player is seeded
+    pub fn is_empty(&self) -> bool {
+        self.0.len() == 0
     }
 }
 
@@ -81,13 +84,7 @@ impl Bracket {
             player_group = player_group.add_participant(player.clone())?;
         }
         let participants = seed(&self.seeding_method, player_group, self.participants)?;
-        let matches = self.format.generate_matches(
-            &participants
-                .get_players_list()
-                .iter()
-                .map(Player::get_id)
-                .collect::<Vec<_>>(),
-        )?;
+        let matches = self.format.generate_matches(&participants.get_seeding())?;
         Ok(Self {
             participants,
             matches,

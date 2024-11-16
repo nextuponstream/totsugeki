@@ -34,13 +34,8 @@ impl Bracket {
         let matches = if updated_participants.len() < 3 {
             vec![]
         } else {
-            self.format.generate_matches(
-                &updated_participants
-                    .get_players_list()
-                    .iter()
-                    .map(Player::get_id)
-                    .collect::<Vec<_>>(),
-            )?
+            self.format
+                .generate_matches(&updated_participants.get_seeding())?
         };
         Ok(Self {
             participants: updated_participants,
@@ -65,14 +60,8 @@ impl Bracket {
         let matches = if self.participants.len() < 3 {
             vec![]
         } else {
-            self.format.generate_matches(
-                &self
-                    .participants
-                    .get_players_list()
-                    .iter()
-                    .map(Player::get_id)
-                    .collect::<Vec<_>>(),
-            )?
+            self.format
+                .generate_matches(&self.participants.get_seeding())?
         };
         Ok(Self { matches, ..self })
     }

@@ -4,8 +4,7 @@ use crate::bracket::matches::{update_bracket_with, Error};
 use crate::bracket::progression::{new_matches_to_play_for_bracket, winner_of_bracket};
 use crate::double_elimination_bracket::DoubleEliminationBracket;
 use crate::matches::{
-    double_elimination_matches_from_partition, partition_double_elimination_matches, BracketResult,
-    Id, Match, MatchID, ReportedResult,
+    double_elimination_matches_from_partition, BracketResult, Id, Match, MatchID, ReportedResult,
 };
 use crate::opponent::Opponent;
 use crate::player::PlayerID;
@@ -186,8 +185,7 @@ impl ProgressionDEB for DoubleEliminationBracket {
             .collect();
         assert!(
             matches_where_player1_is_playing.len() <= 1,
-            "player 1 {player1} is involved in only 1 match but they are involved in {:?}",
-            matches_where_player1_is_playing
+            "player 1 {player1} is involved in only 1 match but they are involved in {matches_where_player1_is_playing:?}",
         );
         let matches_where_player2_is_playing: Vec<Match> = bracket
             .clone()
@@ -267,18 +265,16 @@ impl ProgressionDEB for DoubleEliminationBracket {
         let bracket =
             if bracket.automatic_match_validation_mode == AutomaticMatchValidationMode::Strict {
                 bracket
-            } else {
-                if let Some(match_to_validate) =
-                    bracket.matches.iter().find(|m| m.id == affected_match_id)
-                {
-                    if match_to_validate.has_all_player_reports() {
-                        bracket.validate_match_result(affected_match_id).0
-                    } else {
-                        bracket
-                    }
+            } else if let Some(match_to_validate) =
+                bracket.matches.iter().find(|m| m.id == affected_match_id)
+            {
+                if match_to_validate.has_all_player_reports() {
+                    bracket.validate_match_result(affected_match_id).0
                 } else {
-                    panic!()
+                    bracket
                 }
+            } else {
+                panic!()
             };
         // // println!("{:?}", old_matches);
         // // println!("{:?}", p.matches_to_play());
@@ -320,11 +316,9 @@ impl ProgressionDEB for DoubleEliminationBracket {
         //       l_bracket -> loser bracket
         let old_matches_to_play = self.matches_to_play();
         let (w_bracket, l_bracket, gf, gf_reset) =
-            partition_double_elimination_matches(&self.matches, self.seeding.len());
-        let match_to_validate_is_in_winner_bracket =
-            w_bracket.iter().find(|m| m.id == match_id).is_some();
-        let match_to_validate_is_in_loser_bracket =
-            l_bracket.iter().find(|m| m.id == match_id).is_some();
+            self.partition_matches().expect("enough players");
+        let match_to_validate_is_in_winner_bracket = w_bracket.iter().any(|m| m.id == match_id);
+        let match_to_validate_is_in_loser_bracket = l_bracket.iter().any(|m| m.id == match_id);
         if match_to_validate_is_in_winner_bracket {
             // FIXME make update not a result type
             let (w_bracket, l_bracket_elements) =
@@ -357,7 +351,7 @@ impl ProgressionDEB for DoubleEliminationBracket {
                     {
                         gf.set_automatic_loser(winner_of_loser_bracket)
                             .update_outcome()
-                            .unwrap()
+                            .expect("update after automatic disqualification")
                             .0
                     } else {
                         gf
@@ -445,7 +439,7 @@ impl ProgressionDEB for DoubleEliminationBracket {
 
     fn is_over(&self) -> bool {
         let (winner_bracket, loser_bracket, gf, gfr) =
-            partition_double_elimination_matches(&self.matches, self.seeding.len());
+            self.partition_matches().expect("enough players");
         let Some(stronger_seed_wins) = gf.stronger_seed_wins() else {
             return false;
         };
@@ -495,12 +489,10 @@ fn update_loser_bracket_after_updating_winners_bracket(
         };
         l_bracket
     } else {
-        let l_bracket = match crate::bracket::matches::update(&l_bracket.clone(), l_match.get_id())
-        {
+        match crate::bracket::matches::update(&l_bracket.clone(), l_match.get_id()) {
             Ok((l_bracket_matches, _)) => l_bracket_matches,
             Err(_) => l_bracket,
-        };
-        l_bracket
+        }
     }
 }
 

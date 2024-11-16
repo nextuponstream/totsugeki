@@ -1,8 +1,6 @@
 //! Manage matches from bracket
 
 use crate::matches::{GenerationError, MatchID};
-#[cfg(test)]
-use crate::player::Player;
 use crate::player::PlayerID;
 use crate::{
     matches::{Error as MatchError, Id as MatchId, Match},
@@ -113,7 +111,7 @@ pub(crate) fn update(bracket_matches: &[Match], match_id: MatchID) -> Result<Bra
     let m = bracket_matches
         .iter()
         .find(|m| m.get_id() == match_id)
-        .expect(format!("match {} updated", match_id).as_str());
+        .expect("should find match to update");
     // declare winner if there is one
     let is_disqualified = m.get_automatic_loser() != Opponent(None);
     let (updated_m, winner, loser) = (*m).update_outcome()?;
@@ -179,8 +177,7 @@ pub(crate) fn update(bracket_matches: &[Match], match_id: MatchID) -> Result<Bra
         let seed_of_expected_winner = updated_match.get_seeds()[0];
         let Opponent(Some(winner)) = updated_match.get_winner() else {
             panic!(
-                "no winner in updated match. Corrupted data for updated match {:?}",
-                updated_match
+                "no winner in updated match. Corrupted data for updated match {updated_match:?}",
             );
         };
         let m = iter
@@ -191,27 +188,6 @@ pub(crate) fn update(bracket_matches: &[Match], match_id: MatchID) -> Result<Bra
     }
 
     Ok((bracket, Some((loser, expected_loser_seed, is_disqualified))))
-}
-
-/// Assert any players set as disqualified at most once
-pub(crate) fn assert_disqualified_at_most_once(matches: &[Match], seeding: &[PlayerID]) {
-    for player in seeding {
-        assert!(
-            matches
-                .iter()
-                .filter(|m| matches!(m.get_automatic_loser(), Opponent(Some(id)) if id == *player))
-                .count()
-                < 2
-        );
-    }
-}
-
-/// Assert if both opponent are not the same player
-pub(crate) fn assert_match_is_well_formed(m: &Match) {
-    assert!(
-        !matches!(m.get_players(), [Opponent(Some(p1)), Opponent(Some(p2))] if p1 == p2),
-        "match {m} is not well formed"
-    );
 }
 
 /// Computes the next state of a tournament
@@ -293,58 +269,4 @@ pub trait Progression {
 
     /// Checks all assertions after updating matches
     fn check_all_assertions(&self);
-}
-
-#[cfg(test)]
-pub(crate) fn assert_elimination(s: &dyn Progression, players: &[Player], player_who_won: usize) {
-    let iter = players.iter().enumerate();
-    let iter = iter.skip(1);
-
-    for (i, player) in iter {
-        match (i, s.next_opponent(player.get_id())) {
-            (i, Err(Error::NoNextMatch(eliminated_player))) if i == player_who_won => {
-                assert_eq!(eliminated_player, player.get_id());
-            }
-            (i, e) if i == player_who_won => {
-                panic!(
-                    "expected {:?} but got {e:?}",
-                    Error::NoNextMatch(player.get_id())
-                )
-            }
-            (_, Err(Error::Eliminated(eliminated_player))) => {
-                assert_eq!(eliminated_player, player.get_id());
-            }
-            (_, e) => panic!(
-                "expected {:?} but got {e:?}",
-                Error::Eliminated(player.get_id())
-            ),
-        }
-    }
-}
-
-#[cfg(test)]
-/// Assert x wins against y
-fn assert_outcome(matches: &[Match], x: &Player, y: &Player) {
-    assert!(
-        matches.iter().any(|m| matches!((
-                m.contains(x.get_id()),
-                m.contains(y.get_id()),
-                m.get_winner()
-            ), (true, true, Opponent(Some(winner))) if winner == x.get_id())),
-        "No match where {} wins against {}",
-        x.get_name(),
-        y.get_name()
-    );
-}
-
-#[cfg(test)]
-fn assert_x_wins_against_y(p1: &Player, p2: &Player, matches: &[Match]) {
-    assert!(
-        matches.iter().any(|m| {
-            matches!((m.get_winner(), m.contains(p2.get_id())), (Opponent(Some(winner)), true) if winner == p1.get_id())
-        }),
-        "no matches where {} wins against {}",
-        p1.get_name(),
-        p2.get_name()
-    );
 }

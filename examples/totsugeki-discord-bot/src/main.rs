@@ -8,10 +8,12 @@ use std::io::Write;
 use std::path::Path;
 use std::sync::Arc;
 use std::{collections::HashMap, env};
-use totsugeki::bracket::Bracket;
+use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki::format::Format;
+use totsugeki::single_elimination_bracket::SingleEliminationBracket;
 use totsugeki_discord_bot::{
-    close::*, create::*, disqualify::*, forfeit::*, help::*, join::*, next_match::*, ping::*,
-    players::*, quit::*, remove::*, report::*, seed::*, start::*, validate::*, Config, Data,
+    create::*, disqualify::*, forfeit::*, help::*, join::*, next_match::*, ping::*, players::*,
+    quit::*, remove::*, report::*, seed::*, validate::*, Config, Data,
 };
 use tracing::subscriber::set_global_default;
 use tracing::warn;
@@ -26,7 +28,6 @@ use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
     join,
     next_match,
     report,
-    start,
     tournament_organiser_reports,
     validate,
     quit,
@@ -34,8 +35,7 @@ use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
     seed,
     remove,
     disqualify,
-    forfeit,
-    close
+    forfeit
 )]
 #[summary = "Main available commands"]
 #[description = "Manage bracket with this command"]
@@ -81,28 +81,27 @@ async fn main() {
         let mut data = client.data.write().await;
         data.insert::<Config>(Arc::new(bracket_filename.clone()));
         let p = Path::new(&bracket_filename);
-        let bracket_data = match std::fs::read(p) {
-            Ok(r) => r,
-            Err(e) => {
-                warn!("could not parse read file: {e}");
-                vec![]
+        let bracket_data = std::fs::read(p).unwrap_or_else(|e| {
+            warn!("could not parse read file: {e}");
+            vec![]
+        });
+        let bracket_data = serde_json::from_slice::<Data>(&bracket_data).unwrap_or_else(|e| {
+            warn!("could not parse file: {e}");
+            Data {
+                format: Format::default(),
+                users: HashMap::new(),
+                single_elimination_bracket: Some(SingleEliminationBracket::default()),
+                double_elimination_bracket: Some(DoubleEliminationBracket::default()),
             }
-        };
-        let bracket_data = match serde_json::from_slice::<Data>(&bracket_data) {
-            Ok(d) => d,
-            Err(e) => {
-                warn!("could not parse file: {e}");
-                Data {
-                    bracket: Bracket::default(),
-                    users: HashMap::new(),
-                }
-            }
-        };
+        });
+        let bracket_data_copy = bracket_data.clone();
         data.insert::<Data>(Arc::new(RwLock::new((
-            bracket_data.bracket.clone(),
+            bracket_data.format,
             bracket_data.users.clone(),
+            bracket_data.single_elimination_bracket.unwrap(),
+            bracket_data.double_elimination_bracket.unwrap(),
         ))));
-        let j = serde_json::to_vec(&bracket_data).expect("bracket");
+        let j = serde_json::to_vec(&bracket_data_copy).expect("bracket");
         let mut f = std::fs::OpenOptions::new()
             .create(true)
             .truncate(false)

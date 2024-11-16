@@ -12,7 +12,8 @@ impl DoubleEliminationBracket {
     /// This is a no-op if the player has played all of their matches
     ///
     /// # Panics
-    /// When player_id does not belong in bracket
+    /// When `player_id` does not belong in bracket
+    #[must_use]
     pub fn disqualify_participant_from_match(&self, player_id: ID) -> Self {
         todo!()
         // if !self.seeding.contains(player_id) {

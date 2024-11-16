@@ -6,7 +6,12 @@ use serenity::{
     framework::standard::{macros::command, CommandError, CommandResult},
     model::channel::Message,
 };
+use totsugeki::format::Format;
+use totsugeki::matches::MatchID;
+use totsugeki::next_opponent::{Error, NextOpponentInBracket};
+use totsugeki::opponent::Opponent;
 use totsugeki::player::Player;
+use totsugeki::single_elimination_bracket::progression::ProgressionSEB;
 use tracing::{info, span, warn, Level};
 
 #[command]
@@ -20,26 +25,41 @@ async fn next_match(ctx: &Context, msg: &Message) -> CommandResult {
         let data = ctx.data.read().await;
         let bracket_data = data.get::<Data>().expect("data").clone();
         let bracket_data = bracket_data.read().await;
-        let (bracket, users) = bracket_data.clone();
+        let (format, users, single_elimination_bracket, double_elimination_bracket) =
+            bracket_data.clone();
 
         let player = match users.get(&user_id) {
             Some(p) => p.clone(),
             None => Player::new(name),
         };
 
-        let (opponent, m, _player_name) = match bracket.clone().next_opponent(player.get_id()) {
-            Ok(r) => r,
-            Err(e) => {
-                warn!("{e}");
-                msg.reply(ctx, format!("{e}")).await?;
-                return Ok::<CommandResult, CommandError>(Ok(()));
+        let (opponent, match_id) = match format {
+            Format::SingleEliminationBracket => {
+                match single_elimination_bracket.next_opponent_in_bracket(player.get_id()) {
+                    Ok(r) => r,
+                    Err(e) => {
+                        warn!("{e}");
+                        msg.reply(ctx, format!("{e}")).await?;
+                        return Ok::<CommandResult, CommandError>(Ok(()));
+                    }
+                }
+            }
+            Format::DoubleEliminationBracket => {
+                match double_elimination_bracket.next_opponent_in_bracket(player.get_id()) {
+                    Ok(r) => r,
+                    Err(e) => {
+                        warn!("{e}");
+                        msg.reply(ctx, format!("{e}")).await?;
+                        return Ok::<CommandResult, CommandError>(Ok(()));
+                    }
+                }
             }
         };
 
         info!("{player} joined");
         msg.reply(
             ctx,
-            format!("Your next opponent is {opponent} in match {m}"),
+            format!("Your next opponent is {opponent} in match {match_id}"),
         )
         .await?;
         Ok::<CommandResult, CommandError>(Ok(()))

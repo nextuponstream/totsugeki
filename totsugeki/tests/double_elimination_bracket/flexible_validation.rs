@@ -15,7 +15,7 @@ fn bracket_run_3_man() {
         seeding = seeding.add_participant(player).expect("seeding");
     }
     let bracket = DoubleEliminationBracket::create(
-        Seeding::new(seeding.get_seeding()).unwrap(),
+        Seeding::new(seeding.get_player_list()).unwrap(),
         AutomaticMatchValidationMode::Flexible,
     );
 
@@ -84,7 +84,7 @@ fn run_5_man_bracket() {
         seeding = seeding.add_participant(player).expect("new participant");
     }
     let bracket = DoubleEliminationBracket::create(
-        Seeding::new(seeding.get_seeding()).unwrap(),
+        Seeding::new(seeding.get_player_list()).unwrap(),
         AutomaticMatchValidationMode::Flexible,
     );
 
@@ -127,7 +127,7 @@ fn run_5_man() {
         seeding = seeding.add_participant(player).expect("seeding");
     }
     let bracket = DoubleEliminationBracket::create(
-        Seeding::new(seeding.get_seeding()).unwrap(),
+        Seeding::new(seeding.get_player_list()).unwrap(),
         AutomaticMatchValidationMode::Flexible,
     );
 
@@ -232,7 +232,7 @@ fn run_8_no_upsets() {
         seeding = seeding.add_participant(player).expect("seeding");
     }
     let bracket = DoubleEliminationBracket::create(
-        Seeding::new(seeding.get_seeding()).unwrap(),
+        Seeding::new(seeding.get_player_list()).unwrap(),
         AutomaticMatchValidationMode::Flexible,
     );
 

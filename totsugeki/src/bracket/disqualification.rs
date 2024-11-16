@@ -1,20 +1,5 @@
 //! Disqualification of player in bracket and all side-effects
 
-use crate::matches::Match;
-
-/// Returns new matches when comparing old bracket and new bracket
-pub(crate) fn get_new_matches(old_bracket: &[Match], new_bracket: &[Match]) -> Vec<Match> {
-    new_bracket
-        .iter()
-        .filter(|new_m| {
-            !old_bracket
-                .iter()
-                .any(|old_m| old_m.get_id() == new_m.get_id())
-        })
-        .copied()
-        .collect::<Vec<Match>>()
-}
-
 #[cfg(test)]
 mod tests {
     use crate::bracket::seeding::Seeding;
@@ -39,7 +24,7 @@ mod tests {
             players.push(p);
         }
 
-        let bracket = DoubleEliminationBracket::create(
+        let _bracket = DoubleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
             AutomaticMatchValidationMode::Flexible,
         );

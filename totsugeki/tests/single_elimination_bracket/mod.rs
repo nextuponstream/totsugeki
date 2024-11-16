@@ -1,4 +1,3 @@
-use totsugeki::bracket::matches::Progression;
 use totsugeki::single_elimination_bracket::progression::ProgressionSEB;
 mod automatic_validation;
 mod disqualify_from_bracket;

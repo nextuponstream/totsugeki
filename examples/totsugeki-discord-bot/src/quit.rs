@@ -8,6 +8,12 @@ use serenity::{
     model::channel::Message,
 };
 use std::{io::prelude::*, path::Path};
+use totsugeki::bracket::seeding::Seeding;
+use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki::format::Format;
+use totsugeki::player::PlayerID;
+use totsugeki::single_elimination_bracket::SingleEliminationBracket;
+use totsugeki::validation::AutomaticMatchValidationMode;
 use tracing::{info, span, warn, Level};
 
 #[command]
@@ -22,29 +28,63 @@ async fn quit(ctx: &Context, msg: &Message) -> CommandResult {
         let config = data.get::<Config>().expect("filename").clone();
         let bracket_data = data.get::<Data>().expect("data").clone();
         let mut bracket_data = bracket_data.write().await;
-        let (mut bracket, users) = bracket_data.clone();
+        let (format, users, single_elimination_bracket, double_elimination_bracket) =
+            bracket_data.clone();
 
-        let Some(player) = users.get(&user_id) else {
+        let users_copy = users.clone();
+        let Some(player) = users_copy.get(&user_id) else {
             warn!("Unregistered user");
             msg.reply(ctx, "You are not registered").await?;
             return Ok::<CommandResult, CommandError>(Ok(()));
         };
 
-        bracket = match bracket.clone().remove_participant(player.get_id()) {
-            Ok(b) => b,
-            Err(e) => {
-                warn!("{e}");
-                msg.reply(ctx, format!("{e}")).await?;
-                return Ok::<CommandResult, CommandError>(Ok(()));
+        let data = match format {
+            Format::SingleEliminationBracket => {
+                let seeding = single_elimination_bracket.get_seeding().get();
+                let seeding = seeding
+                    .into_iter()
+                    .filter(|id| *id != player.get_id())
+                    .collect::<Vec<PlayerID>>();
+                let seb = SingleEliminationBracket::create(Seeding::new(seeding).unwrap(), true);
+                *bracket_data = (
+                    format,
+                    users.clone(),
+                    seb.clone(),
+                    double_elimination_bracket,
+                );
+                Data {
+                    users,
+                    format,
+                    single_elimination_bracket: Some(seb),
+                    double_elimination_bracket: None,
+                }
+            }
+            Format::DoubleEliminationBracket => {
+                let seeding = double_elimination_bracket.get_seeding().get();
+                let seeding = seeding
+                    .into_iter()
+                    .filter(|id| *id != player.get_id())
+                    .collect::<Vec<PlayerID>>();
+                let deb = DoubleEliminationBracket::create(
+                    Seeding::new(seeding).unwrap(),
+                    AutomaticMatchValidationMode::Flexible,
+                );
+                *bracket_data = (
+                    format,
+                    users.clone(),
+                    single_elimination_bracket,
+                    deb.clone(),
+                );
+                Data {
+                    users,
+                    format,
+                    single_elimination_bracket: None,
+                    double_elimination_bracket: Some(deb),
+                }
             }
         };
-        *bracket_data = (bracket.clone(), users.clone());
 
-        let d = Data {
-            bracket: bracket.clone(),
-            users: users.clone(),
-        };
-        let j = serde_json::to_string(&d).expect("bracket");
+        let j = serde_json::to_string(&data).expect("bracket");
 
         let mut f = std::fs::OpenOptions::new()
             .create(true)
@@ -53,7 +93,7 @@ async fn quit(ctx: &Context, msg: &Message) -> CommandResult {
             .open(Path::new(config.as_ref()))?;
         f.lock_exclusive().expect("lock"); // prevent concurrent access
         let l: u64 = u64::try_from(j.len())?;
-        f.set_len(l)?; // very important: if output has less chars than previous, output is padded
+        f.set_len(l)?; // very important: if output has fewer chars than previous, output is padded
         f.write_all(j.as_bytes())?;
 
         info!("{player} removed from bracket");

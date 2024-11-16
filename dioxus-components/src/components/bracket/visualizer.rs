@@ -13,11 +13,10 @@ use totsugeki::{bracket::Bracket, format::Format};
 
 /// Display bracket name, number of players and players
 pub fn GeneralDetails(cx: Scope) -> Element {
-    let bracket = use_shared_state::<Bracket>(cx).expect("bracket");
+    let tournament = use_shared_state::<Tournament>(cx).expect("bracket");
 
-    let details = bracket.read().to_string();
-    let format = bracket.read().get_format().to_string();
-    let participants = bracket.read().get_participants();
+    let format = tournament.read().get_format().to_string();
+    let participants = tournament.read().get_participants();
     let n = participants.len();
 
     cx.render(rsx!(div {
@@ -25,7 +24,6 @@ pub fn GeneralDetails(cx: Scope) -> Element {
             class: "text-lg",
             "General details"
         }
-        p { details }
         p {
             label { class: "pr-2", "Format:" }
             format

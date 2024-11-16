@@ -11,7 +11,7 @@
 #![forbid(unsafe_code)]
 
 use serde::{Deserialize, Serialize};
-use totsugeki::matches::{Id as MatchId, Match, MatchID, ReportedResult};
+use totsugeki::matches::{Match, MatchID, ReportedResult};
 use totsugeki::opponent::Opponent;
 use totsugeki::player::{Player, PlayerID};
 

@@ -7,15 +7,6 @@ use crate::{
 use super::{Bracket, Id};
 
 impl Bracket {
-    /// Bar new participants from entering bracket
-    #[must_use]
-    pub fn close(self) -> Self {
-        Self {
-            is_closed: true,
-            ..self
-        }
-    }
-
     /// Return bracket format
     #[must_use]
     pub fn get_format(&self) -> Format {

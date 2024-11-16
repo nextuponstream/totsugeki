@@ -9,6 +9,10 @@ use serenity::{
     framework::standard::{macros::command, Args, CommandError, CommandResult},
     model::channel::Message,
 };
+use totsugeki::double_elimination_bracket::progression::ProgressionDEB;
+use totsugeki::format::Format;
+use totsugeki::matches::MatchID;
+use totsugeki::single_elimination_bracket::progression::ProgressionSEB;
 use totsugeki::{matches::Id as MatchId, opponent::Opponent};
 use tracing::{info, span, warn, Level};
 
@@ -18,42 +22,56 @@ use tracing::{info, span, warn, Level};
 async fn validate(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let span = span!(Level::INFO, "Validate match in bracket command");
     span.in_scope(|| async {
-        let match_id = args.parse::<MatchId>()?;
+        let match_id = args.parse::<MatchID>()?;
 
         let data = ctx.data.read().await;
         let config = data.get::<Config>().expect("filename").clone();
         let bracket_data = data.get::<Data>().expect("data").clone();
         let mut bracket_data = bracket_data.write().await;
-        let (bracket, users) = bracket_data.clone();
+        let (format, users, single_elimination_bracket, double_elimination_bracket) =
+            bracket_data.clone();
 
-        let (bracket, new_matches) = match bracket.clone().validate_match_result(match_id) {
-            Ok(r) => r,
-            Err(e) => {
-                warn!("{e}");
-                msg.reply(ctx, format!("{e}")).await?;
-                return Ok::<CommandResult, CommandError>(Ok(()));
+        let (data, new_matches) = match format {
+            Format::SingleEliminationBracket => {
+                let (seb, new_matches) = single_elimination_bracket.validate_match_result(match_id);
+                (
+                    Data {
+                        users,
+                        format,
+                        single_elimination_bracket: Some(seb),
+                        double_elimination_bracket: None,
+                    },
+                    new_matches,
+                )
+            }
+            Format::DoubleEliminationBracket => {
+                let (deb, new_matches) = double_elimination_bracket.validate_match_result(match_id);
+                (
+                    Data {
+                        users,
+                        format,
+                        single_elimination_bracket: None,
+                        double_elimination_bracket: Some(deb),
+                    },
+                    new_matches,
+                )
             }
         };
 
         let mut new_matches_message = String::new();
         for m in new_matches {
             let player1 = match m.get_players()[0] {
-                Opponent::Player(p) => p,
-                Opponent::Unknown => panic!("cannot parse opponent"),
+                Opponent(Some(p)) => p,
+                Opponent(None) => panic!("cannot parse opponent"),
             };
             let player2 = match m.get_players()[1] {
-                Opponent::Player(p) => p,
-                Opponent::Unknown => panic!("cannot parse opponent"),
+                Opponent(Some(p)) => p,
+                Opponent(None) => panic!("cannot parse opponent"),
             };
             new_matches_message = format!("{}\n{} VS {}", new_matches_message, player1, player2);
         }
 
-        *bracket_data = (bracket.clone(), users.clone());
-        let d = Data {
-            bracket: bracket.clone(),
-            users: users.clone(),
-        };
-        let j = serde_json::to_string(&d).expect("bracket");
+        let j = serde_json::to_string(&data).expect("bracket");
 
         let mut f = std::fs::OpenOptions::new()
             .create(true)

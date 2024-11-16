@@ -18,7 +18,7 @@ mod partition;
 pub mod progression;
 
 /// Double elimination bracket
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct DoubleEliminationBracket {
     // NOTE: not worth using a container. Though I want to do `matches.contains(match_id)`...
     /// Matches
@@ -29,18 +29,9 @@ pub struct DoubleEliminationBracket {
     automatic_match_validation_mode: AutomaticMatchValidationMode,
 }
 
-impl Default for DoubleEliminationBracket {
-    fn default() -> Self {
-        Self {
-            matches: vec![],
-            seeding: Seeding::default(),
-            automatic_match_validation_mode: AutomaticMatchValidationMode::default(),
-        }
-    }
-}
-
 impl DoubleEliminationBracket {
     /// Generate matches for a new bracket using `seeding` and other configuration
+    #[must_use]
     pub fn create(
         seeding: Seeding,
         automatic_match_validation_mode: AutomaticMatchValidationMode,
@@ -52,7 +43,7 @@ impl DoubleEliminationBracket {
                 crate::seeding::single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored(&seeding);
             matches.append(&mut winner_bracket_matches);
             let mut looser_bracket_matches =
-                get_loser_bracket_matches_top_seed_favored(&seeding.get()).unwrap();
+                get_loser_bracket_matches_top_seed_favored(&seeding).unwrap();
 
             matches.append(&mut looser_bracket_matches);
             let grand_finals: Match = Match::new_empty([1, 2]);
@@ -74,18 +65,20 @@ impl DoubleEliminationBracket {
     /// # Panics
     /// When a double-elimination bracket cannot be made from `matches` and
     /// `seeding`.
+    #[must_use]
     pub fn new(
         matches: Vec<Match>,
         seeding: Seeding,
         automatic_match_validation_mode: AutomaticMatchValidationMode,
     ) -> Self {
         assert!(
-            (seeding.len() == 0 && matches.len() == 0) || (seeding.len() > 0 && matches.len() > 0),
+            (seeding.is_empty() && matches.is_empty())
+                || (!seeding.is_empty() && !matches.is_empty()),
             "no seeding for matches generated"
         );
         let magic = 2_usize * seeding.len();
         assert!(
-            seeding.len() == 0 || matches.len() == magic - 1,
+            seeding.is_empty() || matches.len() == magic - 1,
             "expected 2*n - 1 matches for n players (n > 0)"
         );
         // TODO more assertions
@@ -97,6 +90,7 @@ impl DoubleEliminationBracket {
     }
 
     /// Get matches
+    #[must_use]
     pub fn get_matches(&self) -> Vec<Match> {
         self.matches.clone()
     }

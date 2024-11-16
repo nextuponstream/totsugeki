@@ -9,7 +9,11 @@ use serenity::{
     framework::standard::{macros::command, Args, CommandError, CommandResult},
     model::channel::Message,
 };
+use std::collections::HashMap;
 use std::{io::prelude::*, path::Path};
+use totsugeki::bracket::seeding::Seeding;
+use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki::single_elimination_bracket::SingleEliminationBracket;
 use totsugeki::{bracket::Bracket, format::Format, seeding::Method};
 use tracing::{info, span, warn, Level};
 
@@ -41,7 +45,7 @@ async fn create(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                     ctx,
                     "Error while parsing date, please use YYYY-MM-DD:HH:MM TZ",
                 )
-                .await?;
+                    .await?;
                 return Ok::<CommandResult, CommandError>(Ok(()));
             }
         };
@@ -53,7 +57,7 @@ async fn create(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                     ctx,
                     "Error while parsing timezone, please use YYYY-MM-DD:HH:MM TZ",
                 )
-                .await?;
+                    .await?;
                 return Ok::<CommandResult, CommandError>(Ok(()));
             }
         };
@@ -67,26 +71,43 @@ async fn create(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                 warn!("User provided ambiguous time: {dt1}, {dt2}");
                 msg.reply(
                     ctx,
-                    format!("Using that time produced an ambiguous result ({} and {}). Please try another date.",dt1, dt2)
+                    format!("Using that time produced an ambiguous result ({} and {}). Please try another date.", dt1, dt2),
                 )
-                .await?;
+                    .await?;
                 return Ok::<CommandResult, CommandError>(Ok(()));
-            },
+            }
         };
         let start_time = start_time.with_timezone(&Utc);
 
         let data = ctx.data.read().await;
         let bracket_data = data.get::<Data>().expect("data").clone();
         let mut bracket_data = bracket_data.write().await;
-        let (_bracket, users) = bracket_data.clone();
         let config = data.get::<Config>().expect("filename").clone();
-        let bracket = Bracket::new(&bracket_name, format, seeding_method, start_time, automatic_match_validation);
-        *bracket_data = (bracket.clone(), users.clone());
-        let d = Data {
-            bracket: bracket.clone(),
-            users: users.clone(),
+        *bracket_data = (
+            format,
+            HashMap::default(),
+            SingleEliminationBracket::default(),
+            DoubleEliminationBracket::default(),
+        );
+        let data = match format {
+            Format::SingleEliminationBracket => {
+                Data {
+                    users: HashMap::default(),
+                    format,
+                    single_elimination_bracket: Some(SingleEliminationBracket::default()),
+                    double_elimination_bracket: None,
+                }
+            }
+            Format::DoubleEliminationBracket => {
+                Data {
+                    users: HashMap::default(),
+                    format,
+                    single_elimination_bracket: None,
+                    double_elimination_bracket: Some(DoubleEliminationBracket::default()),
+                }
+            }
         };
-        let j = serde_json::to_string(&d).expect("bracket");
+        let j = serde_json::to_string(&data).expect("bracket");
 
         let mut f = std::fs::OpenOptions::new()
             .write(true)
@@ -96,11 +117,11 @@ async fn create(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         f.set_len(l)?; // very important: if output has less chars than previous, output is padded
         f.write_all(j.as_bytes())?;
 
-        info!("{bracket} created");
-        msg.reply(ctx, bracket.to_string()).await?;
+        info!("bracket created");
+        msg.reply(ctx, "bracket created").await?; // TODO create Tournament struct with UUID
 
         // workaround: https://rust-lang.github.io/async-book/07_workarounds/02_err_in_async_blocks.html
         Ok::<CommandResult, CommandError>(Ok(()))
     })
-    .await?
+        .await?
 }

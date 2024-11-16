@@ -7,7 +7,6 @@ use totsugeki::opponent::Opponent;
 use totsugeki::player::{Participants, Player, PlayerID};
 use totsugeki::single_elimination_bracket::progression::ProgressionSEB;
 use totsugeki::single_elimination_bracket::SingleEliminationBracket;
-use totsugeki::ID;
 
 // FIXME duplicate definition
 fn assert_players_play_each_other(
@@ -502,7 +501,6 @@ mod bracket_with_8_participants {
 
 mod bracket_with_9_participants {
     use super::*;
-    use totsugeki::seeding::seed;
 
     #[test]
     fn example1() {

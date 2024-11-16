@@ -9,10 +9,11 @@ use crate::components::bracket::match_edit::MatchEditModal;
 use crate::components::bracket::ui_primitives::ConnectMatchesBetweenRounds;
 use crate::ordering::loser_bracket::reorder as reorder_loser_bracket;
 use crate::ordering::winner_bracket::reorder as reorder_winner_bracket;
+use crate::tournaments::Tournament;
 use crate::{from_participants, MinimalMatch, Modal};
 use dioxus::prelude::*;
-use totsugeki::bracket::double_elimination_variant::Variant as DoubleEliminationVariant;
 use totsugeki::bracket::Bracket;
+use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
 
 /// View of a double elimination bracket with interactible elements to update
 /// its state
@@ -20,15 +21,20 @@ pub(crate) fn View(cx: Scope) -> Element {
     let modal = use_shared_state::<Option<Modal>>(cx).expect("modal to show");
     let isMatchEditModalHidden = !matches!(*modal.read(), Some(Modal::EnterMatchResult(_, _, _)));
 
-    let bracket = match use_shared_state::<Bracket>(cx) {
-        Some(bracket_ref) => bracket_ref.read().clone(),
-        None => Bracket::default(),
+    let tournament = match use_shared_state::<Tournament>(cx) {
+        Some(tournament_ref) => tournament_ref.read().clone(),
+        None => Tournament::default(),
     };
-    let dev: DoubleEliminationVariant = bracket.clone().try_into().expect("partition");
+    let bracket = match use_shared_state::<DoubleEliminationBracket>(cx) {
+        Some(bracket_ref) => bracket_ref.read().clone(),
+        None => DoubleEliminationBracket::default(),
+    };
 
-    let participants = bracket.get_participants();
+    let participants = tournament.get_participants();
 
-    let wb_rounds_matches = dev.partition_winner_bracket()?;
+    let Ok(wb_rounds_matches) = bracket.partition_winner_bracket() else {
+        return None;
+    };
     let mut wb_rounds = vec![];
     for r in wb_rounds_matches {
         let round = r
@@ -63,7 +69,9 @@ pub(crate) fn View(cx: Scope) -> Element {
     let wb_columns = wb_elements.len();
 
     // TODO extract function for wb + lb Match to DisplayableMatch organised by rounds
-    let lb_rounds_matches = dev.partition_loser_bracket()?;
+    let Ok(lb_rounds_matches) = bracket.partition_loser_bracket() else {
+        return None;
+    };
     let mut lb_rounds: Vec<Vec<MinimalMatch>> = vec![];
     for r in lb_rounds_matches {
         let round = r
@@ -97,7 +105,7 @@ pub(crate) fn View(cx: Scope) -> Element {
     ));
     let lb_columns = lb_elements.len();
 
-    let (gf, gf_reset) = dev.grand_finals_and_reset().expect("");
+    let (gf, gf_reset) = bracket.grand_finals_and_reset().expect("");
     let gf = from_participants(&gf, &participants);
     let gf_reset = from_participants(&gf_reset, &participants);
 

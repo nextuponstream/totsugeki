@@ -16,6 +16,8 @@ pub enum Error {
 
 impl BracketResult {
     /// New bracket result
+    /// # Errors
+    /// When result is 0-0
     pub fn new(r1: u8, r2: u8) -> Result<Self, Error> {
         if r1 == 0 && r2 == 0 {
             Err(Error::Invalid(r1, r2))

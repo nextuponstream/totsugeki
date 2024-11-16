@@ -232,7 +232,7 @@ impl TournamentRecord {
         );
         let bracket = DoubleEliminationBracket::new(
             self.matches.0 .0,
-            Seeding::new(self.participants.0.get_seeding())
+            Seeding::new(self.participants.0.get_player_list())
                 .expect("use seeding from database record"),
             AutomaticMatchValidationMode::Flexible, // FIXME should be in tournament record
         );

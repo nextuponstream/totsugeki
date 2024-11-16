@@ -102,7 +102,6 @@ fn bracket_8_man() {
         p.push(player.clone());
         seeding.push(player.get_id());
     }
-    let auto = false;
 
     let bracket = SingleEliminationBracket::create(Seeding::new(seeding).unwrap(), false);
 

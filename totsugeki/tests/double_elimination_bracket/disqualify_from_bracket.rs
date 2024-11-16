@@ -1,45 +1,45 @@
 use totsugeki::bracket::seeding::Seeding;
 use totsugeki::double_elimination_bracket::progression::ProgressionDEB;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
-use totsugeki::matches::{partition_double_elimination_matches, Match};
+use totsugeki::matches::Match;
 use totsugeki::opponent::Opponent;
 use totsugeki::player::{Participants, Player, PlayerID};
 use totsugeki::validation::AutomaticMatchValidationMode;
-use totsugeki::ID; // Note: we don't test panics. If a panic occurs, it's a bug that needs
-                   // programmer attention. If UI sends bad data to backend and violate assertions,
-                   // then it's likely the UI is out of date and some synchronisation process is
-                   // failing somewhere.
-                   //
-                   // Moving panics to errors will lead to enum error bloat and after doing a
-                   // global enum with 17+ variants, I don't feel like dealing with too many
-                   // unknowns. If violated assertions causes too many logged errors in production
-                   // or error logs are too polluted with violated assertions (and dealing with it
-                   // is not successful), then maybe treating violated assertions as an Error
-                   // variant may be the way. But let's see if that's the case first before
-                   //
-                   // Example of panic testing?
-                   // #[test]
-                   // #[should_panic]
-                   // fn disqualifying_unknown_player_panics() {
-                   //     let mut participants = Participants::default();
-                   //     for i in 1..=3 {
-                   //         let player = Player::new(format!("p{i}"));
-                   //         participants = participants.add_participant(player).expect("seeding");
-                   //     }
-                   //     let bracket = DoubleEliminationBracket::create(
-                   //         Seeding::new(participants.get_seeding()).unwrap(),
-                   //         AutomaticMatchValidationMode::Strict,
-                   //     );
-                   //
-                   //     let unknown_player = ID::new_v4();
-                   //     bracket
-                   //         .disqualify_participant_from_bracket(unknown_player)
-                   //         .unwrap();
-                   // }
+
+// Note: we don't test panics. If a panic occurs, it's a bug that needs
+// programmer attention. If UI sends bad data to backend and violate assertions,
+// then it's likely the UI is out of date and some synchronisation process is
+// failing somewhere.
+//
+// Moving panics to errors will lead to enum error bloat and after doing a
+// global enum with 17+ variants, I don't feel like dealing with too many
+// unknowns. If violated assertions causes too many logged errors in production
+// or error logs are too polluted with violated assertions (and dealing with it
+// is not successful), then maybe treating violated assertions as an Error
+// variant may be the way. But let's see if that's the case first before
+//
+// Example of panic testing?
+// #[test]
+// #[should_panic]
+// fn disqualifying_unknown_player_panics() {
+//     let mut participants = Participants::default();
+//     for i in 1..=3 {
+//         let player = Player::new(format!("p{i}"));
+//         participants = participants.add_participant(player).expect("seeding");
+//     }
+//     let bracket = DoubleEliminationBracket::create(
+//         Seeding::new(participants.get_seeding()).unwrap(),
+//         AutomaticMatchValidationMode::Strict,
+//     );
+//
+//     let unknown_player = ID::new_v4();
+//     bracket
+//         .disqualify_participant_from_bracket(unknown_player)
+//         .unwrap();
+// }
 
 fn assert_player_drops_to_losers(bracket: &DoubleEliminationBracket, n: usize, p: &[Player]) {
-    let (winners, losers, _, _) =
-        partition_double_elimination_matches(&bracket.get_matches(), bracket.get_seeding().len());
+    let (winners, losers, _, _) = bracket.partition_matches().expect("enough players");
     assert!(
         !winners.iter().any(|m| m.contains(p[n].get_id())
             && m.get_winner() == Opponent(None)
@@ -62,7 +62,7 @@ fn disqualifying_player_that_could_not_make_it() {
         participants = participants.add_participant(player).expect("seeding");
     }
     let bracket = DoubleEliminationBracket::create(
-        Seeding::new(participants.get_seeding()).unwrap(),
+        Seeding::new(participants.get_player_list()).unwrap(),
         AutomaticMatchValidationMode::Flexible,
     );
 
@@ -72,7 +72,7 @@ fn disqualifying_player_that_could_not_make_it() {
         ),
         "expected player 1 not to be declared looser in any match"
     );
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[1].get_id())
         .expect("bracket with player 1 disqualified");
     assert!(
@@ -100,7 +100,7 @@ fn disqualifying_player_sets_looser_of_their_current_match() {
         participants = participants.add_participant(player).expect("seeding");
     }
     let bracket = DoubleEliminationBracket::create(
-        Seeding::new(participants.get_seeding()).unwrap(),
+        Seeding::new(participants.get_player_list()).unwrap(),
         AutomaticMatchValidationMode::Strict,
     );
 
@@ -115,7 +115,7 @@ fn disqualifying_player_sets_looser_of_their_current_match() {
         ),
         "expected player 2 not to be declared looser in any match"
     );
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[2].get_id())
         .expect("p2 is disqualified");
 
@@ -157,7 +157,7 @@ fn disqualifying_player_sets_their_opponent_as_the_winner_and_they_move_to_their
         participants = participants.add_participant(player).expect("seeding");
     }
     let bracket = DoubleEliminationBracket::create(
-        Seeding::new(participants.get_seeding()).unwrap(),
+        Seeding::new(participants.get_player_list()).unwrap(),
         AutomaticMatchValidationMode::Strict,
     );
 
@@ -167,7 +167,7 @@ fn disqualifying_player_sets_their_opponent_as_the_winner_and_they_move_to_their
         ),
         "expected player 2 not to be declared looser in any match"
     );
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[2].get_id())
         .expect("bracket with player 2 disqualified");
     assert!(
@@ -197,7 +197,10 @@ fn initial_step(
         participants = participants.add_participant(player).expect("seeding");
     }
     (
-        DoubleEliminationBracket::create(Seeding::new(participants.get_seeding()).unwrap(), auto),
+        DoubleEliminationBracket::create(
+            Seeding::new(participants.get_player_list()).unwrap(),
+            auto,
+        ),
         p,
     )
 }
@@ -232,25 +235,24 @@ fn disqualifying_everyone_is_impossible_because_the_last_player_remaining_wins_g
 ) {
     let (bracket, p) = initial_step(8, AutomaticMatchValidationMode::Flexible);
 
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[2].get_id())
         .expect("p2 DQ'ed");
     assert_player_drops_to_losers(&bracket, 2, &p);
     assert_outcome(&bracket, &p[7], &p[2]);
 
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[3].get_id())
         .expect("p3 DQ'ed");
     assert_player_drops_to_losers(&bracket, 3, &p);
     assert_outcome(&bracket, &p[6], &p[3]);
 
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[4].get_id())
         .expect("p4 DQ'ed");
     assert_outcome(&bracket, &p[5], &p[4]);
     assert_player_drops_to_losers(&bracket, 4, &p);
-    let (_, l_bracket, _, _) =
-        partition_double_elimination_matches(&bracket.get_matches(), bracket.get_seeding().len());
+    let (_, l_bracket, _, _) = bracket.partition_matches().expect("enough players");
     assert_eq!(
         l_bracket
             .iter()
@@ -259,19 +261,19 @@ fn disqualifying_everyone_is_impossible_because_the_last_player_remaining_wins_g
         1
     );
 
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[5].get_id())
         .expect("p5 DQ'ed");
     // player 5 opponent in winners is unknown, yet he can drop to losers
     // already, even if 1vs8 has not been played out
     assert_player_drops_to_losers(&bracket, 5, &p);
 
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[6].get_id())
         .expect("p6 DQ'ed");
     assert_outcome(&bracket, &p[7], &p[6]);
 
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[7].get_id())
         .expect("p7 DQ'ed");
     assert_player_drops_to_losers(&bracket, 7, &p);
@@ -279,8 +281,7 @@ fn disqualifying_everyone_is_impossible_because_the_last_player_remaining_wins_g
         .get_matches()
         .iter()
         .any(|m| m.contains(p[7].get_id()) && m.get_seeds() == [2, 3]));
-    let (_w_bracket, l_bracket, _, _) =
-        partition_double_elimination_matches(&bracket.get_matches(), bracket.get_seeding().len());
+    let (_w_bracket, l_bracket, _, _) = bracket.partition_matches().expect("enough players");
     let m = &l_bracket
         .iter()
         .find(|m| m.contains(p[7].get_id()) && m.get_seeds() == [2, 3])
@@ -290,7 +291,7 @@ fn disqualifying_everyone_is_impossible_because_the_last_player_remaining_wins_g
     };
     assert_eq!(loser, p[7].get_id());
 
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[8].get_id())
         .expect("p8 DQ'ed");
     assert_outcome(&bracket, &p[1], &p[8]);
@@ -312,7 +313,7 @@ fn disqualifying_everyone_is_impossible_because_the_last_player_remaining_wins_g
         "player 1 not disqualified"
     );
     let (winner_bracket, loser_bracket, gf, _gf_reset) =
-        partition_double_elimination_matches(&bracket.get_matches(), bracket.get_seeding().len());
+        bracket.partition_matches().expect("enough players");
     for m in &winner_bracket {
         assert_ne!(
             m.get_automatic_loser(),
@@ -364,14 +365,13 @@ fn disqualifying_most_in_double_elimination_tournament_and_lowest_expected_seed_
         AutomaticMatchValidationMode::Flexible,
     );
 
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[8])
         .expect("dq 8");
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(players[7].get_id())
         .expect("dq 7");
-    let (_w_bracket, l_bracket, _, _) =
-        partition_double_elimination_matches(&bracket.get_matches(), bad_seeding.len());
+    let (_w_bracket, l_bracket, _, _) = bracket.partition_matches().expect("enough players");
     assert!(
         l_bracket.iter().any(|m| {
             let Opponent(Some(auto)) = m.get_automatic_loser() else {
@@ -381,23 +381,22 @@ fn disqualifying_most_in_double_elimination_tournament_and_lowest_expected_seed_
         }),
         "p7 disqualified in losers"
     );
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(players[6].get_id())
         .expect("dq 6");
-    let (_, l_bracket, _, _) =
-        partition_double_elimination_matches(&bracket.get_matches(), bad_seeding.len());
+    let (_, l_bracket, _, _) = bracket.partition_matches().expect("enough players");
     assert_x_wins_against_y(&players[6], &players[7], &l_bracket);
 
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(players[5].get_id())
         .expect("dq 5");
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(players[4].get_id())
         .expect("dq 4");
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(players[3].get_id())
         .expect("dq 3");
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(players[2].get_id())
         .expect("dq 2");
 
@@ -449,11 +448,11 @@ fn disqualify_from_winner() {
         seeding = seeding.add_participant(player).expect("seeding");
     }
     let bracket = DoubleEliminationBracket::create(
-        Seeding::new(seeding.get_seeding()).unwrap(),
+        Seeding::new(seeding.get_player_list()).unwrap(),
         AutomaticMatchValidationMode::Flexible,
     );
 
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[3].get_id())
         .expect("dq");
     let new_matches = bracket.matches_to_play();
@@ -492,7 +491,7 @@ fn disqualify_in_double_elimination_bracket_from_loser() {
         seeding = seeding.add_participant(player).expect("seeding");
     }
     let bracket = DoubleEliminationBracket::create(
-        Seeding::new(seeding.get_seeding()).unwrap(),
+        Seeding::new(seeding.get_player_list()).unwrap(),
         AutomaticMatchValidationMode::Flexible,
     );
 
@@ -505,11 +504,10 @@ fn disqualify_in_double_elimination_bracket_from_loser() {
         .expect("to report");
     assert_eq!(new_matches.len(), 1, "expected 1 new match");
 
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[3].get_id())
         .expect("dq");
-    let (_, _, gf, _) =
-        partition_double_elimination_matches(&bracket.get_matches(), bracket.get_seeding().len());
+    let (_, _, gf, _) = bracket.partition_matches().expect("enough players");
     assert!(gf.contains(p[1].get_id()), "expected player 1 in GF");
     assert!(gf.contains(p[2].get_id()), "expected player 2 in GF");
 
@@ -529,26 +527,26 @@ fn disqualify_in_double_elimination_bracket_from_loser() {
 #[test]
 fn disqualifying_everyone_in_double_elimination_tournament_is_imposible() {
     let mut p = vec![Player::new("don't use".into())];
-    let mut seeding = Participants::default();
+    let mut seeding = vec![];
     for i in 1..=8 {
         let player = Player::new(format!("p{i}"));
         p.push(player.clone());
-        seeding = seeding.add_participant(player).expect("seeding");
+        seeding.push(player.get_id());
     }
     let bracket = DoubleEliminationBracket::create(
-        Seeding::new(seeding.get_seeding()).unwrap(),
+        Seeding::new(seeding).unwrap(),
         AutomaticMatchValidationMode::Flexible,
     );
 
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[8].get_id())
         .expect("dq 8");
 
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[7].get_id())
         .expect("dq 7");
 
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[6].get_id())
         .expect("dq 6");
     // R1 matches | R2 matches
@@ -569,7 +567,7 @@ fn disqualifying_everyone_in_double_elimination_tournament_is_imposible() {
         p[3]
     );
 
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[5].get_id())
         .expect("dq 5");
     // R1 matches | R2 matches
@@ -592,11 +590,11 @@ fn disqualifying_everyone_in_double_elimination_tournament_is_imposible() {
         p[6]
     );
 
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[4].get_id())
         .expect("dq 4");
 
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[3].get_id())
         .expect("dq 3");
     // p8--p3 DQ'ed
@@ -627,7 +625,7 @@ fn disqualifying_everyone_in_double_elimination_tournament_is_imposible() {
         p[6]
     );
 
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[2].get_id())
         .expect("dq 2");
     assert!(bracket.get_matches()[bracket.get_matches().len() - 2].contains(p[1].get_id()),);
@@ -663,33 +661,33 @@ fn disqualifying_most_in_double_elimination_tournament_and_grand_finalist_from_w
         seeding = seeding.add_participant(player).expect("seeding");
     }
     let bracket = DoubleEliminationBracket::create(
-        Seeding::new(seeding.get_seeding()).unwrap(),
+        Seeding::new(seeding.get_player_list()).unwrap(),
         AutomaticMatchValidationMode::Flexible,
     );
 
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[8].get_id())
         .expect("dq 8");
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[7].get_id())
         .expect("dq 7");
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[6].get_id())
         .expect("dq 6");
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[5].get_id())
         .expect("dq 5");
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[4].get_id())
         .expect("dq 4");
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[3].get_id())
         .expect("dq 3");
     let (bracket, _, _) = bracket
         .tournament_organiser_reports_result_dangerous(p[1].get_id(), (2, 0), p[2].get_id())
         .expect("player 1 wins in winners finals");
 
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[1].get_id())
         .expect("dq 1");
     assert!(bracket.get_matches()[bracket.get_matches().len() - 2].contains(p[1].get_id()),);
@@ -743,32 +741,32 @@ fn disqualifying_most_in_double_elimination_tournament_and_grand_finalist_from_l
         seeding = seeding.add_participant(player).expect("seeding");
     }
     let bracket = DoubleEliminationBracket::create(
-        Seeding::new(seeding.get_seeding()).unwrap(),
+        Seeding::new(seeding.get_player_list()).unwrap(),
         AutomaticMatchValidationMode::Flexible,
     );
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[8].get_id())
         .expect("dq 8");
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[7].get_id())
         .expect("dq 7");
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[6].get_id())
         .expect("dq 6");
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[5].get_id())
         .expect("dq 5");
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[4].get_id())
         .expect("dq 4");
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[3].get_id())
         .expect("dq 3");
     let (bracket, _, _) = bracket
         .tournament_organiser_reports_result_dangerous(p[1].get_id(), (2, 0), p[2].get_id())
         .expect("player 1 wins in winners finals");
 
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[2].get_id())
         .expect("dq 2");
     assert!(bracket.get_matches()[bracket.get_matches().len() - 2].contains(p[1].get_id()),);
@@ -808,28 +806,28 @@ fn disqualifying_most_in_double_elimination_tournament_and_highest_expected_seed
         seeding = seeding.add_participant(player).expect("seeding");
     }
     let bracket = DoubleEliminationBracket::create(
-        Seeding::new(seeding.get_seeding()).unwrap(),
+        Seeding::new(seeding.get_player_list()).unwrap(),
         AutomaticMatchValidationMode::Flexible,
     );
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[8].get_id())
         .expect("dq 8");
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[7].get_id())
         .expect("dq 7");
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[6].get_id())
         .expect("dq 6");
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[5].get_id())
         .expect("dq 5");
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[4].get_id())
         .expect("dq 4");
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[3].get_id())
         .expect("dq 3");
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[1].get_id())
         .expect("dq 1");
 
@@ -901,10 +899,10 @@ fn fuzzer_incident_01() {
     let (bracket, _, _) = bracket
         .tournament_organiser_reports_result_dangerous(p[2], (0, 2), p[3])
         .expect("bracket");
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[3])
         .expect("bracket");
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[1])
         .expect("bracket");
     let _bracket = bracket
@@ -960,22 +958,22 @@ fn fuzzer_incident_02() {
     let (bracket, _, _) = bracket
         .tournament_organiser_reports_result_dangerous(p[1], (2, 0), p[8])
         .expect("bracket");
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[2])
         .expect("bracket");
     let (bracket, _, _) = bracket
         .tournament_organiser_reports_result_dangerous(p[3], (2, 0), p[6])
         .expect("bracket");
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[5])
         .expect("bracket");
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[4])
         .expect("bracket");
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[3])
         .expect("bracket");
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[7])
         .expect("bracket");
     let _bracket = bracket
@@ -1041,12 +1039,12 @@ fn fuzzer_incident_03() {
     let (bracket, _, _) = bracket
         .tournament_organiser_reports_result_dangerous(p[1], (2, 0), p[2])
         .expect("bracket");
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[1])
         .expect("bracket");
     // when moved into grand finals with someone disqualified, match should
     // be updated
-    let bracket = bracket
+    let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[3])
         .expect("bracket");
     assert!(bracket.is_over());

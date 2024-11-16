@@ -1,22 +1,21 @@
 //! Visualize general details of bracket and view of the bracket
 #![allow(non_snake_case)]
 
+use crate::tournaments::Tournament;
 use crate::{
     components::bracket::double_elimination_bracket_view::View as DoubleEliminationBracketView,
     components::bracket::single_elimination_bracket_view::View as SingleEliminationBracketView,
     components::Submit,
 };
-use chrono::prelude::*;
 use dioxus::prelude::*;
-use totsugeki::{bracket::Bracket, format::Format};
+use totsugeki::format::Format;
 
 /// Display bracket name, number of players and players
 pub fn GeneralDetails(cx: Scope) -> Element {
-    let bracket = use_shared_state::<Bracket>(cx).expect("bracket");
+    let tournament = use_shared_state::<Tournament>(cx).expect("bracket");
 
-    let details = bracket.read().to_string();
-    let format = bracket.read().get_format().to_string();
-    let participants = bracket.read().get_participants();
+    let format = tournament.read().get_format().to_string();
+    let participants = tournament.read().get_participants();
     let n = participants.len();
 
     cx.render(rsx!(div {
@@ -24,7 +23,6 @@ pub fn GeneralDetails(cx: Scope) -> Element {
             class: "text-lg",
             "General details"
         }
-        p { details }
         p {
             label { class: "pr-2", "Format:" }
             format
@@ -41,7 +39,7 @@ pub fn GeneralDetails(cx: Scope) -> Element {
 
 /// Update bracket format and rename bracket
 pub fn UpdateBracketDetails(cx: Scope) -> Element {
-    let bracket = use_shared_state::<Bracket>(cx).expect("bracket");
+    let tournament = use_shared_state::<Tournament>(cx).expect("bracket");
 
     cx.render(rsx!(
 
@@ -50,7 +48,7 @@ pub fn UpdateBracketDetails(cx: Scope) -> Element {
             "Update bracket"
         }
         form {
-            onsubmit: move |event| { update_general_details_of_bracket(bracket, event ) },
+            onsubmit: move |event| { update_general_details_of_bracket(tournament, event ) },
 
             div {
                 class: "pb-2",
@@ -84,7 +82,7 @@ pub fn UpdateBracketDetails(cx: Scope) -> Element {
 /// Update bracket name and/or format. When bracket format is updated, thrashes
 /// existing bracket matches and regenerate matches for new format.
 // FIXME do not regenerate bracket when updating name
-fn update_general_details_of_bracket(bracket: &UseSharedState<Bracket>, e: Event<FormData>) {
+fn update_general_details_of_bracket(tournament: &UseSharedState<Tournament>, e: Event<FormData>) {
     let name = e.values.get("name").expect("name").first().expect("");
     let format = e.values.get("format").expect("format").first().expect("f");
     let is_valid = true;
@@ -97,21 +95,18 @@ fn update_general_details_of_bracket(bracket: &UseSharedState<Bracket>, e: Event
         return;
     }
 
-    *bracket.write() = Bracket::new(
-        name,
-        format,
-        totsugeki::seeding::Method::Strict,
-        Utc.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap(),
-        true,
-    );
+    let mut t = Tournament::default();
+    t.name = name.clone();
+    t.format = format;
+    *tournament.write() = t;
 }
 
 /// Dioxus component for interactive bracket, using dioxus shared state
 /// `Bracket`
 pub fn View(cx: Scope) -> Element {
-    let format = match use_shared_state::<Bracket>(cx) {
-        Some(bracket_ref) => bracket_ref.read().get_format(),
-        None => Bracket::default().get_format(),
+    let format = match use_shared_state::<Tournament>(cx) {
+        Some(tournament_ref) => tournament_ref.read().get_format(),
+        None => Tournament::default().get_format(),
     };
     let view = match format {
         Format::SingleEliminationBracket => SingleEliminationBracketView(cx),

@@ -15,9 +15,11 @@ use async_lock::RwLock;
 use serde::{Deserialize, Serialize};
 use serenity::{model::id::UserId, prelude::TypeMapKey};
 use std::{collections::HashMap, sync::Arc};
+use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki::format::Format;
+use totsugeki::single_elimination_bracket::SingleEliminationBracket;
 use totsugeki::{bracket::Bracket, player::Player};
 
-pub mod close;
 pub mod create;
 pub mod disqualify;
 pub mod help;
@@ -26,7 +28,6 @@ pub mod next_match;
 pub mod ping;
 pub mod players;
 pub mod report;
-pub mod start;
 pub mod validate;
 // mod find;
 pub mod forfeit;
@@ -42,15 +43,26 @@ impl TypeMapKey for Config {
     type Value = Arc<String>;
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 /// In-memory data to avoid reading save file
 pub struct Data {
     /// Discord users
     pub users: HashMap<UserId, Player>,
-    /// Hosted bracket
-    pub bracket: Bracket,
+    /// format
+    pub format: Format,
+    /// single elimination bracket
+    pub single_elimination_bracket: Option<SingleEliminationBracket>,
+    /// double elimination bracket
+    pub double_elimination_bracket: Option<DoubleEliminationBracket>,
 }
 
 impl TypeMapKey for Data {
-    type Value = Arc<RwLock<(Bracket, HashMap<UserId, Player>)>>;
+    type Value = Arc<
+        RwLock<(
+            Format,
+            HashMap<UserId, Player>,
+            SingleEliminationBracket,
+            DoubleEliminationBracket,
+        )>,
+    >;
 }

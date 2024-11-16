@@ -4,13 +4,13 @@ use super::{
     ui_primitives::ConnectMatchesBetweenRounds,
 };
 use crate::from_participants;
+use crate::tournaments::Tournament;
 use crate::{
     components::bracket::displayable_round::Round, components::bracket::match_edit::MatchEditModal,
     ordering::winner_bracket::reorder, Modal,
 };
 use dioxus::prelude::*;
-use totsugeki::bracket::single_elimination_variant::Variant as SingleEliminationVariant;
-use totsugeki::bracket::Bracket;
+use totsugeki::single_elimination_bracket::SingleEliminationBracket;
 
 /// View over single elimination bracket
 #[allow(dead_code)]
@@ -18,16 +18,19 @@ pub(crate) fn View(cx: Scope) -> Element {
     // FIXME problem switching from deb to seb, panics
     let modal = use_shared_state::<Option<Modal>>(cx).expect("modal to show");
     let isMatchEditModalHidden = !matches!(*modal.read(), Some(Modal::EnterMatchResult(_, _, _)));
-    let bracket = match use_shared_state::<Bracket>(cx) {
-        Some(bracket_ref) => bracket_ref.read().clone(),
-        None => Bracket::default(),
+    let tournament = match use_shared_state::<Tournament>(cx) {
+        Some(tournament_ref) => tournament_ref.read().clone(),
+        None => Tournament::default(),
     };
-    let sev: SingleEliminationVariant = bracket.clone().try_into().expect("partition");
+    let bracket = match use_shared_state::<SingleEliminationBracket>(cx) {
+        Some(bracket_ref) => bracket_ref.read().clone(),
+        None => SingleEliminationBracket::default(),
+    };
 
-    let participants = bracket.get_participants();
+    let participants = tournament.get_participants();
 
     // let mut rounds = winner_bracket(matches, &participants);
-    let match_by_rounds = sev.partition_by_round().expect("rounds");
+    let match_by_rounds = bracket.partition_by_round().expect("rounds");
     let mut rounds = vec![];
     // FIXME find a way to map vec of vec from one type to another
     // Note: did not find a way to map a vec of vec of Match into vec of vec of

@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::bracket::seeding::Seeding;
-use crate::player::PlayerID;
 use crate::{
     matches::Match,
     seeding::{
@@ -14,6 +13,10 @@ use crate::{
     },
 };
 
+// TODO rename TournamentFormat
+// TODO add enum TournamentFormatWithData so it's easier for library users to handle all formats
+//  with a match statement
+// TODO check if TournamentFormat and TournamentFormatWithData should coexist
 /// All tournament formats
 #[derive(PartialEq, Eq, Copy, Clone, Deserialize, Serialize, Debug)]
 pub enum Format {
@@ -28,19 +31,18 @@ impl Format {
     ///
     /// # Errors
     /// thrown when math overflow happens
-    pub fn generate_matches(self, seeding: &[PlayerID]) -> Result<Vec<Match>, SeedingError> {
-        let seeding = Seeding::new(seeding.into()).unwrap();
+    pub fn generate_matches(self, seeding: &Seeding) -> Result<Vec<Match>, SeedingError> {
         Ok(match self {
             Format::SingleEliminationBracket => {
-                get_balanced_round_matches_top_seed_favored(&seeding)
+                get_balanced_round_matches_top_seed_favored(seeding)
             }
             Format::DoubleEliminationBracket => {
                 let mut matches = vec![];
                 let mut winner_bracket_matches =
-                    get_balanced_round_matches_top_seed_favored(&seeding);
+                    get_balanced_round_matches_top_seed_favored(seeding);
                 matches.append(&mut winner_bracket_matches);
                 let mut looser_bracket_matches =
-                    get_loser_bracket_matches_top_seed_favored(&seeding.get())?;
+                    get_loser_bracket_matches_top_seed_favored(seeding)?;
                 matches.append(&mut looser_bracket_matches);
                 let grand_finals: Match = Match::new_empty([1, 2]);
                 matches.push(grand_finals);

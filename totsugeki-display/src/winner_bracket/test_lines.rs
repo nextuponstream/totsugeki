@@ -7,7 +7,6 @@ mod tests {
     use totsugeki::bracket::seeding::Seeding;
     use totsugeki::player::PlayerID;
     use totsugeki::single_elimination_bracket::SingleEliminationBracket;
-    use totsugeki::ID;
 
     fn get_data(n: usize) -> SingleEliminationBracket {
         let mut seeding = vec![];

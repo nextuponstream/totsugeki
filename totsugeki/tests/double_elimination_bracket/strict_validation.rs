@@ -78,7 +78,7 @@ fn bracket_5_man_with_frequent_upsets() {
         seeding = seeding.add_participant(player).expect("seeding");
     }
     let bracket = DoubleEliminationBracket::create(
-        Seeding::new(seeding.get_seeding()).unwrap(),
+        Seeding::new(seeding.get_player_list()).unwrap(),
         AutomaticMatchValidationMode::Strict,
     );
 
@@ -229,7 +229,7 @@ fn run_8_man_bracket_with_frequent_upsets2() {
         seeding = seeding.add_participant(player).expect("seeding");
     }
     let bracket = DoubleEliminationBracket::create(
-        Seeding::new(seeding.get_seeding()).unwrap(),
+        Seeding::new(seeding.get_player_list()).unwrap(),
         AutomaticMatchValidationMode::Strict,
     );
     assert_eq!(bracket.get_matches().len(), 15);

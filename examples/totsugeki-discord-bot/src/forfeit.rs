@@ -8,6 +8,7 @@ use serenity::{
     model::channel::Message,
 };
 use std::{io::prelude::*, path::Path};
+use totsugeki::format::Format;
 use totsugeki::opponent::Opponent;
 use tracing::{info, span, warn, Level};
 
@@ -22,44 +23,83 @@ async fn forfeit(ctx: &Context, msg: &Message) -> CommandResult {
         let config = data.get::<Config>().expect("filename").clone();
         let bracket_data = data.get::<Data>().expect("data").clone();
         let mut bracket_data = bracket_data.write().await;
-        let (mut bracket, users) = bracket_data.clone();
+        let (format, users, single_elimination_bracket, double_elimination_bracket) =
+            bracket_data.clone();
 
-        let Some(player) = users.get(&user_id) else {
+        let users_copy = users.clone();
+        let Some(player) = users_copy.get(&user_id) else {
             warn!("Unregistered user");
             msg.reply(ctx, "You are not registered").await?;
             return Ok::<CommandResult, CommandError>(Ok(()));
         };
 
         let mut new_matches_message = String::new();
-        match bracket.clone().disqualify_participant(player.get_id()) {
-            Ok((b, new_matches)) => {
-                bracket = b;
-                for m in new_matches {
-                    let player1 = match m.get_players()[0] {
-                        Opponent::Player(p) => p,
-                        Opponent::Unknown => panic!("cannot parse opponent"),
-                    };
-                    let player2 = match m.get_players()[1] {
-                        Opponent::Player(p) => p,
-                        Opponent::Unknown => panic!("cannot parse opponent"),
-                    };
-                    new_matches_message =
-                        format!("{}\n{} VS {}", new_matches_message, player1, player2);
-                }
+        let (data, new_playable_matches) = match format {
+            Format::SingleEliminationBracket => {
+                let (seb, new_playable_matches) =
+                    single_elimination_bracket.disqualify_participant_from_bracket(player.get_id());
+                *bracket_data = (
+                    format,
+                    users.clone(),
+                    seb.clone(),
+                    double_elimination_bracket,
+                );
+                (
+                    Data {
+                        format,
+                        users,
+                        single_elimination_bracket: Some(seb),
+                        double_elimination_bracket: None,
+                    },
+                    new_playable_matches,
+                )
             }
-            Err(e) => {
-                warn!("{e}");
-                msg.reply(ctx, format!("{e}")).await?;
-                return Ok::<CommandResult, CommandError>(Ok(()));
+            Format::DoubleEliminationBracket => {
+                let (deb, new_playable_matches) = match double_elimination_bracket
+                    .disqualify_participant_from_bracket(player.get_id())
+                {
+                    Ok(r) => r,
+                    Err(e) => {
+                        warn!("{e}");
+                        msg.reply(ctx, format!("{e}")).await?;
+                        return Ok::<CommandResult, CommandError>(Ok(()));
+                    }
+                };
+                *bracket_data = (
+                    format,
+                    users.clone(),
+                    single_elimination_bracket.clone(),
+                    deb.clone(),
+                );
+                (
+                    Data {
+                        format,
+                        users,
+                        single_elimination_bracket: None,
+                        double_elimination_bracket: Some(deb),
+                    },
+                    new_playable_matches,
+                )
             }
         };
-        *bracket_data = (bracket.clone(), users.clone());
+        if let Some(new_playable_matches) = new_playable_matches {
+            for m in new_playable_matches {
+                let player1 = match m.get_players()[0] {
+                    Opponent(Some(p)) => p,
+                    Opponent(None) => panic!("cannot parse opponent"),
+                };
+                let player2 = match m.get_players()[1] {
+                    Opponent(Some(p)) => p,
+                    Opponent(None) => panic!("cannot parse opponent"),
+                };
+                new_matches_message =
+                    format!("{}\n{} VS {}", new_matches_message, player1, player2);
+            }
+        } else {
+            new_matches_message = "No new playable matches".into();
+        }
 
-        let d = Data {
-            bracket: bracket.clone(),
-            users: users.clone(),
-        };
-        let j = serde_json::to_string(&d).expect("bracket");
+        let j = serde_json::to_string(&data).expect("bracket");
 
         let mut f = std::fs::OpenOptions::new()
             .create(true)
