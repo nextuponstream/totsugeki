@@ -2,9 +2,9 @@
 
 mod disqualification;
 mod getter_setter;
+pub mod late_bracket_configuration;
 pub mod matches;
 mod ongoing;
-pub mod participants;
 pub(crate) mod progression;
 mod query_state;
 pub mod seeding;

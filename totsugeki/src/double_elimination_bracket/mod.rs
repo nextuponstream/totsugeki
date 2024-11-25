@@ -1,7 +1,9 @@
 //! Double elimination bracket
 
+use crate::bracket::late_bracket_configuration::LateBracketConfiguration;
 use crate::bracket::matches::update_bracket_with;
 use crate::bracket::seeding::Seeding;
+use crate::matches::result::MatchFormat;
 use crate::matches::Match;
 use crate::opponent::Opponent;
 use crate::player::PlayerID;
@@ -16,6 +18,7 @@ pub mod next_opponent;
 mod partition;
 
 pub mod progression;
+pub mod reporting;
 
 /// Double elimination bracket
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
@@ -35,20 +38,23 @@ impl DoubleEliminationBracket {
     pub fn create(
         seeding: Seeding,
         automatic_match_validation_mode: AutomaticMatchValidationMode,
+        base_match_format: MatchFormat,
+        late_bracket_configuration: Option<LateBracketConfiguration>,
     ) -> Self {
         let mut matches = vec![];
         if seeding.len() >= 3 {
             // FIXME remove unwrap, this should never panic
             let mut winner_bracket_matches =
-                crate::seeding::single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored(&seeding);
+                crate::seeding::single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored(&seeding, base_match_format, late_bracket_configuration);
             matches.append(&mut winner_bracket_matches);
             let mut looser_bracket_matches =
-                get_loser_bracket_matches_top_seed_favored(&seeding).unwrap();
+                get_loser_bracket_matches_top_seed_favored(&seeding, MatchFormat::ft3(), None)
+                    .unwrap();
 
             matches.append(&mut looser_bracket_matches);
-            let grand_finals: Match = Match::new_empty([1, 2]);
+            let grand_finals: Match = Match::new_empty([1, 2], base_match_format);
             matches.push(grand_finals);
-            let grand_finals_reset: Match = Match::new_empty([1, 2]);
+            let grand_finals_reset: Match = Match::new_empty([1, 2], base_match_format);
             matches.push(grand_finals_reset);
         }
 

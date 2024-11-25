@@ -26,34 +26,6 @@ pub enum Format {
     DoubleEliminationBracket,
 }
 
-impl Format {
-    /// Generate matches according to the current format
-    ///
-    /// # Errors
-    /// thrown when math overflow happens
-    pub fn generate_matches(self, seeding: &Seeding) -> Result<Vec<Match>, SeedingError> {
-        Ok(match self {
-            Format::SingleEliminationBracket => {
-                get_balanced_round_matches_top_seed_favored(seeding)
-            }
-            Format::DoubleEliminationBracket => {
-                let mut matches = vec![];
-                let mut winner_bracket_matches =
-                    get_balanced_round_matches_top_seed_favored(seeding);
-                matches.append(&mut winner_bracket_matches);
-                let mut looser_bracket_matches =
-                    get_loser_bracket_matches_top_seed_favored(seeding)?;
-                matches.append(&mut looser_bracket_matches);
-                let grand_finals: Match = Match::new_empty([1, 2]);
-                matches.push(grand_finals);
-                let grand_finals_reset: Match = Match::new_empty([1, 2]);
-                matches.push(grand_finals_reset);
-                matches
-            }
-        })
-    }
-}
-
 impl std::fmt::Display for Format {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

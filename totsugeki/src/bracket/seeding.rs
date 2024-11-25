@@ -60,38 +60,6 @@ impl Seeding {
     }
 }
 
-impl Bracket {
-    /// Update seeding with players ordered by seeding position and generate
-    /// matches
-    ///
-    /// # Errors
-    /// thrown when provided players do not match current players in bracket
-    pub fn update_seeding(self, players: &[PlayerID]) -> Result<Self, BracketError> {
-        if self.accept_match_results {
-            return Err(BracketError::Started(self.id, String::new()));
-        }
-
-        let mut player_group = Participants::default();
-        for sorted_player in players {
-            let players = self.get_participants().get_players_list();
-            let Some(player) = players.iter().find(|p| p.get_id() == *sorted_player) else {
-                return Err(BracketError::UnknownPlayer(
-                    *sorted_player,
-                    self.participants.clone(),
-                    self.id,
-                ));
-            };
-            player_group = player_group.add_participant(player.clone())?;
-        }
-        let participants = seed(&self.seeding_method, player_group, self.participants)?;
-        let matches = self.format.generate_matches(&participants.get_seeding())?;
-        Ok(Self {
-            participants,
-            matches,
-            ..self
-        })
-    }
-}
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -13,7 +13,6 @@ use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki::format::Format;
 use totsugeki::player::PlayerID;
 use totsugeki::single_elimination_bracket::progression::ProgressionSEB;
-use totsugeki::single_elimination_bracket::SingleEliminationBracket;
 use totsugeki::validation::AutomaticMatchValidationMode;
 use totsugeki::{matches::ReportedResult, opponent::Opponent};
 use tracing::{info, span, warn, Level};
@@ -26,7 +25,15 @@ async fn report(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     // NOTE: workaround since instrument macro conflict with discords
     let span = span!(Level::INFO, "Report bracket command");
     span.in_scope(|| async {
-        let reported_result = args.single::<ReportedResult>()?;
+        let reported_result = args.single::<String>()?;
+        let reported_result: ReportedResult = match reported_result.parse() {
+            Ok(r) => r,
+            Err(e) => {
+                warn!("{e}");
+                msg.reply(ctx, format!("{e}")).await?;
+                return Ok::<CommandResult, CommandError>(Ok(()));
+            }
+        };
         let user_id = msg.author.id;
 
         let data = ctx.data.read().await;

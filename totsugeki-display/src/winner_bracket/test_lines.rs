@@ -5,6 +5,7 @@
 #[cfg(test)]
 mod tests {
     use totsugeki::bracket::seeding::Seeding;
+    use totsugeki::matches::result::MatchFormat;
     use totsugeki::player::PlayerID;
     use totsugeki::single_elimination_bracket::SingleEliminationBracket;
 
@@ -13,7 +14,12 @@ mod tests {
         for _ in 0..n {
             seeding.push(PlayerID::create());
         }
-        SingleEliminationBracket::create(Seeding::new(seeding).unwrap(), true)
+        SingleEliminationBracket::create(
+            Seeding::new(seeding).unwrap(),
+            true,
+            MatchFormat::ft2(),
+            None,
+        )
     }
 
     use crate::from_participants;

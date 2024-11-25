@@ -2,6 +2,7 @@ use crate::double_elimination_bracket::assert_no_next_match_after_tournament_is_
 use totsugeki::bracket::seeding::Seeding;
 use totsugeki::double_elimination_bracket::progression::ProgressionDEB;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki::matches::result::{MatchFormat, Score};
 use totsugeki::matches::MatchID;
 use totsugeki::next_opponent::NextOpponentInBracket;
 use totsugeki::opponent::Opponent;
@@ -59,7 +60,7 @@ pub(crate) fn assert_next_matches(
 fn report(
     double_elimination_bracket: DoubleEliminationBracket,
     player1: PlayerID,
-    result: (i8, i8),
+    result: Score,
     player2: PlayerID,
 ) -> (DoubleEliminationBracket, MatchID) {
     let (bracket, m_id, _new_matches) = double_elimination_bracket
@@ -80,66 +81,68 @@ fn bracket_5_man_with_frequent_upsets() {
     let bracket = DoubleEliminationBracket::create(
         Seeding::new(seeding.get_player_list()).unwrap(),
         AutomaticMatchValidationMode::Strict,
+        MatchFormat::ft2(),
+        None,
     );
 
     let (bracket, match_id, _) = bracket
-        .tournament_organiser_reports_result_dangerous(p[4].get_id(), (2, 0), p[5].get_id())
+        .tournament_organiser_reports_result_dangerous(p[4].get_id(), Score(2, 0), p[5].get_id())
         .expect("winner 4vs5");
     let (bracket, new_matches) = bracket.validate_match_result(match_id);
     assert_eq!(new_matches.len(), 1);
     assert_next_matches(&bracket, &[5], &[(1, 4), (2, 3)], &p);
 
     let (bracket, match_id, _) = bracket
-        .tournament_organiser_reports_result_dangerous(p[1].get_id(), (0, 2), p[4].get_id())
+        .tournament_organiser_reports_result_dangerous(p[1].get_id(), Score(0, 2), p[4].get_id())
         .expect("winner 1vs4");
     let (bracket, new_matches) = bracket.validate_match_result(match_id);
     assert_eq!(new_matches.len(), 1);
     assert_next_matches(&bracket, &[4], &[(2, 3), (1, 5)], &p);
 
     let (bracket, match_id, _) = bracket
-        .tournament_organiser_reports_result_dangerous(p[2].get_id(), (2, 0), p[3].get_id())
+        .tournament_organiser_reports_result_dangerous(p[2].get_id(), Score(2, 0), p[3].get_id())
         .expect("winner 2vs3");
     let (bracket, new_matches) = bracket.validate_match_result(match_id);
     assert_eq!(new_matches.len(), 1);
     assert_next_matches(&bracket, &[3], &[(1, 5), (2, 4)], &p);
 
     let (bracket, match_id, _) = bracket
-        .tournament_organiser_reports_result_dangerous(p[1].get_id(), (0, 2), p[5].get_id())
+        .tournament_organiser_reports_result_dangerous(p[1].get_id(), Score(0, 2), p[5].get_id())
         .expect("loser 1vs5");
     let (bracket, new_matches) = bracket.validate_match_result(match_id);
     assert_eq!(new_matches.len(), 1);
     assert_next_matches(&bracket, &[], &[(2, 4), (3, 5)], &p);
 
     let (bracket, match_id, _) = bracket
-        .tournament_organiser_reports_result_dangerous(p[2].get_id(), (2, 0), p[4].get_id())
+        .tournament_organiser_reports_result_dangerous(p[2].get_id(), Score(2, 0), p[4].get_id())
         .expect("winner 2vs4");
     let (bracket, new_matches) = bracket.validate_match_result(match_id);
     assert_eq!(new_matches.len(), 0);
     assert_next_matches(&bracket, &[2, 4], &[(3, 5)], &p);
 
     let (bracket, match_id, _) = bracket
-        .tournament_organiser_reports_result_dangerous(p[3].get_id(), (0, 2), p[5].get_id())
+        .tournament_organiser_reports_result_dangerous(p[3].get_id(), Score(0, 2), p[5].get_id())
         .expect("loser 3vs5");
     let (bracket, new_matches) = bracket.validate_match_result(match_id);
     assert_eq!(new_matches.len(), 1);
     assert_next_matches(&bracket, &[2], &[(4, 5)], &p);
 
     let (bracket, match_id, _) = bracket
-        .tournament_organiser_reports_result_dangerous(p[4].get_id(), (2, 0), p[5].get_id())
+        .tournament_organiser_reports_result_dangerous(p[4].get_id(), Score(2, 0), p[5].get_id())
         .expect("loser 4vs5");
     let (bracket, new_matches) = bracket.validate_match_result(match_id);
     assert_eq!(new_matches.len(), 1);
     assert_next_matches(&bracket, &[], &[(2, 4)], &p);
 
     let (bracket, match_id, _) = bracket
-        .tournament_organiser_reports_result_dangerous(p[2].get_id(), (0, 2), p[4].get_id())
+        .tournament_organiser_reports_result_dangerous(p[2].get_id(), Score(0, 2), p[4].get_id())
         .expect("grand finals 2vs4");
     let (bracket, new_matches) = bracket.validate_match_result(match_id);
     assert_eq!(new_matches.len(), 1);
     assert_next_matches(&bracket, &[], &[(2, 4)], &p);
 
     let (bracket, match_id, _) = bracket
-        .tournament_organiser_reports_result_dangerous(p[2].get_id(), (2, 0), p[4].get_id())
+        .tournament_organiser_reports_result_dangerous(p[2].get_id(), Score(2, 0), p[4].get_id())
         .expect("reset 2vs4");
     let (bracket, new_matches) = bracket.validate_match_result(match_id);
     assert_eq!(new_matches.len(), 0);
@@ -162,52 +165,54 @@ fn run_8_man_bracket_with_frequent_upsets() {
     let bracket = DoubleEliminationBracket::create(
         Seeding::new(unpadded_player_ids).unwrap(),
         AutomaticMatchValidationMode::Strict,
+        MatchFormat::ft2(),
+        None,
     );
     assert_eq!(bracket.get_matches().len(), 15);
-    let (bracket, winner_1vs8) = report(bracket, player_ids[1], (2, 0), player_ids[8]);
+    let (bracket, winner_1vs8) = report(bracket, player_ids[1], Score(2, 0), player_ids[8]);
     let bracket = bracket.validate_match_result(winner_1vs8).0;
-    let (bracket, winner_2vs7) = report(bracket, player_ids[2], (0, 2), player_ids[7]);
+    let (bracket, winner_2vs7) = report(bracket, player_ids[2], Score(0, 2), player_ids[7]);
     let bracket = bracket.validate_match_result(winner_2vs7).0;
-    let (bracket, winner_3vs6) = report(bracket, player_ids[3], (2, 0), player_ids[6]);
+    let (bracket, winner_3vs6) = report(bracket, player_ids[3], Score(2, 0), player_ids[6]);
     let bracket = bracket.validate_match_result(winner_3vs6).0;
-    let (bracket, winner_4vs5) = report(bracket, player_ids[4], (0, 2), player_ids[5]);
+    let (bracket, winner_4vs5) = report(bracket, player_ids[4], Score(0, 2), player_ids[5]);
     let bracket = bracket.validate_match_result(winner_4vs5).0;
-    let (bracket, loser_4vs8) = report(bracket, player_ids[4], (2, 0), player_ids[8]);
+    let (bracket, loser_4vs8) = report(bracket, player_ids[4], Score(2, 0), player_ids[8]);
     let bracket = bracket.validate_match_result(loser_4vs8).0;
     let (bracket, loser_2vs6, _new_matches) = bracket
-        .tournament_organiser_reports_result_dangerous(player_ids[2], (0, 2), player_ids[6])
+        .tournament_organiser_reports_result_dangerous(player_ids[2], Score(0, 2), player_ids[6])
         .expect("bracket");
     let bracket = bracket.validate_match_result(loser_2vs6).0;
     let (bracket, winner_1vs5, _new_matches) = bracket
-        .tournament_organiser_reports_result_dangerous(player_ids[1], (2, 0), player_ids[5])
+        .tournament_organiser_reports_result_dangerous(player_ids[1], Score(2, 0), player_ids[5])
         .expect("bracket");
     let bracket = bracket.validate_match_result(winner_1vs5).0;
     let (bracket, winner_3vs7, _new_matches) = bracket
-        .tournament_organiser_reports_result_dangerous(player_ids[3], (0, 2), player_ids[7])
+        .tournament_organiser_reports_result_dangerous(player_ids[3], Score(0, 2), player_ids[7])
         .expect("bracket");
     let bracket = bracket.validate_match_result(winner_3vs7).0;
     let (bracket, loser_3vs6, _new_matches) = bracket
-        .tournament_organiser_reports_result_dangerous(player_ids[3], (2, 0), player_ids[6])
+        .tournament_organiser_reports_result_dangerous(player_ids[3], Score(2, 0), player_ids[6])
         .expect("bracket");
     let bracket = bracket.validate_match_result(loser_3vs6).0;
     let (bracket, loser_4vs5, _new_matches) = bracket
-        .tournament_organiser_reports_result_dangerous(player_ids[4], (0, 2), player_ids[5])
+        .tournament_organiser_reports_result_dangerous(player_ids[4], Score(0, 2), player_ids[5])
         .expect("bracket");
     let bracket = bracket.validate_match_result(loser_4vs5).0;
     let (bracket, loser_3vs5, _new_matches) = bracket
-        .tournament_organiser_reports_result_dangerous(player_ids[3], (2, 0), player_ids[5])
+        .tournament_organiser_reports_result_dangerous(player_ids[3], Score(2, 0), player_ids[5])
         .expect("bracket");
     let bracket = bracket.validate_match_result(loser_3vs5).0;
     let (bracket, winner_1vs7, _new_matches) = bracket
-        .tournament_organiser_reports_result_dangerous(player_ids[1], (0, 2), player_ids[7])
+        .tournament_organiser_reports_result_dangerous(player_ids[1], Score(0, 2), player_ids[7])
         .expect("bracket");
     let bracket = bracket.validate_match_result(winner_1vs7).0;
     let (bracket, loser_1vs3, _new_matches) = bracket
-        .tournament_organiser_reports_result_dangerous(player_ids[1], (2, 0), player_ids[3])
+        .tournament_organiser_reports_result_dangerous(player_ids[1], Score(2, 0), player_ids[3])
         .expect("bracket");
     let bracket = bracket.validate_match_result(loser_1vs3).0;
     let (bracket, grand_finals, _new_matches) = bracket
-        .tournament_organiser_reports_result_dangerous(player_ids[1], (0, 2), player_ids[7])
+        .tournament_organiser_reports_result_dangerous(player_ids[1], Score(0, 2), player_ids[7])
         .expect("bracket");
     let bracket = bracket.validate_match_result(grand_finals).0;
     assert!(bracket.is_over(), "{bracket:?}");
@@ -231,63 +236,65 @@ fn run_8_man_bracket_with_frequent_upsets2() {
     let bracket = DoubleEliminationBracket::create(
         Seeding::new(seeding.get_player_list()).unwrap(),
         AutomaticMatchValidationMode::Strict,
+        MatchFormat::ft2(),
+        None,
     );
     assert_eq!(bracket.get_matches().len(), 15);
 
     let (bracket, winner_1vs8, _new_matches) = bracket
-        .tournament_organiser_reports_result_dangerous(p[1].get_id(), (2, 0), p[8].get_id())
+        .tournament_organiser_reports_result_dangerous(p[1].get_id(), Score(2, 0), p[8].get_id())
         .expect("bracket");
     let (bracket, _) = bracket.validate_match_result(winner_1vs8);
     let (bracket, winner_2vs7, _new_matches) = bracket
-        .tournament_organiser_reports_result_dangerous(p[2].get_id(), (0, 2), p[7].get_id())
+        .tournament_organiser_reports_result_dangerous(p[2].get_id(), Score(0, 2), p[7].get_id())
         .expect("s");
     let (bracket, _) = bracket.validate_match_result(winner_2vs7);
     let (bracket, winner_3vs6, _new_matches) = bracket
-        .tournament_organiser_reports_result_dangerous(p[3].get_id(), (2, 0), p[6].get_id())
+        .tournament_organiser_reports_result_dangerous(p[3].get_id(), Score(2, 0), p[6].get_id())
         .expect("s");
     let (bracket, _) = bracket.validate_match_result(winner_3vs6);
     let (bracket, winner_4vs5, _new_matches) = bracket
-        .tournament_organiser_reports_result_dangerous(p[4].get_id(), (0, 2), p[5].get_id())
+        .tournament_organiser_reports_result_dangerous(p[4].get_id(), Score(0, 2), p[5].get_id())
         .expect("s");
     let (bracket, _) = bracket.validate_match_result(winner_4vs5);
     let (bracket, loser_4vs8, _new_matches) = bracket
-        .tournament_organiser_reports_result_dangerous(p[4].get_id(), (2, 0), p[8].get_id())
+        .tournament_organiser_reports_result_dangerous(p[4].get_id(), Score(2, 0), p[8].get_id())
         .expect("s");
     let (bracket, _) = bracket.validate_match_result(loser_4vs8);
     let (bracket, loser_2vs6, _new_matches) = bracket
-        .tournament_organiser_reports_result_dangerous(p[2].get_id(), (0, 2), p[6].get_id())
+        .tournament_organiser_reports_result_dangerous(p[2].get_id(), Score(0, 2), p[6].get_id())
         .expect("s");
     let (bracket, _) = bracket.validate_match_result(loser_2vs6);
     let (bracket, winner_1vs5, _new_matches) = bracket
-        .tournament_organiser_reports_result_dangerous(p[1].get_id(), (2, 0), p[5].get_id())
+        .tournament_organiser_reports_result_dangerous(p[1].get_id(), Score(2, 0), p[5].get_id())
         .expect("s");
     let (bracket, _) = bracket.validate_match_result(winner_1vs5);
     let (bracket, winner_3vs7, _new_matches) = bracket
-        .tournament_organiser_reports_result_dangerous(p[3].get_id(), (0, 2), p[7].get_id())
+        .tournament_organiser_reports_result_dangerous(p[3].get_id(), Score(0, 2), p[7].get_id())
         .expect("s");
     let (bracket, _) = bracket.validate_match_result(winner_3vs7);
     let (bracket, loser_3vs6, _new_matches) = bracket
-        .tournament_organiser_reports_result_dangerous(p[3].get_id(), (2, 0), p[6].get_id())
+        .tournament_organiser_reports_result_dangerous(p[3].get_id(), Score(2, 0), p[6].get_id())
         .expect("s");
     let (bracket, _) = bracket.validate_match_result(loser_3vs6);
     let (bracket, loser_4vs5, _new_matches) = bracket
-        .tournament_organiser_reports_result_dangerous(p[4].get_id(), (0, 2), p[5].get_id())
+        .tournament_organiser_reports_result_dangerous(p[4].get_id(), Score(0, 2), p[5].get_id())
         .expect("s");
     let (bracket, _) = bracket.validate_match_result(loser_4vs5);
     let (bracket, loser_3vs5, _new_matches) = bracket
-        .tournament_organiser_reports_result_dangerous(p[3].get_id(), (2, 0), p[5].get_id())
+        .tournament_organiser_reports_result_dangerous(p[3].get_id(), Score(2, 0), p[5].get_id())
         .expect("s");
     let (bracket, _) = bracket.validate_match_result(loser_3vs5);
     let (bracket, winner_1vs7, _new_matches) = bracket
-        .tournament_organiser_reports_result_dangerous(p[1].get_id(), (0, 2), p[7].get_id())
+        .tournament_organiser_reports_result_dangerous(p[1].get_id(), Score(0, 2), p[7].get_id())
         .expect("s");
     let (bracket, _) = bracket.validate_match_result(winner_1vs7);
     let (bracket, loser_1vs3, _new_matches) = bracket
-        .tournament_organiser_reports_result_dangerous(p[1].get_id(), (2, 0), p[3].get_id())
+        .tournament_organiser_reports_result_dangerous(p[1].get_id(), Score(2, 0), p[3].get_id())
         .expect("s");
     let (bracket, _) = bracket.validate_match_result(loser_1vs3);
     let (bracket, grand_finals, _new_matches) = bracket
-        .tournament_organiser_reports_result_dangerous(p[1].get_id(), (0, 2), p[7].get_id())
+        .tournament_organiser_reports_result_dangerous(p[1].get_id(), Score(0, 2), p[7].get_id())
         .expect("s");
     let (bracket, _) = bracket.validate_match_result(grand_finals);
     assert!(bracket.is_over());

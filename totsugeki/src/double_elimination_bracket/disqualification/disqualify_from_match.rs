@@ -14,7 +14,7 @@ impl DoubleEliminationBracket {
     /// # Panics
     /// When `player_id` does not belong in bracket
     #[must_use]
-    pub fn disqualify_participant_from_match(&self, player_id: ID) -> Self {
+    pub fn disqualify_participant_from_match(&self, _player_id: ID) -> Self {
         todo!()
         // if !self.seeding.contains(player_id) {
         //     panic!("Player does not belong in bracket {player_id:?}")

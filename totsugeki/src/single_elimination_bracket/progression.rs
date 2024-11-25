@@ -2,6 +2,7 @@
 
 use crate::bracket::matches::{bracket_is_over, Error};
 use crate::bracket::progression::new_matches_to_play_for_bracket;
+use crate::matches::result::Score;
 use crate::matches::{Error as MatchError, MatchID};
 use crate::matches::{Match, ReportedResult};
 use crate::opponent::Opponent;
@@ -44,7 +45,7 @@ pub trait ProgressionSEB {
     fn report_result(
         self,
         player_id: PlayerID,
-        result: (i8, i8),
+        result: Score,
     ) -> Result<(Vec<Match>, MatchID, Vec<Match>), SingleEliminationReportResultError>;
 
     /// Tournament organiser reports result. Returns updated bracket, affected
@@ -63,7 +64,7 @@ pub trait ProgressionSEB {
     fn tournament_organiser_reports_result(
         self,
         player1: PlayerID,
-        result: (i8, i8),
+        result: Score,
         player2: PlayerID,
     ) -> Result<(SingleEliminationBracket, MatchID, Vec<Match>), SingleEliminationReportResultError>;
 
@@ -76,7 +77,7 @@ pub trait ProgressionSEB {
     fn update_player_reported_match_result(
         self,
         match_id: MatchID,
-        result: (i8, i8),
+        result: Score,
         player_id: PlayerID,
     ) -> Result<Vec<Match>, SingleEliminationReportResultError>;
 
@@ -102,7 +103,7 @@ impl ProgressionSEB for SingleEliminationBracket {
     fn report_result(
         self,
         player_id: PlayerID,
-        result: (i8, i8),
+        result: Score,
     ) -> Result<(Vec<Match>, MatchID, Vec<Match>), SingleEliminationReportResultError> {
         assert!(
             self.seeding.contains(player_id),
@@ -171,7 +172,7 @@ impl ProgressionSEB for SingleEliminationBracket {
     fn update_player_reported_match_result(
         self,
         match_id: MatchID,
-        result: (i8, i8),
+        result: Score,
         player_id: PlayerID,
     ) -> Result<Vec<Match>, SingleEliminationReportResultError> {
         let Some(m) = self.matches.iter().find(|m| m.get_id() == match_id) else {
@@ -253,7 +254,7 @@ impl ProgressionSEB for SingleEliminationBracket {
     fn tournament_organiser_reports_result(
         self,
         player1: PlayerID,
-        result: (i8, i8),
+        result: Score,
         player2: PlayerID,
     ) -> Result<(SingleEliminationBracket, MatchID, Vec<Match>), SingleEliminationReportResultError>
     {
@@ -272,6 +273,7 @@ impl ProgressionSEB for SingleEliminationBracket {
 #[cfg(test)]
 mod tests {
     use crate::bracket::seeding::Seeding;
+    use crate::matches::result::{MatchFormat, Score};
     use crate::next_opponent::NextOpponentInBracket;
     use crate::opponent::Opponent;
     use crate::player::Player;
@@ -318,20 +320,21 @@ mod tests {
         }
         let seeding = Seeding::new(seeding).unwrap();
         let auto = true;
-        let matches = get_balanced_round_matches_top_seed_favored(&seeding);
+        let matches =
+            get_balanced_round_matches_top_seed_favored(&seeding, MatchFormat::ft2(), None);
         let bracket = SingleEliminationBracket::new(seeding, matches, auto);
 
         assert_eq!(bracket.matches.len(), 2);
         assert_eq!(bracket.matches_to_play().len(), 1);
         assert_players_play_each_other(2, 3, &p, &bracket);
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[2].get_id(), (2, 0), p[3].get_id())
+            .tournament_organiser_reports_result(p[2].get_id(), Score(2, 0), p[3].get_id())
             .expect("bracket");
         assert_eq!(new_matches.len(), 1, "grand finals match generated");
         assert_players_play_each_other(1, 2, &p, &bracket);
         assert_eq!(bracket.matches_to_play().len(), 1);
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[1].get_id(), (0, 2), p[2].get_id())
+            .tournament_organiser_reports_result(p[1].get_id(), Score(0, 2), p[2].get_id())
             .expect("bracket");
         assert!(bracket.matches_to_play().is_empty());
         assert!(new_matches.is_empty());

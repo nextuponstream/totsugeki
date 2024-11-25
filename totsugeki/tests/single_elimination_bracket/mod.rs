@@ -1,6 +1,4 @@
-use totsugeki::matches::MatchID;
-use totsugeki::next_opponent::{Error, NextOpponentInBracket};
-use totsugeki::single_elimination_bracket::progression::ProgressionSEB;
+use totsugeki::next_opponent::NextOpponentInBracket;
 mod automatic_validation;
 mod disqualify_from_bracket;
 mod manual_validation;

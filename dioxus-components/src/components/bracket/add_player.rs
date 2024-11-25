@@ -7,6 +7,7 @@ use dioxus::prelude::*;
 use totsugeki::bracket::seeding::Seeding;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki::format::Format;
+use totsugeki::matches::result::MatchFormat;
 use totsugeki::player::Player;
 use totsugeki::single_elimination_bracket::SingleEliminationBracket;
 use totsugeki::validation::AutomaticMatchValidationMode;
@@ -97,6 +98,8 @@ fn add_player(
                 Seeding::new(seeding)
                     .expect("should set new seeding for single elimination bracket"),
                 true,
+                MatchFormat::ft2(),
+                None,
             );
             *single_elimination_bracket.write() = s;
         }
@@ -108,6 +111,8 @@ fn add_player(
                 Seeding::new(seeding)
                     .expect("should set new seeding for double elimination bracket"),
                 AutomaticMatchValidationMode::Flexible,
+                MatchFormat::ft2(),
+                None,
             );
             *double_elimination_bracket.write() = d;
         }

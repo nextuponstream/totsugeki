@@ -65,6 +65,7 @@ fn assert_players_play_each_other_ids(
 
 mod player_report_before_organiser {
     use super::*;
+    use totsugeki::matches::result::{MatchFormat, Score};
 
     #[test]
     fn higher_seed_reports_before_to_example2() {
@@ -82,15 +83,20 @@ mod player_report_before_organiser {
             .map(Player::get_id)
             .collect::<Vec<_>>();
 
-        let bracket = SingleEliminationBracket::create(Seeding::new(seeding).unwrap(), true);
+        let bracket = SingleEliminationBracket::create(
+            Seeding::new(seeding).unwrap(),
+            true,
+            MatchFormat::ft3(),
+            None,
+        );
         assert_players_play_each_other_ids(2, 3, &player_ids, &bracket);
 
         // player 2 reports before TO does
         let (bracket, _, _) = bracket
-            .report_result(player_ids[2], (2, 0))
+            .report_result(player_ids[2], Score(2, 0))
             .expect("matches");
         let (_, _, _) = bracket
-            .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[3])
+            .tournament_organiser_reports_result(player_ids[2], Score(2, 0), player_ids[3])
             .expect("matches");
     }
 
@@ -110,15 +116,20 @@ mod player_report_before_organiser {
             .map(Player::get_id)
             .collect::<Vec<_>>();
 
-        let bracket = SingleEliminationBracket::create(Seeding::new(seeding).unwrap(), true);
+        let bracket = SingleEliminationBracket::create(
+            Seeding::new(seeding).unwrap(),
+            true,
+            MatchFormat::ft2(),
+            None,
+        );
         assert_players_play_each_other_ids(2, 3, &player_ids, &bracket);
 
         // player 3 reports before TO does
         let (bracket, _, _) = bracket
-            .report_result(player_ids[3], (0, 2))
+            .report_result(player_ids[3], Score(0, 2))
             .expect("matches");
         let (_, _, _) = bracket
-            .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[3])
+            .tournament_organiser_reports_result(player_ids[2], Score(2, 0), player_ids[3])
             .expect("matches");
     }
 
@@ -133,14 +144,18 @@ mod player_report_before_organiser {
         }
 
         // player 2 reports before TO does
-        let bracket =
-            SingleEliminationBracket::create(Seeding::new(seeding.clone()).unwrap(), true);
+        let bracket = SingleEliminationBracket::create(
+            Seeding::new(seeding.clone()).unwrap(),
+            true,
+            MatchFormat::ft3(),
+            None,
+        );
         assert_players_play_each_other_ids(2, 3, &player_ids, &bracket);
         let (bracket, _, _) = bracket
-            .report_result(player_ids[2], (2, 0))
+            .report_result(player_ids[2], Score(2, 0))
             .expect("bracket");
         let (_, _, _) = bracket
-            .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[3])
+            .tournament_organiser_reports_result(player_ids[2], Score(2, 0), player_ids[3])
             .expect("bracket");
     }
     #[test]
@@ -154,19 +169,25 @@ mod player_report_before_organiser {
         }
 
         // player 3 reports before TO does
-        let bracket = SingleEliminationBracket::create(Seeding::new(seeding).unwrap(), true);
+        let bracket = SingleEliminationBracket::create(
+            Seeding::new(seeding).unwrap(),
+            true,
+            MatchFormat::ft3(),
+            None,
+        );
         assert_players_play_each_other_ids(2, 3, &player_ids, &bracket);
         let (bracket, _, _) = bracket
-            .report_result(player_ids[3], (0, 2))
+            .report_result(player_ids[3], Score(0, 2))
             .expect("bracket");
         let (_, _, _) = bracket
-            .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[3])
+            .tournament_organiser_reports_result(player_ids[2], Score(2, 0), player_ids[3])
             .expect("bracket");
     }
 }
 
 mod bracket_with_3_participants {
     use super::*;
+    use totsugeki::matches::result::{MatchFormat, Score};
     #[test]
     fn example1() {
         let mut p = vec![Player::new("don't use".into())]; // padding for readability
@@ -176,19 +197,24 @@ mod bracket_with_3_participants {
             p.push(player.clone());
             seeding.push(player.get_id());
         }
-        let seb = SingleEliminationBracket::create(Seeding::new(seeding).unwrap(), true);
+        let seb = SingleEliminationBracket::create(
+            Seeding::new(seeding).unwrap(),
+            true,
+            MatchFormat::ft3(),
+            None,
+        );
 
         assert_eq!(seb.get_matches().len(), 2);
         assert_eq!(seb.matches_to_play().len(), 1);
         assert_players_play_each_other(2, 3, &p, &seb);
         let (bracket, _, new_matches) = seb
-            .tournament_organiser_reports_result(p[2].get_id(), (2, 0), p[3].get_id())
+            .tournament_organiser_reports_result(p[2].get_id(), Score(2, 0), p[3].get_id())
             .expect("bracket");
         assert_eq!(new_matches.len(), 1, "grand finals match generated");
         assert_players_play_each_other(1, 2, &p, &bracket);
         assert_eq!(bracket.matches_to_play().len(), 1);
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[1].get_id(), (0, 2), p[2].get_id())
+            .tournament_organiser_reports_result(p[1].get_id(), Score(0, 2), p[2].get_id())
             .expect("bracket");
         assert!(bracket.matches_to_play().is_empty());
         assert!(new_matches.is_empty());
@@ -209,20 +235,25 @@ mod bracket_with_3_participants {
             .iter()
             .map(Player::get_id)
             .collect::<Vec<_>>();
-        let bracket = SingleEliminationBracket::create(Seeding::new(seeding).unwrap(), true);
+        let bracket = SingleEliminationBracket::create(
+            Seeding::new(seeding).unwrap(),
+            true,
+            MatchFormat::ft3(),
+            None,
+        );
 
         assert_eq!(bracket.get_matches().len(), 2);
         assert_eq!(bracket.matches_to_play().len(), 1);
         assert_players_play_each_other_ids(2, 3, &player_ids, &bracket);
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(player_ids[2], (2, 0), player_ids[3])
+            .tournament_organiser_reports_result(player_ids[2], Score(2, 0), player_ids[3])
             .expect("matches");
         assert_ne!(bracket.get_matches()[0].get_winner(), Opponent(None));
         assert_eq!(new_matches.len(), 1, "grand finals match generated");
         assert_players_play_each_other_ids(1, 2, &player_ids, &bracket);
         assert_eq!(bracket.matches_to_play().len(), 1);
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(player_ids[1], (0, 2), player_ids[2])
+            .tournament_organiser_reports_result(player_ids[1], Score(0, 2), player_ids[2])
             .expect("matches");
         assert!(bracket.matches_to_play().is_empty());
         assert!(new_matches.is_empty());
@@ -232,6 +263,7 @@ mod bracket_with_3_participants {
 
 mod bracket_with_5_participants {
     use super::*;
+    use totsugeki::matches::result::{MatchFormat, Score};
     #[test]
     fn example1() {
         let mut p = vec![Player::new("don't use".into())]; // padding for readability
@@ -241,24 +273,29 @@ mod bracket_with_5_participants {
             p.push(player.clone());
             seeding.push(player.get_id());
         }
-        let bracket = SingleEliminationBracket::create(Seeding::new(seeding).unwrap(), true);
+        let bracket = SingleEliminationBracket::create(
+            Seeding::new(seeding).unwrap(),
+            true,
+            MatchFormat::ft3(),
+            None,
+        );
 
         assert_eq!(bracket.get_matches().len(), 4);
         assert_eq!(bracket.matches_to_play().len(), 2);
         let (bracket, _, _new_matches) = bracket
-            .tournament_organiser_reports_result(p[4].get_id(), (2, 0), p[5].get_id())
+            .tournament_organiser_reports_result(p[4].get_id(), Score(2, 0), p[5].get_id())
             .expect("bracket");
         assert_eq!(bracket.matches_to_play().len(), 2);
         let (bracket, _, _new_matches) = bracket
-            .tournament_organiser_reports_result(p[2].get_id(), (0, 2), p[3].get_id())
+            .tournament_organiser_reports_result(p[2].get_id(), Score(0, 2), p[3].get_id())
             .expect("bracket");
         assert_eq!(bracket.matches_to_play().len(), 1);
         let (bracket, _, _new_matches) = bracket
-            .tournament_organiser_reports_result(p[1].get_id(), (2, 0), p[4].get_id())
+            .tournament_organiser_reports_result(p[1].get_id(), Score(2, 0), p[4].get_id())
             .expect("bracket");
         assert_eq!(bracket.matches_to_play().len(), 1);
         let (bracket, _, _new_matches) = bracket
-            .tournament_organiser_reports_result(p[1].get_id(), (2, 0), p[3].get_id())
+            .tournament_organiser_reports_result(p[1].get_id(), Score(2, 0), p[3].get_id())
             .expect("bracket");
         assert!(bracket.is_over());
         assert_eq!(bracket.matches_to_play().len(), 0);
@@ -273,28 +310,33 @@ mod bracket_with_5_participants {
             p.push(player.clone());
             seeding.push(player.get_id());
         }
-        let bracket = SingleEliminationBracket::create(Seeding::new(seeding).unwrap(), true);
+        let bracket = SingleEliminationBracket::create(
+            Seeding::new(seeding).unwrap(),
+            true,
+            MatchFormat::ft3(),
+            None,
+        );
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[5].get_id(), (2, 0), p[4].get_id())
+            .tournament_organiser_reports_result(p[5].get_id(), Score(2, 0), p[4].get_id())
             .expect("winner 4vs5");
         assert_eq!(new_matches.len(), 1, "{new_matches:?}");
         assert_next_matches(&bracket, &[], &[(1, 5), (2, 3)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[1].get_id(), (2, 1), p[5].get_id())
+            .tournament_organiser_reports_result(p[1].get_id(), Score(2, 1), p[5].get_id())
             .expect("winner 1vs5");
         assert_eq!(new_matches.len(), 0);
         assert_next_matches(&bracket, &[1], &[(2, 3)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[3].get_id(), (2, 0), p[2].get_id())
+            .tournament_organiser_reports_result(p[3].get_id(), Score(2, 0), p[2].get_id())
             .expect("winner 2vs3");
         assert_eq!(new_matches.len(), 1);
         assert_next_matches(&bracket, &[], &[(1, 3)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[3].get_id(), (2, 0), p[1].get_id())
+            .tournament_organiser_reports_result(p[3].get_id(), Score(2, 0), p[1].get_id())
             .expect("winner 1vs3");
         assert_eq!(new_matches.len(), 0);
 
@@ -318,23 +360,28 @@ mod bracket_with_5_participants {
             .map(Player::get_id)
             .collect::<Vec<_>>();
 
-        let bracket = SingleEliminationBracket::create(Seeding::new(seeding).unwrap(), true);
+        let bracket = SingleEliminationBracket::create(
+            Seeding::new(seeding).unwrap(),
+            true,
+            MatchFormat::ft3(),
+            None,
+        );
         assert_eq!(bracket.get_matches().len(), 4);
         assert_eq!(bracket.matches_to_play().len(), 2);
         let (bracket, _, _new_matches) = bracket
-            .tournament_organiser_reports_result(player_ids[4], (2, 0), player_ids[5])
+            .tournament_organiser_reports_result(player_ids[4], Score(2, 0), player_ids[5])
             .expect("bracket");
         assert_eq!(bracket.matches_to_play().len(), 2);
         let (bracket, _, _new_matches) = bracket
-            .tournament_organiser_reports_result(player_ids[2], (0, 2), player_ids[3])
+            .tournament_organiser_reports_result(player_ids[2], Score(0, 2), player_ids[3])
             .expect("bracket");
         assert_eq!(bracket.matches_to_play().len(), 1);
         let (bracket, _, _new_matches) = bracket
-            .tournament_organiser_reports_result(player_ids[1], (2, 0), player_ids[4])
+            .tournament_organiser_reports_result(player_ids[1], Score(2, 0), player_ids[4])
             .expect("bracket");
         assert_eq!(bracket.matches_to_play().len(), 1);
         let (bracket, _, _new_matches) = bracket
-            .tournament_organiser_reports_result(player_ids[1], (2, 0), player_ids[3])
+            .tournament_organiser_reports_result(player_ids[1], Score(2, 0), player_ids[3])
             .expect("bracket");
         if !bracket.is_over() {
             for m in bracket.get_matches() {
@@ -354,28 +401,33 @@ mod bracket_with_5_participants {
             p.push(player.clone());
             seeding.push(player.get_id());
         }
-        let bracket = SingleEliminationBracket::create(Seeding::new(seeding).unwrap(), true);
+        let bracket = SingleEliminationBracket::create(
+            Seeding::new(seeding).unwrap(),
+            true,
+            MatchFormat::ft3(),
+            None,
+        );
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[5].get_id(), (2, 0), p[4].get_id())
+            .tournament_organiser_reports_result(p[5].get_id(), Score(2, 0), p[4].get_id())
             .expect("winner 4vs5");
         assert_eq!(new_matches.len(), 1, "{new_matches:?}");
         assert_next_matches(&bracket, &[], &[(1, 5), (2, 3)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[1].get_id(), (2, 1), p[5].get_id())
+            .tournament_organiser_reports_result(p[1].get_id(), Score(2, 1), p[5].get_id())
             .expect("winner 1vs5");
         assert_eq!(new_matches.len(), 0);
         assert_next_matches(&bracket, &[1], &[(2, 3)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[3].get_id(), (2, 0), p[2].get_id())
+            .tournament_organiser_reports_result(p[3].get_id(), Score(2, 0), p[2].get_id())
             .expect("winner 2vs3");
         assert_eq!(new_matches.len(), 1);
         assert_next_matches(&bracket, &[], &[(1, 3)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[3].get_id(), (2, 0), p[1].get_id())
+            .tournament_organiser_reports_result(p[3].get_id(), Score(2, 0), p[1].get_id())
             .expect("winner 1vs3");
         assert_eq!(new_matches.len(), 0);
 
@@ -385,6 +437,7 @@ mod bracket_with_5_participants {
 
 mod bracket_with_8_participants {
     use super::*;
+    use totsugeki::matches::result::{MatchFormat, Score};
 
     #[test]
     fn example1() {
@@ -395,46 +448,51 @@ mod bracket_with_8_participants {
             p.push(player.clone());
             seeding.push(player.get_id());
         }
-        let bracket = SingleEliminationBracket::create(Seeding::new(seeding).unwrap(), true);
+        let bracket = SingleEliminationBracket::create(
+            Seeding::new(seeding).unwrap(),
+            true,
+            MatchFormat::ft3(),
+            None,
+        );
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[1].get_id(), (2, 0), p[8].get_id())
+            .tournament_organiser_reports_result(p[1].get_id(), Score(2, 0), p[8].get_id())
             .expect("winner 1vs8");
         assert_eq!(new_matches.len(), 0);
         assert_next_matches(&bracket, &[1], &[(2, 7), (3, 6), (4, 5)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[2].get_id(), (2, 0), p[7].get_id())
+            .tournament_organiser_reports_result(p[2].get_id(), Score(2, 0), p[7].get_id())
             .expect("winner 2vs7");
         assert_eq!(new_matches.len(), 0);
         assert_next_matches(&bracket, &[1, 2], &[(3, 6), (4, 5)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[5].get_id(), (2, 0), p[4].get_id())
+            .tournament_organiser_reports_result(p[5].get_id(), Score(2, 0), p[4].get_id())
             .expect("winner 4vs5");
         assert_eq!(new_matches.len(), 1);
         assert_next_matches(&bracket, &[2], &[(3, 6), (1, 5)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[5].get_id(), (2, 0), p[1].get_id())
+            .tournament_organiser_reports_result(p[5].get_id(), Score(2, 0), p[1].get_id())
             .expect("winner 1vs5");
         assert_eq!(new_matches.len(), 0);
         assert_next_matches(&bracket, &[2, 5], &[(3, 6)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[6].get_id(), (2, 0), p[3].get_id())
+            .tournament_organiser_reports_result(p[6].get_id(), Score(2, 0), p[3].get_id())
             .expect("winner 3vs6");
         assert_eq!(new_matches.len(), 1);
         assert_next_matches(&bracket, &[5], &[(2, 6)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[6].get_id(), (2, 0), p[2].get_id())
+            .tournament_organiser_reports_result(p[6].get_id(), Score(2, 0), p[2].get_id())
             .expect("winner 2vs6");
         assert_eq!(new_matches.len(), 1);
         assert_next_matches(&bracket, &[], &[(5, 6)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[5].get_id(), (2, 0), p[6].get_id())
+            .tournament_organiser_reports_result(p[5].get_id(), Score(2, 0), p[6].get_id())
             .expect("winner 5vs6");
         assert_eq!(new_matches.len(), 0);
 
@@ -452,46 +510,51 @@ mod bracket_with_8_participants {
             seeding.push(player.get_id());
             bad_seeding = bad_seeding.add_participant(player).expect("new player");
         }
-        let bracket = SingleEliminationBracket::create(Seeding::new(seeding).unwrap(), true);
+        let bracket = SingleEliminationBracket::create(
+            Seeding::new(seeding).unwrap(),
+            true,
+            MatchFormat::ft3(),
+            None,
+        );
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[1].get_id(), (2, 0), p[8].get_id())
+            .tournament_organiser_reports_result(p[1].get_id(), Score(2, 0), p[8].get_id())
             .expect("winner 1vs8");
         assert_eq!(new_matches.len(), 0);
         assert_next_matches(&bracket, &[1], &[(2, 7), (3, 6), (4, 5)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[2].get_id(), (2, 0), p[7].get_id())
+            .tournament_organiser_reports_result(p[2].get_id(), Score(2, 0), p[7].get_id())
             .expect("winner 2vs7");
         assert_eq!(new_matches.len(), 0);
         assert_next_matches(&bracket, &[1, 2], &[(3, 6), (4, 5)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[5].get_id(), (2, 0), p[4].get_id())
+            .tournament_organiser_reports_result(p[5].get_id(), Score(2, 0), p[4].get_id())
             .expect("winner 4vs5");
         assert_eq!(new_matches.len(), 1);
         assert_next_matches(&bracket, &[2], &[(3, 6), (1, 5)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[5].get_id(), (2, 0), p[1].get_id())
+            .tournament_organiser_reports_result(p[5].get_id(), Score(2, 0), p[1].get_id())
             .expect("winner 1vs5");
         assert_eq!(new_matches.len(), 0);
         assert_next_matches(&bracket, &[2, 5], &[(3, 6)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[6].get_id(), (2, 0), p[3].get_id())
+            .tournament_organiser_reports_result(p[6].get_id(), Score(2, 0), p[3].get_id())
             .expect("winner 3vs6");
         assert_eq!(new_matches.len(), 1);
         assert_next_matches(&bracket, &[5], &[(2, 6)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[6].get_id(), (2, 0), p[2].get_id())
+            .tournament_organiser_reports_result(p[6].get_id(), Score(2, 0), p[2].get_id())
             .expect("winner 2vs6");
         assert_eq!(new_matches.len(), 1);
         assert_next_matches(&bracket, &[], &[(5, 6)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[5].get_id(), (2, 0), p[6].get_id())
+            .tournament_organiser_reports_result(p[5].get_id(), Score(2, 0), p[6].get_id())
             .expect("winner 5vs6");
         assert_eq!(new_matches.len(), 0);
 
@@ -501,6 +564,7 @@ mod bracket_with_8_participants {
 
 mod bracket_with_9_participants {
     use super::*;
+    use totsugeki::matches::result::{MatchFormat, Score};
 
     #[test]
     fn example1() {
@@ -511,52 +575,57 @@ mod bracket_with_9_participants {
             p.push(player.clone());
             seeding.push(player.get_id());
         }
-        let bracket = SingleEliminationBracket::create(Seeding::new(seeding).unwrap(), true);
+        let bracket = SingleEliminationBracket::create(
+            Seeding::new(seeding).unwrap(),
+            true,
+            MatchFormat::ft3(),
+            None,
+        );
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[5].get_id(), (2, 0), p[4].get_id())
+            .tournament_organiser_reports_result(p[5].get_id(), Score(2, 0), p[4].get_id())
             .expect("winner 4vs5");
         assert_eq!(new_matches.len(), 0);
         assert_next_matches(&bracket, &[1, 5], &[(8, 9), (3, 6), (2, 7)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[9].get_id(), (2, 0), p[8].get_id())
+            .tournament_organiser_reports_result(p[9].get_id(), Score(2, 0), p[8].get_id())
             .expect("winner 8vs9");
         assert_eq!(new_matches.len(), 1);
         assert_next_matches(&bracket, &[5], &[(1, 9), (3, 6), (2, 7)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[3].get_id(), (2, 0), p[6].get_id())
+            .tournament_organiser_reports_result(p[3].get_id(), Score(2, 0), p[6].get_id())
             .expect("winner 3vs6");
         assert_eq!(new_matches.len(), 0);
         assert_next_matches(&bracket, &[3, 5], &[(1, 9), (2, 7)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[7].get_id(), (2, 0), p[2].get_id())
+            .tournament_organiser_reports_result(p[7].get_id(), Score(2, 0), p[2].get_id())
             .expect("winner 3vs6");
         assert_eq!(new_matches.len(), 1);
         assert_next_matches(&bracket, &[5], &[(1, 9), (3, 7)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[3].get_id(), (2, 0), p[7].get_id())
+            .tournament_organiser_reports_result(p[3].get_id(), Score(2, 0), p[7].get_id())
             .expect("winner 3vs7");
         assert_eq!(new_matches.len(), 0);
         assert_next_matches(&bracket, &[3, 5], &[(1, 9)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[9].get_id(), (2, 0), p[1].get_id())
+            .tournament_organiser_reports_result(p[9].get_id(), Score(2, 0), p[1].get_id())
             .expect("winner 1vs9");
         assert_eq!(new_matches.len(), 1);
         assert_next_matches(&bracket, &[3], &[(9, 5)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[9].get_id(), (2, 0), p[5].get_id())
+            .tournament_organiser_reports_result(p[9].get_id(), Score(2, 0), p[5].get_id())
             .expect("winner 5vs9");
         assert_eq!(new_matches.len(), 1);
         assert_next_matches(&bracket, &[], &[(3, 9)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[3].get_id(), (2, 0), p[9].get_id())
+            .tournament_organiser_reports_result(p[3].get_id(), Score(2, 0), p[9].get_id())
             .expect("winner 3vs9");
         assert_eq!(new_matches.len(), 0);
 
@@ -572,52 +641,57 @@ mod bracket_with_9_participants {
             p.push(player.clone());
             seeding.push(player.get_id());
         }
-        let bracket = SingleEliminationBracket::create(Seeding::new(seeding).unwrap(), true);
+        let bracket = SingleEliminationBracket::create(
+            Seeding::new(seeding).unwrap(),
+            true,
+            MatchFormat::ft3(),
+            None,
+        );
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[5].get_id(), (2, 0), p[4].get_id())
+            .tournament_organiser_reports_result(p[5].get_id(), Score(2, 0), p[4].get_id())
             .expect("winner 4vs5");
         assert_eq!(new_matches.len(), 0);
         assert_next_matches(&bracket, &[1, 5], &[(8, 9), (3, 6), (2, 7)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[9].get_id(), (2, 0), p[8].get_id())
+            .tournament_organiser_reports_result(p[9].get_id(), Score(2, 0), p[8].get_id())
             .expect("winner 8vs9");
         assert_eq!(new_matches.len(), 1);
         assert_next_matches(&bracket, &[5], &[(1, 9), (3, 6), (2, 7)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[3].get_id(), (2, 0), p[6].get_id())
+            .tournament_organiser_reports_result(p[3].get_id(), Score(2, 0), p[6].get_id())
             .expect("winner 3vs6");
         assert_eq!(new_matches.len(), 0);
         assert_next_matches(&bracket, &[3, 5], &[(1, 9), (2, 7)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[7].get_id(), (2, 0), p[2].get_id())
+            .tournament_organiser_reports_result(p[7].get_id(), Score(2, 0), p[2].get_id())
             .expect("winner 3vs6");
         assert_eq!(new_matches.len(), 1);
         assert_next_matches(&bracket, &[5], &[(1, 9), (3, 7)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[3].get_id(), (2, 0), p[7].get_id())
+            .tournament_organiser_reports_result(p[3].get_id(), Score(2, 0), p[7].get_id())
             .expect("winner 3vs7");
         assert_eq!(new_matches.len(), 0);
         assert_next_matches(&bracket, &[3, 5], &[(1, 9)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[9].get_id(), (2, 0), p[1].get_id())
+            .tournament_organiser_reports_result(p[9].get_id(), Score(2, 0), p[1].get_id())
             .expect("winner 1vs9");
         assert_eq!(new_matches.len(), 1);
         assert_next_matches(&bracket, &[3], &[(9, 5)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[9].get_id(), (2, 0), p[5].get_id())
+            .tournament_organiser_reports_result(p[9].get_id(), Score(2, 0), p[5].get_id())
             .expect("winner 5vs9");
         assert_eq!(new_matches.len(), 1);
         assert_next_matches(&bracket, &[], &[(3, 9)], &p);
 
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(p[3].get_id(), (2, 0), p[9].get_id())
+            .tournament_organiser_reports_result(p[3].get_id(), Score(2, 0), p[9].get_id())
             .expect("winner 3vs9");
         assert_eq!(new_matches.len(), 0);
 

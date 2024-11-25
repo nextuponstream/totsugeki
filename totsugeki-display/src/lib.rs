@@ -11,6 +11,7 @@
 #![forbid(unsafe_code)]
 
 use serde::{Deserialize, Serialize};
+use totsugeki::matches::result::Score;
 use totsugeki::matches::{Match, MatchID, ReportedResult};
 use totsugeki::opponent::Opponent;
 use totsugeki::player::{Player, PlayerID};
@@ -82,7 +83,7 @@ impl MinimalMatch {
 
     /// Get scores of match
     #[must_use]
-    pub fn get_score(&self) -> Option<(i8, i8)> {
+    pub fn get_score(&self) -> Option<Score> {
         self.score.0
     }
 

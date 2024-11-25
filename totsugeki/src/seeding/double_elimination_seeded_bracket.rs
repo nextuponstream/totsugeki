@@ -2,7 +2,9 @@
 
 use std::ops::ControlFlow;
 
+use crate::bracket::late_bracket_configuration::LateBracketConfiguration;
 use crate::bracket::seeding::Seeding;
+use crate::matches::result::MatchFormat;
 use crate::player::PlayerID;
 use crate::{matches::Match, seeding::Error};
 
@@ -37,7 +39,11 @@ fn get_seed_of(player: PlayerID, seeding: &Seeding) -> usize {
 ///
 /// # Errors
 /// thrown when math overflow happens
-pub fn get_loser_bracket_matches_top_seed_favored(seeding: &Seeding) -> Result<Vec<Match>, Error> {
+pub fn get_loser_bracket_matches_top_seed_favored(
+    seeding: &Seeding,
+    match_format: MatchFormat,
+    late_bracket_configuration: Option<LateBracketConfiguration>,
+) -> Result<Vec<Match>, Error> {
     let losers_by_round = match partition_players_of_loser_bracket(seeding) {
         Ok(value) => value,
         Err(value) => return value,
@@ -61,8 +67,12 @@ pub fn get_loser_bracket_matches_top_seed_favored(seeding: &Seeding) -> Result<V
 
         let tmp = incoming_players_of_this_wave.clone();
         let wave = form_wave(&tmp)?;
-        let (p_with_bye, p_without_bye) =
-            generate_matches_of_first_round_in_wave(wave, &seeding, &mut matches);
+        let (p_with_bye, p_without_bye) = generate_matches_of_first_round_in_wave(
+            wave,
+            &seeding,
+            &mut matches,
+            MatchFormat::ft3(),
+        );
 
         let Some(remaining) = fun_name(
             p_without_bye,
@@ -81,7 +91,7 @@ pub fn get_loser_bracket_matches_top_seed_favored(seeding: &Seeding) -> Result<V
         for (o1, o2) in expected_winners.iter().zip(other_opponents.iter()) {
             let seed_o1 = get_seed_of(*o1, &seeding);
             let seed_o2 = get_seed_of(*o2, &seeding);
-            let m = Match::new_looser_bracket_match([seed_o1, seed_o2]);
+            let m = Match::new_looser_bracket_match([seed_o1, seed_o2], match_format);
             matches.push(m);
         }
 
@@ -98,12 +108,12 @@ pub fn get_loser_bracket_matches_top_seed_favored(seeding: &Seeding) -> Result<V
         for (o1, o2) in expected_winners.iter().zip(expected_loosers.iter()) {
             let seed_o1 = get_seed_of(*o1, seeding);
             let seed_o2 = get_seed_of(*o2, seeding);
-            let m = Match::new_looser_bracket_match([seed_o1, seed_o2]);
+            let m = Match::new_looser_bracket_match([seed_o1, seed_o2], match_format);
             matches.push(m);
         }
 
         if expected_winners.len() == 2 {
-            matches.push(Match::new_looser_bracket_match([2, 3]));
+            matches.push(Match::new_looser_bracket_match([2, 3], match_format));
         }
     }
 
@@ -137,6 +147,7 @@ fn generate_matches_of_first_round_in_wave<'a>(
     wave: Wave<'a>,
     seeding: &'a Seeding,
     matches: &'a mut Vec<Match>,
+    match_format: MatchFormat,
 ) -> (&'a [PlayerID], &'a [PlayerID]) {
     let p_with_bye = wave.players_with_bye;
     let p_without_bye = wave.players_without_bye;
@@ -145,7 +156,7 @@ fn generate_matches_of_first_round_in_wave<'a>(
     for (o1, o2) in expected_winners.iter().zip(expected_losers.iter()) {
         let seed_o1 = get_seed_of(*o1, seeding);
         let seed_o2 = get_seed_of(*o2, seeding);
-        let m = Match::new_looser_bracket_match([seed_o1, seed_o2]);
+        let m = Match::new_looser_bracket_match([seed_o1, seed_o2], match_format);
         matches.push(m);
     }
     (p_with_bye, p_without_bye)
@@ -246,11 +257,15 @@ fn partition_players_of_loser_bracket(
 
 #[cfg(test)]
 mod tests {
+    use crate::bracket::seeding::Seeding;
+    use crate::double_elimination_bracket::DoubleEliminationBracket;
     use crate::format::Format;
+    use crate::matches::result::MatchFormat;
     use crate::matches::{Match, MatchID};
     use crate::opponent::Opponent;
     use crate::player::{Participants, Player};
     use crate::seeding::double_elimination_seeded_bracket::get_loser_bracket_matches_top_seed_favored;
+    use crate::validation::AutomaticMatchValidationMode;
 
     #[test]
     fn matches_generation_3_man() {
@@ -266,9 +281,13 @@ mod tests {
         players.push(Player::new("don't use".into()));
         players.reverse();
 
-        let matches = Format::DoubleEliminationBracket
-            .generate_matches(&participants.get_seeding())
-            .expect("matches");
+        let double_elimination_bracket = DoubleEliminationBracket::create(
+            participants.get_seeding(),
+            AutomaticMatchValidationMode::Flexible,
+            MatchFormat::ft3(),
+            None,
+        );
+        let matches = double_elimination_bracket.get_matches();
         let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches,
@@ -283,6 +302,7 @@ mod tests {
                     winner: Opponent(None),
                     automatic_loser: Opponent(None),
                     reported_results: [None, None],
+                    format: MatchFormat::ft3(),
                 },
                 Match {
                     id: match_ids.pop().expect("id"),
@@ -291,10 +311,23 @@ mod tests {
                     winner: Opponent(None),
                     automatic_loser: Opponent(None),
                     reported_results: [None, None],
+                    format: MatchFormat::ft3(),
                 },
-                Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3]),
-                Match::looser_bracket_match(match_ids.pop().expect("id"), [1, 2]),
-                Match::looser_bracket_match(match_ids.pop().expect("id"), [1, 2]),
+                Match::looser_bracket_match(
+                    match_ids.pop().expect("id"),
+                    [2, 3],
+                    MatchFormat::ft3()
+                ),
+                Match::looser_bracket_match(
+                    match_ids.pop().expect("id"),
+                    [1, 2],
+                    MatchFormat::ft3()
+                ),
+                Match::looser_bracket_match(
+                    match_ids.pop().expect("id"),
+                    [1, 2],
+                    MatchFormat::ft3()
+                ),
             ],
             "returned {} matches with expected count of 5",
             matches.len()
@@ -311,15 +344,27 @@ mod tests {
             participants = participants.add_participant(player).expect("participant");
         }
 
-        let matches = get_loser_bracket_matches_top_seed_favored(&participants.get_seeding())
-            .expect("matches");
+        let matches = get_loser_bracket_matches_top_seed_favored(
+            &participants.get_seeding(),
+            MatchFormat::ft3(),
+            None,
+        )
+        .expect("matches");
         let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(matches.len(), 2, "expected 2 matches, got: {matches:?}");
         assert_eq!(
             matches,
             vec![
-                Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4]),
-                Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3]),
+                Match::looser_bracket_match(
+                    match_ids.pop().expect("id"),
+                    [3, 4],
+                    MatchFormat::ft3()
+                ),
+                Match::looser_bracket_match(
+                    match_ids.pop().expect("id"),
+                    [2, 3],
+                    MatchFormat::ft3()
+                ),
             ],
             "returned {} matches with expected count of 2",
             matches.len()
@@ -336,8 +381,12 @@ mod tests {
             participants = participants.add_participant(player).expect("participant");
         }
 
-        let matches = get_loser_bracket_matches_top_seed_favored(&participants.get_seeding())
-            .expect("matches");
+        let matches = get_loser_bracket_matches_top_seed_favored(
+            &participants.get_seeding(),
+            MatchFormat::ft3(),
+            None,
+        )
+        .expect("matches");
         let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
@@ -351,9 +400,21 @@ mod tests {
         assert_eq!(
             matches,
             vec![
-                Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5]),
-                Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4]),
-                Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3]),
+                Match::looser_bracket_match(
+                    match_ids.pop().expect("id"),
+                    [4, 5],
+                    MatchFormat::ft3()
+                ),
+                Match::looser_bracket_match(
+                    match_ids.pop().expect("id"),
+                    [3, 4],
+                    MatchFormat::ft3()
+                ),
+                Match::looser_bracket_match(
+                    match_ids.pop().expect("id"),
+                    [2, 3],
+                    MatchFormat::ft3()
+                ),
             ],
         );
     }
@@ -368,8 +429,12 @@ mod tests {
             participants = participants.add_participant(player).expect("participant");
         }
 
-        let matches = get_loser_bracket_matches_top_seed_favored(&participants.get_seeding())
-            .expect("matches");
+        let matches = get_loser_bracket_matches_top_seed_favored(
+            &participants.get_seeding(),
+            MatchFormat::ft3(),
+            None,
+        )
+        .expect("matches");
         let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
@@ -381,10 +446,10 @@ mod tests {
                 .collect::<Vec<[usize; 2]>>()
         );
         let expected_matches = vec![
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3], MatchFormat::ft3()),
         ];
 
         assert_eq!(
@@ -412,8 +477,12 @@ mod tests {
             participants = participants.add_participant(player).expect("participant");
         }
 
-        let matches = get_loser_bracket_matches_top_seed_favored(&participants.get_seeding())
-            .expect("matches");
+        let matches = get_loser_bracket_matches_top_seed_favored(
+            &participants.get_seeding(),
+            MatchFormat::ft3(),
+            None,
+        )
+        .expect("matches");
         let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
@@ -425,11 +494,11 @@ mod tests {
                 .collect::<Vec<[usize; 2]>>(),
         );
         let expected_matches = vec![
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 7]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 7], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3], MatchFormat::ft3()),
         ];
 
         assert_eq!(
@@ -457,8 +526,12 @@ mod tests {
             participants = participants.add_participant(player).expect("participant");
         }
 
-        let matches = get_loser_bracket_matches_top_seed_favored(&participants.get_seeding())
-            .expect("matches");
+        let matches = get_loser_bracket_matches_top_seed_favored(
+            &participants.get_seeding(),
+            MatchFormat::ft3(),
+            None,
+        )
+        .expect("matches");
         let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
@@ -470,12 +543,12 @@ mod tests {
                 .collect::<Vec<[usize; 2]>>(),
         );
         let expected_matches = vec![
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 8]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 7]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 8], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 7], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3], MatchFormat::ft3()),
         ];
 
         assert_eq!(
@@ -503,8 +576,12 @@ mod tests {
             participants = participants.add_participant(player).expect("participant");
         }
 
-        let matches = get_loser_bracket_matches_top_seed_favored(&participants.get_seeding())
-            .expect("matches");
+        let matches = get_loser_bracket_matches_top_seed_favored(
+            &participants.get_seeding(),
+            MatchFormat::ft3(),
+            None,
+        )
+        .expect("matches");
         let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
@@ -516,13 +593,13 @@ mod tests {
                 .collect::<Vec<[usize; 2]>>(),
         );
         let expected_matches = vec![
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [8, 9]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 8]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 7]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [8, 9], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 8], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 7], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3], MatchFormat::ft3()),
         ];
 
         assert_eq!(
@@ -550,8 +627,12 @@ mod tests {
             participants = participants.add_participant(player).expect("participant");
         }
 
-        let matches = get_loser_bracket_matches_top_seed_favored(&participants.get_seeding())
-            .expect("matches");
+        let matches = get_loser_bracket_matches_top_seed_favored(
+            &participants.get_seeding(),
+            MatchFormat::ft3(),
+            None,
+        )
+        .expect("matches");
         let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
@@ -563,14 +644,14 @@ mod tests {
                 .collect::<Vec<[usize; 2]>>(),
         );
         let expected_matches = vec![
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [7, 10]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [8, 9]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 8]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 7]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [7, 10], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [8, 9], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 8], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 7], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3], MatchFormat::ft3()),
         ];
 
         assert_eq!(
@@ -598,8 +679,12 @@ mod tests {
             participants = participants.add_participant(player).expect("participant");
         }
 
-        let matches = get_loser_bracket_matches_top_seed_favored(&participants.get_seeding())
-            .expect("matches");
+        let matches = get_loser_bracket_matches_top_seed_favored(
+            &participants.get_seeding(),
+            MatchFormat::ft3(),
+            None,
+        )
+        .expect("matches");
         let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
@@ -611,15 +696,15 @@ mod tests {
                 .collect::<Vec<[usize; 2]>>(),
         );
         let expected_matches = vec![
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 11]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [7, 10]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [8, 9]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 8]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 7]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 11], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [7, 10], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [8, 9], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 8], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 7], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3], MatchFormat::ft3()),
         ];
 
         assert_eq!(
@@ -647,8 +732,12 @@ mod tests {
             participants = participants.add_participant(player).expect("participant");
         }
 
-        let matches = get_loser_bracket_matches_top_seed_favored(&participants.get_seeding())
-            .expect("matches");
+        let matches = get_loser_bracket_matches_top_seed_favored(
+            &participants.get_seeding(),
+            MatchFormat::ft3(),
+            None,
+        )
+        .expect("matches");
         let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
@@ -660,16 +749,16 @@ mod tests {
                 .collect::<Vec<[usize; 2]>>(),
         );
         let expected_matches = vec![
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 12]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 11]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [7, 10]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [8, 9]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 8]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 7]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 12], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 11], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [7, 10], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [8, 9], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 8], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 7], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3], MatchFormat::ft3()),
         ];
 
         assert_eq!(
@@ -697,8 +786,12 @@ mod tests {
             participants = participants.add_participant(player).expect("participant");
         }
 
-        let matches = get_loser_bracket_matches_top_seed_favored(&participants.get_seeding())
-            .expect("matches");
+        let matches = get_loser_bracket_matches_top_seed_favored(
+            &participants.get_seeding(),
+            MatchFormat::ft3(),
+            None,
+        )
+        .expect("matches");
         let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
@@ -710,20 +803,20 @@ mod tests {
                 .collect::<Vec<[usize; 2]>>(),
         );
         let expected_matches = vec![
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [9, 16]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [10, 15]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [11, 14]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [12, 13]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 12]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 11]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [7, 10]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [8, 9]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 8]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 7]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4]),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3]),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [9, 16], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [10, 15], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [11, 14], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [12, 13], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 12], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 11], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [7, 10], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [8, 9], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 8], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 7], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4], MatchFormat::ft3()),
+            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3], MatchFormat::ft3()),
         ];
 
         assert_eq!(

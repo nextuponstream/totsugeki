@@ -3,8 +3,9 @@
 use crate::bracket::matches::{update_bracket_with, Error};
 use crate::bracket::progression::{new_matches_to_play_for_bracket, winner_of_bracket};
 use crate::double_elimination_bracket::DoubleEliminationBracket;
+use crate::matches::result::Score;
 use crate::matches::{
-    double_elimination_matches_from_partition, BracketResult, Id, Match, MatchID, ReportedResult,
+    double_elimination_matches_from_partition, Match, MatchID, MatchResult, ReportedResult,
 };
 use crate::opponent::Opponent;
 use crate::player::PlayerID;
@@ -27,52 +28,10 @@ pub enum DoubleEliminationReportResultError {
     //  they won
     #[error("Player has no match to play yet {0}")]
     NoMatchToPlay(PlayerID),
-    // /// Match result was reported and validated already.
-    // // FIXME add test where reporting twice for match results in error
-    // #[error("Match results already validated")]
-    // ResultValidatedAlready,
 }
 
 /// All methods to update matches of an ongoing double elimination bracket
 pub trait ProgressionDEB {
-    /// Tournament organiser reports result for a given match
-    ///
-    /// # Errors
-    /// FIXME add test Reporting twice the same results
-    fn tournament_organiser_reports_result(
-        self,
-        match_id: MatchID,
-        player1: PlayerID,
-        bracket_result: BracketResult,
-        player2: PlayerID,
-    ) -> Result<(DoubleEliminationBracket, Id, Vec<Match>), DoubleEliminationReportResultError>;
-
-    /// Tournament organiser reports result. Returns bracket, affected match ID and new matches
-    ///
-    /// NOTE: both players are needed, so it is less ambiguous when reading code:
-    /// * p1 2-0 is more ambiguous to read than
-    /// * p1 2-0 p2
-    ///
-    /// Technically, it's unnecessary.
-    ///
-    /// This method is dangerous because in a double-elimination bracket, it's
-    /// possible that a player plays against the same opponent twice, like grand
-    /// finals into grand final reset. If a request to update grand finals is
-    /// sent twice by accident, then grand finals AND grand final reset match
-    /// may get updated. While this is a niche corner case, you may want to use
-    /// the safer method `tournament_organiser_reports_result`
-    ///
-    /// # Panics
-    /// When either `player1` or `player2` is unknown
-    /// # Error
-    /// FIXME add test Reporting result for people that are not playing each other
-    fn tournament_organiser_reports_result_dangerous(
-        self,
-        player1: PlayerID,
-        result: (i8, i8),
-        player2: PlayerID,
-    ) -> Result<(DoubleEliminationBracket, MatchID, Vec<Match>), DoubleEliminationReportResultError>;
-
     /// Tournament organiser reports `result` for match where `player` is involved.
     ///
     /// Example: player says "I won 2-0" or "I lost 0-2, but it was close though"
@@ -87,7 +46,7 @@ pub trait ProgressionDEB {
     fn tournament_organiser_reports_result_for_single_player_dangerous(
         self,
         player: PlayerID,
-        bracket_result: BracketResult,
+        bracket_result: MatchResult,
     ) -> Result<(DoubleEliminationBracket, MatchID, Vec<Match>), DoubleEliminationReportResultError>;
 
     /// Report result of player.
@@ -101,7 +60,7 @@ pub trait ProgressionDEB {
     fn report_result_dangerous(
         self,
         player_id: PlayerID,
-        result: (i8, i8),
+        result: Score,
     ) -> Result<(Vec<Match>, MatchID, Vec<Match>), DoubleEliminationReportResultError>;
 
     /// Update `match_id` with reported `result` of `player`
@@ -114,7 +73,7 @@ pub trait ProgressionDEB {
     fn update_player_reported_match_result(
         self,
         match_id: MatchID,
-        result: (i8, i8),
+        result: Score,
         player_id: PlayerID,
     ) -> Self;
 
@@ -147,92 +106,10 @@ pub trait ProgressionDEB {
 }
 
 impl ProgressionDEB for DoubleEliminationBracket {
-    fn tournament_organiser_reports_result(
-        self,
-        match_id: MatchID,
-        player1: PlayerID,
-        bracket_result: BracketResult,
-        player2: PlayerID,
-    ) -> Result<(DoubleEliminationBracket, Id, Vec<Match>), DoubleEliminationReportResultError>
-    {
-        todo!()
-    }
-
-    fn tournament_organiser_reports_result_dangerous(
-        self,
-        player1: PlayerID,
-        result: (i8, i8),
-        player2: PlayerID,
-    ) -> Result<(DoubleEliminationBracket, MatchID, Vec<Match>), DoubleEliminationReportResultError>
-    {
-        assert!(
-            self.seeding.contains(player1),
-            "{player1} does not belong in bracket"
-        );
-        assert!(
-            self.seeding.contains(player2),
-            "{player2} does not belong in bracket"
-        );
-        // clear reported results
-        let bracket = self.clone().clear_reported_result(player1);
-        let bracket = bracket.clear_reported_result(player2);
-
-        let matches_where_player1_is_playing: Vec<Match> = bracket
-            .matches
-            .clone()
-            .into_iter()
-            .filter(|m| m.contains(player1) && !m.is_over())
-            .collect();
-        assert!(
-            matches_where_player1_is_playing.len() <= 1,
-            "player 1 {player1} is involved in only 1 match but they are involved in {matches_where_player1_is_playing:?}",
-        );
-        let matches_where_player2_is_playing: Vec<Match> = bracket
-            .clone()
-            .matches
-            .into_iter()
-            .filter(|m| m.contains(player2) && !m.is_over())
-            .collect();
-        assert!(
-            matches_where_player2_is_playing.len() <= 1,
-            "player 2 {player2} is involved in only 1 match but they are involved in {:?}",
-            matches_where_player2_is_playing
-        );
-
-        // report score as p1
-        // FIXME should return bracket
-        let result_player_1 = ReportedResult(Some(result));
-        let (matches, first_affected_match, _new_matches) = bracket
-            .report_result_dangerous(player1, result_player_1.0.expect("result"))
-            .expect("matches");
-
-        // report same score as p2
-        let bracket = DoubleEliminationBracket::new(
-            matches,
-            self.seeding.clone(),
-            self.automatic_match_validation_mode,
-        );
-
-        let (matches, second_affected_match, new_matches) = bracket
-            .report_result_dangerous(player2, result_player_1.reverse().0.expect("result"))?;
-
-        assert_eq!(first_affected_match, second_affected_match);
-
-        Ok((
-            DoubleEliminationBracket::new(
-                matches,
-                self.seeding,
-                self.automatic_match_validation_mode,
-            ),
-            first_affected_match,
-            new_matches,
-        ))
-    }
-
     fn tournament_organiser_reports_result_for_single_player_dangerous(
         self,
         player_left: PlayerID,
-        bracket_result: BracketResult,
+        bracket_result: MatchResult,
     ) -> Result<(DoubleEliminationBracket, MatchID, Vec<Match>), DoubleEliminationReportResultError>
     {
         todo!()
@@ -241,7 +118,7 @@ impl ProgressionDEB for DoubleEliminationBracket {
     fn report_result_dangerous(
         self,
         player_id: PlayerID,
-        result: (i8, i8),
+        result: Score,
     ) -> Result<(Vec<Match>, MatchID, Vec<Match>), DoubleEliminationReportResultError> {
         assert!(self.seeding.contains(player_id));
         if crate::bracket::matches::is_disqualified(player_id, &self.matches) {
@@ -286,7 +163,7 @@ impl ProgressionDEB for DoubleEliminationBracket {
     fn update_player_reported_match_result(
         self,
         match_id: MatchID,
-        result: (i8, i8),
+        result: Score,
         player_id: PlayerID,
     ) -> Self {
         let Some(m) = self.matches.iter().find(|m| m.get_id() == match_id) else {
@@ -368,7 +245,7 @@ impl ProgressionDEB for DoubleEliminationBracket {
                 (Opponent(Some(disqualified)), Some(winner_of_winner_bracket), true)
                     if disqualified == winner_of_winner_bracket =>
                 {
-                    Match::new(gf.get_players(), [1, 2])
+                    Match::new(gf.get_players(), [1, 2], gf.format)
                         .expect("grand final reset")
                         .set_automatic_loser(winner_of_winner_bracket)
                         .update_outcome()
@@ -569,5 +446,97 @@ fn update_grand_finals_or_reset(
             Ok([winner_bracket, loser_bracket, vec![gf, gf_reset]].concat())
         }
         _ => panic!("expected GF or GF reset but got other match: {match_id}"),
+    }
+}
+
+impl DoubleEliminationBracket {
+    /// Tournament organiser reports result. Returns bracket, affected match ID and new matches
+    ///
+    /// NOTE: both players are needed, so it is less ambiguous when reading code:
+    /// * p1 2-0 is more ambiguous to read than
+    /// * p1 2-0 p2
+    ///
+    /// Technically, it's unnecessary.
+    ///
+    /// This method is dangerous because in a double-elimination bracket, it's
+    /// possible that a player plays against the same opponent twice, like grand
+    /// finals into grand final reset. If a request to update grand finals is
+    /// sent twice by accident, then grand finals AND grand final reset match
+    /// may get updated. While this is a niche corner case, you may want to use
+    /// the safer method `tournament_organiser_reports_result`
+    ///
+    /// # Panics
+    /// When either `player1` or `player2` is unknown
+    /// # Error
+    /// FIXME add test Reporting result for people that are not playing each other
+    pub fn tournament_organiser_reports_result_dangerous(
+        self,
+        player1: PlayerID,
+        result: Score,
+        player2: PlayerID,
+    ) -> Result<(DoubleEliminationBracket, MatchID, Vec<Match>), DoubleEliminationReportResultError>
+    {
+        assert!(
+            self.seeding.contains(player1),
+            "{player1} does not belong in bracket"
+        );
+        assert!(
+            self.seeding.contains(player2),
+            "{player2} does not belong in bracket"
+        );
+        // clear reported results
+        let bracket = self.clone().clear_reported_result(player1);
+        let bracket = bracket.clear_reported_result(player2);
+
+        let matches_where_player1_is_playing: Vec<Match> = bracket
+            .matches
+            .clone()
+            .into_iter()
+            .filter(|m| m.contains(player1) && !m.is_over())
+            .collect();
+        assert!(
+            matches_where_player1_is_playing.len() <= 1,
+            "player 1 {player1} is involved in only 1 match but they are involved in {matches_where_player1_is_playing:?}",
+        );
+        let matches_where_player2_is_playing: Vec<Match> = bracket
+            .clone()
+            .matches
+            .into_iter()
+            .filter(|m| m.contains(player2) && !m.is_over())
+            .collect();
+        assert!(
+            matches_where_player2_is_playing.len() <= 1,
+            "player 2 {player2} is involved in only 1 match but they are involved in {:?}",
+            matches_where_player2_is_playing
+        );
+
+        // report score as p1
+        // FIXME should return bracket
+        let result_player_1 = ReportedResult(Some(result));
+        let (matches, first_affected_match, _new_matches) = bracket
+            .report_result_dangerous(player1, result_player_1.0.expect("result"))
+            .expect("matches");
+
+        // report same score as p2
+        let bracket = DoubleEliminationBracket::new(
+            matches,
+            self.seeding.clone(),
+            self.automatic_match_validation_mode,
+        );
+
+        let (matches, second_affected_match, new_matches) = bracket
+            .report_result_dangerous(player2, result_player_1.reverse().0.expect("result"))?;
+
+        assert_eq!(first_affected_match, second_affected_match);
+
+        Ok((
+            DoubleEliminationBracket::new(
+                matches,
+                self.seeding,
+                self.automatic_match_validation_mode,
+            ),
+            first_affected_match,
+            new_matches,
+        ))
     }
 }

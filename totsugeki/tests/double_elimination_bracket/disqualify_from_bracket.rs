@@ -1,6 +1,7 @@
 use totsugeki::bracket::seeding::Seeding;
 use totsugeki::double_elimination_bracket::progression::ProgressionDEB;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki::matches::result::{MatchFormat, Score};
 use totsugeki::matches::Match;
 use totsugeki::opponent::Opponent;
 use totsugeki::player::{Participants, Player, PlayerID};
@@ -64,6 +65,8 @@ fn disqualifying_player_that_could_not_make_it() {
     let bracket = DoubleEliminationBracket::create(
         Seeding::new(participants.get_player_list()).unwrap(),
         AutomaticMatchValidationMode::Flexible,
+        MatchFormat::ft3(),
+        None,
     );
 
     assert!(
@@ -102,10 +105,12 @@ fn disqualifying_player_sets_looser_of_their_current_match() {
     let bracket = DoubleEliminationBracket::create(
         Seeding::new(participants.get_player_list()).unwrap(),
         AutomaticMatchValidationMode::Strict,
+        MatchFormat::ft3(),
+        None,
     );
 
     let (bracket, match_id_p2, _new_matches) = bracket
-        .tournament_organiser_reports_result_dangerous(p[2].get_id(), (2, 0), p[3].get_id())
+        .tournament_organiser_reports_result_dangerous(p[2].get_id(), Score(2, 0), p[3].get_id())
         .expect("reported result by player 2");
     let (bracket, _) = bracket.validate_match_result(match_id_p2);
 
@@ -159,6 +164,8 @@ fn disqualifying_player_sets_their_opponent_as_the_winner_and_they_move_to_their
     let bracket = DoubleEliminationBracket::create(
         Seeding::new(participants.get_player_list()).unwrap(),
         AutomaticMatchValidationMode::Strict,
+        MatchFormat::ft3(),
+        None,
     );
 
     assert!(
@@ -200,6 +207,8 @@ fn initial_step(
         DoubleEliminationBracket::create(
             Seeding::new(participants.get_player_list()).unwrap(),
             auto,
+            MatchFormat::ft3(),
+            None,
         ),
         p,
     )
@@ -363,6 +372,8 @@ fn disqualifying_most_in_double_elimination_tournament_and_lowest_expected_seed_
     let bracket = DoubleEliminationBracket::create(
         Seeding::new(seeding).unwrap(),
         AutomaticMatchValidationMode::Flexible,
+        MatchFormat::ft3(),
+        None,
     );
 
     let (bracket, _) = bracket
@@ -450,6 +461,8 @@ fn disqualify_from_winner() {
     let bracket = DoubleEliminationBracket::create(
         Seeding::new(seeding.get_player_list()).unwrap(),
         AutomaticMatchValidationMode::Flexible,
+        MatchFormat::ft3(),
+        None,
     );
 
     let (bracket, _) = bracket
@@ -462,7 +475,7 @@ fn disqualify_from_winner() {
         "expected 1 match after DQ'ing p3 in 3 player tournament"
     );
     let (bracket, _, new_matches) = bracket
-        .tournament_organiser_reports_result_dangerous(p[1].get_id(), (2, 0), p[2].get_id())
+        .tournament_organiser_reports_result_dangerous(p[1].get_id(), Score(2, 0), p[2].get_id())
         .expect("to report");
     assert_eq!(
         1,
@@ -493,14 +506,16 @@ fn disqualify_in_double_elimination_bracket_from_loser() {
     let bracket = DoubleEliminationBracket::create(
         Seeding::new(seeding.get_player_list()).unwrap(),
         AutomaticMatchValidationMode::Flexible,
+        MatchFormat::ft3(),
+        None,
     );
 
     let (bracket, _, new_matches) = bracket
-        .tournament_organiser_reports_result_dangerous(p[2].get_id(), (2, 0), p[3].get_id())
+        .tournament_organiser_reports_result_dangerous(p[2].get_id(), Score(2, 0), p[3].get_id())
         .expect("to report");
     assert_eq!(new_matches.len(), 1, "expected 1 new match");
     let (bracket, _, new_matches) = bracket
-        .tournament_organiser_reports_result_dangerous(p[1].get_id(), (2, 0), p[2].get_id())
+        .tournament_organiser_reports_result_dangerous(p[1].get_id(), Score(2, 0), p[2].get_id())
         .expect("to report");
     assert_eq!(new_matches.len(), 1, "expected 1 new match");
 
@@ -536,6 +551,8 @@ fn disqualifying_everyone_in_double_elimination_tournament_is_imposible() {
     let bracket = DoubleEliminationBracket::create(
         Seeding::new(seeding).unwrap(),
         AutomaticMatchValidationMode::Flexible,
+        MatchFormat::ft3(),
+        None,
     );
 
     let (bracket, _) = bracket
@@ -663,6 +680,8 @@ fn disqualifying_most_in_double_elimination_tournament_and_grand_finalist_from_w
     let bracket = DoubleEliminationBracket::create(
         Seeding::new(seeding.get_player_list()).unwrap(),
         AutomaticMatchValidationMode::Flexible,
+        MatchFormat::ft3(),
+        None,
     );
 
     let (bracket, _) = bracket
@@ -684,7 +703,7 @@ fn disqualifying_most_in_double_elimination_tournament_and_grand_finalist_from_w
         .disqualify_participant_from_bracket(p[3].get_id())
         .expect("dq 3");
     let (bracket, _, _) = bracket
-        .tournament_organiser_reports_result_dangerous(p[1].get_id(), (2, 0), p[2].get_id())
+        .tournament_organiser_reports_result_dangerous(p[1].get_id(), Score(2, 0), p[2].get_id())
         .expect("player 1 wins in winners finals");
 
     let (bracket, _) = bracket
@@ -743,6 +762,8 @@ fn disqualifying_most_in_double_elimination_tournament_and_grand_finalist_from_l
     let bracket = DoubleEliminationBracket::create(
         Seeding::new(seeding.get_player_list()).unwrap(),
         AutomaticMatchValidationMode::Flexible,
+        MatchFormat::ft3(),
+        None,
     );
     let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[8].get_id())
@@ -763,7 +784,7 @@ fn disqualifying_most_in_double_elimination_tournament_and_grand_finalist_from_l
         .disqualify_participant_from_bracket(p[3].get_id())
         .expect("dq 3");
     let (bracket, _, _) = bracket
-        .tournament_organiser_reports_result_dangerous(p[1].get_id(), (2, 0), p[2].get_id())
+        .tournament_organiser_reports_result_dangerous(p[1].get_id(), Score(2, 0), p[2].get_id())
         .expect("player 1 wins in winners finals");
 
     let (bracket, _) = bracket
@@ -808,6 +829,8 @@ fn disqualifying_most_in_double_elimination_tournament_and_highest_expected_seed
     let bracket = DoubleEliminationBracket::create(
         Seeding::new(seeding.get_player_list()).unwrap(),
         AutomaticMatchValidationMode::Flexible,
+        MatchFormat::ft3(),
+        None,
     );
     let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[8].get_id())
@@ -892,12 +915,14 @@ fn fuzzer_incident_01() {
     let bracket = DoubleEliminationBracket::create(
         Seeding::new(seeding).unwrap(),
         AutomaticMatchValidationMode::Flexible,
+        MatchFormat::ft3(),
+        None,
     );
     let (bracket, _, _) = bracket
-        .tournament_organiser_reports_result_dangerous(p[1], (0, 2), p[4])
+        .tournament_organiser_reports_result_dangerous(p[1], Score(0, 2), p[4])
         .expect("bracket");
     let (bracket, _, _) = bracket
-        .tournament_organiser_reports_result_dangerous(p[2], (0, 2), p[3])
+        .tournament_organiser_reports_result_dangerous(p[2], Score(0, 2), p[3])
         .expect("bracket");
     let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[3])
@@ -954,15 +979,17 @@ fn fuzzer_incident_02() {
     let bracket = DoubleEliminationBracket::create(
         Seeding::new(seeding).unwrap(),
         AutomaticMatchValidationMode::Flexible,
+        MatchFormat::ft3(),
+        None,
     );
     let (bracket, _, _) = bracket
-        .tournament_organiser_reports_result_dangerous(p[1], (2, 0), p[8])
+        .tournament_organiser_reports_result_dangerous(p[1], Score(2, 0), p[8])
         .expect("bracket");
     let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[2])
         .expect("bracket");
     let (bracket, _, _) = bracket
-        .tournament_organiser_reports_result_dangerous(p[3], (2, 0), p[6])
+        .tournament_organiser_reports_result_dangerous(p[3], Score(2, 0), p[6])
         .expect("bracket");
     let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[5])
@@ -1032,12 +1059,14 @@ fn fuzzer_incident_03() {
     let bracket = DoubleEliminationBracket::create(
         Seeding::new(seeding).unwrap(),
         AutomaticMatchValidationMode::Flexible,
+        MatchFormat::ft3(),
+        None,
     );
     let (bracket, _, _) = bracket
-        .tournament_organiser_reports_result_dangerous(p[2], (2, 0), p[3])
+        .tournament_organiser_reports_result_dangerous(p[2], Score(2, 0), p[3])
         .expect("bracket");
     let (bracket, _, _) = bracket
-        .tournament_organiser_reports_result_dangerous(p[1], (2, 0), p[2])
+        .tournament_organiser_reports_result_dangerous(p[1], Score(2, 0), p[2])
         .expect("bracket");
     let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[1])

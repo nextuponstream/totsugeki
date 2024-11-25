@@ -6,6 +6,7 @@ use totsugeki::next_opponent::NextOpponentInBracket;
 
 pub mod disqualify_from_bracket;
 mod flexible_validation;
+mod reporting;
 mod strict_validation;
 
 fn assert_no_next_match_after_tournament_is_over(bracket: &DoubleEliminationBracket) {

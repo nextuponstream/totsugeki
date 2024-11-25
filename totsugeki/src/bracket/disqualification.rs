@@ -4,6 +4,7 @@
 mod tests {
     use crate::bracket::seeding::Seeding;
     use crate::double_elimination_bracket::DoubleEliminationBracket;
+    use crate::matches::result::MatchFormat;
     use crate::player::Participants;
     use crate::player::Player;
     use crate::validation::AutomaticMatchValidationMode;
@@ -27,6 +28,8 @@ mod tests {
         let _bracket = DoubleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
             AutomaticMatchValidationMode::Flexible,
+            MatchFormat::ft2(),
+            None,
         );
 
         for _p in players {

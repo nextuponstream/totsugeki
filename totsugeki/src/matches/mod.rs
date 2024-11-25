@@ -1,15 +1,16 @@
 //! Two players play a match, resulting in a winner and a loser
 
-mod bracket_result;
 mod query;
+pub mod result;
 
+use crate::matches::result::{MatchFormat, Score};
 use crate::player::PlayerID;
 use crate::{
     opponent::{Opponent, ParsingOpponentError},
     player::Participants,
     ID,
 };
-pub use bracket_result::{BracketResult, Error as BracketResultGenerationError};
+pub use result::{Error as BracketResultGenerationError, MatchResult};
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 use std::{num::ParseIntError, str::FromStr};
@@ -89,17 +90,17 @@ impl From<GenerationError> for Error {
 pub type Seeds = [usize; 2];
 
 /// A match result is a score. For example, I win 2-0
-pub type MatchReportedResult = [Option<(i8, i8)>; 2];
+pub type MatchReportedResult = [Option<Score>; 2];
 
 /// Reported result, where first number is player own score, and second score is their opponent
 /// score (example: I won 2-0, or I lost 0-2)
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct ReportedResult(pub Option<(i8, i8)>);
+pub struct ReportedResult(pub Option<Score>);
 
 impl PartialEq<ReportedResult> for ReportedResult {
     fn eq(&self, other: &ReportedResult) -> bool {
         match (self, *other) {
-            (ReportedResult(Some((s11, s12))), ReportedResult(Some((s21, s22)))) => {
+            (ReportedResult(Some(Score(s11, s12))), ReportedResult(Some(Score(s21, s22)))) => {
                 *s11 == s21 && *s12 == s22
             }
             _ => false,
@@ -112,16 +113,16 @@ impl ReportedResult {
     #[must_use]
     pub fn reverse(self) -> Self {
         match self.0 {
-            Some((s1, s2)) => ReportedResult(Some((s2, s1))),
+            Some(Score(s1, s2)) => ReportedResult(Some(Score(s2, s1))),
             None => ReportedResult(None),
         }
     }
 }
 
-impl std::fmt::Display for ReportedResult {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Display for ReportedResult {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            ReportedResult(Some((s1, s2))) => write!(f, "{s1}-{s2}"),
+            ReportedResult(Some(Score(s1, s2))) => write!(f, "{s1}-{s2}"),
             ReportedResult(None) => write!(f, "?"),
         }
     }
@@ -144,9 +145,9 @@ impl FromStr for ReportedResult {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.split_once('-') {
             Some((l, r)) => {
-                let l_score: i8 = l.parse::<i8>()?;
-                let r_score: i8 = r.parse::<i8>()?;
-                Ok(Self(Some((l_score, r_score))))
+                let l_score: u8 = l.parse::<u8>()?;
+                let r_score: u8 = r.parse::<u8>()?;
+                Ok(Self(Some(Score(l_score, r_score))))
             }
             None => Err(MatchResultParsingError::MissingResultDelimiter(s.into())),
         }
@@ -178,6 +179,8 @@ pub struct Match {
     pub(crate) automatic_loser: Opponent,
     /// Result reported by players
     pub(crate) reported_results: MatchReportedResult,
+    /// Format
+    pub(crate) format: MatchFormat,
 }
 
 impl Display for Match {
@@ -388,7 +391,11 @@ impl Match {
     /// Create looser bracket match where opponents are unknown yet
     #[must_use]
     #[cfg(test)]
-    pub(crate) fn looser_bracket_match(id: MatchID, seeds: [usize; 2]) -> Self {
+    pub(crate) fn looser_bracket_match(
+        id: MatchID,
+        seeds: [usize; 2],
+        format: MatchFormat,
+    ) -> Self {
         Match {
             id,
             players: [Opponent(None), Opponent(None)],
@@ -396,6 +403,7 @@ impl Match {
             winner: Opponent(None),
             automatic_loser: Opponent(None),
             reported_results: [None, None],
+            format,
         }
     }
 
@@ -416,7 +424,11 @@ impl Match {
     /// # Errors
     /// Returns an error if both players are the same (two unknown players will
     /// not produce an error)
-    pub fn new(players: [Opponent; 2], seeds: [usize; 2]) -> Result<Match, GenerationError> {
+    pub fn new(
+        players: [Opponent; 2],
+        seeds: [usize; 2],
+        format: MatchFormat,
+    ) -> Result<Match, GenerationError> {
         match players {
             [Opponent(Some(p1)), Opponent(Some(p2))] if p1 == p2 => {
                 Err(GenerationError::SamePlayer)
@@ -428,6 +440,7 @@ impl Match {
                 automatic_loser: Opponent(None),
                 seeds,
                 reported_results: [None, None],
+                format,
             }),
         }
     }
@@ -440,7 +453,7 @@ impl Match {
     /// Returns an error if both players are the same (two unknown players will
     /// not produce an error)
     #[must_use]
-    pub fn new_empty(seeds: [usize; 2]) -> Match {
+    pub fn new_empty(seeds: [usize; 2], format: MatchFormat) -> Match {
         Self {
             id: MatchID::new(),
             players: [Opponent(None), Opponent(None)],
@@ -448,12 +461,13 @@ impl Match {
             automatic_loser: Opponent(None),
             seeds,
             reported_results: [None, None],
+            format,
         }
     }
 
     /// Create new looser bracket match where opponents are unknown yet
     #[must_use]
-    pub fn new_looser_bracket_match(seeds: [usize; 2]) -> Self {
+    pub fn new_looser_bracket_match(seeds: [usize; 2], format: MatchFormat) -> Self {
         Match {
             id: MatchID::new(),
             players: [Opponent(None), Opponent(None)],
@@ -461,6 +475,7 @@ impl Match {
             winner: Opponent(None),
             automatic_loser: Opponent(None),
             reported_results: [None, None],
+            format,
         }
     }
 
@@ -627,8 +642,9 @@ impl Match {
         }
 
         let same_result_reported = match self.reported_results {
-            [Some((s11, s12)), Some((s21, s22))] => {
-                ReportedResult(Some((s11, s12))).reverse() == ReportedResult(Some((s21, s22)))
+            [Some(Score(s11, s12)), Some(Score(s21, s22))] => {
+                ReportedResult(Some(Score(s11, s12))).reverse()
+                    == ReportedResult(Some(Score(s21, s22)))
             }
             _ => false,
         };
@@ -641,23 +657,23 @@ impl Match {
             (
                 [Opponent(Some(p1)), Opponent(Some(p2))],
                 true,
-                [Some((s11, s12)), Some((s21, s22))],
+                [Some(Score(s11, s12)), Some(Score(s21, s22))],
             ) if s11 > s12 && s21 < s22 => (p1, p2),
             (
                 [Opponent(Some(p1)), Opponent(Some(p2))],
                 true,
-                [Some((s11, s12)), Some((s21, s22))],
+                [Some(Score(s11, s12)), Some(Score(s21, s22))],
             ) if s11 < s12 && s21 > s22 => (p2, p1),
             (
                 [Opponent(Some(_)), Opponent(Some(_))],
                 false,
-                [Some((s11, s12)), Some((s21, s22))],
+                [Some(Score(s11, s12)), Some(Score(s21, s22))],
             ) => {
                 return Err(Error::PlayersReportedDifferentMatchOutcome(
                     self.id,
                     [
-                        ReportedResult(Some((s11, s12))),
-                        ReportedResult(Some((s21, s22))),
+                        ReportedResult(Some(Score(s11, s12))),
+                        ReportedResult(Some(Score(s21, s22))),
                     ],
                 ));
             }
@@ -679,6 +695,7 @@ impl Match {
                 winner: Opponent(Some(winner)),
                 automatic_loser: self.automatic_loser,
                 reported_results: self.reported_results,
+                format: self.format,
             },
             Some(winner),
             loser,
@@ -705,6 +722,7 @@ impl Match {
                     winner: self.winner,
                     automatic_loser: self.automatic_loser,
                     reported_results,
+                    format: self.format,
                 }
             }
             [Opponent(Some(_)), Opponent(Some(player2))] if player2 == player_id => {
@@ -717,6 +735,7 @@ impl Match {
                     winner: self.winner,
                     automatic_loser: self.automatic_loser,
                     reported_results,
+                    format: self.format,
                 }
             }
             _ => panic!("unknown player ID reported for match {}", self.id),
@@ -737,7 +756,7 @@ impl Match {
 
     /// Get score of match. Defaults to 0-0 if winner is not declared
     #[must_use]
-    pub fn get_score(&self) -> Option<(i8, i8)> {
+    pub fn get_score(&self) -> Option<Score> {
         match self.reported_results {
             [Some(r1), Some(r2)] if r1.0 == r2.1 && r1.1 == r2.0 => Some(r1),
             _ => None,
@@ -791,7 +810,7 @@ mod tests {
         let p2 = PlayerID::create();
         let player_2 = Opponent(Some(p2));
         let unknown = PlayerID::create();
-        let m = Match::new([player_1, player_2], [1, 2]).expect("match");
+        let m = Match::new([player_1, player_2], [1, 2], MatchFormat::default()).expect("match");
         assert!(m.contains(p1));
         assert!(m.contains(p2));
         assert!(!m.contains(unknown));
@@ -801,7 +820,7 @@ mod tests {
     fn cannot_create_match_with_same_player() {
         let p = PlayerID::create();
         let player = Opponent(Some(p));
-        match Match::new([player, player], [1, 2]) {
+        match Match::new([player, player], [1, 2], MatchFormat::default()) {
             Err(GenerationError::SamePlayer) => {}
             _ => panic!("Expected error but got none"),
         }
@@ -814,11 +833,12 @@ mod tests {
         let m = Match::new(
             [Opponent(Some(p1.get_id())), Opponent(Some(p2.get_id()))],
             [1, 2],
+            MatchFormat::default(),
         )
         .expect("match");
         assert!(!m.is_over());
-        let m = m.update_reported_result(p1.get_id(), ReportedResult(Some((2, 0))));
-        let m = m.update_reported_result(p2.get_id(), ReportedResult(Some((0, 2))));
+        let m = m.update_reported_result(p1.get_id(), ReportedResult(Some(Score(2, 0))));
+        let m = m.update_reported_result(p2.get_id(), ReportedResult(Some(Score(0, 2))));
         let (m, _, _) = m.update_outcome().expect("validation");
         assert!(m.is_over());
         assert!(
@@ -829,11 +849,12 @@ mod tests {
         let m = Match::new(
             [Opponent(Some(p1.get_id())), Opponent(Some(p2.get_id()))],
             [1, 2],
+            MatchFormat::default(),
         )
         .expect("match");
         assert!(!m.is_over());
-        let m = m.update_reported_result(p2.get_id(), ReportedResult(Some((2, 0))));
-        let m = m.update_reported_result(p1.get_id(), ReportedResult(Some((0, 2))));
+        let m = m.update_reported_result(p2.get_id(), ReportedResult(Some(Score(2, 0))));
+        let m = m.update_reported_result(p1.get_id(), ReportedResult(Some(Score(0, 2))));
         let (m, _, _) = m.update_outcome().expect("validation");
         assert!(m.is_over());
         assert!(
@@ -844,11 +865,12 @@ mod tests {
         let m = Match::new(
             [Opponent(Some(p1.get_id())), Opponent(Some(p2.get_id()))],
             [2, 1],
+            MatchFormat::ft2(),
         )
         .expect("match");
         assert!(!m.is_over());
-        let m = m.update_reported_result(p1.get_id(), ReportedResult(Some((2, 0))));
-        let m = m.update_reported_result(p2.get_id(), ReportedResult(Some((0, 2))));
+        let m = m.update_reported_result(p1.get_id(), ReportedResult(Some(Score(2, 0))));
+        let m = m.update_reported_result(p2.get_id(), ReportedResult(Some(Score(0, 2))));
         let (m, _, _) = m.update_outcome().expect("validation");
         assert!(m.is_over());
         assert!(
@@ -859,11 +881,12 @@ mod tests {
         let m = Match::new(
             [Opponent(Some(p1.get_id())), Opponent(Some(p2.get_id()))],
             [2, 1],
+            MatchFormat::ft2(),
         )
         .expect("match");
         assert!(!m.is_over());
-        let m = m.update_reported_result(p2.get_id(), ReportedResult(Some((2, 0))));
-        let m = m.update_reported_result(p1.get_id(), ReportedResult(Some((0, 2))));
+        let m = m.update_reported_result(p2.get_id(), ReportedResult(Some(Score(2, 0))));
+        let m = m.update_reported_result(p1.get_id(), ReportedResult(Some(Score(0, 2))));
         let (m, _, _) = m.update_outcome().expect("validation");
         assert!(m.is_over());
         assert!(
@@ -879,15 +902,27 @@ mod tests {
         let m = Match::new(
             [Opponent(Some(p1.get_id())), Opponent(Some(p2.get_id()))],
             [1, 2],
+            MatchFormat::ft2(),
         )
         .expect("match");
         assert!(m.needs_playing());
 
-        let m = Match::new([Opponent(None), Opponent(Some(p2.get_id()))], [1, 2]).expect("match");
+        let m = Match::new(
+            [Opponent(None), Opponent(Some(p2.get_id()))],
+            [1, 2],
+            MatchFormat::ft2(),
+        )
+        .expect("match");
         assert!(!m.needs_playing());
-        let m = Match::new([Opponent(Some(p1.get_id())), Opponent(None)], [1, 2]).expect("match");
+        let m = Match::new(
+            [Opponent(Some(p1.get_id())), Opponent(None)],
+            [1, 2],
+            MatchFormat::ft2(),
+        )
+        .expect("match");
         assert!(!m.needs_playing());
-        let m = Match::new([Opponent(None), Opponent(None)], [1, 2]).expect("match");
+        let m = Match::new([Opponent(None), Opponent(None)], [1, 2], MatchFormat::ft2())
+            .expect("match");
         assert!(!m.needs_playing());
     }
 
@@ -915,7 +950,8 @@ mod tests {
             ("2-3", (2, 3)),
         ];
         for (s, (l_expected, r_expected)) in to_test {
-            let ReportedResult(Some((l, r))) = s.parse::<ReportedResult>().expect("result") else {
+            let ReportedResult(Some(Score(l, r))) = s.parse::<ReportedResult>().expect("result")
+            else {
                 panic!("no result")
             };
             assert_eq!(
@@ -947,7 +983,12 @@ mod tests {
     fn cannot_insert_player_if_someone_else_is_already_there_p1_side() {
         let p1 = PlayerID::create();
         let p2 = PlayerID::create();
-        let m = Match::new([Opponent(Some(p1)), Opponent(Some(p2))], [0, 0]).expect("match");
+        let m = Match::new(
+            [Opponent(Some(p1)), Opponent(Some(p2))],
+            [0, 0],
+            MatchFormat::default(),
+        )
+        .expect("match");
         let p1_intruder = PlayerID::create();
 
         let _ = m.insert_player(p1_intruder, true);
@@ -957,7 +998,12 @@ mod tests {
     fn cannot_insert_player_if_someone_else_is_already_there_p2_side() {
         let p1 = PlayerID::create();
         let p2 = PlayerID::create();
-        let m = Match::new([Opponent(Some(p1)), Opponent(Some(p2))], [0, 0]).expect("match");
+        let m = Match::new(
+            [Opponent(Some(p1)), Opponent(Some(p2))],
+            [0, 0],
+            MatchFormat::default(),
+        )
+        .expect("match");
 
         let p2_intruder = PlayerID::create();
         let _ = m.insert_player(p2_intruder, false);
@@ -967,7 +1013,12 @@ mod tests {
     fn insert_player_even_if_already_present() {
         let p1 = PlayerID::create();
         let p2 = PlayerID::create();
-        let m = Match::new([Opponent(Some(p1)), Opponent(Some(p2))], [0, 0]).expect("match");
+        let m = Match::new(
+            [Opponent(Some(p1)), Opponent(Some(p2))],
+            [0, 0],
+            MatchFormat::default(),
+        )
+        .expect("match");
 
         let m = m.insert_player(p1, true);
         let m = m.insert_player(p1, true);
@@ -982,7 +1033,12 @@ mod tests {
     fn no_match_score_when_no_winner_is_declared() {
         let p1 = PlayerID::create();
         let p2 = PlayerID::create();
-        let m = Match::new([Opponent(Some(p1)), Opponent(Some(p2))], [0, 0]).expect("match");
+        let m = Match::new(
+            [Opponent(Some(p1)), Opponent(Some(p2))],
+            [0, 0],
+            MatchFormat::default(),
+        )
+        .expect("match");
 
         assert!(m.get_score().is_none());
     }

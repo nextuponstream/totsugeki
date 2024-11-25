@@ -1,5 +1,6 @@
 //! Manage matches from bracket
 
+use crate::matches::result::Score;
 use crate::matches::{GenerationError, MatchID};
 use crate::player::PlayerID;
 use crate::{
@@ -229,7 +230,7 @@ pub trait Progression {
     fn report_result(
         &self,
         player_id: PlayerID,
-        result: (i8, i8),
+        result: Score,
     ) -> Result<(Vec<Match>, MatchId, Vec<Match>), Error>;
 
     /// Tournament organiser reports result
@@ -245,7 +246,7 @@ pub trait Progression {
     fn tournament_organiser_reports_result(
         &self,
         player1: PlayerID,
-        result: (i8, i8),
+        result: Score,
         player2: PlayerID,
     ) -> Result<(Vec<Match>, MatchId, Vec<Match>), Error>;
 
@@ -256,7 +257,7 @@ pub trait Progression {
     fn update_player_reported_match_result(
         &self,
         match_id: MatchId,
-        result: (i8, i8),
+        result: Score,
         player_id: PlayerID,
     ) -> Result<Vec<Match>, Error>;
 

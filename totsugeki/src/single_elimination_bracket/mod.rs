@@ -5,7 +5,9 @@ mod next_opponent_in_bracket;
 mod partition;
 pub mod progression;
 
+use crate::bracket::late_bracket_configuration::LateBracketConfiguration;
 use crate::bracket::seeding::Seeding;
+use crate::matches::result::{MatchFormat, Score};
 use crate::matches::{Match, MatchID};
 use crate::opponent::Opponent;
 use crate::player::PlayerID;
@@ -65,8 +67,17 @@ impl SingleEliminationBracket {
 
     /// Generate matches for a new bracket using `seeding` and other configuration
     #[must_use]
-    pub fn create(seeding: Seeding, automatic_match_progression: bool) -> Self {
-        let matches = get_balanced_round_matches_top_seed_favored(&seeding);
+    pub fn create(
+        seeding: Seeding,
+        automatic_match_progression: bool,
+        match_format: MatchFormat,
+        late_bracket_configuration: Option<LateBracketConfiguration>,
+    ) -> Self {
+        let matches = get_balanced_round_matches_top_seed_favored(
+            &seeding,
+            match_format,
+            late_bracket_configuration,
+        );
 
         Self {
             matches,
@@ -120,7 +131,7 @@ impl SingleEliminationBracket {
     pub fn report_result(
         self,
         player_id: PlayerID,
-        result: (i8, i8),
+        result: Score,
     ) -> Result<(SingleEliminationBracket, MatchID, Vec<Match>), SingleEliminationReportResultError>
     {
         assert!(

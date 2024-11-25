@@ -7,6 +7,7 @@ use axum::Json;
 use http::StatusCode;
 use totsugeki::bracket::seeding::Seeding;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki::matches::result::MatchFormat;
 use totsugeki::player::Player;
 use totsugeki::validation::AutomaticMatchValidationMode;
 use tracing::instrument;
@@ -35,6 +36,8 @@ pub async fn new_bracket(Json(form): Json<CreateBracketForm>) -> impl IntoRespon
         Seeding::new(tournament.get_participants().get_seeding())
             .expect("should use seeding from tournament organiser input"),
         AutomaticMatchValidationMode::Flexible, // FIXME from form
+        MatchFormat::ft2(),                     // FIXME parse from form
+        None,                                   // FIXME parse from form
     );
 
     Ok(breakdown(&tournament, bracket, None, false))

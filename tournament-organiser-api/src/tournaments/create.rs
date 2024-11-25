@@ -15,6 +15,7 @@ use http::StatusCode;
 use sqlx::PgPool;
 use totsugeki::bracket::seeding::Seeding;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki::matches::result::MatchFormat;
 use totsugeki::player::Player;
 use totsugeki::validation::AutomaticMatchValidationMode;
 use totsugeki::ID;
@@ -53,6 +54,8 @@ pub(crate) async fn create_bracket(
         )
         .expect("should form seeding with new player"),
         AutomaticMatchValidationMode::default(),
+        MatchFormat::ft2(),
+        None,
     );
 
     TournamentService::create(&mut transaction, &tournament, &bracket, user_id).await?;

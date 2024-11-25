@@ -17,8 +17,8 @@ use serenity::{model::id::UserId, prelude::TypeMapKey};
 use std::{collections::HashMap, sync::Arc};
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki::format::Format;
+use totsugeki::player::Player;
 use totsugeki::single_elimination_bracket::SingleEliminationBracket;
-use totsugeki::{bracket::Bracket, player::Player};
 
 pub mod create;
 pub mod disqualify;

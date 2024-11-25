@@ -45,7 +45,10 @@ async fn quit(ctx: &Context, msg: &Message) -> CommandResult {
                     .into_iter()
                     .filter(|id| *id != player.get_id())
                     .collect::<Vec<PlayerID>>();
-                let seb = SingleEliminationBracket::create(Seeding::new(seeding).unwrap(), true);
+                let seb = SingleEliminationBracket::create(
+                    Seeding::new(seeding).expect("seeding should not contain user"),
+                    true,
+                );
                 *bracket_data = (
                     format,
                     users.clone(),
@@ -66,7 +69,7 @@ async fn quit(ctx: &Context, msg: &Message) -> CommandResult {
                     .filter(|id| *id != player.get_id())
                     .collect::<Vec<PlayerID>>();
                 let deb = DoubleEliminationBracket::create(
-                    Seeding::new(seeding).unwrap(),
+                    Seeding::new(seeding).expect("seeding should not contain user"),
                     AutomaticMatchValidationMode::Flexible,
                 );
                 *bracket_data = (

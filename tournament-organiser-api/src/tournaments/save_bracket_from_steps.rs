@@ -12,8 +12,8 @@ use axum_macros::debug_handler;
 use http::StatusCode;
 use sqlx::PgPool;
 use totsugeki::bracket::seeding::Seeding;
-use totsugeki::double_elimination_bracket::progression::ProgressionDEB;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki::matches::result::{MatchFormat, Score};
 use totsugeki::player::Player;
 use totsugeki::validation::AutomaticMatchValidationMode;
 use totsugeki::ID;
@@ -56,9 +56,11 @@ pub async fn save_bracket_from_steps(
         Seeding::new(tournament.get_participants().get_seeding())
             .expect("should use seeding from tournament organiser input"),
         AutomaticMatchValidationMode::Flexible, // FIXME get from form
+        MatchFormat::ft2(),
+        None,
     );
     for r in bracket_state.results {
-        let report = (r.score_p1, r.score_p2);
+        let report = Score(r.score_p1, r.score_p2);
         let Some(p1_mapping) = safe_player_mapping.iter().find(|m| m.0.get_id() == r.p1_id) else {
             return Err(ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR));
         };

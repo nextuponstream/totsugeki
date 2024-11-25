@@ -7,11 +7,8 @@ use serenity::{
     model::channel::Message,
 };
 use totsugeki::format::Format;
-use totsugeki::matches::MatchID;
-use totsugeki::next_opponent::{Error, NextOpponentInBracket};
-use totsugeki::opponent::Opponent;
+use totsugeki::next_opponent::NextOpponentInBracket;
 use totsugeki::player::Player;
-use totsugeki::single_elimination_bracket::progression::ProgressionSEB;
 use tracing::{info, span, warn, Level};
 
 #[command]

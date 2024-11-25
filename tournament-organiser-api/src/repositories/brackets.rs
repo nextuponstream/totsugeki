@@ -11,8 +11,8 @@ use sqlx::types::Json as SqlxJson;
 use sqlx::{Postgres, Transaction};
 use thiserror::Error;
 use totsugeki::bracket::seeding::Seeding;
-use totsugeki::double_elimination_bracket::progression::ProgressionDEB;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki::matches::result::{MatchFormat, Score};
 use totsugeki::matches::Match;
 use totsugeki::player::Player;
 use totsugeki::player::{Participants, PlayerID};
@@ -114,6 +114,8 @@ impl TournamentService {
             )
             .expect("should update seeding of bracket with tournament valid seeding"),
             AutomaticMatchValidationMode::Flexible,
+            MatchFormat::ft2(),
+            None,
         );
 
         Ok(Some((tournament, bracket, is_tournament_organiser)))
@@ -175,7 +177,7 @@ impl TournamentService {
         // FIXME actual error handling
         let (bracket, _, _) = bracket.tournament_organiser_reports_result_dangerous(
             report.p1_id,
-            (report.score_p1, report.score_p2),
+            Score(report.score_p1, report.score_p2),
             report.p2_id,
         )?;
         let _r = sqlx::query!(

@@ -11,10 +11,9 @@ use serenity::{
 };
 use std::collections::HashMap;
 use std::{io::prelude::*, path::Path};
-use totsugeki::bracket::seeding::Seeding;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki::single_elimination_bracket::SingleEliminationBracket;
-use totsugeki::{bracket::Bracket, format::Format, seeding::Method};
+use totsugeki::{format::Format, seeding::Method};
 use tracing::{info, span, warn, Level};
 
 #[command]
@@ -27,14 +26,14 @@ async fn create(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     // NOTE: workaround since instrument macro conflict with discords
     let span = span!(Level::INFO, "Create bracket command");
     span.in_scope(|| async {
-        let bracket_name = args.single_quoted::<String>()?;
+        let _bracket_name = args.single_quoted::<String>()?;
         let start_time = args.parse::<String>()?;
         args.advance();
         let tz = args.parse::<String>()?;
         args.advance();
         let format = args.single_quoted::<String>()?.parse::<Format>()?;
-        let seeding_method = args.single_quoted::<String>()?.parse::<Method>()?;
-        let automatic_match_validation = args.parse::<bool>()?;
+        let _seeding_method = args.single_quoted::<String>()?.parse::<Method>()?;
+        let _automatic_match_validation = args.parse::<bool>()?;
 
         let start_time = match NaiveDateTime::parse_from_str(start_time.as_str(), "%Y-%m-%d:%H:%M")
         {
@@ -77,7 +76,7 @@ async fn create(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                 return Ok::<CommandResult, CommandError>(Ok(()));
             }
         };
-        let start_time = start_time.with_timezone(&Utc);
+        let _start_time = start_time.with_timezone(&Utc);
 
         let data = ctx.data.read().await;
         let bracket_data = data.get::<Data>().expect("data").clone();
@@ -114,7 +113,7 @@ async fn create(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
             .open(Path::new(config.as_ref()))?;
         f.lock_exclusive().expect("lock"); // prevent concurrent access
         let l: u64 = u64::try_from(j.len())?;
-        f.set_len(l)?; // very important: if output has less chars than previous, output is padded
+        f.set_len(l)?; // very important: if output has fewer chars than previous, output is padded
         f.write_all(j.as_bytes())?;
 
         info!("bracket created");

@@ -111,6 +111,7 @@ mod tests {
     use super::PartitionError;
     use crate::bracket::seeding::Seeding;
     use crate::double_elimination_bracket::DoubleEliminationBracket;
+    use crate::matches::result::MatchFormat;
     use crate::player::{Player, PlayerID};
     use crate::validation::AutomaticMatchValidationMode;
 
@@ -133,6 +134,8 @@ mod tests {
         let bracket = DoubleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
             AutomaticMatchValidationMode::Flexible,
+            MatchFormat::ft2(),
+            None,
         );
         assert_eq!(bracket.get_seeding().len(), 1);
 
@@ -151,6 +154,8 @@ mod tests {
         let bracket = DoubleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
             AutomaticMatchValidationMode::Flexible,
+            MatchFormat::ft2(),
+            None,
         );
         assert_eq!(bracket.get_seeding().len(), 2);
 
@@ -172,6 +177,8 @@ mod tests {
         let bracket = DoubleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
             AutomaticMatchValidationMode::Flexible,
+            MatchFormat::ft2(),
+            None,
         );
         assert_eq!(bracket.get_seeding().len(), n);
 
@@ -192,6 +199,8 @@ mod tests {
         let bracket = DoubleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
             AutomaticMatchValidationMode::Flexible,
+            MatchFormat::ft2(),
+            None,
         );
         assert_eq!(bracket.get_seeding().len(), n);
 
@@ -214,6 +223,8 @@ mod tests {
         let bracket = DoubleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
             AutomaticMatchValidationMode::Flexible,
+            MatchFormat::ft2(),
+            None,
         );
         assert_eq!(bracket.get_seeding().len(), n);
 
@@ -238,6 +249,8 @@ mod tests {
         let bracket = DoubleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
             AutomaticMatchValidationMode::Flexible,
+            MatchFormat::ft2(),
+            None,
         );
         assert_eq!(bracket.get_seeding().len(), n);
 
@@ -268,6 +281,8 @@ mod tests {
         let bracket = DoubleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
             AutomaticMatchValidationMode::Flexible,
+            MatchFormat::ft2(),
+            None,
         );
         assert_eq!(bracket.get_seeding().len(), n);
 
@@ -304,6 +319,8 @@ mod tests {
         let bracket = DoubleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
             AutomaticMatchValidationMode::Flexible,
+            MatchFormat::ft2(),
+            None,
         );
         assert_eq!(bracket.get_seeding().len(), n);
 
@@ -350,6 +367,8 @@ mod tests {
         let bracket = DoubleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
             AutomaticMatchValidationMode::Flexible,
+            MatchFormat::ft2(),
+            None,
         );
         assert_eq!(bracket.get_seeding().len(), n);
 
@@ -405,6 +424,8 @@ mod tests {
         let bracket = DoubleEliminationBracket::create(
             Seeding::new(unpadded_player_ids).unwrap(),
             AutomaticMatchValidationMode::Flexible,
+            MatchFormat::ft2(),
+            None,
         );
 
         let (winner_bracket, loser_bracket, _gf, _gfr) = bracket.partition_matches().unwrap();

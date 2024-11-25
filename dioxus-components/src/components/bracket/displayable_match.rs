@@ -4,6 +4,7 @@
 
 use crate::{convert_to_displayable_name, Modal, MAX_NAME_SIZE};
 use dioxus::prelude::*;
+use totsugeki::matches::result::Score;
 use totsugeki_display::MinimalMatch;
 
 // TODO find more elegant way to declare constant array of big size
@@ -104,7 +105,7 @@ fn MatchInRound(
     let player2 = player2_name.as_str();
     let score = m.get_score();
     let (score1, score2) = match score {
-        Some((s1, s2)) => (s1.to_string(), s2.to_string()),
+        Some(Score(s1, s2)) => (s1.to_string(), s2.to_string()),
         None => ("?".to_string(), "?".to_string()),
     };
     let (player, score) = if is_player1 {

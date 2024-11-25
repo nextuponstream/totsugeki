@@ -3,6 +3,7 @@
 pub mod double_elimination_seeded_bracket;
 pub mod single_elimination_seeded_bracket;
 
+use crate::matches::result::MatchFormat;
 use crate::player::PlayerID;
 use crate::{
     matches::Match,
@@ -124,6 +125,7 @@ fn seeding_initial_round(
     available_players_by_seeds: &mut Vec<usize>,
     seeding: &[PlayerID],
     this_round: &mut Vec<Match>,
+    base_match_format: MatchFormat,
 ) {
     let top_seed = available_players_by_seeds.remove(0);
     let top_seed_player_id = seeding[top_seed - 1];
@@ -137,6 +139,7 @@ fn seeding_initial_round(
                 Opponent(Some(bottom_seed_player_id)),
             ],
             [top_seed, bottom_seed],
+            base_match_format,
         )
         .expect("match"),
     );

@@ -54,9 +54,9 @@ pub struct ReportResultInput {
     /// Second player
     pub p2_id: PlayerID,
     /// player 1 score
-    pub score_p1: i8,
+    pub score_p1: u8,
     /// player 2 score
-    pub score_p2: i8,
+    pub score_p2: u8,
 }
 
 /// Bracket to display. When there is less than 3 players, then there is nothing
@@ -105,9 +105,9 @@ pub struct PlayerMatchResultReport {
     /// low seed player
     pub p2_id: PlayerID,
     /// score of player 1
-    pub score_p1: i8,
+    pub score_p1: u8,
     /// score of player 2
-    pub score_p2: i8,
+    pub score_p2: u8,
 }
 
 /// List of players from which a bracket can be created

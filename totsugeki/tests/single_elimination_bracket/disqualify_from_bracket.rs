@@ -1,5 +1,6 @@
 use crate::common::assert_outcome;
 use totsugeki::bracket::seeding::Seeding;
+use totsugeki::matches::result::{MatchFormat, Score};
 use totsugeki::opponent::Opponent;
 use totsugeki::player::{Player, PlayerID};
 use totsugeki::single_elimination_bracket::progression::ProgressionSEB;
@@ -16,25 +17,33 @@ fn disqualifying_everyone() {
     }
     let seeding = Seeding::new(seeding).unwrap();
     let auto = false;
-    let bracket = SingleEliminationBracket::create(seeding, auto);
-    let (bracket, _new_playable_matches) = bracket.disqualify_participant_from_bracket(p[2].get_id());
+    let bracket = SingleEliminationBracket::create(seeding, auto, MatchFormat::ft3(), None);
+    let (bracket, _new_playable_matches) =
+        bracket.disqualify_participant_from_bracket(p[2].get_id());
     assert_outcome(&bracket.get_matches(), &p[7], &p[2]);
-    let (bracket, _new_playable_matches) = bracket.disqualify_participant_from_bracket(p[3].get_id());
+    let (bracket, _new_playable_matches) =
+        bracket.disqualify_participant_from_bracket(p[3].get_id());
     assert_outcome(&bracket.get_matches(), &p[6], &p[3]);
-    let (bracket, _new_playable_matches) = bracket.disqualify_participant_from_bracket(p[4].get_id());
+    let (bracket, _new_playable_matches) =
+        bracket.disqualify_participant_from_bracket(p[4].get_id());
     assert_outcome(&bracket.get_matches(), &p[5], &p[4]);
-    let (bracket, _new_playable_matches) = bracket.disqualify_participant_from_bracket(p[5].get_id());
+    let (bracket, _new_playable_matches) =
+        bracket.disqualify_participant_from_bracket(p[5].get_id());
     // player 5 opponent is unknown
-    let (bracket, _new_playable_matches) = bracket.disqualify_participant_from_bracket(p[6].get_id());
+    let (bracket, _new_playable_matches) =
+        bracket.disqualify_participant_from_bracket(p[6].get_id());
     assert_outcome(&bracket.get_matches(), &p[7], &p[6]);
-    let (bracket, _new_playable_matches) = bracket.disqualify_participant_from_bracket(p[7].get_id());
+    let (bracket, _new_playable_matches) =
+        bracket.disqualify_participant_from_bracket(p[7].get_id());
     // player 7 is in GF
-    let (bracket, _new_playable_matches) = bracket.disqualify_participant_from_bracket(p[8].get_id());
+    let (bracket, _new_playable_matches) =
+        bracket.disqualify_participant_from_bracket(p[8].get_id());
     assert_outcome(&bracket.get_matches(), &p[1], &p[8]);
     assert_outcome(&bracket.get_matches(), &p[1], &p[5]);
     assert_outcome(&bracket.get_matches(), &p[1], &p[7]);
 
-    let (bracket, _new_playable_matches) = bracket.disqualify_participant_from_bracket(p[1].get_id());
+    let (bracket, _new_playable_matches) =
+        bracket.disqualify_participant_from_bracket(p[1].get_id());
     assert_outcome(&bracket.get_matches(), &p[1], &p[8]);
     assert_outcome(&bracket.get_matches(), &p[1], &p[5]);
     assert_outcome(&bracket.get_matches(), &p[1], &p[7]);
@@ -47,7 +56,7 @@ fn disqualifying_unknown_player_is_a_no_op() {
         seeding.push(PlayerID::create())
     }
     let seeding = Seeding::new(seeding).unwrap();
-    let bracket = SingleEliminationBracket::create(seeding, false);
+    let bracket = SingleEliminationBracket::create(seeding, false, MatchFormat::ft3(), None);
 
     let unknown_player = PlayerID::create();
     let _ = bracket.disqualify_participant_from_bracket(unknown_player);
@@ -62,7 +71,12 @@ fn opponent_of_disqualified_player_can_play_their_next_match() {
         p.push(player.clone());
         seeding.push(player.get_id());
     }
-    let bracket = SingleEliminationBracket::create(Seeding::new(seeding).unwrap(), true);
+    let bracket = SingleEliminationBracket::create(
+        Seeding::new(seeding).unwrap(),
+        true,
+        MatchFormat::ft3(),
+        None,
+    );
 
     assert!(
         !bracket.get_matches().iter().any(
@@ -70,7 +84,8 @@ fn opponent_of_disqualified_player_can_play_their_next_match() {
         ),
         "expected player 1 not to be declared looser in any match"
     );
-    let (bracket, _new_playable_matches) = bracket.disqualify_participant_from_bracket(p[1].get_id());
+    let (bracket, _new_playable_matches) =
+        bracket.disqualify_participant_from_bracket(p[1].get_id());
     assert!(
         bracket.get_matches().iter().any(
             |m| matches!(m.get_automatic_loser(), Opponent(Some(loser)) if loser == p[1].get_id())
@@ -95,10 +110,15 @@ fn disqualifying_player_sets_looser_of_their_current_match() {
         p.push(player.clone());
         seeding.push(player.get_id());
     }
-    let bracket = SingleEliminationBracket::create(Seeding::new(seeding).unwrap(), false);
+    let bracket = SingleEliminationBracket::create(
+        Seeding::new(seeding).unwrap(),
+        false,
+        MatchFormat::ft3(),
+        None,
+    );
 
     let (bracket, match_id_p2, _new_matches) = bracket
-        .tournament_organiser_reports_result(p[2].get_id(), (2, 0), p[3].get_id())
+        .tournament_organiser_reports_result(p[2].get_id(), Score(2, 0), p[3].get_id())
         .unwrap();
     let (bracket, _) = bracket.validate_match_result(match_id_p2);
 
@@ -108,7 +128,8 @@ fn disqualifying_player_sets_looser_of_their_current_match() {
         ),
         "expected player 2 not to be declared looser in any match"
     );
-    let (bracket, _new_playable_matches) = bracket.disqualify_participant_from_bracket(p[2].get_id());
+    let (bracket, _new_playable_matches) =
+        bracket.disqualify_participant_from_bracket(p[2].get_id());
     assert!(
         bracket.get_matches().iter().any(|m| matches!(
                     (m.get_automatic_loser(), m.get_winner()),
@@ -135,7 +156,12 @@ fn disqualifying_player_sets_their_opponent_as_the_winner_and_they_move_to_their
         p.push(player.clone());
         seeding.push(player.get_id());
     }
-    let bracket = SingleEliminationBracket::create(Seeding::new(seeding).unwrap(), false);
+    let bracket = SingleEliminationBracket::create(
+        Seeding::new(seeding).unwrap(),
+        false,
+        MatchFormat::ft3(),
+        None,
+    );
 
     assert!(
         !bracket.get_matches().iter().any(
@@ -143,7 +169,8 @@ fn disqualifying_player_sets_their_opponent_as_the_winner_and_they_move_to_their
         ),
         "expected player 2 not to be declared looser in any match"
     );
-    let (bracket, _new_playable_matches) = bracket.disqualify_participant_from_bracket(p[2].get_id());
+    let (bracket, _new_playable_matches) =
+        bracket.disqualify_participant_from_bracket(p[2].get_id());
     assert!(
         bracket.get_matches().iter().any(
             |m| matches!(m.get_automatic_loser(), Opponent(Some(loser)) if loser == p[2].get_id())

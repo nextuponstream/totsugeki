@@ -5,7 +5,7 @@ use crate::tournaments::{breakdown, ReportResultInput};
 use axum::response::IntoResponse;
 use axum::Json;
 use http::StatusCode;
-use totsugeki::double_elimination_bracket::progression::ProgressionDEB;
+use totsugeki::matches::result::Score;
 use tracing::instrument;
 
 /// Returns updated bracket with result. Because there is no persistence, it's
@@ -28,7 +28,7 @@ pub async fn report_result(Json(report): Json<ReportResultInput>) -> impl IntoRe
 
     let Ok((bracket, _, _)) = bracket.tournament_organiser_reports_result_dangerous(
         report.p1_id,
-        (report.score_p1, report.score_p2),
+        Score(report.score_p1, report.score_p2),
         report.p2_id,
     ) else {
         // FIXME actual error handling
