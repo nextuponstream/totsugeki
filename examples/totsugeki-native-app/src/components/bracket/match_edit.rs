@@ -7,6 +7,7 @@ use dioxus::prelude::*;
 use totsugeki::double_elimination_bracket::progression::ProgressionDEB;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki::format::Format;
+use totsugeki::matches::result::Score;
 use totsugeki::matches::MatchID;
 use totsugeki::opponent::Opponent;
 use totsugeki::single_elimination_bracket::progression::ProgressionSEB;
@@ -183,7 +184,7 @@ fn update_bracket_with_match_result(
     let Some(r1) = r1.first() else {
         return;
     };
-    let Ok(r1) = r1.parse::<i8>() else {
+    let Ok(r1) = r1.parse::<u8>() else {
         // TODO log error
         return;
     };
@@ -194,11 +195,11 @@ fn update_bracket_with_match_result(
     let Some(r2) = r2.first() else {
         return;
     };
-    let Ok(r2) = r2.parse::<i8>() else {
+    let Ok(r2) = r2.parse::<u8>() else {
         // TODO log error
         return;
     };
-    let result = (r1, r2);
+    let result = Score(r1, r2);
 
     match t.format {
         Format::SingleEliminationBracket => {

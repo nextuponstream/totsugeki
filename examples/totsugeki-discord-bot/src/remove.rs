@@ -11,6 +11,7 @@ use std::{io::prelude::*, path::Path};
 use totsugeki::bracket::seeding::Seeding;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki::format::Format;
+use totsugeki::matches::result::MatchFormat;
 use totsugeki::player::PlayerID;
 use totsugeki::single_elimination_bracket::SingleEliminationBracket;
 use totsugeki::validation::AutomaticMatchValidationMode;
@@ -39,7 +40,12 @@ async fn remove(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                     .into_iter()
                     .filter(|id| *id != player_id)
                     .collect::<Vec<PlayerID>>();
-                let seb = SingleEliminationBracket::create(Seeding::new(seeding).unwrap(), true);
+                let seb = SingleEliminationBracket::create(
+                    Seeding::new(seeding).unwrap(),
+                    true,
+                    MatchFormat::ft3(), // FIXME should be user provided
+                    None,               // FIXME should be user provided
+                );
                 *bracket_data = (
                     format,
                     users.clone(),
@@ -62,6 +68,8 @@ async fn remove(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                 let deb = DoubleEliminationBracket::create(
                     Seeding::new(seeding).unwrap(),
                     AutomaticMatchValidationMode::Flexible,
+                    MatchFormat::ft3(), // FIXME should be user provided
+                    None,               // FIXME should be user provided
                 );
                 *bracket_data = (
                     format,

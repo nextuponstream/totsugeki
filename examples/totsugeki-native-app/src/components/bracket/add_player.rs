@@ -6,6 +6,7 @@ use crate::tournaments::Tournament;
 use dioxus::prelude::*;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki::format::Format;
+use totsugeki::matches::result::MatchFormat;
 use totsugeki::player::Player;
 use totsugeki::single_elimination_bracket::SingleEliminationBracket;
 use totsugeki::validation::AutomaticMatchValidationMode;
@@ -79,13 +80,19 @@ fn add_player(
     *tournament.write() = t_update;
     match t.format {
         Format::SingleEliminationBracket => {
-            *single_elimination_bracket.write() =
-                SingleEliminationBracket::create(t.get_participants().get_seeding(), true);
+            *single_elimination_bracket.write() = SingleEliminationBracket::create(
+                t.get_participants().get_seeding(),
+                true,
+                MatchFormat::ft3(), // FIXME should be user provided
+                None,               // FIXME should be user provided
+            );
         }
         Format::DoubleEliminationBracket => {
             *double_elimination_bracket.write() = DoubleEliminationBracket::create(
                 t.get_participants().get_seeding(),
                 AutomaticMatchValidationMode::Flexible,
+                MatchFormat::ft3(), // FIXME should be user provided
+                None,               // FIXME should be user provided
             );
         }
     }

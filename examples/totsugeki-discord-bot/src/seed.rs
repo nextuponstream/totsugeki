@@ -12,6 +12,7 @@ use std::{io::prelude::*, path::Path};
 use totsugeki::bracket::seeding::Seeding;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki::format::Format;
+use totsugeki::matches::result::MatchFormat;
 use totsugeki::player::PlayerID;
 use totsugeki::single_elimination_bracket::SingleEliminationBracket;
 use totsugeki::validation::AutomaticMatchValidationMode;
@@ -44,7 +45,10 @@ async fn seed(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         let data = match format {
             Format::SingleEliminationBracket => {
                 let seb = SingleEliminationBracket::create(
-                    seeding, true, // FIXME should be user provided
+                    seeding,
+                    true,               // FIXME should be user provided
+                    MatchFormat::ft3(), // FIXME should be user provided
+                    None,               // FIXME should be user provided
                 );
                 *bracket_data = (
                     format,
@@ -63,6 +67,8 @@ async fn seed(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                 let deb = DoubleEliminationBracket::create(
                     seeding,
                     AutomaticMatchValidationMode::Flexible, // FIXME should be user provided
+                    MatchFormat::ft3(),                     // FIXME should be user provided
+                    None,                                   // FIXME should be user provided
                 );
                 *bracket_data = (
                     format,

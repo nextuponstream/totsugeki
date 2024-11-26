@@ -11,6 +11,7 @@ use std::{io::prelude::*, path::Path};
 use totsugeki::bracket::seeding::Seeding;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki::format::Format;
+use totsugeki::matches::result::MatchFormat;
 use totsugeki::player::PlayerID;
 use totsugeki::single_elimination_bracket::SingleEliminationBracket;
 use totsugeki::validation::AutomaticMatchValidationMode;
@@ -48,6 +49,8 @@ async fn quit(ctx: &Context, msg: &Message) -> CommandResult {
                 let seb = SingleEliminationBracket::create(
                     Seeding::new(seeding).expect("seeding should not contain user"),
                     true,
+                    MatchFormat::ft3(), // FIXME should be user provided
+                    None,               // FIXME should be user provided
                 );
                 *bracket_data = (
                     format,
@@ -71,6 +74,8 @@ async fn quit(ctx: &Context, msg: &Message) -> CommandResult {
                 let deb = DoubleEliminationBracket::create(
                     Seeding::new(seeding).expect("seeding should not contain user"),
                     AutomaticMatchValidationMode::Flexible,
+                    MatchFormat::ft3(), // FIXME should be user provided
+                    None,               // FIXME should be user provided
                 );
                 *bracket_data = (
                     format,

@@ -9,6 +9,7 @@
 #![warn(clippy::unwrap_used)]
 
 use crate::components::bracket::displayable_match::EMPTY_NAME;
+use totsugeki::matches::result::Score;
 use totsugeki::matches::MatchID;
 use totsugeki::player::PlayerID;
 use totsugeki::{matches::Match, player::Participants};
@@ -30,7 +31,7 @@ pub struct MinimalMatch {
     /// Names of players participating in match
     pub(crate) players: [Name; 2],
     /// Score of match
-    score: (i8, i8),
+    score: (u8, u8),
     /// Expected seeds of player in match
     seeds: [usize; 2],
     /// Indicate which row it belongs to, starting from 0 index
@@ -155,10 +156,14 @@ fn from_participants(m: &Match, participants: &Participants) -> MinimalMatch {
         list.iter().map(|p| (p.get_id(), p.get_name())).collect();
     let player1 = convert_to_displayable_name(m.get_players()[0].get_name(&players));
     let player2 = convert_to_displayable_name(m.get_players()[1].get_name(&players));
+    let score = match m.get_score() {
+        None => (0, 0),
+        Some(s) => (s.0, s.1),
+    };
     MinimalMatch {
         id: m.get_id(),
         players: [player1, player2],
-        score: m.get_score().unwrap_or((0, 0)),
+        score,
         seeds: m.get_seeds(),
         row_hint: None,
     }
