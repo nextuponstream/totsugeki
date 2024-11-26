@@ -194,7 +194,7 @@ impl SingleEliminationBracket {
             .find(|m| m.contains(player_id) && m.get_winner() == Opponent(None));
         match match_to_update {
             Some(m_to_clear) => {
-                let m_to_clear = (*m_to_clear).clear_reported_result(player_id);
+                let m_to_clear = (*m_to_clear).clear_reported_result_from(player_id);
 
                 let matches = self
                     .matches

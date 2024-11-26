@@ -257,9 +257,7 @@ fn partition_players_of_loser_bracket(
 
 #[cfg(test)]
 mod tests {
-    use crate::bracket::seeding::Seeding;
     use crate::double_elimination_bracket::DoubleEliminationBracket;
-    use crate::format::Format;
     use crate::matches::result::MatchFormat;
     use crate::matches::{Match, MatchID};
     use crate::opponent::Opponent;

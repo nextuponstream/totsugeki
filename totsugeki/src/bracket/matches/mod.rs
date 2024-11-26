@@ -57,7 +57,7 @@ pub enum Error {
 
 // FIXME remove
 impl From<GenerationError> for Error {
-    fn from(value: GenerationError) -> Self {
+    fn from(_value: GenerationError) -> Self {
         Self::MatchUpdate(MatchError::SamePlayer)
     }
 }

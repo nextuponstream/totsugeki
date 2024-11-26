@@ -1,11 +1,6 @@
 //! Update seeding of bracket
 
 use crate::player::PlayerID;
-use crate::{
-    bracket::{Bracket, Error as BracketError},
-    player::Participants,
-    seeding::seed,
-};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use thiserror::Error;

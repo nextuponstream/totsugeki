@@ -3,16 +3,6 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::bracket::seeding::Seeding;
-use crate::{
-    matches::Match,
-    seeding::{
-        double_elimination_seeded_bracket::get_loser_bracket_matches_top_seed_favored,
-        single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored,
-        Error as SeedingError,
-    },
-};
-
 // TODO rename TournamentFormat
 // TODO add enum TournamentFormatWithData so it's easier for library users to handle all formats
 //  with a match statement

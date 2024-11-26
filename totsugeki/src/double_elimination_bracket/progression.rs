@@ -484,13 +484,10 @@ impl DoubleEliminationBracket {
             self.seeding.contains(player2),
             "{player2} does not belong in bracket"
         );
-        // clear reported results
-        let bracket = self.clone().clear_reported_result(player1);
-        let bracket = bracket.clear_reported_result(player2);
 
-        let matches_where_player1_is_playing: Vec<Match> = bracket
-            .matches
+        let matches_where_player1_is_playing: Vec<Match> = self
             .clone()
+            .matches
             .into_iter()
             .filter(|m| m.contains(player1) && !m.is_over())
             .collect();
@@ -498,7 +495,7 @@ impl DoubleEliminationBracket {
             matches_where_player1_is_playing.len() <= 1,
             "player 1 {player1} is involved in only 1 match but they are involved in {matches_where_player1_is_playing:?}",
         );
-        let matches_where_player2_is_playing: Vec<Match> = bracket
+        let matches_where_player2_is_playing: Vec<Match> = self
             .clone()
             .matches
             .into_iter()
@@ -509,6 +506,10 @@ impl DoubleEliminationBracket {
             "player 2 {player2} is involved in only 1 match but they are involved in {:?}",
             matches_where_player2_is_playing
         );
+
+        let bracket = self
+            .clone()
+            .clear_reported_result(matches_where_player1_is_playing[0].id);
 
         // report score as p1
         // FIXME should return bracket

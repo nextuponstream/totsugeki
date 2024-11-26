@@ -295,7 +295,7 @@ pub(crate) fn double_elimination_matches_from_partition(
 impl Match {
     /// Clear result from match and returns updated match
     #[must_use]
-    pub(crate) fn clear_reported_result(self, player_id: PlayerID) -> Self {
+    pub(crate) fn clear_reported_result_from(self, player_id: PlayerID) -> Self {
         assert!(
             self.contains(player_id),
             "cannot clear result of match for unknown player"
@@ -311,6 +311,11 @@ impl Match {
             },
             _ => unreachable!("cannot clear result for unknown player"),
         }
+    }
+    /// Clear reported results
+    #[must_use]
+    pub(crate) fn clear_reported_result(&mut self) {
+        self.reported_results = [None, None];
     }
 
     /// Returns true if one of the player has id `player_id`

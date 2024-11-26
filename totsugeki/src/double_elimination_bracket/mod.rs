@@ -1,12 +1,9 @@
 //! Double elimination bracket
 
 use crate::bracket::late_bracket_configuration::LateBracketConfiguration;
-use crate::bracket::matches::update_bracket_with;
 use crate::bracket::seeding::Seeding;
 use crate::matches::result::MatchFormat;
-use crate::matches::Match;
-use crate::opponent::Opponent;
-use crate::player::PlayerID;
+use crate::matches::{Match, MatchID};
 use crate::seeding::double_elimination_seeded_bracket::get_loser_bracket_matches_top_seed_favored;
 use crate::validation::AutomaticMatchValidationMode;
 use serde::{Deserialize, Serialize};
@@ -101,30 +98,15 @@ impl DoubleEliminationBracket {
         self.matches.clone()
     }
 
-    /// Remove player reported results from match. For internal use because validating a match with
-    /// automatic validation on may trigger a cascading update
-    fn clear_reported_result(self, player_id: PlayerID) -> Self {
-        let matches_to_update = self
-            .matches
-            .clone()
-            .into_iter()
-            .filter(|m| m.contains(player_id) && m.get_winner() == Opponent(None))
-            .collect::<Vec<Match>>();
-        assert!(
-            matches_to_update.len() <= 1,
-            "player has to play at most 1 match but found {}",
-            matches_to_update.len()
-        );
-        match matches_to_update.len() {
-            1 => {
-                let match_to_update = matches_to_update[0];
-                let m_to_clear = match_to_update.clear_reported_result(player_id);
-                let matches = update_bracket_with(&self.matches, &m_to_clear);
-
-                Self { matches, ..self }
-            }
-            0 => self,
-            _ => unreachable!(),
-        }
+    /// Clear all reported results for given match in bracket
+    #[must_use]
+    fn clear_reported_result(self, match_id: MatchID) -> Self {
+        let mut matches = self.matches.clone();
+        let match_to_update = matches
+            .iter_mut()
+            .find(|m| m.id == match_id)
+            .expect("found match");
+        let _ = match_to_update.clear_reported_result();
+        Self { matches, ..self }
     }
 }

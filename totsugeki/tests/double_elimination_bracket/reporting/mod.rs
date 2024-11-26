@@ -4,7 +4,7 @@ use totsugeki::bracket::seeding::Seeding;
 use totsugeki::double_elimination_bracket::reporting::MatchReportError;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki::matches::result::{MatchFormat, Score};
-use totsugeki::matches::{MatchID, MatchResult};
+use totsugeki::matches::MatchID;
 use totsugeki::player::PlayerID;
 use totsugeki::validation::AutomaticMatchValidationMode;
 
@@ -21,7 +21,7 @@ fn panics_when_bracket_is_empty() {
     deb.tournament_organiser_reports_result(
         MatchID::default(),
         PlayerID::create(),
-        MatchResult::new(Score(2, 0), MatchFormat::ft2()).unwrap(),
+        Score(2, 0),
         PlayerID::create(),
     )
     .unwrap();
@@ -32,7 +32,7 @@ fn reporting_twice_for_the_same_match_throws_error() {
     let seeding = vec![PlayerID::create(), PlayerID::create(), PlayerID::create()];
     let deb = DoubleEliminationBracket::create(
         Seeding::new(seeding).unwrap(),
-        AutomaticMatchValidationMode::default(),
+        AutomaticMatchValidationMode::Flexible,
         MatchFormat::ft2(),
         None,
     );
@@ -41,20 +41,14 @@ fn reporting_twice_for_the_same_match_throws_error() {
     let players = deb.get_seeding().get();
     let s2 = players[1];
     let s3 = players[2];
+    assert!(!deb.get_matches()[0].is_over());
     let (deb, _n) = deb
-        .tournament_organiser_reports_result(
-            match_id_seed_2_vs_seed_3,
-            s2,
-            MatchResult::new(Score(2, 0), MatchFormat::ft2()).unwrap(),
-            s3,
-        )
+        .tournament_organiser_reports_result(match_id_seed_2_vs_seed_3, s2, Score(2, 0), s3)
         .unwrap();
-    let Err(MatchReportError::AlreadyReported) = deb.tournament_organiser_reports_result(
-        MatchID::default(),
-        s2,
-        MatchResult::new(Score(2, 0), MatchFormat::ft2()).unwrap(),
-        s3,
-    ) else {
-        panic!("")
+    assert!(deb.get_matches()[0].is_over());
+    let Err(MatchReportError::AlreadyReported) =
+        deb.tournament_organiser_reports_result(match_id_seed_2_vs_seed_3, s2, Score(2, 0), s3)
+    else {
+        panic!("MatchReportError::AlreadyReported was not throwned")
     };
 }

@@ -1,7 +1,9 @@
 //! Reporting result for a double elimination bracket
 
+use crate::double_elimination_bracket::progression::ProgressionDEB;
 use crate::double_elimination_bracket::DoubleEliminationBracket;
-use crate::matches::{Match, MatchID, MatchResult};
+use crate::matches::result::Score;
+use crate::matches::{Match, MatchID, ReportedResult};
 use crate::player::PlayerID;
 use thiserror::Error;
 
@@ -23,7 +25,7 @@ impl DoubleEliminationBracket {
         self,
         match_id: MatchID,
         player1: PlayerID,
-        bracket_result: MatchResult,
+        score: Score,
         player2: PlayerID,
     ) -> Result<(DoubleEliminationBracket, Vec<Match>), MatchReportError> {
         assert!(
@@ -35,34 +37,55 @@ impl DoubleEliminationBracket {
             "{player2} does not belong in bracket"
         );
 
-        let matches_where_player1_is_playing: Vec<Match> = self
-            .matches
-            .clone()
-            .into_iter()
-            .filter(|m| m.contains(player1) && !m.is_over())
-            .collect();
-        assert!(
-            matches_where_player1_is_playing.len() <= 1,
-            "player 1 {player1} is involved in only 1 match but they are involved in {matches_where_player1_is_playing:?}",
-        );
-        let matches_where_player2_is_playing: Vec<Match> = self
-            .clone()
-            .matches
-            .into_iter()
-            .filter(|m| m.contains(player2) && !m.is_over())
-            .collect();
-        assert!(
-            matches_where_player2_is_playing.len() <= 1,
-            "player 2 {player2} is involved in only 1 match but they are involved in {:?}",
-            matches_where_player2_is_playing
-        );
+        let old_playable_matches = self.matches_to_play();
+        let mut matches = self.matches.clone();
 
-        let m = self
-            .matches
-            .iter()
+        let match_to_update = matches
+            .iter_mut()
             .find(|m| m.id == match_id)
-            .expect("match");
+            .expect("match to update");
+        if match_to_update.is_over() {
+            return Err(MatchReportError::AlreadyReported);
+        }
+        let _ = match_to_update.clear_reported_result();
 
-        todo!()
+        let bracket = DoubleEliminationBracket::new(
+            matches,
+            self.seeding.clone(),
+            self.automatic_match_validation_mode,
+        );
+
+        let result_player_1 = ReportedResult(Some(score));
+        let (matches, first_affected_match, _new_matches) = bracket
+            .report_result_dangerous(player1, result_player_1.0.expect("result"))
+            .expect("matches");
+
+        // report same score as p2
+        let bracket = DoubleEliminationBracket::new(
+            matches,
+            self.seeding.clone(),
+            self.automatic_match_validation_mode,
+        );
+
+        // TODO just set reported results and validate
+        let (matches, second_affected_match, _new_matches) = bracket
+            .report_result_dangerous(player2, result_player_1.reverse().0.expect("result"))
+            .expect("reported result");
+
+        let bracket = DoubleEliminationBracket::new(
+            matches,
+            self.seeding.clone(),
+            self.automatic_match_validation_mode,
+        );
+
+        assert_eq!(first_affected_match, second_affected_match);
+
+        let new_playable_matches = bracket
+            .matches_to_play()
+            .into_iter()
+            .filter(|m| old_playable_matches.iter().any(|old_m| old_m.id == m.id))
+            .collect::<Vec<Match>>();
+
+        Ok((bracket, new_playable_matches))
     }
 }

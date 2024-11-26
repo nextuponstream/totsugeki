@@ -15,7 +15,7 @@ mod tests {
     #[ignore]
     fn disqualify_8000_player_bracket() {
         let start = Instant::now();
-        let participants = Participants::default();
+        let _participants = Participants::default();
         let mut players = vec![];
         let mut seeding = vec![];
 
