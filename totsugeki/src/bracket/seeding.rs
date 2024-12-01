@@ -11,7 +11,7 @@ pub struct Seeding(Vec<PlayerID>);
 
 /// Provided input is unsuitable for seeding
 #[derive(Error, Debug, PartialEq)]
-pub enum SeedingError {
+pub enum Error {
     /// Duplicate player
     #[error("Duplicate player {0}")]
     DuplicatePlayer(PlayerID),
@@ -22,17 +22,18 @@ impl Seeding {
     ///
     /// # Errors
     /// Player list is unsuitable for seeding
-    pub fn new(player_ids: Vec<PlayerID>) -> Result<Self, SeedingError> {
+    pub fn new(player_ids: Vec<PlayerID>) -> Result<Self, Error> {
         let mut set = HashSet::new();
         for player_id in &player_ids {
             if !set.insert(player_id) {
-                return Err(SeedingError::DuplicatePlayer(player_id.clone()));
+                return Err(Error::DuplicatePlayer(*player_id));
             }
         }
         Ok(Self(player_ids))
     }
 
     /// Get seeding
+    #[must_use]
     pub fn get(&self) -> Vec<PlayerID> {
         self.0.clone()
     }
@@ -50,6 +51,7 @@ impl Seeding {
     }
 
     /// Returns `true` if no player is seeded
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.0.len() == 0
     }
@@ -75,7 +77,7 @@ mod tests {
         ];
         assert_eq!(
             Seeding::new(players),
-            Err(SeedingError::DuplicatePlayer(duplicate_id))
+            Err(Error::DuplicatePlayer(duplicate_id))
         )
     }
 }

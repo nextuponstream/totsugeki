@@ -11,7 +11,7 @@ pub struct Score(pub u8, pub u8);
 
 /// Match result
 #[derive(Debug)]
-pub struct MatchResult(Score, MatchFormat);
+pub struct MatchScore(Score, MatchFormat);
 
 /// Match formats
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
@@ -40,6 +40,7 @@ impl MatchFormat {
     /// First to two
     ///
     /// Commonly seen in large double-elimination bracket because of bracket schedule
+    #[must_use]
     pub fn ft2() -> Self {
         Self(2)
     }
@@ -50,11 +51,13 @@ impl MatchFormat {
     /// * top8/top6 in large tournament
     /// * top3/4 in small online brackets (10-20 players)
     /// * default format for kusoges and extremely fast-pace game (example: DBFZ, BBTAG, GGST)
+    #[must_use]
     pub fn ft3() -> Self {
         Self(3)
     }
 
     /// New match format (you should use `ft2()` and `ft3()`
+    #[allow(unused)]
     fn new(first_to_n: u8) -> Result<Self, MatchFormatError> {
         if first_to_n == 0 {
             Err(MatchFormatError::Invalid(first_to_n))
@@ -72,8 +75,11 @@ pub enum Error {
     Invalid(Score),
 }
 
-impl MatchResult {
+impl MatchScore {
     /// New bracket result
+    ///
+    /// # Errors
+    /// When provided score is incompatible with match format
     pub fn new(score: Score, format: MatchFormat) -> Result<Self, Error> {
         if format.0 < score.0 || format.0 < score.1 || (format.0 == score.0 && score.0 == score.1) {
             Err(Error::Invalid(score))
@@ -83,6 +89,10 @@ impl MatchResult {
     }
 
     /// Returns true if match is finished
+    ///
+    /// # Panics
+    /// when match format and score are incompatible
+    #[must_use]
     pub fn finished(&self) -> bool {
         let first_to_n = self.1 .0;
         let player_with_expected_high_seed_score = self.0 .0;
@@ -102,7 +112,7 @@ impl Display for Score {
     }
 }
 
-impl Display for MatchResult {
+impl Display for MatchScore {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "({}) {}", self.1, self.0)
     }
@@ -111,47 +121,47 @@ impl Display for MatchResult {
 #[cfg(test)]
 mod tests {
     use crate::matches::result::{Error, MatchFormat, Score};
-    use crate::matches::MatchResult;
+    use crate::matches::MatchScore;
 
     #[test]
     fn first_to_two() {
-        assert!(MatchResult::new(Score(2, 0), MatchFormat::default()).is_ok());
-        assert!(MatchResult::new(Score(2, 1), MatchFormat::default()).is_ok());
-        assert!(MatchResult::new(Score(1, 2), MatchFormat::default()).is_ok());
-        assert!(MatchResult::new(Score(0, 2), MatchFormat::default()).is_ok());
+        assert!(MatchScore::new(Score(2, 0), MatchFormat::default()).is_ok());
+        assert!(MatchScore::new(Score(2, 1), MatchFormat::default()).is_ok());
+        assert!(MatchScore::new(Score(1, 2), MatchFormat::default()).is_ok());
+        assert!(MatchScore::new(Score(0, 2), MatchFormat::default()).is_ok());
     }
     #[test]
     fn first_to_three() {
         let format = MatchFormat::ft3();
-        assert!(MatchResult::new(Score(3, 0), format).is_ok());
-        assert!(MatchResult::new(Score(3, 1), format).is_ok());
-        assert!(MatchResult::new(Score(3, 2), format).is_ok());
-        assert!(MatchResult::new(Score(2, 3), format).is_ok());
-        assert!(MatchResult::new(Score(1, 3), format).is_ok());
-        assert!(MatchResult::new(Score(0, 3), format).is_ok());
+        assert!(MatchScore::new(Score(3, 0), format).is_ok());
+        assert!(MatchScore::new(Score(3, 1), format).is_ok());
+        assert!(MatchScore::new(Score(3, 2), format).is_ok());
+        assert!(MatchScore::new(Score(2, 3), format).is_ok());
+        assert!(MatchScore::new(Score(1, 3), format).is_ok());
+        assert!(MatchScore::new(Score(0, 3), format).is_ok());
     }
 
     #[test]
     fn ft2_is_finished() {
         let format = MatchFormat::ft2();
-        let result = MatchResult::new(Score(2, 0), format).unwrap();
+        let result = MatchScore::new(Score(2, 0), format).unwrap();
         assert!(result.finished());
-        let result = MatchResult::new(Score(0, 2), format).unwrap();
+        let result = MatchScore::new(Score(0, 2), format).unwrap();
         assert!(result.finished());
     }
     #[test]
     fn ft3_is_finished() {
         let format = MatchFormat::ft3();
-        let result = MatchResult::new(Score(3, 1), format).unwrap();
+        let result = MatchScore::new(Score(3, 1), format).unwrap();
         assert!(result.finished());
-        let result = MatchResult::new(Score(1, 3), format).unwrap();
+        let result = MatchScore::new(Score(1, 3), format).unwrap();
         assert!(result.finished());
     }
 
     #[test]
     fn weird_result_throws_error() {
         let format = MatchFormat::ft2();
-        let Err(Error::Invalid(_)) = MatchResult::new(Score(2, 2), format) else {
+        let Err(Error::Invalid(_)) = MatchScore::new(Score(2, 2), format) else {
             panic!()
         };
     }
@@ -159,7 +169,7 @@ mod tests {
     #[test]
     fn cannot_report_ft3_final_result_in_ft2_match() {
         let format = MatchFormat::ft2();
-        let Err(Error::Invalid(_)) = MatchResult::new(Score(3, 1), format) else {
+        let Err(Error::Invalid(_)) = MatchScore::new(Score(3, 1), format) else {
             panic!()
         };
     }

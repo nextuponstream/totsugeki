@@ -5,6 +5,7 @@ use crate::double_elimination_bracket::DoubleEliminationBracket;
 
 impl DoubleEliminationBracket {
     /// Get seeding of bracket
+    #[must_use]
     pub fn get_seeding(&self) -> Seeding {
         self.seeding.clone()
     }

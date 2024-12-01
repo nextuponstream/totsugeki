@@ -1,6 +1,5 @@
 //! Reporting result for a double elimination bracket
 
-use crate::double_elimination_bracket::progression::ProgressionDEB;
 use crate::double_elimination_bracket::DoubleEliminationBracket;
 use crate::matches::result::Score;
 use crate::matches::{Match, MatchID, ReportedResult};
@@ -47,7 +46,7 @@ impl DoubleEliminationBracket {
         if match_to_update.is_over() {
             return Err(MatchReportError::AlreadyReported);
         }
-        let _ = match_to_update.clear_reported_result();
+        match_to_update.clear_reported_result();
 
         let bracket = DoubleEliminationBracket::new(
             matches,

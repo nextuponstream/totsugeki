@@ -5,68 +5,110 @@ use crate::bracket::progression::new_matches_to_play_for_bracket;
 use crate::matches::result::Score;
 use crate::matches::{Error as MatchError, MatchID};
 use crate::matches::{Match, ReportedResult};
-use crate::opponent::Opponent;
 use crate::player::PlayerID;
 use crate::single_elimination_bracket::{
     SingleEliminationBracket, SingleEliminationReportResultError,
 };
 // FIXME add all test for reports from double elimination here too
 
+// TODO force implementation of score report where you are required to tell all players involved
+//  rather then inferring (p1, p2). This way, does additional checks are done (is p2
+//  disqualified?). Currently, it only requires p1, which is fine in itself. There might be a
+//  case to require all players involved that I don't foresee, like a performance improvement
+
 // TODO for consistency, make Progression trait common to single elim and double elim but MAKE IT
 //  CLEAR that the abstraction is only for library DX and it should be taken out once both
 //  implementations diverge
-/// All methods to update matches of an ongoing single elimination bracket
-pub trait ProgressionSEB {
-    // TODO force implementation of score report where you are required to tell all players involved
-    //  rather then inferring (p1, p2). This way, does additional checks are done (is p2
-    //  disqualified?). Currently, it only requires p1, which is fine in itself. There might be a
-    //  case to require all players involved that I don't foresee, like a performance improvement
 
+impl SingleEliminationBracket {
     /// Returns true if bracket is over (all matches are played)
     #[must_use]
-    fn is_over(&self) -> bool;
-
-    // /// Returns true if bracket is over (all matches are played)
-    // #[must_use]
-    // fn matches_progress(&self) -> (usize, usize);
-
-    /// List all matches that can be played out
-    fn matches_to_play(&self) -> Vec<Match>;
+    pub fn is_over(&self) -> bool {
+        bracket_is_over(&self.matches)
+    }
 
     /// Returns true if player is disqualified
-    fn is_disqualified(&self, player_id: PlayerID) -> bool;
+    #[must_use]
+    pub fn is_disqualified(&self, player_id: PlayerID) -> bool {
+        self.matches
+            .iter()
+            .any(|m| m.is_automatic_loser_by_disqualification(player_id))
+    }
 
-    /// Report result of match. Returns updated matches, affected match and new
-    /// matches to play
-    /// # Errors
-    /// thrown when player does not belong in bracket
-    /// # Panics
-    /// When `player_id` is unknown
-    fn report_result(
-        self,
-        player_id: PlayerID,
-        result: Score,
-    ) -> Result<(Vec<Match>, MatchID, Vec<Match>), SingleEliminationReportResultError>;
-
-    /// Tournament organiser reports result. Returns updated bracket, affected
-    /// `match_id` and new matches to play (that weren't playable before)
-    ///
-    /// NOTE: both players are needed, so it is less ambiguous when reading code:
-    /// * p1 2-0 is more ambiguous to read than
-    /// * p1 2-0 p2
-    ///
-    /// Technically, it's unnecessary.
-    ///
-    /// # Errors
-    /// thrown when player does not belong in bracket
-    /// # Panics
-    /// When either `player1` or `player2` is unknown
-    fn tournament_organiser_reports_result(
-        self,
-        player1: PlayerID,
-        result: Score,
-        player2: PlayerID,
-    ) -> Result<(SingleEliminationBracket, MatchID, Vec<Match>), SingleEliminationReportResultError>;
+    // /// Report result of match. Returns updated matches, affected match and new
+    // /// matches to play
+    // /// # Errors
+    // /// thrown when player does not belong in bracket
+    // /// # Panics
+    // /// When `player_id` is unknown
+    // fn report_result(
+    //     self,
+    //     player_id: PlayerID,
+    //     result: Score,
+    // ) -> Result<(Vec<Match>, MatchID, Vec<Match>), SingleEliminationReportResultError> {
+    //     assert!(
+    //         self.seeding.contains(player_id),
+    //         "Unknown player {player_id}"
+    //     );
+    //     if self.is_over() {
+    //         return Err(SingleEliminationReportResultError::TournamentIsOver);
+    //     }
+    //     if self.is_disqualified(player_id) {
+    //         return Err(SingleEliminationReportResultError::ForbiddenDisqualified(
+    //             player_id,
+    //         ));
+    //     }
+    //     let match_to_update = self
+    //         .matches
+    //         .iter()
+    //         .find(|m| m.contains(player_id) && m.get_winner() == Opponent(None));
+    //     todo!()
+    // match match_to_update {
+    //     Some(m) => {
+    //         let old_matches = self.matches_to_play();
+    //         let affected_match_id = m.get_id();
+    //         let matches =
+    //             self.update_player_reported_match_result(affected_match_id, result, player_id)?;
+    //         // let p = crate::bracket::matches::single_elimination_format::Step::new(
+    //         //     Some(matches),
+    //         //     &self.seeding,
+    //         //     self.automatic_progression,
+    //         // )?;
+    //
+    //         let matches = if self.automatic_match_progression {
+    //             // match p.clone().validate_match_result(affected_match_id) {
+    //             //     Ok((b, _)) => b,
+    //             //                 Err(e) => match e {
+    //             //                     Error::MatchUpdate(
+    //             //                         crate::matches::Error::PlayersReportedDifferentMatchOutcome(_, _),
+    //             //                     ) => p.matches,
+    //             //                     _ => return Err(e),
+    //             //                 },
+    //             //             }
+    //             todo!()
+    //         } else {
+    //             // p.matches
+    //             self.matches.clone()
+    //         };
+    //         //
+    //         //         let p = crate::bracket::matches::single_elimination_format::Step::new(
+    //         //             Some(matches),
+    //         //             &self.seeding,
+    //         //             self.automatic_progression,
+    //         //         )?;
+    //         //
+    //         //         let new_matches = p
+    //         //             .matches_to_play()
+    //         //             .iter()
+    //         //             .filter(|m| !old_matches.iter().any(|old_m| old_m.get_id() == m.get_id()))
+    //         //             .map(std::clone::Clone::clone)
+    //         //             .collect();
+    //         //         Ok((p.matches, affected_match_id, new_matches))
+    //         todo!()
+    //     }
+    //     None => Err(SingleEliminationReportResultError::NoMatchToPlay(player_id)),
+    // }
+    // }
 
     /// Update `match_id` with reported `result` of `player`
     ///
@@ -74,102 +116,7 @@ pub trait ProgressionSEB {
     /// When `match_id` or `player_id` is unknown
     /// # Errors
     /// Input is invalid for this bracket state
-    fn update_player_reported_match_result(
-        self,
-        match_id: MatchID,
-        result: Score,
-        player_id: PlayerID,
-    ) -> Result<Vec<Match>, SingleEliminationReportResultError>;
-
-    /// Returns updated bracket and new matches to play. Uses `match_id` as the
-    /// first match to start updating before looking deeper into the bracket
-    fn validate_match_result(self, match_id: MatchID) -> (SingleEliminationBracket, Vec<Match>);
-
-    // /// Checks all assertions after updating matches
-    // fn check_all_assertions(&self);
-}
-
-impl ProgressionSEB for SingleEliminationBracket {
-    fn is_over(&self) -> bool {
-        bracket_is_over(&self.matches)
-    }
-
-    fn is_disqualified(&self, player_id: PlayerID) -> bool {
-        self.matches
-            .iter()
-            .any(|m| m.is_automatic_loser_by_disqualification(player_id))
-    }
-
-    fn report_result(
-        self,
-        player_id: PlayerID,
-        result: Score,
-    ) -> Result<(Vec<Match>, MatchID, Vec<Match>), SingleEliminationReportResultError> {
-        assert!(
-            self.seeding.contains(player_id),
-            "Unknown player {player_id}"
-        );
-        if self.is_over() {
-            return Err(SingleEliminationReportResultError::TournamentIsOver);
-        }
-        if self.is_disqualified(player_id) {
-            return Err(SingleEliminationReportResultError::ForbiddenDisqualified(
-                player_id,
-            ));
-        }
-        let match_to_update = self
-            .matches
-            .iter()
-            .find(|m| m.contains(player_id) && m.get_winner() == Opponent(None));
-        todo!()
-        // match match_to_update {
-        //     Some(m) => {
-        //         let old_matches = self.matches_to_play();
-        //         let affected_match_id = m.get_id();
-        //         let matches =
-        //             self.update_player_reported_match_result(affected_match_id, result, player_id)?;
-        //         // let p = crate::bracket::matches::single_elimination_format::Step::new(
-        //         //     Some(matches),
-        //         //     &self.seeding,
-        //         //     self.automatic_progression,
-        //         // )?;
-        //
-        //         let matches = if self.automatic_match_progression {
-        //             // match p.clone().validate_match_result(affected_match_id) {
-        //             //     Ok((b, _)) => b,
-        //             //                 Err(e) => match e {
-        //             //                     Error::MatchUpdate(
-        //             //                         crate::matches::Error::PlayersReportedDifferentMatchOutcome(_, _),
-        //             //                     ) => p.matches,
-        //             //                     _ => return Err(e),
-        //             //                 },
-        //             //             }
-        //             todo!()
-        //         } else {
-        //             // p.matches
-        //             self.matches.clone()
-        //         };
-        //         //
-        //         //         let p = crate::bracket::matches::single_elimination_format::Step::new(
-        //         //             Some(matches),
-        //         //             &self.seeding,
-        //         //             self.automatic_progression,
-        //         //         )?;
-        //         //
-        //         //         let new_matches = p
-        //         //             .matches_to_play()
-        //         //             .iter()
-        //         //             .filter(|m| !old_matches.iter().any(|old_m| old_m.get_id() == m.get_id()))
-        //         //             .map(std::clone::Clone::clone)
-        //         //             .collect();
-        //         //         Ok((p.matches, affected_match_id, new_matches))
-        //         todo!()
-        //     }
-        //     None => Err(SingleEliminationReportResultError::NoMatchToPlay(player_id)),
-        // }
-    }
-
-    fn update_player_reported_match_result(
+    pub fn update_player_reported_match_result(
         self,
         match_id: MatchID,
         result: Score,
@@ -196,7 +143,13 @@ impl ProgressionSEB for SingleEliminationBracket {
         Ok(matches)
     }
 
-    fn validate_match_result(self, match_id: MatchID) -> (SingleEliminationBracket, Vec<Match>) {
+    /// Returns updated bracket and new matches to play. Uses `match_id` as the
+    /// first match to start updating before looking deeper into the bracket
+    #[must_use]
+    pub fn validate_match_result(
+        self,
+        match_id: MatchID,
+    ) -> (SingleEliminationBracket, Vec<Match>) {
         let old_matches_to_play = self.matches_to_play();
         // FIXME remove unreachable
         // FIXME should return an error because it's used by a library => there must be some
@@ -216,7 +169,8 @@ impl ProgressionSEB for SingleEliminationBracket {
         (bracket, new_matches)
     }
 
-    fn matches_to_play(&self) -> Vec<Match> {
+    /// List all matches that can be played out
+    pub fn matches_to_play(&self) -> Vec<Match> {
         self.matches
             .iter()
             .copied()
@@ -251,7 +205,20 @@ impl ProgressionSEB for SingleEliminationBracket {
     // }
 
     // FIXME return self and consume...
-    fn tournament_organiser_reports_result(
+    /// Tournament organiser reports result. Returns updated bracket, affected
+    /// `match_id` and new matches to play (that weren't playable before)
+    ///
+    /// NOTE: both players are needed, so it is less ambiguous when reading code:
+    /// * p1 2-0 is more ambiguous to read than
+    /// * p1 2-0 p2
+    ///
+    /// Technically, it's unnecessary.
+    ///
+    /// # Errors
+    /// thrown when player does not belong in bracket
+    /// # Panics
+    /// When either `player1` or `player2` is unknown
+    pub fn tournament_organiser_reports_result(
         self,
         player1: PlayerID,
         result: Score,
@@ -278,7 +245,6 @@ mod tests {
     use crate::opponent::Opponent;
     use crate::player::Player;
     use crate::seeding::single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored;
-    use crate::single_elimination_bracket::progression::ProgressionSEB;
     use crate::single_elimination_bracket::SingleEliminationBracket;
 
     fn assert_players_play_each_other(

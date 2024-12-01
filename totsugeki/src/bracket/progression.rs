@@ -9,9 +9,9 @@ pub(crate) fn new_matches_to_play_for_bracket(
     old_matches_to_play: &[Match],
     matches_to_play: &[Match],
 ) -> Vec<Match> {
-    assert!(matches_to_play.iter().all(|m| m.needs_playing()));
+    assert!(matches_to_play.iter().all(Match::needs_playing));
     assert!(
-        old_matches_to_play.iter().all(|m| m.needs_playing()),
+        old_matches_to_play.iter().all(Match::needs_playing),
         "{:?}",
         old_matches_to_play
     );
@@ -25,14 +25,14 @@ pub(crate) fn new_matches_to_play_for_bracket(
         .map(Clone::clone)
         .collect();
 
-    if new_matches_to_play.len() > 2 {
-        panic!(
-            "Misuse: when resolving in a bracket, the winner of the match goes to his next match \
+    assert!(
+        !(new_matches_to_play.len() > 2),
+        "Misuse: when resolving in a bracket, the winner of the match goes to his next match \
         and same thing for the loser. Therefore, there should be at most two new matches to play \
          but found ({})",
-            new_matches_to_play.len()
-        )
-    }
+        new_matches_to_play.len()
+    );
+
     new_matches_to_play
 }
 

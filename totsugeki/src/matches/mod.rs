@@ -10,7 +10,7 @@ use crate::{
     player::Participants,
     ID,
 };
-pub use result::{Error as BracketResultGenerationError, MatchResult};
+pub use result::{Error as BracketResultGenerationError, MatchScore};
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 use std::{num::ParseIntError, str::FromStr};
@@ -313,7 +313,6 @@ impl Match {
         }
     }
     /// Clear reported results
-    #[must_use]
     pub(crate) fn clear_reported_result(&mut self) {
         self.reported_results = [None, None];
     }

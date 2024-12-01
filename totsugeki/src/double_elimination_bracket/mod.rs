@@ -16,6 +16,7 @@ mod partition;
 
 pub mod progression;
 pub mod reporting;
+mod validate_from;
 
 /// Double elimination bracket
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
@@ -45,8 +46,7 @@ impl DoubleEliminationBracket {
                 crate::seeding::single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored(&seeding, base_match_format, late_bracket_configuration);
             matches.append(&mut winner_bracket_matches);
             let mut looser_bracket_matches =
-                get_loser_bracket_matches_top_seed_favored(&seeding, MatchFormat::ft3(), None)
-                    .unwrap();
+                get_loser_bracket_matches_top_seed_favored(&seeding, base_match_format, None);
 
             matches.append(&mut looser_bracket_matches);
             let grand_finals: Match = Match::new_empty([1, 2], base_match_format);
@@ -56,9 +56,9 @@ impl DoubleEliminationBracket {
         }
 
         Self {
+            matches,
             seeding,
             automatic_match_validation_mode,
-            matches,
         }
     }
 
@@ -106,7 +106,7 @@ impl DoubleEliminationBracket {
             .iter_mut()
             .find(|m| m.id == match_id)
             .expect("found match");
-        let _ = match_to_update.clear_reported_result();
+        match_to_update.clear_reported_result();
         Self { matches, ..self }
     }
 }

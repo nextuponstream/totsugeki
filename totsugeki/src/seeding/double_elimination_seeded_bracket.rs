@@ -5,8 +5,8 @@ use std::ops::ControlFlow;
 use crate::bracket::late_bracket_configuration::LateBracketConfiguration;
 use crate::bracket::seeding::Seeding;
 use crate::matches::result::MatchFormat;
+use crate::matches::Match;
 use crate::player::PlayerID;
-use crate::{matches::Match, seeding::Error};
 
 /// Get seed of player from seeding
 fn get_seed_of(player: PlayerID, seeding: &Seeding) -> usize {
@@ -39,15 +39,13 @@ fn get_seed_of(player: PlayerID, seeding: &Seeding) -> usize {
 ///
 /// # Errors
 /// thrown when math overflow happens
+#[must_use]
 pub fn get_loser_bracket_matches_top_seed_favored(
     seeding: &Seeding,
     match_format: MatchFormat,
     late_bracket_configuration: Option<LateBracketConfiguration>,
-) -> Result<Vec<Match>, Error> {
-    let losers_by_round = match partition_players_of_loser_bracket(seeding) {
-        Ok(value) => value,
-        Err(value) => return value,
-    };
+) -> Vec<Match> {
+    let losers_by_round = partition_players_of_loser_bracket(seeding);
 
     let mut matches = vec![];
     let mut incoming_players_of_this_wave = vec![];
@@ -66,10 +64,10 @@ pub fn get_loser_bracket_matches_top_seed_favored(
         }
 
         let tmp = incoming_players_of_this_wave.clone();
-        let wave = form_wave(&tmp)?;
+        let wave = form_wave(&tmp);
         let (p_with_bye, p_without_bye) = generate_matches_of_first_round_in_wave(
             wave,
-            &seeding,
+            seeding,
             &mut matches,
             MatchFormat::ft3(),
         );
@@ -89,8 +87,8 @@ pub fn get_loser_bracket_matches_top_seed_favored(
         let mut other_opponents = expected_losers.to_vec();
         other_opponents.reverse();
         for (o1, o2) in expected_winners.iter().zip(other_opponents.iter()) {
-            let seed_o1 = get_seed_of(*o1, &seeding);
-            let seed_o2 = get_seed_of(*o2, &seeding);
+            let seed_o1 = get_seed_of(*o1, seeding);
+            let seed_o2 = get_seed_of(*o2, seeding);
             let m = Match::new_looser_bracket_match([seed_o1, seed_o2], match_format);
             matches.push(m);
         }
@@ -117,7 +115,7 @@ pub fn get_loser_bracket_matches_top_seed_favored(
         }
     }
 
-    Ok(matches)
+    matches
 }
 
 /// qiej
@@ -183,22 +181,22 @@ struct Wave<'a> {
 }
 
 /// Returns wave of players. See `Wave` documentation for more information
-fn form_wave(incoming_players_of_wave: &[PlayerID]) -> Result<Wave, Error> {
+fn form_wave(incoming_players_of_wave: &[PlayerID]) -> Wave {
     let byes = match (incoming_players_of_wave.len()).checked_next_power_of_two() {
         Some(next_higher_power_of_two) => next_higher_power_of_two - incoming_players_of_wave.len(),
-        None => return Err(Error::MathOverflow),
+        None => panic!("math overflow"),
     };
     let (players_with_bye, players_without_bye) = incoming_players_of_wave.split_at(byes);
     let half = players_without_bye.len() / 2;
     let (expected_winners, expected_losers) = players_without_bye.split_at(half);
     let mut expected_losers = expected_losers.to_vec();
     expected_losers.reverse();
-    Ok(Wave {
+    Wave {
         players_with_bye,
         players_without_bye,
         expected_winners,
         expected_losers,
-    })
+    }
 }
 
 /// Returns `ControlFlow::Break` when the players from the initial wave should
@@ -223,9 +221,7 @@ fn fill_incoming_wave(
 /// Partitions players by "waves". Waves are made of the winner of the previous
 /// loser bracket round and the incoming player from the winner bracket (who
 /// lost a mathc)
-fn partition_players_of_loser_bracket(
-    seeding: &Seeding,
-) -> Result<Vec<Vec<PlayerID>>, Result<Vec<Match>, Error>> {
+fn partition_players_of_loser_bracket(seeding: &Seeding) -> Vec<Vec<PlayerID>> {
     let mut remaining_loosers = seeding.get();
     remaining_loosers.reverse();
     remaining_loosers.pop();
@@ -235,7 +231,7 @@ fn partition_players_of_loser_bracket(
     while n < seeding.len() - 1 {
         n += match 2usize.checked_pow(total_waves) {
             Some(c) => c,
-            None => return Err(Err(Error::MathOverflow)),
+            None => panic!("math overflow"),
         };
         total_waves += 1;
     }
@@ -243,7 +239,7 @@ fn partition_players_of_loser_bracket(
         // take 2^i participants for this wave starting from the last possible wave
         let number_of_losers_for_this_round = match usize::checked_pow(2, i) {
             Some(power_of_two) => power_of_two.min(remaining_loosers.len()),
-            None => return Err(Err(Error::MathOverflow)),
+            None => panic!("math overflow"),
         };
         let mut loosers_for_this_round = vec![];
         for _ in 0..number_of_losers_for_this_round {
@@ -252,7 +248,7 @@ fn partition_players_of_loser_bracket(
         losers_by_round.push(loosers_for_this_round);
     }
     losers_by_round.reverse();
-    Ok(losers_by_round)
+    losers_by_round
 }
 
 #[cfg(test)]
@@ -346,8 +342,7 @@ mod tests {
             &participants.get_seeding(),
             MatchFormat::ft3(),
             None,
-        )
-        .expect("matches");
+        );
         let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(matches.len(), 2, "expected 2 matches, got: {matches:?}");
         assert_eq!(
@@ -383,8 +378,7 @@ mod tests {
             &participants.get_seeding(),
             MatchFormat::ft3(),
             None,
-        )
-        .expect("matches");
+        );
         let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
@@ -431,8 +425,7 @@ mod tests {
             &participants.get_seeding(),
             MatchFormat::ft3(),
             None,
-        )
-        .expect("matches");
+        );
         let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
@@ -479,8 +472,7 @@ mod tests {
             &participants.get_seeding(),
             MatchFormat::ft3(),
             None,
-        )
-        .expect("matches");
+        );
         let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
@@ -528,8 +520,7 @@ mod tests {
             &participants.get_seeding(),
             MatchFormat::ft3(),
             None,
-        )
-        .expect("matches");
+        );
         let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
@@ -578,8 +569,7 @@ mod tests {
             &participants.get_seeding(),
             MatchFormat::ft3(),
             None,
-        )
-        .expect("matches");
+        );
         let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
@@ -629,8 +619,7 @@ mod tests {
             &participants.get_seeding(),
             MatchFormat::ft3(),
             None,
-        )
-        .expect("matches");
+        );
         let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
@@ -681,8 +670,7 @@ mod tests {
             &participants.get_seeding(),
             MatchFormat::ft3(),
             None,
-        )
-        .expect("matches");
+        );
         let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
@@ -734,8 +722,7 @@ mod tests {
             &participants.get_seeding(),
             MatchFormat::ft3(),
             None,
-        )
-        .expect("matches");
+        );
         let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
@@ -788,8 +775,7 @@ mod tests {
             &participants.get_seeding(),
             MatchFormat::ft3(),
             None,
-        )
-        .expect("matches");
+        );
         let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),

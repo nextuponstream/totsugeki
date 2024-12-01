@@ -16,9 +16,9 @@ pub struct LateBracketConfiguration {
     ///
     /// Examples:
     /// * the winner bracket of a double elimination bracket is played in FT3
-    /// only for the winner finals. Then `rounds` is configured to 1.
+    ///   only for the winner finals. Then `rounds` is configured to 1.
     /// * the winner bracket of a double elimination bracket top 8 is in FT3.
-    /// Then `rounds` is set to 3
+    ///   Then `rounds` is set to 3
     rounds: usize,
     /// For the last `rounds`, use `match_format` instead
     match_format: MatchFormat,

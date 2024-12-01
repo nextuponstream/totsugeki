@@ -1,6 +1,5 @@
 //! Disqualify from bracket. For people that cannot physically make it
 
-use crate::double_elimination_bracket::progression::ProgressionDEB;
 use crate::double_elimination_bracket::DoubleEliminationBracket;
 use crate::matches::Match;
 use crate::opponent::Opponent;
@@ -69,7 +68,7 @@ impl DoubleEliminationBracket {
         else {
             return Ok((
                 bracket.clone(),
-                bracket.new_playable_matches(old_playable_matches),
+                bracket.new_playable_matches(&old_playable_matches),
             ));
         };
         // DQ them in loser bracket and validate result again
@@ -87,12 +86,12 @@ impl DoubleEliminationBracket {
             let (bracket, _) = bracket.validate_match_result(match_in_loser_id);
             Ok((
                 bracket.clone(),
-                bracket.new_playable_matches(old_playable_matches),
+                bracket.new_playable_matches(&old_playable_matches),
             ))
         } else {
             Ok((
                 bracket.clone(),
-                bracket.new_playable_matches(old_playable_matches),
+                bracket.new_playable_matches(&old_playable_matches),
             ))
         }
     }
@@ -100,7 +99,7 @@ impl DoubleEliminationBracket {
 
 impl DoubleEliminationBracket {
     /// Returns playable matches from previous state
-    fn new_playable_matches(&self, old_playable_matches: Vec<Match>) -> Option<Vec<Match>> {
+    fn new_playable_matches(&self, old_playable_matches: &[Match]) -> Option<Vec<Match>> {
         let matches_to_play = self.matches_to_play();
         let new_playable_matches = matches_to_play
             .into_iter()

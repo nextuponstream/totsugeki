@@ -8,6 +8,7 @@ use crate::player::PlayerID;
 
 impl DoubleEliminationBracket {
     /// Returns `true` if player is eliminated from bracket
+    #[must_use]
     pub fn is_eliminated(&self, player_id: PlayerID) -> bool {
         let losses = self
             .matches

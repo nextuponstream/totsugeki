@@ -3,7 +3,6 @@
 use crate::matches::Match;
 use crate::opponent::Opponent;
 use crate::player::PlayerID;
-use crate::single_elimination_bracket::progression::ProgressionSEB;
 use crate::single_elimination_bracket::SingleEliminationBracket;
 
 impl SingleEliminationBracket {

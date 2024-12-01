@@ -1,12 +1,10 @@
 //! Progression of a double elimination bracket
 
-use crate::bracket::matches::{update_bracket_with, Error};
-use crate::bracket::progression::{new_matches_to_play_for_bracket, winner_of_bracket};
+use crate::bracket::matches::update_bracket_with;
+use crate::bracket::progression::new_matches_to_play_for_bracket;
 use crate::double_elimination_bracket::DoubleEliminationBracket;
 use crate::matches::result::Score;
-use crate::matches::{
-    double_elimination_matches_from_partition, Match, MatchID, MatchResult, ReportedResult,
-};
+use crate::matches::{Match, MatchID, MatchScore, ReportedResult};
 use crate::opponent::Opponent;
 use crate::player::PlayerID;
 use crate::validation::AutomaticMatchValidationMode;
@@ -30,8 +28,7 @@ pub enum DoubleEliminationReportResultError {
     NoMatchToPlay(PlayerID),
 }
 
-/// All methods to update matches of an ongoing double elimination bracket
-pub trait ProgressionDEB {
+impl DoubleEliminationBracket {
     /// Tournament organiser reports `result` for match where `player` is involved.
     ///
     /// Example: player says "I won 2-0" or "I lost 0-2, but it was close though"
@@ -40,14 +37,17 @@ pub trait ProgressionDEB {
     ///
     /// # Panics
     /// FIXME add test When player is unknown
-    /// # Error
+    /// # Errors
     /// FIXME add test When player has played all their matches (won/eliminated)
-    /// FIXME use struct BracketResult (Unsigned integer x2)
-    fn tournament_organiser_reports_result_for_single_player_dangerous(
+    /// FIXME use struct `BracketResult` (Unsigned integer x2)
+    pub fn tournament_organiser_reports_result_for_single_player_dangerous(
         self,
-        player: PlayerID,
-        bracket_result: MatchResult,
-    ) -> Result<(DoubleEliminationBracket, MatchID, Vec<Match>), DoubleEliminationReportResultError>;
+        player_left: PlayerID,
+        bracket_result: MatchScore,
+    ) -> Result<(DoubleEliminationBracket, MatchID, Vec<Match>), DoubleEliminationReportResultError>
+    {
+        todo!()
+    }
 
     /// Report result of player.
     ///
@@ -56,66 +56,8 @@ pub trait ProgressionDEB {
     ///
     /// # Panics
     /// * FIXME add test When player is unknown
-    /// * FIXME use struct BracketResult (Unsigned integer x2)
-    fn report_result_dangerous(
-        self,
-        player_id: PlayerID,
-        result: Score,
-    ) -> Result<(Vec<Match>, MatchID, Vec<Match>), DoubleEliminationReportResultError>;
-
-    /// Update `match_id` with reported `result` of `player`
-    ///
-    /// # Panics
-    /// * FIXME add test When `match_id` is unknown
-    /// * FIXME add test When `player_id` is unknown
-    /// * FIXME use struct BracketResult (Unsigned integer x2)
-    /// * FIXME add test (0, 0)
-    fn update_player_reported_match_result(
-        self,
-        match_id: MatchID,
-        result: Score,
-        player_id: PlayerID,
-    ) -> Self;
-
-    // FIXME doc
-    // FIXME determine if it's better to assert or return an error
-    //  IMO you should inspect match state before validating. You should try to
-    //  validate match always by default when automatic validation is on.
-    /// Update bracket with a new match result
-    ///
-    /// Returns updated bracket and new matches to play. Uses `match_id` as the
-    /// first match to start updating before looking deeper into the bracket
-    ///
-    /// First look if match is in winners, then losers, then GF, then GF reset
-    /// If found in winners, update winners, send loser to losers and update
-    /// losers as well
-    ///
-    /// # Panics
-    /// When `match_id` is invalid
-    ///
-    /// # Error
-    /// * FIXME add test When `match_id` is unknown
-    /// * FIXME add test When validating `match_id` is not possible
-    fn validate_match_result(self, match_id: MatchID) -> (DoubleEliminationBracket, Vec<Match>);
-
-    /// List all matches that can be played out
-    fn matches_to_play(&self) -> Vec<Match>;
-
-    /// `true` if all necessary matches were played
-    fn is_over(&self) -> bool;
-}
-
-impl ProgressionDEB for DoubleEliminationBracket {
-    fn tournament_organiser_reports_result_for_single_player_dangerous(
-        self,
-        player_left: PlayerID,
-        bracket_result: MatchResult,
-    ) -> Result<(DoubleEliminationBracket, MatchID, Vec<Match>), DoubleEliminationReportResultError>
-    {
-        todo!()
-    }
-
-    fn report_result_dangerous(
+    /// * FIXME use struct `BracketResult` (Unsigned integer x2)
+    pub fn report_result_dangerous(
         self,
         player_id: PlayerID,
         result: Score,
@@ -160,7 +102,15 @@ impl ProgressionDEB for DoubleEliminationBracket {
         Ok((bracket.matches, affected_match_id, new_matches))
     }
 
-    fn update_player_reported_match_result(
+    /// Update `match_id` with reported `result` of `player`
+    ///
+    /// # Panics
+    /// * FIXME add test When `match_id` is unknown
+    /// * FIXME add test When `player_id` is unknown
+    /// * FIXME use struct `BracketResult` (Unsigned integer x2)
+    /// * FIXME add test (0, 0)
+    #[must_use]
+    pub fn update_player_reported_match_result(
         self,
         match_id: MatchID,
         result: Score,
@@ -187,126 +137,47 @@ impl ProgressionDEB for DoubleEliminationBracket {
         Self { matches, ..self }
     }
 
-    fn validate_match_result(self, match_id: MatchID) -> (DoubleEliminationBracket, Vec<Match>) {
+    // FIXME doc
+    // FIXME determine if it's better to assert or return an error
+    //  IMO you should inspect match state before validating. You should try to
+    //  validate match always by default when automatic validation is on.
+    /// Update bracket with a new match result
+    ///
+    /// Returns updated bracket and new matches to play. Uses `match_id` as the
+    /// first match to start updating before looking deeper into the bracket
+    ///
+    /// First look if match is in winners, then losers, then GF, then GF reset
+    /// If found in winners, update winners, send loser to losers and update
+    /// losers as well
+    ///
+    /// # Panics
+    /// When `match_id` is invalid
+    ///
+    /// # Error
+    /// * FIXME add test When `match_id` is unknown
+    /// * FIXME add test When validating `match_id` is not possible
+    pub(crate) fn validate_match_result(
+        self,
+        match_id: MatchID,
+    ) -> (DoubleEliminationBracket, Vec<Match>) {
         assert_eq!(self.matches.iter().filter(|m| m.id == match_id).count(), 1);
         // NOTE: w_bracket -> winner bracket
         //       l_bracket -> loser bracket
-        let old_matches_to_play = self.matches_to_play();
-        let (w_bracket, l_bracket, gf, gf_reset) =
+        let (w_bracket, l_bracket, _gf, _gf_reset) =
             self.partition_matches().expect("enough players");
         let match_to_validate_is_in_winner_bracket = w_bracket.iter().any(|m| m.id == match_id);
         let match_to_validate_is_in_loser_bracket = l_bracket.iter().any(|m| m.id == match_id);
         if match_to_validate_is_in_winner_bracket {
-            // FIXME make update not a result type
-            let (w_bracket, l_bracket_elements) =
-                crate::bracket::matches::update(&w_bracket, match_id)
-                    .expect("should update winner bracket");
-            let l_bracket = match l_bracket_elements {
-                Some((loser, expected_loser_seed, is_disqualified_from_winners)) => {
-                    update_loser_bracket_after_updating_winners_bracket(
-                        &l_bracket,
-                        loser,
-                        is_disqualified_from_winners,
-                        expected_loser_seed,
-                    )
-                }
-                None => l_bracket,
-            };
-
-            let gf = match winner_of_bracket(&w_bracket) {
-                Some(winner_of_winner_bracket) => gf.insert_player(winner_of_winner_bracket, true),
-                None => gf,
-            };
-            // when loser of winners finals is disqualified, grand finals can be updated
-            let gf = match winner_of_bracket(&l_bracket) {
-                Some(winner_of_loser_bracket) => {
-                    let gf = gf.insert_player(winner_of_loser_bracket, false);
-
-                    if w_bracket
-                        .iter()
-                        .any(|m| m.is_automatic_loser_by_disqualification(winner_of_loser_bracket))
-                    {
-                        gf.set_automatic_loser(winner_of_loser_bracket)
-                            .update_outcome()
-                            .expect("update after automatic disqualification")
-                            .0
-                    } else {
-                        gf
-                    }
-                }
-                None => gf,
-            };
-            // when the winner of winner bracket is disqualified, then reset match should be validated also
-            let gf_reset = match (
-                gf.get_automatic_loser(),
-                winner_of_bracket(&w_bracket),
-                gf.is_over(),
-            ) {
-                (Opponent(Some(disqualified)), Some(winner_of_winner_bracket), true)
-                    if disqualified == winner_of_winner_bracket =>
-                {
-                    Match::new(gf.get_players(), [1, 2], gf.format)
-                        .expect("grand final reset")
-                        .set_automatic_loser(winner_of_winner_bracket)
-                        .update_outcome()
-                        .unwrap()
-                        .0
-                }
-                _ => gf_reset,
-            };
-
-            let matches =
-                double_elimination_matches_from_partition(&w_bracket, &l_bracket, gf, gf_reset);
-            let bracket = DoubleEliminationBracket::new(
-                matches,
-                self.seeding,
-                self.automatic_match_validation_mode,
-            );
-            let new_matches =
-                new_matches_to_play_for_bracket(&old_matches_to_play, &bracket.matches_to_play());
-            (bracket, new_matches)
+            self.validate_from_winner(match_id)
         } else if match_to_validate_is_in_loser_bracket {
-            let (l_bracket, _elements) = crate::bracket::matches::update(&l_bracket, match_id)
-                .expect("update in loser bracket");
-            //         send winner of loser bracket to grand finals if
-            //         possible
-            let gf = match winner_of_bracket(&l_bracket) {
-                Some(winner_of_loser_bracket) => gf.set_player(winner_of_loser_bracket, false),
-                None => gf,
-            };
-            let matches = match (gf.get_players(), gf.get_automatic_loser()) {
-                ([Opponent(Some(_)), Opponent(Some(_))], Opponent(Some(_))) => {
-                    update_grand_finals_or_reset(gf.get_id(), w_bracket, l_bracket, gf, gf_reset)
-                        .expect("grand finals updated")
-                }
-                _ => crate::matches::double_elimination_matches_from_partition(
-                    &w_bracket, &l_bracket, gf, gf_reset,
-                ),
-            };
-            let bracket = DoubleEliminationBracket::new(
-                matches,
-                self.seeding,
-                self.automatic_match_validation_mode,
-            );
-            let new_matches =
-                new_matches_to_play_for_bracket(&old_matches_to_play, &bracket.matches_to_play());
-            (bracket, new_matches)
+            self.validate_from_loser(match_id)
         } else {
-            let matches =
-                update_grand_finals_or_reset(match_id, w_bracket, l_bracket, gf, gf_reset)
-                    .expect("grand final or grand final reset should update");
-            let bracket = DoubleEliminationBracket::new(
-                matches,
-                self.seeding,
-                self.automatic_match_validation_mode,
-            );
-            let new_m =
-                new_matches_to_play_for_bracket(&old_matches_to_play, &bracket.matches_to_play());
-            (bracket, new_m)
+            self.validate_from_finals(match_id)
         }
     }
 
-    fn matches_to_play(&self) -> Vec<Match> {
+    /// List all matches that can be played out
+    pub fn matches_to_play(&self) -> Vec<Match> {
         self.matches
             .iter()
             .copied()
@@ -314,7 +185,9 @@ impl ProgressionDEB for DoubleEliminationBracket {
             .collect()
     }
 
-    fn is_over(&self) -> bool {
+    /// `true` if all necessary matches were played
+    #[must_use]
+    pub fn is_over(&self) -> bool {
         let (winner_bracket, loser_bracket, gf, gfr) =
             self.partition_matches().expect("enough players");
         let Some(stronger_seed_wins) = gf.stronger_seed_wins() else {
@@ -333,7 +206,7 @@ impl ProgressionDEB for DoubleEliminationBracket {
 /// First you send disqualified player to loser, move him if he was not
 /// disqualified, then set him as automatic loser in his current loser bracket
 /// match.
-fn update_loser_bracket_after_updating_winners_bracket(
+pub(crate) fn update_loser_bracket_after_updating_winners_bracket(
     l_bracket: &[Match],
     loser: PlayerID,
     is_disqualified_from_winners: bool,
@@ -390,65 +263,6 @@ fn send_to_losers(
     update_bracket_with(loser_bracket, &loser_match)
 }
 
-/// Update grand finals or reset
-fn update_grand_finals_or_reset(
-    match_id: MatchID,
-    winner_bracket: Vec<Match>,
-    loser_bracket: Vec<Match>,
-    gf: Match,
-    gf_reset: Match,
-) -> Result<Vec<Match>, Error> {
-    match match_id {
-        id if id == gf.get_id() => {
-            let (gf, _, _) = gf.update_outcome()?;
-            // when a reset happens in grand finals
-            let gf_reset = match (gf.get_winner(), gf.get_players()[1]) {
-                (Opponent(Some(gf_winner)), Opponent(Some(player_from_losers)))
-                    if gf_winner == player_from_losers =>
-                {
-                    // Set players of gf reset
-                    let gf_reset = match gf.get_players() {
-                        [Opponent(Some(p1)), Opponent(Some(p2))] => {
-                            let ggf_reset = gf_reset.insert_player(p1, true);
-                            ggf_reset.insert_player(p2, false)
-                        }
-                        [Opponent(Some(p)), _] => gf_reset.insert_player(p, true),
-                        [_, Opponent(Some(p))] => gf_reset.insert_player(p, false),
-                        _ => gf_reset,
-                    };
-
-                    // if player is disqualified in grand finals, update gf reset
-                    match (gf.get_automatic_loser(), gf.get_players()[0]) {
-                        (
-                            Opponent(Some(grand_finals_loser)),
-                            Opponent(Some(winner_of_winner_bracket)),
-                        ) if grand_finals_loser == winner_of_winner_bracket => {
-                            gf_reset
-                                .set_automatic_loser(grand_finals_loser)
-                                .update_outcome()?
-                                .0
-                        }
-                        (_, _) => gf_reset,
-                    }
-                }
-                _ => gf_reset,
-            };
-
-            Ok(crate::matches::double_elimination_matches_from_partition(
-                &winner_bracket,
-                &loser_bracket,
-                gf,
-                gf_reset,
-            ))
-        }
-        id if id == gf_reset.get_id() => {
-            let (gf_reset, _, _) = gf_reset.update_outcome()?;
-            Ok([winner_bracket, loser_bracket, vec![gf, gf_reset]].concat())
-        }
-        _ => panic!("expected GF or GF reset but got other match: {match_id}"),
-    }
-}
-
 impl DoubleEliminationBracket {
     /// Tournament organiser reports result. Returns bracket, affected match ID and new matches
     ///
@@ -503,8 +317,7 @@ impl DoubleEliminationBracket {
             .collect();
         assert!(
             matches_where_player2_is_playing.len() <= 1,
-            "player 2 {player2} is involved in only 1 match but they are involved in {:?}",
-            matches_where_player2_is_playing
+            "player 2 {player2} is involved in only 1 match but they are involved in {matches_where_player2_is_playing:?}"
         );
 
         let bracket = self

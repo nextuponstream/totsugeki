@@ -12,7 +12,6 @@ use crate::matches::{Match, MatchID};
 use crate::opponent::Opponent;
 use crate::player::PlayerID;
 use crate::seeding::single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored;
-use crate::single_elimination_bracket::progression::ProgressionSEB;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -214,6 +213,7 @@ impl SingleEliminationBracket {
     }
 
     /// Get validation
+    #[must_use]
     pub fn get_automatic_validation(&self) -> bool {
         self.automatic_match_progression
     }
