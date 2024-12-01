@@ -82,7 +82,7 @@ fn add_player(
         Format::SingleEliminationBracket => {
             *single_elimination_bracket.write() = SingleEliminationBracket::create(
                 t.get_participants().get_seeding(),
-                true,
+                AutomaticMatchValidationMode::Flexible,
                 MatchFormat::ft3(), // FIXME should be user provided
                 None,               // FIXME should be user provided
             );

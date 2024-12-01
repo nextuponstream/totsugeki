@@ -4,12 +4,13 @@ use crate::single_elimination_bracket::{
 use totsugeki::bracket::seeding::Seeding;
 use totsugeki::matches::result::{MatchFormat, Score};
 use totsugeki::player::{Participants, Player};
-use totsugeki::single_elimination_bracket::progression::ProgressionSEB;
 use totsugeki::single_elimination_bracket::SingleEliminationBracket;
+use totsugeki::validation::AutomaticMatchValidationMode;
 
 mod bracket_with_5_participants {
     use super::*;
     use totsugeki::matches::result::{MatchFormat, Score};
+    use totsugeki::validation::AutomaticMatchValidationMode;
 
     #[test]
     fn example1() {
@@ -22,7 +23,7 @@ mod bracket_with_5_participants {
         }
         let bracket = SingleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
-            false,
+            AutomaticMatchValidationMode::Strict,
             MatchFormat::ft3(),
             None,
         );
@@ -69,7 +70,7 @@ mod bracket_with_5_participants {
         }
         let bracket = SingleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
-            false,
+            AutomaticMatchValidationMode::Strict,
             MatchFormat::ft3(),
             None,
         );
@@ -117,7 +118,7 @@ fn bracket_8_man() {
 
     let bracket = SingleEliminationBracket::create(
         Seeding::new(seeding).unwrap(),
-        false,
+        AutomaticMatchValidationMode::Strict,
         MatchFormat::ft3(),
         None,
     );
@@ -187,7 +188,7 @@ fn bracket_8_man_manual2() {
 
     let bracket = SingleEliminationBracket::create(
         Seeding::new(seeding).unwrap(),
-        false,
+        AutomaticMatchValidationMode::Strict,
         MatchFormat::ft3(),
         None,
     );
@@ -258,7 +259,7 @@ mod bracket_with_9_participants {
         }
         let bracket = SingleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
-            false,
+            AutomaticMatchValidationMode::Strict,
             MatchFormat::ft3(),
             None,
         );
@@ -332,7 +333,7 @@ mod bracket_with_9_participants {
         }
         let bracket = SingleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
-            false,
+            AutomaticMatchValidationMode::Strict,
             MatchFormat::ft3(),
             None,
         );

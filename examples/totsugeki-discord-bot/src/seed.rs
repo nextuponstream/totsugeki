@@ -46,9 +46,9 @@ async fn seed(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
             Format::SingleEliminationBracket => {
                 let seb = SingleEliminationBracket::create(
                     seeding,
-                    true,               // FIXME should be user provided
-                    MatchFormat::ft3(), // FIXME should be user provided
-                    None,               // FIXME should be user provided
+                    AutomaticMatchValidationMode::Flexible, // FIXME should be user provided
+                    MatchFormat::ft3(),                     // FIXME should be user provided
+                    None,                                   // FIXME should be user provided
                 );
                 *bracket_data = (
                     format,

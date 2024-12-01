@@ -5,7 +5,6 @@ use totsugeki::bracket::seeding::Seeding;
 use totsugeki::next_opponent::NextOpponentInBracket;
 use totsugeki::opponent::Opponent;
 use totsugeki::player::{Participants, Player, PlayerID};
-use totsugeki::single_elimination_bracket::progression::ProgressionSEB;
 use totsugeki::single_elimination_bracket::SingleEliminationBracket;
 
 // FIXME duplicate definition
@@ -66,6 +65,7 @@ fn assert_players_play_each_other_ids(
 mod player_report_before_organiser {
     use super::*;
     use totsugeki::matches::result::{MatchFormat, Score};
+    use totsugeki::validation::AutomaticMatchValidationMode;
 
     #[test]
     fn higher_seed_reports_before_to_example2() {
@@ -85,7 +85,7 @@ mod player_report_before_organiser {
 
         let bracket = SingleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
-            true,
+            AutomaticMatchValidationMode::Flexible,
             MatchFormat::ft3(),
             None,
         );
@@ -118,7 +118,7 @@ mod player_report_before_organiser {
 
         let bracket = SingleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
-            true,
+            AutomaticMatchValidationMode::Flexible,
             MatchFormat::ft2(),
             None,
         );
@@ -146,7 +146,7 @@ mod player_report_before_organiser {
         // player 2 reports before TO does
         let bracket = SingleEliminationBracket::create(
             Seeding::new(seeding.clone()).unwrap(),
-            true,
+            AutomaticMatchValidationMode::Flexible,
             MatchFormat::ft3(),
             None,
         );
@@ -171,7 +171,7 @@ mod player_report_before_organiser {
         // player 3 reports before TO does
         let bracket = SingleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
-            true,
+            AutomaticMatchValidationMode::Flexible,
             MatchFormat::ft3(),
             None,
         );
@@ -188,6 +188,8 @@ mod player_report_before_organiser {
 mod bracket_with_3_participants {
     use super::*;
     use totsugeki::matches::result::{MatchFormat, Score};
+    use totsugeki::validation::AutomaticMatchValidationMode;
+
     #[test]
     fn example1() {
         let mut p = vec![Player::new("don't use".into())]; // padding for readability
@@ -199,7 +201,7 @@ mod bracket_with_3_participants {
         }
         let seb = SingleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
-            true,
+            AutomaticMatchValidationMode::Flexible,
             MatchFormat::ft3(),
             None,
         );
@@ -237,7 +239,7 @@ mod bracket_with_3_participants {
             .collect::<Vec<_>>();
         let bracket = SingleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
-            true,
+            AutomaticMatchValidationMode::Flexible,
             MatchFormat::ft3(),
             None,
         );
@@ -264,6 +266,8 @@ mod bracket_with_3_participants {
 mod bracket_with_5_participants {
     use super::*;
     use totsugeki::matches::result::{MatchFormat, Score};
+    use totsugeki::validation::AutomaticMatchValidationMode;
+
     #[test]
     fn example1() {
         let mut p = vec![Player::new("don't use".into())]; // padding for readability
@@ -275,7 +279,7 @@ mod bracket_with_5_participants {
         }
         let bracket = SingleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
-            true,
+            AutomaticMatchValidationMode::Flexible,
             MatchFormat::ft3(),
             None,
         );
@@ -312,7 +316,7 @@ mod bracket_with_5_participants {
         }
         let bracket = SingleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
-            true,
+            AutomaticMatchValidationMode::Flexible,
             MatchFormat::ft3(),
             None,
         );
@@ -362,7 +366,7 @@ mod bracket_with_5_participants {
 
         let bracket = SingleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
-            true,
+            AutomaticMatchValidationMode::Flexible,
             MatchFormat::ft3(),
             None,
         );
@@ -403,7 +407,7 @@ mod bracket_with_5_participants {
         }
         let bracket = SingleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
-            true,
+            AutomaticMatchValidationMode::Flexible,
             MatchFormat::ft3(),
             None,
         );
@@ -438,6 +442,7 @@ mod bracket_with_5_participants {
 mod bracket_with_8_participants {
     use super::*;
     use totsugeki::matches::result::{MatchFormat, Score};
+    use totsugeki::validation::AutomaticMatchValidationMode;
 
     #[test]
     fn example1() {
@@ -450,7 +455,7 @@ mod bracket_with_8_participants {
         }
         let bracket = SingleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
-            true,
+            AutomaticMatchValidationMode::Flexible,
             MatchFormat::ft3(),
             None,
         );
@@ -512,7 +517,7 @@ mod bracket_with_8_participants {
         }
         let bracket = SingleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
-            true,
+            AutomaticMatchValidationMode::Flexible,
             MatchFormat::ft3(),
             None,
         );
@@ -565,6 +570,7 @@ mod bracket_with_8_participants {
 mod bracket_with_9_participants {
     use super::*;
     use totsugeki::matches::result::{MatchFormat, Score};
+    use totsugeki::validation::AutomaticMatchValidationMode;
 
     #[test]
     fn example1() {
@@ -577,7 +583,7 @@ mod bracket_with_9_participants {
         }
         let bracket = SingleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
-            true,
+            AutomaticMatchValidationMode::Flexible,
             MatchFormat::ft3(),
             None,
         );
@@ -643,7 +649,7 @@ mod bracket_with_9_participants {
         }
         let bracket = SingleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
-            true,
+            AutomaticMatchValidationMode::Flexible,
             MatchFormat::ft3(),
             None,
         );

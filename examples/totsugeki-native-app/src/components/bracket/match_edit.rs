@@ -4,13 +4,11 @@
 use crate::tournaments::Tournament;
 use crate::{components::SUBMIT_CLASS, Modal, ShortName};
 use dioxus::prelude::*;
-use totsugeki::double_elimination_bracket::progression::ProgressionDEB;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki::format::Format;
 use totsugeki::matches::result::Score;
 use totsugeki::matches::MatchID;
 use totsugeki::opponent::Opponent;
-use totsugeki::single_elimination_bracket::progression::ProgressionSEB;
 use totsugeki::single_elimination_bracket::SingleEliminationBracket;
 
 #[derive(PartialEq, Props)]

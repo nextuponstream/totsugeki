@@ -12,6 +12,7 @@ use crate::matches::{Match, MatchID};
 use crate::opponent::Opponent;
 use crate::player::PlayerID;
 use crate::seeding::single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored;
+use crate::validation::AutomaticMatchValidationMode;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -22,9 +23,8 @@ pub struct SingleEliminationBracket {
     matches: Vec<Match>,
     /// Seeding
     seeding: Seeding,
-    // FIXME use AutomaticMatchValidationMode instead
-    /// True when a match should not require tournament organiser to be finalized
-    automatic_match_progression: bool,
+    /// Validation mode. May trigger validation after a reported result
+    automatic_match_progression: AutomaticMatchValidationMode,
 }
 
 impl Default for SingleEliminationBracket {
@@ -32,7 +32,7 @@ impl Default for SingleEliminationBracket {
         Self {
             matches: vec![],
             seeding: Seeding::default(),
-            automatic_match_progression: true,
+            automatic_match_progression: AutomaticMatchValidationMode::default(),
         }
     }
 }
@@ -68,7 +68,7 @@ impl SingleEliminationBracket {
     #[must_use]
     pub fn create(
         seeding: Seeding,
-        automatic_match_progression: bool,
+        automatic_match_progression: AutomaticMatchValidationMode,
         match_format: MatchFormat,
         late_bracket_configuration: Option<LateBracketConfiguration>,
     ) -> Self {
@@ -91,7 +91,11 @@ impl SingleEliminationBracket {
     /// When a well-formed single-elimination bracket cannot be made from
     /// `matches` and `seeding`
     #[must_use]
-    pub fn new(seeding: Seeding, matches: Vec<Match>, automatic_match_progression: bool) -> Self {
+    pub fn new(
+        seeding: Seeding,
+        matches: Vec<Match>,
+        automatic_match_progression: AutomaticMatchValidationMode,
+    ) -> Self {
         for player in seeding.get() {
             assert!(
                 matches
@@ -147,8 +151,8 @@ impl SingleEliminationBracket {
         }
         let old_matches = self.matches_to_play();
         let match_to_update = self
-            .matches
-            .iter()
+            .get_matches()
+            .into_iter()
             .find(|m| m.contains(player_id) && m.get_winner() == Opponent(None));
         let seeding = self.seeding.clone();
         let automatic_match_progression = self.automatic_match_progression;
@@ -160,10 +164,23 @@ impl SingleEliminationBracket {
                 let bracket =
                     SingleEliminationBracket::new(seeding, matches, automatic_match_progression);
 
-                let bracket = if automatic_match_progression {
-                    bracket.validate_match_result(affected_match_id).0
-                } else {
-                    bracket
+                let bracket = match automatic_match_progression {
+                    AutomaticMatchValidationMode::Strict => bracket,
+                    AutomaticMatchValidationMode::Flexible => {
+                        let updated_match = bracket
+                            .get_matches()
+                            .into_iter()
+                            .find(|mm| mm.id == m.id)
+                            .expect("updated match");
+                        if updated_match.has_all_player_reports() {
+                            bracket.validate_match_result(affected_match_id).0
+                        } else {
+                            bracket
+                        }
+                    }
+                    AutomaticMatchValidationMode::Lax => {
+                        bracket.validate_match_result(affected_match_id).0
+                    }
                 };
 
                 let new_matches = bracket
@@ -214,7 +231,7 @@ impl SingleEliminationBracket {
 
     /// Get validation
     #[must_use]
-    pub fn get_automatic_validation(&self) -> bool {
+    pub fn get_automatic_validation(&self) -> AutomaticMatchValidationMode {
         self.automatic_match_progression
     }
 }

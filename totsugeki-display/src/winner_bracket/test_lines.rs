@@ -8,6 +8,7 @@ mod tests {
     use totsugeki::matches::result::MatchFormat;
     use totsugeki::player::PlayerID;
     use totsugeki::single_elimination_bracket::SingleEliminationBracket;
+    use totsugeki::validation::AutomaticMatchValidationMode;
 
     fn get_data(n: usize) -> SingleEliminationBracket {
         let mut seeding = vec![];
@@ -16,7 +17,7 @@ mod tests {
         }
         SingleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
-            true,
+            AutomaticMatchValidationMode::Flexible,
             MatchFormat::ft2(),
             None,
         )

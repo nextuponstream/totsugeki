@@ -97,7 +97,7 @@ fn add_player(
             let s = SingleEliminationBracket::create(
                 Seeding::new(seeding)
                     .expect("should set new seeding for single elimination bracket"),
-                true,
+                AutomaticMatchValidationMode::Flexible,
                 MatchFormat::ft2(),
                 None,
             );

@@ -1,5 +1,4 @@
 use totsugeki::bracket::seeding::Seeding;
-use totsugeki::double_elimination_bracket::progression::ProgressionDEB;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki::matches::result::{MatchFormat, Score};
 use totsugeki::matches::Match;

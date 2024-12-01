@@ -246,6 +246,7 @@ mod tests {
     use crate::player::Player;
     use crate::seeding::single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored;
     use crate::single_elimination_bracket::SingleEliminationBracket;
+    use crate::validation::AutomaticMatchValidationMode;
 
     fn assert_players_play_each_other(
         player_1: usize,
@@ -285,7 +286,7 @@ mod tests {
             seeding.push(player.get_id());
         }
         let seeding = Seeding::new(seeding).unwrap();
-        let auto = true;
+        let auto = AutomaticMatchValidationMode::Flexible;
         let matches =
             get_balanced_round_matches_top_seed_favored(&seeding, MatchFormat::ft2(), None);
         let bracket = SingleEliminationBracket::new(seeding, matches, auto);

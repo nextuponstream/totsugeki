@@ -42,7 +42,7 @@ async fn remove(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                     .collect::<Vec<PlayerID>>();
                 let seb = SingleEliminationBracket::create(
                     Seeding::new(seeding).unwrap(),
-                    true,
+                    AutomaticMatchValidationMode::Flexible,
                     MatchFormat::ft3(), // FIXME should be user provided
                     None,               // FIXME should be user provided
                 );

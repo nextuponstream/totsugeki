@@ -1,6 +1,5 @@
 use crate::double_elimination_bracket::assert_no_next_match_after_tournament_is_over;
 use totsugeki::bracket::seeding::Seeding;
-use totsugeki::double_elimination_bracket::progression::ProgressionDEB;
 use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki::matches::result::{MatchFormat, Score};
 use totsugeki::matches::MatchID;

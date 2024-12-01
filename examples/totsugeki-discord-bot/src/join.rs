@@ -53,9 +53,9 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
                 };
                 let seb = SingleEliminationBracket::create(
                     seeding,
-                    true,               // FIXME should be user provided
-                    MatchFormat::ft3(), // FIXME should be user provided
-                    None,               // FIXME should be user provided
+                    AutomaticMatchValidationMode::Flexible, // FIXME should be user provided
+                    MatchFormat::ft3(),                     // FIXME should be user provided
+                    None,                                   // FIXME should be user provided
                 );
                 users.insert(user_id, player.clone());
                 *bracket_data = (

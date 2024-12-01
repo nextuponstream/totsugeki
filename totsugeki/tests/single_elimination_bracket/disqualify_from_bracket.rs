@@ -3,8 +3,8 @@ use totsugeki::bracket::seeding::Seeding;
 use totsugeki::matches::result::{MatchFormat, Score};
 use totsugeki::opponent::Opponent;
 use totsugeki::player::{Player, PlayerID};
-use totsugeki::single_elimination_bracket::progression::ProgressionSEB;
 use totsugeki::single_elimination_bracket::SingleEliminationBracket;
+use totsugeki::validation::AutomaticMatchValidationMode;
 
 #[test]
 fn disqualifying_everyone() {
@@ -16,7 +16,7 @@ fn disqualifying_everyone() {
         seeding.push(player.get_id());
     }
     let seeding = Seeding::new(seeding).unwrap();
-    let auto = false;
+    let auto = AutomaticMatchValidationMode::Strict;
     let bracket = SingleEliminationBracket::create(seeding, auto, MatchFormat::ft3(), None);
     let (bracket, _new_playable_matches) =
         bracket.disqualify_participant_from_bracket(p[2].get_id());
@@ -56,7 +56,7 @@ fn disqualifying_unknown_player_is_a_no_op() {
         seeding.push(PlayerID::create())
     }
     let seeding = Seeding::new(seeding).unwrap();
-    let bracket = SingleEliminationBracket::create(seeding, false, MatchFormat::ft3(), None);
+    let bracket = SingleEliminationBracket::create(seeding, AutomaticMatchValidationMode::Strict, MatchFormat::ft3(), None);
 
     let unknown_player = PlayerID::create();
     let _ = bracket.disqualify_participant_from_bracket(unknown_player);
@@ -73,7 +73,7 @@ fn opponent_of_disqualified_player_can_play_their_next_match() {
     }
     let bracket = SingleEliminationBracket::create(
         Seeding::new(seeding).unwrap(),
-        true,
+        AutomaticMatchValidationMode::Flexible,
         MatchFormat::ft3(),
         None,
     );
@@ -112,7 +112,7 @@ fn disqualifying_player_sets_looser_of_their_current_match() {
     }
     let bracket = SingleEliminationBracket::create(
         Seeding::new(seeding).unwrap(),
-        false,
+        AutomaticMatchValidationMode::Strict,
         MatchFormat::ft3(),
         None,
     );
@@ -158,7 +158,7 @@ fn disqualifying_player_sets_their_opponent_as_the_winner_and_they_move_to_their
     }
     let bracket = SingleEliminationBracket::create(
         Seeding::new(seeding).unwrap(),
-        false,
+        AutomaticMatchValidationMode::Strict,
         MatchFormat::ft3(),
         None,
     );

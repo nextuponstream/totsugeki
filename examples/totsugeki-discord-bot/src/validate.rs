@@ -9,11 +9,9 @@ use serenity::{
     framework::standard::{macros::command, Args, CommandError, CommandResult},
     model::channel::Message,
 };
-use totsugeki::double_elimination_bracket::progression::ProgressionDEB;
 use totsugeki::format::Format;
 use totsugeki::matches::MatchID;
-use totsugeki::single_elimination_bracket::progression::ProgressionSEB;
-use totsugeki::{matches::Id as MatchId, opponent::Opponent};
+use totsugeki::opponent::Opponent;
 use tracing::{info, span, warn, Level};
 
 #[command]

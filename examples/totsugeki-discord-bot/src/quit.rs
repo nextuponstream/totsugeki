@@ -48,7 +48,7 @@ async fn quit(ctx: &Context, msg: &Message) -> CommandResult {
                     .collect::<Vec<PlayerID>>();
                 let seb = SingleEliminationBracket::create(
                     Seeding::new(seeding).expect("seeding should not contain user"),
-                    true,
+                    AutomaticMatchValidationMode::Flexible,
                     MatchFormat::ft3(), // FIXME should be user provided
                     None,               // FIXME should be user provided
                 );

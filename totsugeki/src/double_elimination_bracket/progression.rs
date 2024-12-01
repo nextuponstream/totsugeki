@@ -16,14 +16,16 @@ pub enum DoubleEliminationReportResultError {
     /// Player is disqualified
     ///
     /// Player ID is valid but disqualified player are not allowed to report
-    // FIXME add test When a player is DQ'd for the match, he cannot report that match
+    // FIXME add test When a player is DQ'd for the match, they cannot report
+    //  that match
     #[error("Player was disqualified {0}")]
     ForbiddenDisqualified(PlayerID),
     /// No match to play for player
     ///
-    /// May happen if tournament organiser validated right before player did for the same match
-    // FIXME add test where player has won grand finals but him reporting results in a message that
-    //  they won
+    /// May happen if tournament organiser validated right before player did for
+    /// the same match
+    // FIXME add test where player has won grand finals but them reporting
+    //  results in a message that they won
     #[error("Player has no match to play yet {0}")]
     NoMatchToPlay(PlayerID),
 }
@@ -156,7 +158,7 @@ impl DoubleEliminationBracket {
     /// # Error
     /// * FIXME add test When `match_id` is unknown
     /// * FIXME add test When validating `match_id` is not possible
-    pub(crate) fn validate_match_result(
+    pub fn validate_match_result(
         self,
         match_id: MatchID,
     ) -> (DoubleEliminationBracket, Vec<Match>) {
