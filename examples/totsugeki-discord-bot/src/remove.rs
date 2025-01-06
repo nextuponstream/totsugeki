@@ -40,7 +40,7 @@ async fn remove(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                     .filter(|id| *id != player_id)
                     .collect::<Vec<PlayerID>>();
                 let seb = SingleEliminationBracket::create(
-                    Seeding::new(seeding).unwrap(),
+                    Seeding::new(seeding).expect("seeding from player list"),
                     AutomaticMatchValidationMode::Flexible,
                     MatchFormat::ft3(), // FIXME should be user provided
                     None,               // FIXME should be user provided
@@ -65,7 +65,7 @@ async fn remove(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                     .filter(|id| *id != player_id)
                     .collect::<Vec<PlayerID>>();
                 let deb = DoubleEliminationBracket::create(
-                    Seeding::new(seeding).unwrap(),
+                    Seeding::new(seeding).expect("seeding from player list"),
                     AutomaticMatchValidationMode::Flexible,
                     MatchFormat::ft3(), // FIXME should be user provided
                     None,               // FIXME should be user provided
