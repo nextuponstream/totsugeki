@@ -20,6 +20,8 @@ impl DoubleEliminationBracket {
     ///
     /// # Errors
     /// FIXME add test Reporting twice the same results
+    /// # Panics
+    /// When data is corrupted
     pub fn tournament_organiser_reports_result(
         self,
         match_id: MatchID,

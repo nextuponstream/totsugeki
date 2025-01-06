@@ -13,6 +13,8 @@ impl DoubleEliminationBracket {
     ///
     /// # Errors
     /// Returns an error when there is less than 3 players in the bracket
+    /// # Panics
+    /// When data is corrupted
     pub fn partition_matches(
         &self,
     ) -> Result<(Vec<Match>, Vec<Match>, Match, Match), PartitionError> {
@@ -24,8 +26,9 @@ impl DoubleEliminationBracket {
         assert_eq!(
             self.matches.len(),
             2 * n - 1,
-            "expected (2 * n) - 1 matches, where n is the number of players but got: {}",
-            self.matches.len()
+            "expected (2 * n) - 1 matches, where n is the number of players but got: {} players for {} matches",
+            n,
+            self.matches.len(),
         );
         let total_winner_bracket_matches = n - 1;
 

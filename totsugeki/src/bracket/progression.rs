@@ -12,8 +12,7 @@ pub(crate) fn new_matches_to_play_for_bracket(
     assert!(matches_to_play.iter().all(Match::needs_playing));
     assert!(
         old_matches_to_play.iter().all(Match::needs_playing),
-        "{:?}",
-        old_matches_to_play
+        "{old_matches_to_play:?}",
     );
     let new_matches_to_play: Vec<Match> = matches_to_play
         .iter()
@@ -26,7 +25,7 @@ pub(crate) fn new_matches_to_play_for_bracket(
         .collect();
 
     assert!(
-        !(new_matches_to_play.len() > 2),
+        new_matches_to_play.len() <= 2,
         "Misuse: when resolving in a bracket, the winner of the match goes to his next match \
         and same thing for the loser. Therefore, there should be at most two new matches to play \
          but found ({})",

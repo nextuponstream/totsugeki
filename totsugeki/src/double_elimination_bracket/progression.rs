@@ -56,6 +56,8 @@ impl DoubleEliminationBracket {
     /// This method is dangerous because it is not idempotent: if you sent the result twice when you
     /// meant to send it once, you can accidentally update two matches.
     ///
+    /// # Errors
+    /// When bracket state makes report invalid
     /// # Panics
     /// * FIXME add test When player is unknown
     /// * FIXME use struct `BracketResult` (Unsigned integer x2)
@@ -188,6 +190,8 @@ impl DoubleEliminationBracket {
     }
 
     /// `true` if all necessary matches were played
+    /// # Panics
+    /// When data is corrupted
     #[must_use]
     pub fn is_over(&self) -> bool {
         let (winner_bracket, loser_bracket, gf, gfr) =
@@ -283,7 +287,7 @@ impl DoubleEliminationBracket {
     ///
     /// # Panics
     /// When either `player1` or `player2` is unknown
-    /// # Error
+    /// # Errors
     /// FIXME add test Reporting result for people that are not playing each other
     pub fn tournament_organiser_reports_result_dangerous(
         self,

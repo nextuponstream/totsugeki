@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 /// Single elimination bracket
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct SingleEliminationBracket {
     /// Matches
     matches: Vec<Match>,
@@ -25,16 +25,6 @@ pub struct SingleEliminationBracket {
     seeding: Seeding,
     /// Validation mode. May trigger validation after a reported result
     automatic_match_progression: AutomaticMatchValidationMode,
-}
-
-impl Default for SingleEliminationBracket {
-    fn default() -> Self {
-        Self {
-            matches: vec![],
-            seeding: Seeding::default(),
-            automatic_match_progression: AutomaticMatchValidationMode::default(),
-        }
-    }
 }
 
 /// Input is invalid because of current bracket state

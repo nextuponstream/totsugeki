@@ -9,6 +9,7 @@ use crate::matches::result::MatchFormat;
 ///
 /// Most of the bracket is played in a match format. When configured, use
 /// a different match format for the last matches
+#[derive(Copy, Clone)]
 pub struct LateBracketConfiguration {
     /// Use match format for the last `rounds`
     ///
