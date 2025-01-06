@@ -1,6 +1,5 @@
-
 # https://github.com/actions-rs/meta/blob/d7602e71e8b4e6054edbeda7732ed0da8fbb8989/recipes/quickstart.md
-on: [push, pull_request]
+on: [ push, pull_request ]
 
 name: CI abandonned experiments
 
@@ -12,13 +11,11 @@ jobs:
     name: Check
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
-    strategy: 
-      matrix: { 
+    strategy:
+      matrix: {
         dir: [
           'examples/totsugeki-discord-bot',
-          'examples/totsugeki-native-app',
-          'examples/web',
-        ]}
+        ] }
     env:
       API_ADDR: localhost
       API_PORT: 8080
@@ -34,20 +31,6 @@ jobs:
             examples/*/target/
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      # setup
-      - name: update system repos
-        if: ${{ matrix.dir == 'examples/totsugeki-native-app' }}
-        run: sudo apt-get update
-      # https://dioxuslabs.com/docs/0.3/guide/en/getting_started/desktop.html#linux
-      - name: install dioxus system deps
-        if: ${{ matrix.dir == 'examples/totsugeki-native-app' }}
-        run: sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev
-      - run: mkdir resources # totsugeki-native-app+web
-        if: ${{ matrix.dir != 'examples/totsugeki-discord-bot' }}
-        working-directory: ${{ matrix.dir }}
-      - run: touch resources/tailwind.css
-        if: ${{ matrix.dir != 'examples/totsugeki-discord-bot' }}
-        working-directory: ${{ matrix.dir }}
 
       - run: cargo check
         working-directory: ${{ matrix.dir }}
@@ -56,13 +39,11 @@ jobs:
     name: test
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
-    strategy: 
-      matrix: { 
+    strategy:
+      matrix: {
         dir: [
           'examples/totsugeki-discord-bot',
-          'examples/totsugeki-native-app',
-          'examples/web',
-        ]}
+        ] }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/cache@v4
@@ -77,21 +58,6 @@ jobs:
             tournament-organiser-web/node_modules
             tournament-organiser-web/dist
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: update system repos
-        if: ${{ matrix.dir == 'examples/totsugeki-native-app' }}
-        run: sudo apt-get update
-      # https://dioxuslabs.com/docs/0.3/guide/en/getting_started/desktop.html#linux
-      - name: install dioxus system deps
-        if: ${{ matrix.dir == 'examples/totsugeki-native-app' }}
-        run: sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev
-      - run: mkdir resources # totsugeki-native-app+web
-        if: ${{ matrix.dir != 'examples/totsugeki-discord-bot' }}
-        working-directory: ${{ matrix.dir }}
-      - run: touch resources/tailwind.css
-        if: ${{ matrix.dir != 'examples/totsugeki-discord-bot' }}
-        working-directory: ${{ matrix.dir }}
-
       - run: cargo test
         working-directory: ${{ matrix.dir }}
 
@@ -99,13 +65,11 @@ jobs:
     name: Rustfmt
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
-    strategy: 
-      matrix: { 
+    strategy:
+      matrix: {
         dir: [
           'examples/totsugeki-discord-bot',
-          'examples/totsugeki-native-app',
-          'examples/web',
-        ]}
+        ] }
     env:
       API_ADDR: localhost
       API_PORT: 8080
@@ -131,13 +95,11 @@ jobs:
     name: Clippy
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
-    strategy: 
-      matrix: { 
+    strategy:
+      matrix: {
         dir: [
           'examples/totsugeki-discord-bot',
-          'examples/totsugeki-native-app',
-          'examples/web',
-        ]}
+        ] }
     env:
       API_ADDR: localhost
       API_PORT: 8080
@@ -155,21 +117,5 @@ jobs:
             tournament-organiser-web/node_modules
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - run: rustup component add clippy
-      
-      # setup
-      - name: update system repos
-        if: ${{ matrix.dir == 'examples/totsugeki-native-app' }}
-        run: sudo apt-get update
-      # https://dioxuslabs.com/docs/0.3/guide/en/getting_started/desktop.html#linux
-      - name: install dioxus system deps
-        if: ${{ matrix.dir == 'examples/totsugeki-native-app' }}
-        run: sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev
-      - run: mkdir resources # totsugeki-native-app+web
-        if: ${{ matrix.dir != 'examples/totsugeki-discord-bot' }}
-        working-directory: ${{ matrix.dir }}
-      - run: touch resources/tailwind.css
-        if: ${{ matrix.dir != 'examples/totsugeki-discord-bot' }}
-        working-directory: ${{ matrix.dir }}
-
       - run: cargo clippy -- -D warnings
         working-directory: ${{ matrix.dir }}
