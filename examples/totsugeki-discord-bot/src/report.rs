@@ -50,7 +50,7 @@ async fn report(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
             Format::SingleEliminationBracket => {
                 let (single_elimination_bracket_matches, _, new_matches) =
                     match single_elimination_bracket
-                        .report_result(player.get_id(), reported_result.0.unwrap())
+                        .report_result(player.get_id(), reported_result.0.expect("user input"))
                     {
                         Ok(t) => t,
                         Err(e) => {
@@ -85,9 +85,10 @@ async fn report(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
             Format::DoubleEliminationBracket => {
                 let seeding = double_elimination_bracket.get_seeding();
                 let (double_elimination_bracket_matches, _, new_matches) =
-                    match double_elimination_bracket
-                        .report_result_dangerous(player.get_id(), reported_result.0.unwrap())
-                    {
+                    match double_elimination_bracket.report_result_dangerous(
+                        player.get_id(),
+                        reported_result.0.expect("user input"),
+                    ) {
                         Ok(t) => t,
                         Err(e) => {
                             warn!("{e}");
@@ -184,7 +185,7 @@ async fn tournament_organiser_reports(
                 let (seb, _match_id, new_playable_matches) = match single_elimination_bracket
                     .tournament_organiser_reports_result(
                         player1,
-                        reported_result.0.unwrap(),
+                        reported_result.0.expect("user input"),
                         player2,
                     ) {
                     Ok(r) => r,
@@ -212,7 +213,7 @@ async fn tournament_organiser_reports(
                 let (deb, _match_id, new_playable_matches) = match double_elimination_bracket
                     .tournament_organiser_reports_result_dangerous(
                         player1,
-                        reported_result.0.unwrap(),
+                        reported_result.0.expect("user input"),
                         player2,
                     ) {
                     Ok(r) => r,
