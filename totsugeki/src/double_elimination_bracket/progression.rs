@@ -44,8 +44,8 @@ impl DoubleEliminationBracket {
     /// FIXME use struct `BracketResult` (Unsigned integer x2)
     pub fn tournament_organiser_reports_result_for_single_player_dangerous(
         self,
-        player_left: PlayerID,
-        bracket_result: MatchScore,
+        _player_left: PlayerID,
+        _bracket_result: MatchScore,
     ) -> Result<(DoubleEliminationBracket, MatchID, Vec<Match>), DoubleEliminationReportResultError>
     {
         todo!()
@@ -160,6 +160,7 @@ impl DoubleEliminationBracket {
     /// # Error
     /// * FIXME add test When `match_id` is unknown
     /// * FIXME add test When validating `match_id` is not possible
+    #[must_use]
     pub fn validate_match_result(
         self,
         match_id: MatchID,

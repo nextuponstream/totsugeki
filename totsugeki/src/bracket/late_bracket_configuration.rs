@@ -20,7 +20,9 @@ pub struct LateBracketConfiguration {
     ///   only for the winner finals. Then `rounds` is configured to 1.
     /// * the winner bracket of a double elimination bracket top 8 is in FT3.
     ///   Then `rounds` is set to 3
+    #[allow(dead_code)]
     rounds: usize,
     /// For the last `rounds`, use `match_format` instead
+    #[allow(dead_code)]
     match_format: MatchFormat,
 }

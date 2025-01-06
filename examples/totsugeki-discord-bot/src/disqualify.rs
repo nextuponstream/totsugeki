@@ -27,8 +27,8 @@ async fn disqualify(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
         let (format, users, single_elimination_bracket, double_elimination_bracket) =
             bracket_data.clone();
 
-        let mut new_matches_message = String::new();
-        let (data, new_playable_matches) = match format {
+        let new_matches_message = String::new();
+        let (data, _new_playable_matches) = match format {
             Format::SingleEliminationBracket => {
                 let (seb, new_playable_matches) =
                     single_elimination_bracket.disqualify_participant_from_bracket(player_id);

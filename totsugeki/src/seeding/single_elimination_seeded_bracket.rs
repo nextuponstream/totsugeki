@@ -39,7 +39,7 @@ pub enum SingleEliminationBracketMatchGenerationError {
 pub fn get_balanced_round_matches_top_seed_favored(
     seeding: &Seeding,
     match_format: MatchFormat,
-    late_bracket_configuration: Option<LateBracketConfiguration>,
+    _late_bracket_configuration: Option<LateBracketConfiguration>,
 ) -> Vec<Match> {
     // FIXME seeding should be a struct that has been well constructed
     // Matches are built bottom-up:

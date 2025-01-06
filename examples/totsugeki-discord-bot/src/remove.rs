@@ -15,7 +15,7 @@ use totsugeki::matches::result::MatchFormat;
 use totsugeki::player::PlayerID;
 use totsugeki::single_elimination_bracket::SingleEliminationBracket;
 use totsugeki::validation::AutomaticMatchValidationMode;
-use tracing::{info, span, warn, Level};
+use tracing::{info, span, Level};
 
 #[command]
 #[description = "Remove player from bracket"]
@@ -32,7 +32,6 @@ async fn remove(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         let (format, users, single_elimination_bracket, double_elimination_bracket) =
             bracket_data.clone();
 
-        let users_copy = users.clone();
         let data = match format {
             Format::SingleEliminationBracket => {
                 let seeding = single_elimination_bracket.get_seeding().get();

@@ -12,7 +12,7 @@ use serenity::{
 use totsugeki::format::Format;
 use totsugeki::matches::MatchID;
 use totsugeki::opponent::Opponent;
-use tracing::{info, span, warn, Level};
+use tracing::{info, span, Level};
 
 #[command]
 #[description = "Validate match in bracket"]
@@ -25,7 +25,7 @@ async fn validate(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
         let data = ctx.data.read().await;
         let config = data.get::<Config>().expect("filename").clone();
         let bracket_data = data.get::<Data>().expect("data").clone();
-        let mut bracket_data = bracket_data.write().await;
+        let bracket_data = bracket_data.write().await;
         let (format, users, single_elimination_bracket, double_elimination_bracket) =
             bracket_data.clone();
 

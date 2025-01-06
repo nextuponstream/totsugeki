@@ -43,7 +43,7 @@ fn get_seed_of(player: PlayerID, seeding: &Seeding) -> usize {
 pub fn get_loser_bracket_matches_top_seed_favored(
     seeding: &Seeding,
     match_format: MatchFormat,
-    late_bracket_configuration: Option<LateBracketConfiguration>,
+    _late_bracket_configuration: Option<LateBracketConfiguration>,
 ) -> Vec<Match> {
     let losers_by_round = partition_players_of_loser_bracket(seeding);
 
