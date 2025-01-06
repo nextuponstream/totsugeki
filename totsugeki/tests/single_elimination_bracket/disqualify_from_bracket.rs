@@ -56,7 +56,12 @@ fn disqualifying_unknown_player_is_a_no_op() {
         seeding.push(PlayerID::create())
     }
     let seeding = Seeding::new(seeding).unwrap();
-    let bracket = SingleEliminationBracket::create(seeding, AutomaticMatchValidationMode::Strict, MatchFormat::ft3(), None);
+    let bracket = SingleEliminationBracket::create(
+        seeding,
+        AutomaticMatchValidationMode::Strict,
+        MatchFormat::ft3(),
+        None,
+    );
 
     let unknown_player = PlayerID::create();
     let _ = bracket.disqualify_participant_from_bracket(unknown_player);

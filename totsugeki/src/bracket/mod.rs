@@ -10,79 +10,12 @@ mod query_state;
 pub mod seeding;
 pub(crate) mod winner_bracket;
 
-use crate::player::PlayerID;
 use crate::{
-    bracket::Id as BracketId,
-    format::{Format, ParsingError as FormatParsingError},
-    matches::{Error as MatchError, Id as MatchId, Match, MatchParsingError},
-    player::{Error as PlayerError, Participants, Player},
-    seeding::{
-        Error as SeedingError, Method as SeedingMethod, ParsingError as SeedingParsingError,
-    },
+    format::Format, matches::Match, player::Participants, seeding::Method as SeedingMethod,
 };
 use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 use uuid::Uuid;
-
-/// Updating bracket cannot be performed or searched information does not exist
-#[derive(Error, Debug)]
-pub enum Error {
-    /// Error while seeding a bracket
-    #[error("{0}")]
-    Seeding(#[from] SeedingError),
-    /// Error while updating players of bracket
-    #[error("{0}")]
-    PlayerUpdate(#[from] PlayerError),
-    /// Unknown player provided for seeding
-    #[error("Unknown player \"{0}\" cannot be used for seeding. Use the following players: {1} of bracket {2}")]
-    UnknownPlayer(PlayerID, Participants, BracketId),
-    // FIXME remove variant
-    /// Cannot add player when they are barred from entering
-    #[error("Bracket \"{1}\" does not accept new participants")]
-    BarredFromEntering(PlayerID, BracketId),
-    /// Bracket has started. Inform user with suggested action.
-    #[error("Bracket {0} has started{1}")]
-    Started(BracketId, String),
-    /// Bracket has not started. Inform user with suggested action.
-    #[error("Bracket {0} has not started{1}")]
-    NotStarted(BracketId, String),
-    /// Player has been disqualified
-    #[error("{1} is disqualified\nBracket: {0}")]
-    Disqualified(BracketId, Player),
-    /// Player has won the tournament and has no match left to play
-    #[error("{1} won the tournament and has no matches left to play\nBracket: {0}")]
-    NoNextMatch(BracketId, Player),
-    /// Player has been eliminated from the tournament
-    #[error(
-        "{1} has been eliminated from the tournament and has no matches left to play\nBracket: {0}"
-    )]
-    Eliminated(BracketId, Player),
-    /// Player has been eliminated from the tournament
-    #[error("{1} is not a participant\nBracket: {0}")]
-    PlayerIsNotParticipant(BracketId, Player),
-    /// Forbidden action: player has been disqualified
-    #[error("{1} is disqualified\nBracket: {0}")]
-    ForbiddenDisqualified(BracketId, Player),
-    /// No match to play for player
-    #[error("There is no matches for you to play\nBracket: {0}")]
-    NoMatchToPlay(BracketId, Player),
-    /// There is no generated matches at this time
-    #[error("No matches were generated yet\nBracket: {0}")]
-    NoGeneratedMatches(BracketId),
-    /// Tournament is over
-    #[error("Tournament is over\nBracket: {0}")]
-    TournamentIsOver(BracketId),
-    /// Cannot update match
-    #[error("{1}\nBracket: {0}")]
-    MatchUpdate(BracketId, MatchError),
-    /// Referred match is unknown
-    #[error("Match {1} is unknown\nBracket: {0}")]
-    UnknownMatch(BracketId, MatchId),
-    /// Update to match could not happen
-    #[error("There is no match to update\nBracket: {0}")]
-    NoMatchToUpdate(BracketId, Vec<Match>, MatchId),
-}
 
 /// Bracket identifier
 pub type Id = Uuid;
@@ -116,26 +49,6 @@ pub struct Bracket {
     automatic_match_progression: bool,
     /// When set to `true`, bars new participants from entering bracket
     is_closed: bool,
-}
-
-/// Error while parsing Bracket
-#[derive(Error, Debug)]
-pub enum ParsingError {
-    /// Could not parse bracket format
-    #[error("{0}")]
-    Format(#[from] FormatParsingError),
-    /// Could not parse seeding method
-    #[error("{0}")]
-    Seeding(#[from] SeedingParsingError),
-    /// Could not parse match
-    #[error("{0}")]
-    Match(#[from] MatchParsingError),
-    /// Could not parse time
-    #[error("{0}")]
-    Time(#[from] chrono::ParseError),
-    /// Could not parse players
-    #[error("{0}")]
-    Players(#[from] PlayerError),
 }
 
 impl std::fmt::Display for Bracket {

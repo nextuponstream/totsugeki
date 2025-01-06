@@ -201,7 +201,10 @@ impl TestApp {
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
     pub async fn join_bracket(&self, tournament_id: ID) -> Response {
         self.http_client
-            .post(format!("{}/api/tournaments/{}/join", self.addr, tournament_id))
+            .post(format!(
+                "{}/api/tournaments/{}/join",
+                self.addr, tournament_id
+            ))
             .send()
             .await
             .expect("request done")
