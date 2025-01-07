@@ -64,13 +64,12 @@ npm run test:unit
 
 ### Run End-to-End Tests with [Cypress](https://www.cypress.io/)
 
-First, run the application in the background
+First, run the application in the background (you can use [bacon](https://dystroy.org/bacon/)):
 
 ```bash
 BUILD_PATH_TOURNAMENT_ORGANISER_WEB=tournament-organiser-web/dist \
 DB_USERNAME=toa DB_PASSWORD=toa DB_NAME=toa \
-cargo watch -w tournament-organiser-api \
--s "cargo run --package tournament-organiser-api"
+bacon api
 ```
 
 Seed the database:
@@ -88,10 +87,7 @@ npm run test:e2e
 Optionally, if you want to be closer to the real production setup:
 
 ```bash
-BUILD_PATH_TOURNAMENT_ORGANISER_WEB=tournament-organiser-web/dist \
-DB_USERNAME=toa DB_PASSWORD=toa DB_NAME=toa \
-cargo watch -w tournament-organiser-web -w tournament-organiser-api \
--s "npm --prefix tournament-organiser-web run build && cargo run --package tournament-organiser-api"
+bacon web
 ```
 
 ### Lint with [ESLint](https://eslint.org/)
