@@ -15,10 +15,10 @@ use async_lock::RwLock;
 use serde::{Deserialize, Serialize};
 use serenity::{model::id::UserId, prelude::TypeMapKey};
 use std::{collections::HashMap, sync::Arc};
-use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
-use totsugeki::format::Format;
-use totsugeki::player::Player;
-use totsugeki::single_elimination_bracket::SingleEliminationBracket;
+use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki_core::format::Format;
+use totsugeki_core::player::Player;
+use totsugeki_core::single_elimination_bracket::SingleEliminationBracket;
 
 pub mod create;
 pub mod disqualify;

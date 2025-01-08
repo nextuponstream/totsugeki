@@ -8,9 +8,9 @@ use std::io::Write;
 use std::path::Path;
 use std::sync::Arc;
 use std::{collections::HashMap, env};
-use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
-use totsugeki::format::Format;
-use totsugeki::single_elimination_bracket::SingleEliminationBracket;
+use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki_core::format::Format;
+use totsugeki_core::single_elimination_bracket::SingleEliminationBracket;
 use totsugeki_discord_bot::{
     create::*, disqualify::*, forfeit::*, help::*, join::*, next_match::*, ping::*, players::*,
     quit::*, remove::*, report::*, seed::*, validate::*, Config, Data,

@@ -8,8 +8,8 @@ use serenity::{
     model::channel::Message,
 };
 use std::{io::prelude::*, path::Path};
-use totsugeki::format::Format;
-use totsugeki::player::PlayerID;
+use totsugeki_core::format::Format;
+use totsugeki_core::player::PlayerID;
 use tracing::{info, span, warn, Level};
 
 #[command]

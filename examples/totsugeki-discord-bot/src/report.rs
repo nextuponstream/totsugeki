@@ -8,11 +8,11 @@ use serenity::{
     model::channel::Message,
 };
 use std::{io::prelude::*, path::Path};
-use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
-use totsugeki::format::Format;
-use totsugeki::player::PlayerID;
-use totsugeki::validation::AutomaticMatchValidationMode;
-use totsugeki::{matches::ReportedResult, opponent::Opponent};
+use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki_core::format::Format;
+use totsugeki_core::player::PlayerID;
+use totsugeki_core::validation::AutomaticMatchValidationMode;
+use totsugeki_core::{matches::ReportedResult, opponent::Opponent};
 use tracing::{info, span, warn, Level};
 
 #[command]

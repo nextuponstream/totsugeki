@@ -6,7 +6,7 @@ use serenity::{
     framework::standard::{macros::command, CommandError, CommandResult},
     model::channel::Message,
 };
-use totsugeki::format::Format;
+use totsugeki_core::format::Format;
 use tracing::{span, Level};
 
 #[command]

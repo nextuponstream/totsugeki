@@ -11,9 +11,9 @@ use serenity::{
 };
 use std::collections::HashMap;
 use std::{io::prelude::*, path::Path};
-use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
-use totsugeki::single_elimination_bracket::SingleEliminationBracket;
-use totsugeki::{format::Format, seeding::Method};
+use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki_core::single_elimination_bracket::SingleEliminationBracket;
+use totsugeki_core::{format::Format, seeding::Method};
 use tracing::{info, span, warn, Level};
 
 #[command]

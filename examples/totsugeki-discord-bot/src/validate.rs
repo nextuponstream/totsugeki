@@ -9,9 +9,9 @@ use serenity::{
     framework::standard::{macros::command, Args, CommandError, CommandResult},
     model::channel::Message,
 };
-use totsugeki::format::Format;
-use totsugeki::matches::MatchID;
-use totsugeki::opponent::Opponent;
+use totsugeki_core::format::Format;
+use totsugeki_core::matches::MatchID;
+use totsugeki_core::opponent::Opponent;
 use tracing::{info, span, Level};
 
 #[command]

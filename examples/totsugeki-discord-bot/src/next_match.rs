@@ -6,9 +6,9 @@ use serenity::{
     framework::standard::{macros::command, CommandError, CommandResult},
     model::channel::Message,
 };
-use totsugeki::format::Format;
-use totsugeki::next_opponent::NextOpponentInBracket;
-use totsugeki::player::Player;
+use totsugeki_core::format::Format;
+use totsugeki_core::next_opponent::NextOpponentInBracket;
+use totsugeki_core::player::Player;
 use tracing::{info, span, warn, Level};
 
 #[command]
