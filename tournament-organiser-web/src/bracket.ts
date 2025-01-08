@@ -17,9 +17,8 @@ interface Player {
 }
 
 interface RawBracket {
-  // no used
-  // id?: string
-  // name?: string
+  id?: string
+  name?: string
 
   // ordered Player IDs
   seeding?: string[]
