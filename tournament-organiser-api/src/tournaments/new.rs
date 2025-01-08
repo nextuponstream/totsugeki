@@ -5,11 +5,11 @@ use crate::tournaments::{breakdown, CreateBracketForm};
 use axum::response::IntoResponse;
 use axum::Json;
 use http::StatusCode;
-use totsugeki::bracket::seeding::Seeding;
-use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
-use totsugeki::matches::result::MatchFormat;
-use totsugeki::player::Player;
-use totsugeki::validation::AutomaticMatchValidationMode;
+use totsugeki_core::bracket::seeding::Seeding;
+use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki_core::matches::result::MatchFormat;
+use totsugeki_core::player::Player;
+use totsugeki_core::validation::AutomaticMatchValidationMode;
 use tracing::instrument;
 
 /// Return a newly instantiated bracket from ordered (=seeded) player names for

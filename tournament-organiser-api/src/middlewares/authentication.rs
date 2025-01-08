@@ -5,7 +5,7 @@ use axum::extract::Request;
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
 use http::StatusCode;
-use totsugeki::ID;
+use totsugeki_core::ID;
 use tower_sessions::Session;
 
 /// Auth layer checking for presence of key `user_id` in session, set by login

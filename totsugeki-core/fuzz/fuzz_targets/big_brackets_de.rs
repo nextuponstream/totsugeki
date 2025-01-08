@@ -6,17 +6,19 @@ extern crate libfuzzer_sys;
 use chrono::prelude::*;
 use itertools::Itertools;
 use num_bigint::BigInt;
-use totsugeki::{
+use totsugeki_core::{
     bracket::Bracket, format::Format, matches::ReportedResult, opponent::Opponent, player::Player,
     seeding::Method,
 };
-use totsugeki_fuzz::{BigOnlineBracketEvents, MatchEvent};
+use totsugeki_fuzz::{LotsOfEvents, MatchEvent};
 
-// Fuzz thoroughly for 256 players (big online brackets)
-// 2100 player was realistic but it is already EXTREMELY SLOW TO FUZZ
-// 7000 is still realistic would be interesting for 1-2 pass to confirm it
-// still works
-fuzz_target!(|data: (BigOnlineBracketEvents, u128)| {
+// Fuzz for 65 players
+// NOTE: usize, 22! is the max
+// iterations are long:
+// NOTE2: this may happen also
+// ALARM: working on the last Unit for 1201 seconds
+//        and the timeout value is 1200 (use -timeout=N to change)
+fuzz_target!(|data: (LotsOfEvents, u128)| {
     let (events, permutation_index) = data;
 
     let total_events = events.0.len();

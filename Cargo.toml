@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "totsugeki",
+    "totsugeki-core",
     "totsugeki-display",
     "tournament-organiser-api",
     "ui",

@@ -1,11 +1,11 @@
 use crate::single_elimination_bracket::{
     assert_next_matches, assert_no_next_match_after_tournament_is_over,
 };
-use totsugeki::bracket::seeding::Seeding;
-use totsugeki::next_opponent::NextOpponentInBracket;
-use totsugeki::opponent::Opponent;
-use totsugeki::player::{Participants, Player, PlayerID};
-use totsugeki::single_elimination_bracket::SingleEliminationBracket;
+use totsugeki_core::bracket::seeding::Seeding;
+use totsugeki_core::next_opponent::NextOpponentInBracket;
+use totsugeki_core::opponent::Opponent;
+use totsugeki_core::player::{Participants, Player, PlayerID};
+use totsugeki_core::single_elimination_bracket::SingleEliminationBracket;
 
 // FIXME duplicate definition
 fn assert_players_play_each_other(
@@ -64,8 +64,8 @@ fn assert_players_play_each_other_ids(
 
 mod player_report_before_organiser {
     use super::*;
-    use totsugeki::matches::result::{MatchFormat, Score};
-    use totsugeki::validation::AutomaticMatchValidationMode;
+    use totsugeki_core::matches::result::{MatchFormat, Score};
+    use totsugeki_core::validation::AutomaticMatchValidationMode;
 
     #[test]
     fn higher_seed_reports_before_to_example2() {
@@ -187,8 +187,8 @@ mod player_report_before_organiser {
 
 mod bracket_with_3_participants {
     use super::*;
-    use totsugeki::matches::result::{MatchFormat, Score};
-    use totsugeki::validation::AutomaticMatchValidationMode;
+    use totsugeki_core::matches::result::{MatchFormat, Score};
+    use totsugeki_core::validation::AutomaticMatchValidationMode;
 
     #[test]
     fn example1() {
@@ -265,8 +265,8 @@ mod bracket_with_3_participants {
 
 mod bracket_with_5_participants {
     use super::*;
-    use totsugeki::matches::result::{MatchFormat, Score};
-    use totsugeki::validation::AutomaticMatchValidationMode;
+    use totsugeki_core::matches::result::{MatchFormat, Score};
+    use totsugeki_core::validation::AutomaticMatchValidationMode;
 
     #[test]
     fn example1() {
@@ -441,8 +441,8 @@ mod bracket_with_5_participants {
 
 mod bracket_with_8_participants {
     use super::*;
-    use totsugeki::matches::result::{MatchFormat, Score};
-    use totsugeki::validation::AutomaticMatchValidationMode;
+    use totsugeki_core::matches::result::{MatchFormat, Score};
+    use totsugeki_core::validation::AutomaticMatchValidationMode;
 
     #[test]
     fn example1() {
@@ -569,8 +569,8 @@ mod bracket_with_8_participants {
 
 mod bracket_with_9_participants {
     use super::*;
-    use totsugeki::matches::result::{MatchFormat, Score};
-    use totsugeki::validation::AutomaticMatchValidationMode;
+    use totsugeki_core::matches::result::{MatchFormat, Score};
+    use totsugeki_core::validation::AutomaticMatchValidationMode;
 
     #[test]
     fn example1() {

@@ -118,11 +118,11 @@ Cypress.Commands.add('guestSession', (weeklyName: string, email: string) => {
     cy.get('[name=name]').type('p2{enter}')
     cy.get('[name=name]').type('p3{enter}')
 
-    cy.intercept('POST', '/api/guest/brackets').as('createBracket')
+    cy.intercept('POST', '/api/guest/tournaments').as('createTournaments')
 
     cy.get('[data-test-id=start-bracket]').click()
 
-    cy.wait('@createBracket').then((interception) => {
+    cy.wait('@createTournaments').then((interception) => {
       assert.equal(interception.response?.statusCode, 200)
     })
 
@@ -169,8 +169,8 @@ Cypress.Commands.add('playerLogin', (email: string, password: string) => {
 })
 
 Cypress.Commands.add('joinBracket', (id: string) => {
-  cy.visit(`/brackets/${id}`)
-  cy.intercept('POST', `/api/brackets/${id}/join`).as('join')
+  cy.visit(`/tournaments/${id}`)
+  cy.intercept('POST', `/api/tournaments/${id}/join`).as('join')
   cy.get('Join').click()
   cy.wait('@join').then((interception) => {
     assert.isNotNull(interception.response, 'response')

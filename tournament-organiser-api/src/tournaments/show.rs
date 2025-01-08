@@ -8,9 +8,9 @@ use axum::extract::{Path, State};
 use axum::response::IntoResponse;
 use http::StatusCode;
 use sqlx::PgPool;
-use totsugeki::bracket::Id;
-use totsugeki::player::PlayerID;
-use totsugeki::ID;
+use totsugeki_core::bracket::Id;
+use totsugeki_core::player::PlayerID;
+use totsugeki_core::ID;
 use tower_sessions::Session;
 use tracing::instrument;
 

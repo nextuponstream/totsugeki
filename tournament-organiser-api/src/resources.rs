@@ -3,7 +3,7 @@
 use chrono::prelude::*;
 use serde::Deserialize;
 use serde::Serialize;
-use totsugeki::bracket::Id;
+use totsugeki_core::bracket::Id;
 use validator::{Validate, ValidationError};
 
 #[derive(Debug, Deserialize, Validate)]

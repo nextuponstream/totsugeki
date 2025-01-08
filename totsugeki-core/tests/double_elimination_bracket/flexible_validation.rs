@@ -1,9 +1,9 @@
 use crate::double_elimination_bracket::assert_no_next_match_after_tournament_is_over;
-use totsugeki::bracket::seeding::Seeding;
-use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
-use totsugeki::matches::result::{MatchFormat, Score};
-use totsugeki::player::{Participants, Player, PlayerID};
-use totsugeki::validation::AutomaticMatchValidationMode;
+use totsugeki_core::bracket::seeding::Seeding;
+use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki_core::matches::result::{MatchFormat, Score};
+use totsugeki_core::player::{Participants, Player, PlayerID};
+use totsugeki_core::validation::AutomaticMatchValidationMode;
 
 #[test]
 fn bracket_run_3_man() {

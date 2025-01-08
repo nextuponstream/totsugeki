@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 // use mycrate::fibonacci;
-use totsugeki::{bracket::Bracket, player::Player};
+use totsugeki_core::{bracket::Bracket, player::Player};
 
 // run with `cargo bench`
 

@@ -6,7 +6,7 @@ use axum::{response::IntoResponse, Json};
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPool;
-use totsugeki::ID;
+use totsugeki_core::ID;
 use tower_sessions::Session;
 use tracing::instrument;
 

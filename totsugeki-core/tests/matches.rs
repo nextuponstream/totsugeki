@@ -1,5 +1,5 @@
-use totsugeki::matches::result::{MatchFormat, Score};
-use totsugeki::matches::MatchScore;
+use totsugeki_core::matches::result::{MatchFormat, Score};
+use totsugeki_core::matches::MatchScore;
 
 #[test]
 fn create_bracket_result() {

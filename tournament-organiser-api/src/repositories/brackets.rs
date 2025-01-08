@@ -10,13 +10,13 @@ use sqlx::error::Error as SqlxError;
 use sqlx::types::Json as SqlxJson;
 use sqlx::{Postgres, Transaction};
 use thiserror::Error;
-use totsugeki::bracket::seeding::Seeding;
-use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
-use totsugeki::matches::result::{MatchFormat, Score};
-use totsugeki::matches::Match;
-use totsugeki::player::Player;
-use totsugeki::player::{Participants, PlayerID};
-use totsugeki::validation::AutomaticMatchValidationMode;
+use totsugeki_core::bracket::seeding::Seeding;
+use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki_core::matches::result::{MatchFormat, Score};
+use totsugeki_core::matches::Match;
+use totsugeki_core::player::Player;
+use totsugeki_core::player::{Participants, PlayerID};
+use totsugeki_core::validation::AutomaticMatchValidationMode;
 use tracing::error;
 
 /// Interact with brackets in postgres database using sqlx

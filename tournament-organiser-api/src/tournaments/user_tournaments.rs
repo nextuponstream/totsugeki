@@ -7,7 +7,7 @@ use axum::extract::{Path, State};
 use axum::Json;
 use axum_macros::debug_handler;
 use sqlx::PgPool;
-use totsugeki::bracket::Id;
+use totsugeki_core::bracket::Id;
 use tracing::instrument;
 
 /// `/:user_id/brackets` GET to view brackets managed by user

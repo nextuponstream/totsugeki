@@ -11,10 +11,10 @@
 #![forbid(unsafe_code)]
 
 use serde::{Deserialize, Serialize};
-use totsugeki::matches::result::Score;
-use totsugeki::matches::{Match, MatchID, ReportedResult};
-use totsugeki::opponent::Opponent;
-use totsugeki::player::{Player, PlayerID};
+use totsugeki_core::matches::result::Score;
+use totsugeki_core::matches::{Match, MatchID, ReportedResult};
+use totsugeki_core::opponent::Opponent;
+use totsugeki_core::player::{Player, PlayerID};
 
 pub mod loser_bracket;
 pub mod winner_bracket;

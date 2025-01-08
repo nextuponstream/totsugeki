@@ -14,7 +14,7 @@ chrono = { version = "0.4.21" }
 itertools = "0.10.5"
 num-bigint = { version = "0.4.3", features = ["arbitrary", "serde"] }
 
-[dependencies.totsugeki]
+[dependencies.totsugeki-core]
 # path = "/home/takecare/Public/totsugeki/totsugeki"
 path = ".."
 

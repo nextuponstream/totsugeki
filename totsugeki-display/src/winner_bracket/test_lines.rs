@@ -4,11 +4,11 @@
 
 #[cfg(test)]
 mod tests {
-    use totsugeki::bracket::seeding::Seeding;
-    use totsugeki::matches::result::MatchFormat;
-    use totsugeki::player::PlayerID;
-    use totsugeki::single_elimination_bracket::SingleEliminationBracket;
-    use totsugeki::validation::AutomaticMatchValidationMode;
+    use totsugeki_core::bracket::seeding::Seeding;
+    use totsugeki_core::matches::result::MatchFormat;
+    use totsugeki_core::player::{Player, PlayerID};
+    use totsugeki_core::single_elimination_bracket::SingleEliminationBracket;
+    use totsugeki_core::validation::AutomaticMatchValidationMode;
 
     fn get_data(n: usize) -> SingleEliminationBracket {
         let mut seeding = vec![];
@@ -61,7 +61,7 @@ mod tests {
             .get()
             .iter()
             .map(|id| (*id, "p").try_into().unwrap())
-            .collect::<Vec<totsugeki::player::Player>>();
+            .collect::<Vec<Player>>();
         let matches_by_rounds = bracket.partition_by_round().expect("rounds");
         let mut rounds = vec![];
         for r in matches_by_rounds {
@@ -118,7 +118,7 @@ mod tests {
             .get()
             .iter()
             .map(|id| (*id, "p").try_into().unwrap())
-            .collect::<Vec<totsugeki::player::Player>>();
+            .collect::<Vec<Player>>();
         let matches_by_rounds = bracket.partition_by_round().expect("rounds");
         let mut rounds = vec![];
         for r in matches_by_rounds {
@@ -148,7 +148,7 @@ mod tests {
             .get()
             .iter()
             .map(|id| (*id, "p").try_into().unwrap())
-            .collect::<Vec<totsugeki::player::Player>>();
+            .collect::<Vec<Player>>();
         let matches_by_rounds = bracket.partition_by_round().expect("rounds");
         let mut rounds = vec![];
         for r in matches_by_rounds {

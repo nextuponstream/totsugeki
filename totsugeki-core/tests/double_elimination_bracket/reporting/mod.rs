@@ -1,12 +1,12 @@
 //! Reporting for double elimination bracket
 
-use totsugeki::bracket::seeding::Seeding;
-use totsugeki::double_elimination_bracket::reporting::MatchReportError;
-use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
-use totsugeki::matches::result::{MatchFormat, Score};
-use totsugeki::matches::MatchID;
-use totsugeki::player::PlayerID;
-use totsugeki::validation::AutomaticMatchValidationMode;
+use totsugeki_core::bracket::seeding::Seeding;
+use totsugeki_core::double_elimination_bracket::reporting::MatchReportError;
+use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki_core::matches::result::{MatchFormat, Score};
+use totsugeki_core::matches::MatchID;
+use totsugeki_core::player::PlayerID;
+use totsugeki_core::validation::AutomaticMatchValidationMode;
 
 #[test]
 #[should_panic]

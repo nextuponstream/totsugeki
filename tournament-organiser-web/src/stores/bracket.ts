@@ -36,6 +36,7 @@ export const useBracketStore = defineStore(
   () => {
     const id: Ref<string | undefined> = ref(undefined)
     const bracket: Ref<Bracket | undefined> = ref(undefined)
+    const participants: Ref<Participants | undefined> = ref(undefined)
     const bracketList: Ref<Bracket[] | undefined> = ref(undefined)
     const isSaved: Ref<boolean> = ref(true)
     const formCreate: Ref<BracketCreationForm> = ref({
@@ -80,8 +81,8 @@ export const useBracketStore = defineStore(
      * @throws Error when something goes wrong with the API
      */
     async function createBracket(loggedIn: boolean) {
-      console.debug(`creating bracket with ${loggedIn ? 'user' : 'guest'}`)
-      let url = `/${loggedIn ? '' : 'guest/'}brackets`
+      console.debug(`creating tournament with ${loggedIn ? 'user' : 'guest'}`)
+      let url = `/${loggedIn ? '' : 'guest/'}tournaments`
       let response = await httpClient.post(url, {
         bracket_name: formCreate.value.bracket_name,
         player_names: formCreate.value.player_names.map((p) => p.name),
@@ -94,6 +95,7 @@ export const useBracketStore = defineStore(
       } else {
         id.value = undefined
         bracket.value = r
+        participants.value = r.participants
         isSaved.value = false
       }
       reportedResults.value = []
@@ -105,10 +107,14 @@ export const useBracketStore = defineStore(
      * @throws Error when something goes wrong with the API
      */
     async function getDisplayableBracket() {
-      let response = await httpClient.get(`/brackets/${id.value}`)
+      let response = await httpClient.get(`/tournaments/${id.value}`)
       let r = await response.json()
-      console.debug(r)
+      console.debug('updating bracket store', r)
+      // console.log(bracket.value?.winner_bracket)
+      // console.log(r.winner_bracket)
       bracket.value = r
+      console.log(bracket.value?.bracket?.seeding)
+      participants.value = r.participants
     }
 
     /**
@@ -131,7 +137,7 @@ export const useBracketStore = defineStore(
         console.debug(`submitting result for bracket...`)
         let path = dryRun
           ? `/report-result`
-          : `/brackets/${id.value}/report-result`
+          : `/tournaments/${id.value}/report-result`
 
         let response = await httpClient.post(path, {
           bracket: bracket.value.bracket,
@@ -159,12 +165,12 @@ export const useBracketStore = defineStore(
      * @throws Error when something goes wrong with the API
      */
     async function saveBracket() {
-      // use /brackets/save endpoint
-      if (reportedResults.value && bracket.value?.bracket?.participants) {
+      // use /tournaments/save endpoint
+      if (reportedResults.value && bracket.value?.bracket?.seeding) {
         console.debug(`submitting result for bracket...`)
-        let player_names = bracket.value.bracket.participants
-        let response = await httpClient.post(`/brackets/save`, {
-          bracket_name: bracket.value?.bracket?.name,
+        let player_names = bracket.value.bracket.seeding
+        let response = await httpClient.post(`/tournaments/save`, {
+          // bracket_name: bracket.value?.bracket?.name, // FIXME
           results: reportedResults.value,
           players: player_names,
         })
@@ -182,7 +188,7 @@ export const useBracketStore = defineStore(
      */
     async function getBracketsFrom(userId: string) {
       let response = await httpClient.get(
-        `/user/${userId}/brackets?limit=${pagination.value.limit}&offset=${pagination.value.offset}&sort_order=${pagination.value.sortOrder}`
+        `/user/${userId}/tournaments?limit=${pagination.value.limit}&offset=${pagination.value.offset}&sort_order=${pagination.value.sortOrder}`
       )
       let paginationResult: PaginationResponse = await response.json()
       bracketList.value = paginationResult.data
@@ -190,9 +196,8 @@ export const useBracketStore = defineStore(
     }
 
     async function join() {
-      console.log('iasjoijijjii')
       let response = await httpClient.post(
-        `/brackets/${bracket.value?.bracket?.id}/join`,
+        `/tournaments/${bracket.value?.bracket?.id}/join`,
         {}
       )
       throw new Error('implement')
@@ -215,6 +220,7 @@ export const useBracketStore = defineStore(
       formCreate,
       reportedResults, // export ref so localStorage is updated with that value
       pagination,
+      participants,
       join,
     }
   },

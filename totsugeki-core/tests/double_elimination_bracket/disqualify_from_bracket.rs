@@ -1,10 +1,10 @@
-use totsugeki::bracket::seeding::Seeding;
-use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
-use totsugeki::matches::result::{MatchFormat, Score};
-use totsugeki::matches::Match;
-use totsugeki::opponent::Opponent;
-use totsugeki::player::{Participants, Player, PlayerID};
-use totsugeki::validation::AutomaticMatchValidationMode;
+use totsugeki_core::bracket::seeding::Seeding;
+use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki_core::matches::result::{MatchFormat, Score};
+use totsugeki_core::matches::Match;
+use totsugeki_core::opponent::Opponent;
+use totsugeki_core::player::{Participants, Player, PlayerID};
+use totsugeki_core::validation::AutomaticMatchValidationMode;
 
 // Note: we don't test panics. If a panic occurs, it's a bug that needs
 // programmer attention. If UI sends bad data to backend and violate assertions,
@@ -348,7 +348,7 @@ fn disqualifying_everyone_is_impossible_because_the_last_player_remaining_wins_g
     // https://stackoverflow.com/a/68919527
     assert!(matches!(
         bracket.disqualify_participant_from_bracket(p[1].get_id()),
-        Err(totsugeki::double_elimination_bracket::disqualification::disqualify_from_bracket::Error::WonTournament)
+        Err(totsugeki_core::double_elimination_bracket::disqualification::disqualify_from_bracket::Error::WonTournament)
     ));
 }
 

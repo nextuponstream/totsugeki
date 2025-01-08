@@ -10,7 +10,7 @@ use http::StatusCode;
 use sqlx::Error as SqlxError;
 use sqlx::PgPool;
 use thiserror::Error;
-use totsugeki::bracket::Id;
+use totsugeki_core::bracket::Id;
 use tracing::instrument;
 
 /// Cannot update double elimination bracket with result
@@ -20,7 +20,7 @@ pub(crate) enum Error {
     #[error("{0}")]
     App(
         #[from]
-        totsugeki::double_elimination_bracket::progression::DoubleEliminationReportResultError,
+        totsugeki_core::double_elimination_bracket::progression::DoubleEliminationReportResultError,
     ),
     /// Unrecoverable
     #[error("{0}")]

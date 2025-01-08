@@ -11,12 +11,12 @@ use axum::Json;
 use axum_macros::debug_handler;
 use http::StatusCode;
 use sqlx::PgPool;
-use totsugeki::bracket::seeding::Seeding;
-use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
-use totsugeki::matches::result::{MatchFormat, Score};
-use totsugeki::player::Player;
-use totsugeki::validation::AutomaticMatchValidationMode;
-use totsugeki::ID;
+use totsugeki_core::bracket::seeding::Seeding;
+use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki_core::matches::result::{MatchFormat, Score};
+use totsugeki_core::player::Player;
+use totsugeki_core::validation::AutomaticMatchValidationMode;
+use totsugeki_core::ID;
 use tower_sessions::Session;
 use tracing::instrument;
 

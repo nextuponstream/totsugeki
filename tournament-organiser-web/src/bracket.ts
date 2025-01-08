@@ -17,10 +17,15 @@ interface Player {
 }
 
 interface RawBracket {
-  id?: string
-  name?: string
-  participants?: Player[]
+  // no used
+  // id?: string
+  // name?: string
+
+  // ordered Player IDs
+  seeding?: string[]
 }
+
+type Participants = Player[]
 
 interface Bracket {
   winner_bracket: Match[][]
@@ -32,4 +37,12 @@ interface Bracket {
   bracket: RawBracket | undefined
   is_participant: boolean
   is_tournament_organiser: boolean
+  tournament_id: string
+  tournament_name: string
+}
+
+interface Tournament {
+  id: string
+  name: string
+  participants: Participants
 }

@@ -2,8 +2,8 @@
 
 use reqwest::StatusCode;
 use sqlx::PgPool;
-use totsugeki::matches::Match;
-use totsugeki::player::Player;
+use totsugeki_core::matches::Match;
+use totsugeki_core::player::Player;
 use tournament_organiser_api::resources::PaginationResult;
 use tournament_organiser_api::test_utils::spawn_app;
 use tournament_organiser_api::tournaments::{

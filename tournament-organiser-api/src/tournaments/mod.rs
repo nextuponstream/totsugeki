@@ -28,12 +28,12 @@ use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::types::Json as SqlxJson;
 use std::fmt::{Display, Formatter};
-use totsugeki::bracket::seeding::Seeding;
-use totsugeki::bracket::Id;
-use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
-use totsugeki::format::Format;
-use totsugeki::player::{Participants as TotsugekiParticipants, Player, PlayerID};
-use totsugeki::validation::AutomaticMatchValidationMode;
+use totsugeki_core::bracket::seeding::Seeding;
+use totsugeki_core::bracket::Id;
+use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki_core::format::Format;
+use totsugeki_core::player::{Participants as TotsugekiParticipants, Player, PlayerID};
+use totsugeki_core::validation::AutomaticMatchValidationMode;
 use totsugeki_display::loser_bracket::lines as loser_bracket_lines;
 use totsugeki_display::loser_bracket::reorder as reorder_loser_bracket;
 use totsugeki_display::winner_bracket::lines as winner_bracket_lines;
@@ -81,6 +81,8 @@ pub struct BracketDisplay {
     pub is_tournament_organiser: bool,
     /// true if user requesting the data participates
     pub is_participant: bool,
+    /// Participants (seeding + names)
+    pub participants: Participants,
 }
 
 /// List of players from which a bracket can be created
@@ -143,7 +145,7 @@ fn breakdown(
             reorder_winner_bracket(&mut winner_bracket_rounds);
             Some(winner_bracket_rounds)
         }
-        Err(totsugeki::bracket::PartitionError::NotEnoughPlayersInBracket) => None,
+        Err(totsugeki_core::bracket::PartitionError::NotEnoughPlayersInBracket) => None,
     };
     let maybe_winner_bracket_lines = match winner_bracket_rounds.clone() {
         Some(winner_bracket_rounds) => winner_bracket_lines(&winner_bracket_rounds),
@@ -163,7 +165,7 @@ fn breakdown(
             reorder_loser_bracket(&mut loser_bracket_rounds);
             Some(loser_bracket_rounds)
         }
-        Err(totsugeki::bracket::PartitionError::NotEnoughPlayersInBracket) => None,
+        Err(totsugeki_core::bracket::PartitionError::NotEnoughPlayersInBracket) => None,
     };
     let maybe_loser_bracket_lines = match loser_bracket_rounds.clone() {
         Some(loser_bracket_rounds) => loser_bracket_lines(loser_bracket_rounds),
@@ -176,7 +178,7 @@ fn breakdown(
             let gf_reset = from_participants(&gf_reset, &tournament.get_participants().0);
             (Some(gf), Some(gf_reset))
         }
-        Err(totsugeki::bracket::PartitionError::NotEnoughPlayersInBracket) => (None, None),
+        Err(totsugeki_core::bracket::PartitionError::NotEnoughPlayersInBracket) => (None, None),
     };
 
     let is_participant = match user_id {
@@ -191,6 +193,7 @@ fn breakdown(
         loser_bracket_lines: maybe_loser_bracket_lines,
         grand_finals: gf,
         grand_finals_reset: gf_reset,
+        participants: tournament.get_participants(),
         bracket,
         is_participant,
         is_tournament_organiser,

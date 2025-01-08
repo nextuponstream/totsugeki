@@ -2,6 +2,6 @@ target
 tournament-organiser-web/node_modules
 tournament-organiser-web/dist
 examples
-totsugeki/fuzz/target
-totsugeki/fuzz/coverage
+totsugeki-core/fuzz/target
+totsugeki-core/fuzz/coverage
 .git

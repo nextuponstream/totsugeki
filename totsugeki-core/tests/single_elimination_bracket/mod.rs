@@ -1,11 +1,11 @@
-use totsugeki::next_opponent::NextOpponentInBracket;
+use totsugeki_core::next_opponent::NextOpponentInBracket;
 mod automatic_validation;
 mod disqualify_from_bracket;
 mod manual_validation;
 
-use totsugeki::opponent::Opponent;
-use totsugeki::player::Player;
-use totsugeki::single_elimination_bracket::SingleEliminationBracket;
+use totsugeki_core::opponent::Opponent;
+use totsugeki_core::player::Player;
+use totsugeki_core::single_elimination_bracket::SingleEliminationBracket;
 
 fn assert_next_matches(
     bracket: &SingleEliminationBracket,

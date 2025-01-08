@@ -9,7 +9,7 @@
 import BaseModal from '@/components/ui/modals/BaseModal.vue'
 import OtherBtn from '@/components/ui/buttons/OtherBtn.vue'
 
-const model = defineModel({ default: () => false })
+const model = defineModel({ default: false })
 const emits = defineEmits(['confirmed'])
 
 function hide() {

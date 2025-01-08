@@ -3,7 +3,7 @@
 use crate::users::registration::UserRecord;
 use sqlx::error::Error as SqlxError;
 use sqlx::{Postgres, Transaction};
-use totsugeki::ID;
+use totsugeki_core::ID;
 
 /// All methods to query user in database
 pub(crate) struct UserRepository {}

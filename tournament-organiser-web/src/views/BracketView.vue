@@ -16,15 +16,16 @@
   <div class="pb-5 text-gray-400">
     {{ t('bracketView.hint') }}
   </div>
-  <div v-if="unsavedBracketCanBeSaved">
+  <div v-if="unsavedBracketCanBeSavedAction">
     <SubmitBtn @click="saveAndRedirectToNewBracketPage"
       >{{ t('bracketView.saveBracket') }}
     </SubmitBtn>
   </div>
-  <div v-else-if="userStore.id === null">
+  <div v-else-if="unsavedBracketCanBeSavedWarning">
     {{ t('bracketView.unsavedWarning') }}
   </div>
   <div v-if="hasEnoughPlayersToDisplay">
+    {{ JSON.stringify(bracketStore.bracket?.winner_bracket) }}
     <ShowBracket
       :bracket="bracketStore.bracket?.winner_bracket"
       :lines="bracketStore.bracket?.winner_bracket_lines"
@@ -74,8 +75,12 @@ const props = defineProps({
   isGuest: Boolean,
 })
 
-const unsavedBracketCanBeSaved = computed(() => {
+const unsavedBracketCanBeSavedAction = computed(() => {
   return userStore.id !== null && !bracketStore.isSaved
+})
+
+const unsavedBracketCanBeSavedWarning = computed(() => {
+  return userStore.id === null && !bracketStore.isSaved
 })
 
 onMounted(async () => {
@@ -95,7 +100,7 @@ onMounted(async () => {
     // load properly
     //
     // guest view, nothing to do
-  } else if (unsavedBracketCanBeSaved.value) {
+  } else if (unsavedBracketCanBeSavedWarning.value) {
     // guest just registered, they need to save that bracket
   } else {
     console.debug(typeof id)
@@ -135,8 +140,8 @@ const bracketName = computed(() => {
 })
 
 const hasEnoughPlayersToDisplay = computed(() => {
-  if (bracketStore.bracket?.bracket?.participants?.length) {
-    return bracketStore.bracket.bracket.participants.length >= 3
+  if (bracketStore.participants?.length) {
+    return bracketStore.participants?.length >= 3
   }
   return false
 })

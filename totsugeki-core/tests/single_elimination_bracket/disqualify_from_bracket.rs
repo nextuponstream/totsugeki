@@ -1,10 +1,10 @@
 use crate::common::assert_outcome;
-use totsugeki::bracket::seeding::Seeding;
-use totsugeki::matches::result::{MatchFormat, Score};
-use totsugeki::opponent::Opponent;
-use totsugeki::player::{Player, PlayerID};
-use totsugeki::single_elimination_bracket::SingleEliminationBracket;
-use totsugeki::validation::AutomaticMatchValidationMode;
+use totsugeki_core::bracket::seeding::Seeding;
+use totsugeki_core::matches::result::{MatchFormat, Score};
+use totsugeki_core::opponent::Opponent;
+use totsugeki_core::player::{Player, PlayerID};
+use totsugeki_core::single_elimination_bracket::SingleEliminationBracket;
+use totsugeki_core::validation::AutomaticMatchValidationMode;
 
 #[test]
 fn disqualifying_everyone() {

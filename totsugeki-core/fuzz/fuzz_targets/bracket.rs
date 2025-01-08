@@ -5,7 +5,7 @@ use libfuzzer_sys::fuzz_target;
 extern crate libfuzzer_sys;
 
 use chrono::prelude::*;
-use totsugeki::{
+use totsugeki_core::{
     bracket::Bracket, format::Format, matches::ReportedResult, opponent::Opponent, player::Player,
     seeding::Method,
 };

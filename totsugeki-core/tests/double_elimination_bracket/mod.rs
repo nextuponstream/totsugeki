@@ -1,8 +1,8 @@
 // TODO move all tests of public interface here
 
-use totsugeki::double_elimination_bracket::DoubleEliminationBracket;
-use totsugeki::next_opponent::Error;
-use totsugeki::next_opponent::NextOpponentInBracket;
+use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki_core::next_opponent::Error;
+use totsugeki_core::next_opponent::NextOpponentInBracket;
 
 pub mod disqualify_from_bracket;
 mod flexible_validation;

@@ -4,18 +4,23 @@ use libfuzzer_sys::fuzz_target;
 extern crate libfuzzer_sys;
 
 use chrono::prelude::*;
-use itertools::Itertools;
-use totsugeki::{
+use totsugeki_core::{
     bracket::Bracket, format::Format, matches::ReportedResult, opponent::Opponent, player::Player,
     seeding::Method,
 };
-use totsugeki_fuzz::{BracketFormat, EventsPermutation, MatchEvent};
+use totsugeki_fuzz::{BracketFormat, MatchEvent, StillRealisticEvents};
 
-// NOTE: fuzzer is stuck between tournaments of 3-10 players
-fuzz_target!(|data: (EventsPermutation, BracketFormat)| {
+// Note: for 25k players, this fuzzing target hits catastrophic scenarios
+// quite easily. Even 1k player for double elimination, this hits catastrophic
+// scenarios.
+fuzz_target!(|data: (StillRealisticEvents, BracketFormat)| {
     let (events, format) = data;
+    // let (events, _format) = data;
     let total_events = events.sequence.len();
 
+    // if you want to temporarily force another type of bracket format, update
+    // format here (and not below)
+    // let format = BracketFormat::DoubleElimination;
     match (format, total_events) {
         (BracketFormat::SingleElimination, t_e) if t_e < 3 => {
             return;
@@ -46,35 +51,53 @@ fuzz_target!(|data: (EventsPermutation, BracketFormat)| {
         true,
     );
 
-    let mut players = vec![Player::new(String::default())];
     for i in 1..=total_players {
+        // if i % 100 == 0 {
+        //     println!("{i} player joined...")
+        // }
         let player = Player::new(format!("p{i}"));
-        players.push(player.clone());
-        initial_bracket = initial_bracket.join(player).expect("");
+        // unchecked does not slow down
+        initial_bracket = initial_bracket
+            .unchecked_join_skip_matches_generation(player)
+            .expect("bracket with more participants but no matches");
     }
+
+    initial_bracket = initial_bracket.generate_matches().expect("matches");
 
     println!("{format:?}");
     println!("#total players: {total_players}");
     println!("#events       : {}", total_events);
-    println!("#permutation  : {}", events.permutation);
+    // println!("#permutation  : {}", events.permutation);
     println!("-------------------");
     let initial_bracket = initial_bracket.start().expect("bracket started").0;
 
-    let permutations = (0..total_events)
-        .into_iter()
-        .permutations(total_events)
-        .collect_vec();
-    let p = permutations.get(events.permutation).expect("permutation");
-    let mut bracket = initial_bracket.clone();
+    // cannot compute all permutations for big brackets because computationnaly
+    // expensive. Then take random sequence provided
+    let p = events.permutation;
 
-    for _ in 0..total_events {
+    let mut bracket = initial_bracket;
+
+    for _e in 0..total_events {
+        // if e > 0 && e % 50 == 0 {
+        //     println!("{e} events...");
+        // }
         // early exit if there is not enough matches to fuzz
         let mut dq_events = 0;
         if bracket.is_over() {
             break;
         }
 
+        // FIXME it takes a full second to process 1 event for 8k people
         for index_event in p.iter() {
+            // println!("{}/{}", index_event, p.len());
+            if *index_event > 0 && *index_event % 20 == 0 {
+                // println!("ie {index_event}...");
+                let (done, total) = bracket.matches_progress();
+                println!("{done}/{total} matches done");
+                // let ms = bracket.get_matches();
+                // println!("{:?}", ms[ms.len() - 1]);
+                // println!("{:?}", ms[ms.len() - 2]);
+            }
             let e = events.sequence.get(*index_event).expect("event");
             if bracket.is_over() {
                 break;
@@ -91,8 +114,10 @@ fuzz_target!(|data: (EventsPermutation, BracketFormat)| {
             if m.is_over() {
                 continue;
             }
+            // println!("processing event {e:?} for match {m:?}");
             match e {
                 MatchEvent::Disqualification(is_player_1) => {
+                    // println!("{e:?}");
                     let player = match (is_player_1, m.get_players()) {
                         (true, [Opponent::Player(id), _]) => id,
                         (false, [_, Opponent::Player(id)]) => id,
@@ -103,6 +128,9 @@ fuzz_target!(|data: (EventsPermutation, BracketFormat)| {
                     if dq_events < events.sequence.len() {
                         if !bracket.is_disqualified(player) {
                             dq_events = dq_events + 1;
+                            // if dq_events % 500 == 0 {
+                            //     println!("processed {dq_events} disqualifications...");
+                            // }
                             bracket = bracket.disqualify_participant(player).expect("bracket").0;
                         }
                     } else {

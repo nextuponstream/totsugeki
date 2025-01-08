@@ -12,7 +12,7 @@ use http::StatusCode;
 use secrecy::{ExposeSecret, Secret};
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPool;
-use totsugeki::ID;
+use totsugeki_core::ID;
 use tower_sessions::Session;
 use tracing::instrument;
 

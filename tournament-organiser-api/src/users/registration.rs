@@ -11,7 +11,7 @@ use http::StatusCode;
 use secrecy::{ExposeSecret, Secret};
 use serde::Deserialize;
 use sqlx::postgres::PgPool;
-use totsugeki::ID;
+use totsugeki_core::ID;
 use tracing::instrument;
 use zxcvbn::zxcvbn;
 

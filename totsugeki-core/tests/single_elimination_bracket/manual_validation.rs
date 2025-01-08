@@ -1,16 +1,16 @@
 use crate::single_elimination_bracket::{
     assert_next_matches, assert_no_next_match_after_tournament_is_over,
 };
-use totsugeki::bracket::seeding::Seeding;
-use totsugeki::matches::result::{MatchFormat, Score};
-use totsugeki::player::{Participants, Player};
-use totsugeki::single_elimination_bracket::SingleEliminationBracket;
-use totsugeki::validation::AutomaticMatchValidationMode;
+use totsugeki_core::bracket::seeding::Seeding;
+use totsugeki_core::matches::result::{MatchFormat, Score};
+use totsugeki_core::player::{Participants, Player};
+use totsugeki_core::single_elimination_bracket::SingleEliminationBracket;
+use totsugeki_core::validation::AutomaticMatchValidationMode;
 
 mod bracket_with_5_participants {
     use super::*;
-    use totsugeki::matches::result::{MatchFormat, Score};
-    use totsugeki::validation::AutomaticMatchValidationMode;
+    use totsugeki_core::matches::result::{MatchFormat, Score};
+    use totsugeki_core::validation::AutomaticMatchValidationMode;
 
     #[test]
     fn example1() {
@@ -246,7 +246,7 @@ fn bracket_8_man_manual2() {
 
 mod bracket_with_9_participants {
     use super::*;
-    use totsugeki::matches::result::Score;
+    use totsugeki_core::matches::result::Score;
 
     #[test]
     fn example1() {

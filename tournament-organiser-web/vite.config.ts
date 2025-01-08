@@ -18,6 +18,10 @@ export default defineConfig({
       include: [path.resolve(__dirname, './src/locales/**')],
     }),
   ],
+  // TLDR: any url from the frontend targeting /api will actually target
+  // localhost:8080. CORS issues are avoided, regardless what port occupies
+  // `npm run dev`
+  //
   // NOTE: apparently, localhost may not resolve well with http-node-proxy, at
   // least on my machine, which is why you may need 127.0.0.1 for development.
   //

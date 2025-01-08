@@ -5,7 +5,7 @@ use crate::tournaments::{breakdown, ReportResultInput};
 use axum::response::IntoResponse;
 use axum::Json;
 use http::StatusCode;
-use totsugeki::matches::result::Score;
+use totsugeki_core::matches::result::Score;
 use tracing::instrument;
 
 /// Returns updated bracket with result. Because there is no persistence, it's

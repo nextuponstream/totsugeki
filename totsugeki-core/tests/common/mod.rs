@@ -1,6 +1,6 @@
-use totsugeki::matches::Match;
-use totsugeki::opponent::Opponent;
-use totsugeki::player::Player;
+use totsugeki_core::matches::Match;
+use totsugeki_core::opponent::Opponent;
+use totsugeki_core::player::Player;
 
 /// There is a match with a given `winner` and `loser`
 pub fn assert_outcome(matches: &[Match], winner: &Player, loser: &Player) {

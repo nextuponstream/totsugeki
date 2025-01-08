@@ -6,44 +6,32 @@ extern crate libfuzzer_sys;
 use chrono::prelude::*;
 use itertools::Itertools;
 use num_bigint::BigInt;
-use totsugeki::{
+use totsugeki_core::{
     bracket::Bracket, format::Format, matches::ReportedResult, opponent::Opponent, player::Player,
     seeding::Method,
 };
-use totsugeki_fuzz::{BracketFormat, LotsOfEvents, MatchEvent};
+use totsugeki_fuzz::{BigOnlineBracketEvents, MatchEvent};
 
-// NOTE: usize, 22! is the max
-// iterations are long:
-// ALARM: working on the last Unit for 1201 seconds
-//        and the timeout value is 1200 (use -timeout=N to change)
-fuzz_target!(|data: (LotsOfEvents, BracketFormat, u128)| {
-    let (events, format, permutation_index) = data;
+// Fuzz thoroughly for 256 players (big online brackets)
+// 2100 player was realistic but it is already EXTREMELY SLOW TO FUZZ
+// 7000 is still realistic would be interesting for 1-2 pass to confirm it
+// still works
+fuzz_target!(|data: (BigOnlineBracketEvents, u128)| {
+    let (events, permutation_index) = data;
 
     let total_events = events.0.len();
 
-    let total_players = match (format, total_events) {
-        (BracketFormat::SingleElimination, t_e) => t_e + 1, // n - 1 = t_e
-        (BracketFormat::DoubleElimination, t_e) => (t_e + 1) / 2, // 2 * n - 1 = t_e
-    };
+    let total_players = (total_events + 1) / 2; // 2 * n - 1 = t_e
 
-    let format = match format {
-        BracketFormat::SingleElimination => Format::SingleElimination,
-        BracketFormat::DoubleElimination => Format::DoubleElimination,
-    };
+    let format = Format::DoubleElimination;
 
-    let mut min_permutations: BigInt = match format {
-        Format::SingleElimination => 2.into(),
-        Format::DoubleElimination => 5.into(),
-    };
+    let mut min_permutations: BigInt = 5.into();
     let mut min_player_count = 3;
     let p_index_big_int = <u128 as Into<BigInt>>::into(permutation_index);
 
     for player_count in 3..total_players {
         if min_permutations < p_index_big_int {
-            let next = match format {
-                Format::SingleElimination => player_count,
-                Format::DoubleElimination => player_count * 2 - 1,
-            };
+            let next = player_count * 2 - 1;
             min_permutations = min_permutations * <usize as Into<BigInt>>::into(next);
             min_player_count = player_count;
         } else {
@@ -58,10 +46,7 @@ fuzz_target!(|data: (LotsOfEvents, BracketFormat, u128)| {
         }
 
         // required events in this loop
-        let event_count = match format {
-            Format::SingleElimination => player_count - 1,
-            Format::DoubleElimination => 2 * player_count - 1,
-        };
+        let event_count = 2 * player_count - 1;
         let mut bracket = Bracket::new(
             "",
             format,
@@ -89,11 +74,6 @@ fuzz_target!(|data: (LotsOfEvents, BracketFormat, u128)| {
         let p = permutations
             .nth(permutation_index.try_into().unwrap())
             .expect("permutation");
-
-        println!("format                    : {format}");
-        println!("player count for this loop: {player_count}");
-        println!("permutation               : {permutation_index}");
-        println!("-------------------------------");
 
         for _ in 0..event_count {
             // early exit if there is not enough matches to fuzz
