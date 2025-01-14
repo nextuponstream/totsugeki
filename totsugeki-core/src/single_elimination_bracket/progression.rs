@@ -162,8 +162,11 @@ impl SingleEliminationBracket {
             Err(e) => unreachable!("{e:?}"),
         };
 
-        let bracket =
-            SingleEliminationBracket::new(self.seeding, matches, self.automatic_match_progression);
+        let bracket = SingleEliminationBracket::new(
+            self.seeding,
+            matches,
+            self.automatic_match_validation_mode,
+        );
         let new_matches =
             new_matches_to_play_for_bracket(&old_matches_to_play, &bracket.matches_to_play());
         (bracket, new_matches)

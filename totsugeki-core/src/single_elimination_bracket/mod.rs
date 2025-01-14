@@ -24,7 +24,7 @@ pub struct SingleEliminationBracket {
     /// Seeding
     seeding: Seeding,
     /// Validation mode. May trigger validation after a reported result
-    automatic_match_progression: AutomaticMatchValidationMode,
+    automatic_match_validation_mode: AutomaticMatchValidationMode,
 }
 
 /// Input is invalid because of current bracket state
@@ -71,7 +71,7 @@ impl SingleEliminationBracket {
         Self {
             matches,
             seeding,
-            automatic_match_progression,
+            automatic_match_validation_mode: automatic_match_progression,
         }
     }
 
@@ -99,7 +99,7 @@ impl SingleEliminationBracket {
         Self {
             matches,
             seeding,
-            automatic_match_progression,
+            automatic_match_validation_mode: automatic_match_progression,
         }
     }
 
@@ -145,7 +145,7 @@ impl SingleEliminationBracket {
             .into_iter()
             .find(|m| m.contains(player_id) && m.get_winner() == Opponent(None));
         let seeding = self.seeding.clone();
-        let automatic_match_progression = self.automatic_match_progression;
+        let automatic_match_progression = self.automatic_match_validation_mode;
         match match_to_update {
             Some(m) => {
                 let affected_match_id = m.get_id();
@@ -222,6 +222,6 @@ impl SingleEliminationBracket {
     /// Get validation
     #[must_use]
     pub fn get_automatic_validation(&self) -> AutomaticMatchValidationMode {
-        self.automatic_match_progression
+        self.automatic_match_validation_mode
     }
 }

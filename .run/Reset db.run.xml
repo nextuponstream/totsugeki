@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Reset db" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
-    <option name="command" value="sqlx database reset" />
+    <option name="command" value="sqlx database reset -y" />
     <option name="workingDirectory" value="file://$PROJECT_DIR$/tournament-organiser-api" />
     <envs>
       <env name="DB_USERNAME" value="toa" />
@@ -18,6 +18,7 @@
     <option name="redirectInputPath" value="" />
     <method v="2">
       <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      <option name="RunConfigurationTask" enabled="true" run_configuration_name="kill connection to toa db" run_configuration_type="ShConfigurationType" />
     </method>
   </configuration>
 </component>

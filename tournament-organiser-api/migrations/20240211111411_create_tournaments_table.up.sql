@@ -12,6 +12,8 @@ CREATE TABLE tournaments
     id         uuid        NOT NULL DEFAULT gen_random_uuid(),
     PRIMARY KEY (id),
     name       TEXT        NOT NULL,
-    matches    JSONB       NOT NULL,
+    format     TEXT        NOT NULL
+        CONSTRAINT tournament_format
+            CHECK ( format IN ('double_elimination') ),
     created_at timestamptz NOT NULL default current_timestamp
 );
