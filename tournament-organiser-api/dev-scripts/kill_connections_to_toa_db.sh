@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-# kill jetbrains connection (datasource tool) and every other
+# You cannot run migrations if jetbrains has a connection to the database
+#
+# kill jetbrains connection (datasource tool) and all other connections
 # https://stackoverflow.com/a/44829330
 psql --dbname=toa -c 'SELECT
 pg_terminate_backend(pg_stat_activity.pid) FROM

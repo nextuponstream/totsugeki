@@ -1,9 +1,9 @@
 //! User repository
 
-use crate::users::registration::UserRecord;
+use crate::types::SqlxTransaction;
+use crate::users::registration::{User, UserID, UserRecord};
+use axum::debug_handler;
 use sqlx::error::Error as SqlxError;
-use sqlx::{Postgres, Transaction};
-use totsugeki_core::ID;
 
 /// All methods to query user in database
 pub(crate) struct UserRepository {}
@@ -23,17 +23,26 @@ impl From<SqlxError> for Error {
 
 impl UserRepository {
     /// Read user from database
-    pub async fn read(
-        transaction: &mut Transaction<'_, Postgres>,
-        user_id: ID,
+    pub async fn read<'a>(
+        transaction: SqlxTransaction<'a, '_>,
+        user_id: UserID,
     ) -> Result<Option<UserRecord>, Error> {
         let u = sqlx::query_as!(
             UserRecord,
             r#"SELECT id, name, email from users WHERE id = $1"#,
-            user_id
+            user_id.0
         )
         .fetch_optional(&mut **transaction)
         .await?;
         Ok(u)
+    }
+
+    pub async fn exists<'a>(transaction: SqlxTransaction<'a, '_>, email: &str) -> bool {
+        sqlx::query_as!(User, "SELECT * from users WHERE email = $1", email,)
+            // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
+            .fetch_optional(&mut **transaction)
+            .await
+            .expect("user with matching email")
+            .is_some()
     }
 }

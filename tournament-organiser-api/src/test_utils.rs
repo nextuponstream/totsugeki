@@ -11,10 +11,11 @@ pub struct TestApp {
     pub http_client: Client,
 }
 
-use super::{app, Duration, Expiry, PgPool, PostgresStore, SessionManagerLayer, SocketAddr};
+use super::{app, Expiry, PgPool, PostgresStore, SessionManagerLayer, SocketAddr};
 use crate::tournaments::{BracketState, CreateBracketForm, ID};
 use reqwest::{Client, Response};
 use serde::Serialize;
+use time::Duration;
 use tokio::net::TcpListener;
 
 /// Returns address to connect to new application (with random available port)

@@ -2,15 +2,18 @@
 
 use crate::http::internal_error;
 use crate::middlewares::validation::ValidatedRequest;
-use crate::repositories::brackets::TournamentService;
 use crate::resources::{Pagination, PaginationResult};
+use crate::services::tournaments::TournamentService;
+use crate::types::ConnectionPool;
 use axum::extract::State;
 use axum::Json;
+use axum_macros::debug_handler;
 use sqlx::PgPool;
 use tracing::instrument;
 
 /// Return a newly instanciated bracket from ordered (=seeded) player names
 #[instrument(name = "list_brackets", skip(pool))]
+#[debug_handler]
 pub(crate) async fn list_brackets(
     // NOTE pool before validated query params for some reason???
     State(pool): State<PgPool>,

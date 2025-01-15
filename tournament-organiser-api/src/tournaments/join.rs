@@ -1,14 +1,16 @@
 //! Register player in bracket
 
 use crate::http::{internal_error, ErrorSlug};
-use crate::repositories::brackets::{Error, TournamentService};
+use crate::repositories::brackets::{Error, TournamentServiceOld};
 use crate::repositories::users::UserRepository;
-use crate::tournaments::breakdown;
+use crate::services::tournaments::TournamentService;
+use crate::tournaments::{breakdown, TournamentID};
+use crate::types::ConnectionPool;
+use crate::users::registration::UserID;
 use crate::users::session::Keys::UserId;
 use axum::extract::{Path, State};
 use axum::response::IntoResponse;
 use http::StatusCode;
-use sqlx::PgPool;
 use totsugeki_core::bracket::Id;
 use totsugeki_core::player::PlayerID;
 use totsugeki_core::ID;
@@ -17,12 +19,13 @@ use tracing::instrument;
 
 /// Let user join bracket as a player
 #[instrument(name = "join_bracket", skip(session, pool))]
-pub(crate) async fn join_bracket(
+pub(crate) async fn join_bracket<'a>(
     session: Session,
     Path(tournament_id): Path<Id>,
-    State(pool): State<PgPool>,
+    State(pool): ConnectionPool,
 ) -> impl IntoResponse {
     tracing::debug!("tournament {tournament_id}");
+    let tournament_id = TournamentID::from(tournament_id);
     let user_id: ID = session
         .get(&UserId.to_string())
         .await
@@ -31,6 +34,7 @@ pub(crate) async fn join_bracket(
             tracing::error!("missing user id");
             ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR)
         })?;
+    let user_id = UserID::from(user_id);
 
     let mut transaction = pool.begin().await.map_err(internal_error)?;
     let user = match UserRepository::read(&mut transaction, user_id).await {
@@ -59,7 +63,7 @@ pub(crate) async fn join_bracket(
     Ok(breakdown(
         &tournament,
         bracket,
-        Some(PlayerID::new(user_id)),
+        Some(PlayerID::new(user_id.0)),
         is_tournament_organiser,
     ))
 }

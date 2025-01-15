@@ -1,6 +1,10 @@
 //! registration
 
-use crate::ErrorResponse;
+use crate::http::{internal_error, Error, ErrorSlug};
+use crate::repositories::users::UserRepository;
+use crate::tournaments::GenericResourceCreated;
+use crate::types::{AxumJson, SqlxError, StatusCodeAndMessage};
+use crate::ApiResponse;
 use argon2::password_hash::SaltString;
 use argon2::Argon2;
 use argon2::PasswordHasher;
@@ -8,11 +12,13 @@ use axum::extract::State;
 use axum::response::{IntoResponse, Json};
 use chrono::prelude::*;
 use http::StatusCode;
-use secrecy::{ExposeSecret, Secret};
+use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
 use sqlx::postgres::PgPool;
+use sqlx::{Postgres, Transaction};
 use totsugeki_core::ID;
 use tracing::instrument;
+use uuid::Uuid;
 use zxcvbn::zxcvbn;
 
 /// User registration form input with secret input to avoid it being exposed
@@ -24,16 +30,26 @@ pub struct FormInput {
     /// user email address
     pub email: String,
     /// user provided password
-    pub password: Secret<String>,
+    pub password: SecretString,
     /// user id
     pub created_at: Option<String>,
+}
+
+/// User of application
+#[derive(Clone, Debug, Copy)]
+pub struct UserID(pub ID);
+
+impl From<Uuid> for UserID {
+    fn from(value: Uuid) -> Self {
+        Self(value)
+    }
 }
 
 /// User of application
 #[derive(sqlx::FromRow, Clone, Debug)]
 pub struct User {
     /// Id of user
-    pub id: ID,
+    pub id: UserID,
     /// user name
     pub name: String,
     /// user email address
@@ -42,40 +58,44 @@ pub struct User {
     pub password: String,
     /// user id
     #[allow(dead_code)]
-    pub created_at: Option<DateTime<Utc>>,
+    pub created_at: Option<OffsetDateTime>,
 }
 
 /// User of application
 #[derive(sqlx::FromRow, Clone, Debug)]
 pub struct UserRecord {
     /// Id of user
-    pub id: ID,
+    pub id: UserID,
     /// user name
     pub name: String,
     /// user email address
     pub email: String,
 }
 
+async fn get_transaction_from_pool<'a>(
+    pg_pool: PgPool,
+) -> Result<Transaction<'a, Postgres>, ErrorSlug> {
+    Ok(pg_pool
+        .begin()
+        .await
+        .map_err(|_| ErrorSlug::new(StatusCode::INTERNAL_SERVER_ERROR, "sqlx".to_string()))?)
+}
+
+use axum::debug_handler;
+use time::OffsetDateTime;
+
 /// `/register` endpoint for health check
 #[instrument(name = "user_registration", skip(pool))]
+#[debug_handler]
 pub(crate) async fn registration(
     State(pool): State<PgPool>,
     Json(form_input): Json<FormInput>,
 ) -> impl IntoResponse {
-    if sqlx::query_as!(
-        User,
-        "SELECT * from users WHERE email = $1",
-        &form_input.email,
-    )
-    // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
-    .fetch_optional(&pool)
-    .await
-    .expect("user with matching email")
-    .is_some()
-    {
+    let mut transaction = pool.begin().await?;
+    if UserRepository::exists(&mut transaction, &form_input.email).await {
         let message = "Another user has already registered with provided mail".to_string();
         tracing::warn!(message);
-        return (StatusCode::CONFLICT, Json(ErrorResponse { message })).into_response();
+        return Ok((StatusCode::CONFLICT, Json(ApiResponse { message })));
     }
 
     let raw_password = form_input.password.expose_secret();
@@ -85,23 +105,21 @@ pub(crate) async fn registration(
     if let Some(feedback) = estimate.feedback() {
         if let Some(warning) = feedback.warning() {
             // NOTE: might contain password attempt if you log feedback
-            return (
+            return Ok((
                 StatusCode::BAD_REQUEST,
-                Json(ErrorResponse {
+                Json(ApiResponse {
                     #[allow(clippy::uninlined_format_args)]
                     message: format!("weak_password: {}", warning),
                 }),
-            )
-                .into_response();
+            ));
         }
 
-        return (
+        return Ok((
             StatusCode::BAD_REQUEST,
-            Json(ErrorResponse {
+            Json(ApiResponse {
                 message: "weak_password".into(),
             }),
-        )
-            .into_response();
+        ));
     };
 
     // Copied from zero2prod book
@@ -118,10 +136,16 @@ pub(crate) async fn registration(
         password_hash,
     )
     .execute(&pool)
-    .await
-    .expect("user insert");
+    .await?;
     // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
     tracing::info!("new user {}", form_input.email);
 
-    (StatusCode::OK, Json(())).into_response()
+    // Ok::<(StatusCode, AxumJson<()>), Error>((StatusCode::OK, Json(())))
+    // TODO make it a type
+    // StatusCodeAndMessage::Ok((StatusCode::CREATED, Json(ApiResponse::default())))
+    // Ok::<_, Error>((StatusCode::CREATED, Json(ApiResponse::default())))
+    Ok::<(StatusCode, Json<ApiResponse>), Error>((
+        StatusCode::CREATED,
+        Json(ApiResponse::default()),
+    ))
 }

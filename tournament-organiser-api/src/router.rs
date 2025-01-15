@@ -36,8 +36,8 @@ pub(crate) fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router 
             .route("/", get(list_brackets))
             .route("/", post(create_bracket))
             .route("/save", post(save_bracket_from_steps))
-            .route("/:tournament_id/report-result", post(update_with_result))
-            .route("/:tournament_id/join", post(join_bracket)),
+            .route("/{tournament_id}/report-result", post(update_with_result))
+            .route("/{tournament_id}/join", post(join_bracket)),
     );
     let protected_routes = Router::new()
         .merge(user_routes)
@@ -61,12 +61,12 @@ pub(crate) fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router 
         )
         .nest(
             "/user",
-            Router::new().route("/:id/tournaments", get(user_tournaments)),
+            Router::new().route("/{id}/tournaments", get(user_tournaments)),
         );
     let maybe_logged_in_routes = Router::new()
         .nest(
             "/tournaments",
-            Router::new().route("/:tournament_id", get(show_bracket)),
+            Router::new().route("/{tournament_id}", get(show_bracket)),
         )
         .layer(axum::middleware::from_fn_with_state(
             session_store,

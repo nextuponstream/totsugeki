@@ -9,7 +9,7 @@ use axum::http::Request;
 use axum::response::{IntoResponse, Json};
 use base64::Engine;
 use http::StatusCode;
-use secrecy::{ExposeSecret, Secret};
+use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPool;
 use totsugeki_core::ID;
@@ -22,7 +22,7 @@ pub struct Credentials {
     /// user email
     pub email: String,
     /// user password
-    pub password: Secret<String>,
+    pub password: SecretString,
 }
 
 /// Successful login response with ID of logged in user
@@ -61,7 +61,7 @@ pub(crate) async fn login(
         .next()
         .expect("email in authorization header payload")
         .to_string();
-    let password = Secret::new(
+    let password = SecretString::from(
         credentials
             .next()
             .expect("password in authorization payload")

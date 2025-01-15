@@ -3,7 +3,7 @@
 use crate::http::internal_error;
 use crate::http::Error;
 use crate::middlewares::validation::ValidatedJson;
-use crate::repositories::brackets::TournamentService;
+use crate::services::tournaments::TournamentService;
 use crate::tournaments::Tournament;
 use crate::tournaments::{CreateBracketForm, GenericResourceCreated};
 use crate::users::session::Keys::UserId;
@@ -27,7 +27,7 @@ use tracing::instrument;
 #[debug_handler]
 pub(crate) async fn create_bracket(
     session: Session,
-    State(pool): State<PgPool>,
+    State(pool): State<PgPool>, // FIXME cannot use ConnectionPool
     ValidatedJson(form): ValidatedJson<CreateBracketForm>,
 ) -> impl IntoResponse {
     tracing::debug!("new bracket from players: {:?}", form.player_names);

@@ -1,7 +1,7 @@
 //! Brackets from user
 
 use crate::middlewares::validation::ValidatedRequest;
-use crate::repositories::brackets::TournamentService;
+use crate::repositories::brackets::TournamentServiceOld;
 use crate::resources::{Pagination, PaginationResult};
 use axum::extract::{Path, State};
 use axum::Json;
@@ -22,7 +22,7 @@ pub(crate) async fn user_tournaments(
     let offset: i64 = pagination.offset.try_into().expect("ok");
 
     let mut transaction = pool.begin().await?;
-    let brackets = TournamentService::user_tournaments(
+    let brackets = TournamentServiceOld::user_tournaments(
         &mut transaction,
         pagination.sort_order,
         limit,

@@ -15,8 +15,10 @@ mod middlewares;
 pub(crate) mod repositories;
 pub mod resources;
 mod router;
+pub(crate) mod services;
 pub mod test_utils;
 pub mod tournaments;
+mod types;
 pub mod users;
 
 use crate::router::api;
@@ -25,7 +27,6 @@ use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use std::net::SocketAddr;
-use time::Duration;
 use tokio::net::TcpListener;
 use tower_http::{
     services::{ServeDir, ServeFile},
@@ -158,7 +159,9 @@ pub async fn run() {
     };
     let session_layer = SessionManagerLayer::new(session_store.clone())
         .with_secure(false)
-        .with_expiry(Expiry::OnInactivity(Duration::seconds(session_duration)));
+        .with_expiry(Expiry::OnInactivity(time::Duration::seconds(
+            session_duration,
+        )));
 
     let port = if let Ok(port) = std::env::var("PORT") {
         port.parse().expect("port")
@@ -178,9 +181,17 @@ pub async fn run() {
     serve(app(pool, session_store).layer(session_layer), port).await;
 }
 
-/// Standard error message
+/// Standard error message or a message that everything is fine
 #[derive(Serialize, Deserialize)]
-pub struct ErrorResponse {
+pub struct ApiResponse {
     /// user-facing error message
     pub message: String,
+}
+
+impl Default for ApiResponse {
+    fn default() -> Self {
+        ApiResponse {
+            message: "ok".into(),
+        }
+    }
 }

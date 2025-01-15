@@ -249,7 +249,20 @@ pub type ID = Uuid;
 
 /// ID format for tournament
 #[derive(Default, Debug, Copy, Clone, Serialize, Deserialize)]
-pub struct TournamentID(pub ID);
+pub struct TournamentID(ID);
+
+impl TournamentID {
+    /// Get uuid
+    pub fn get(&self) -> ID {
+        self.0
+    }
+}
+
+impl From<Uuid> for TournamentID {
+    fn from(value: Uuid) -> Self {
+        Self(value)
+    }
+}
 
 impl Display for TournamentID {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
