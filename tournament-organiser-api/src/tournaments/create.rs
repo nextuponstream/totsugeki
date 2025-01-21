@@ -5,7 +5,7 @@ use crate::http::Error;
 use crate::middlewares::validation::ValidatedJson;
 use crate::services::tournaments::TournamentService;
 use crate::tournaments::Tournament;
-use crate::tournaments::{CreateBracketForm, GenericResourceCreated};
+use crate::tournaments::{CreateTournamentForm, GenericResourceCreated};
 use crate::users::session::Keys::UserId;
 use axum::extract::State;
 use axum::response::IntoResponse;
@@ -23,12 +23,12 @@ use tower_sessions::Session;
 use tracing::instrument;
 
 /// Return a newly instanciated bracket from ordered (=seeded) player names
-#[instrument(name = "create_bracket", skip(pool, session))]
+#[instrument(name = "create_tournament", skip(pool, session))]
 #[debug_handler]
-pub(crate) async fn create_bracket(
+pub(crate) async fn create_tournament(
     session: Session,
     State(pool): State<PgPool>, // FIXME cannot use ConnectionPool
-    ValidatedJson(form): ValidatedJson<CreateBracketForm>,
+    ValidatedJson(form): ValidatedJson<CreateTournamentForm>,
 ) -> impl IntoResponse {
     tracing::debug!("new bracket from players: {:?}", form.player_names);
 
@@ -42,7 +42,7 @@ pub(crate) async fn create_bracket(
             .add_participant(Player::new(name))
             .map_err(internal_error)?;
     }
-    tournament.set_name(form.bracket_name);
+    tournament.set_name(form.tournament_name);
     let bracket = DoubleEliminationBracket::create(
         Seeding::new(
             tournament

@@ -3,7 +3,7 @@
 use crate::http::{internal_error, Error, ErrorSlug};
 use crate::repositories::users::UserRepository;
 use crate::tournaments::GenericResourceCreated;
-use crate::types::{AxumJson, SqlxError, StatusCodeAndMessage};
+use crate::types::{AxumJson, SqlxError};
 use crate::ApiResponse;
 use argon2::password_hash::SaltString;
 use argon2::Argon2;

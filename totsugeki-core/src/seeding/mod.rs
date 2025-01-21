@@ -134,6 +134,7 @@ fn seeding_initial_round(
 
     this_round.push(
         Match::new(
+            None,
             [
                 Opponent(Some(top_seed_player_id)),
                 Opponent(Some(bottom_seed_player_id)),

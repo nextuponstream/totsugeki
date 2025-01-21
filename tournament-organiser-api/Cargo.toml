@@ -21,7 +21,7 @@ totsugeki-display = { path = "../totsugeki-display" }
 # like in the zero2prod book
 # I don't like that sqlx might have a huge breaking change when going 1.0 but
 # that's life
-sqlx = { version = "0.8.3", features = ["runtime-tokio-rustls", "any", "tls-rustls", "postgres", "uuid", "chrono", "json"] }
+sqlx = { version = "0.8.3", features = ["runtime-tokio-rustls", "any", "tls-rustls", "postgres", "uuid", "chrono", "json", "bigdecimal"] }
 chrono = { version = "0.4.39", features = ["serde"] }
 reqwest = { version = "0.12.12", features = ["json", "cookies"] }
 secrecy = { version = "0.10.3", features = ["serde"] }
@@ -35,3 +35,4 @@ validator = { version = "0.16.1", features = ["derive"] }
 async-trait = "0.1.77"
 thiserror = "1.0.57"
 uuid = { version = "1.1.2", features = ["v4", "serde"] }
+bigdecimal = { version = "0.4.7" }

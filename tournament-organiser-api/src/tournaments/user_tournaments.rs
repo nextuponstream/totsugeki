@@ -1,8 +1,8 @@
 //! Brackets from user
 
 use crate::middlewares::validation::ValidatedRequest;
-use crate::repositories::brackets::TournamentServiceOld;
 use crate::resources::{Pagination, PaginationResult};
+use crate::services::tournaments::{PaginatedTournamentResource, TournamentService};
 use axum::extract::{Path, State};
 use axum::Json;
 use axum_macros::debug_handler;
@@ -17,12 +17,12 @@ pub(crate) async fn user_tournaments(
     Path(user_id): Path<Id>,
     State(pool): State<PgPool>,
     ValidatedRequest(pagination): ValidatedRequest<Pagination>,
-) -> crate::http::Result<Json<PaginationResult>> {
+) -> crate::http::Result<Json<PaginationResult<PaginatedTournamentResource>>> {
     let limit: i64 = pagination.limit.try_into().expect("ok");
     let offset: i64 = pagination.offset.try_into().expect("ok");
 
     let mut transaction = pool.begin().await?;
-    let brackets = TournamentServiceOld::user_tournaments(
+    let tournaments = TournamentService::user_tournaments(
         &mut transaction,
         pagination.sort_order,
         limit,
@@ -31,13 +31,13 @@ pub(crate) async fn user_tournaments(
     )
     .await?;
 
-    let total = if brackets.is_empty() {
+    let total = if tournaments.is_empty() {
         0
     } else {
-        brackets[0].total.expect("total")
+        tournaments[0].total.expect("total")
     };
     let total = total.try_into().expect("conversion");
-    let data = brackets;
+    let data = tournaments;
     let pagination_result = PaginationResult { total, data };
 
     transaction.commit().await?;

@@ -15,7 +15,7 @@ mod middlewares;
 pub(crate) mod repositories;
 pub mod resources;
 mod router;
-pub(crate) mod services;
+pub mod services;
 pub mod test_utils;
 pub mod tournaments;
 mod types;

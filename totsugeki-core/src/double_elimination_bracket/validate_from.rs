@@ -67,7 +67,7 @@ impl DoubleEliminationBracket {
             (Opponent(Some(disqualified)), Some(winner_of_winner_bracket), true)
                 if disqualified == winner_of_winner_bracket =>
             {
-                Match::new(gf.get_players(), [1, 2], gf.format)
+                Match::new(Some(gf_reset.id), gf.get_players(), [1, 2], gf.format)
                     .expect("grand final reset")
                     .set_automatic_loser(winner_of_winner_bracket)
                     .update_outcome()

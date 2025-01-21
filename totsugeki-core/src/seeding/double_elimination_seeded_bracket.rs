@@ -89,7 +89,7 @@ pub fn get_loser_bracket_matches_top_seed_favored(
         for (o1, o2) in expected_winners.iter().zip(other_opponents.iter()) {
             let seed_o1 = get_seed_of(*o1, seeding);
             let seed_o2 = get_seed_of(*o2, seeding);
-            let m = Match::new_looser_bracket_match([seed_o1, seed_o2], match_format);
+            let m = Match::new_empty([seed_o1, seed_o2], match_format);
             matches.push(m);
         }
 
@@ -106,12 +106,12 @@ pub fn get_loser_bracket_matches_top_seed_favored(
         for (o1, o2) in expected_winners.iter().zip(expected_loosers.iter()) {
             let seed_o1 = get_seed_of(*o1, seeding);
             let seed_o2 = get_seed_of(*o2, seeding);
-            let m = Match::new_looser_bracket_match([seed_o1, seed_o2], match_format);
+            let m = Match::new_empty([seed_o1, seed_o2], match_format);
             matches.push(m);
         }
 
         if expected_winners.len() == 2 {
-            matches.push(Match::new_looser_bracket_match([2, 3], match_format));
+            matches.push(Match::new_empty([2, 3], match_format));
         }
     }
 
@@ -154,7 +154,7 @@ fn generate_matches_of_first_round_in_wave<'a>(
     for (o1, o2) in expected_winners.iter().zip(expected_losers.iter()) {
         let seed_o1 = get_seed_of(*o1, seeding);
         let seed_o2 = get_seed_of(*o2, seeding);
-        let m = Match::new_looser_bracket_match([seed_o1, seed_o2], match_format);
+        let m = Match::new_empty([seed_o1, seed_o2], match_format);
         matches.push(m);
     }
     (p_with_bye, p_without_bye)

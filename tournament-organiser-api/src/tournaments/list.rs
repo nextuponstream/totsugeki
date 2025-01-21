@@ -3,7 +3,7 @@
 use crate::http::internal_error;
 use crate::middlewares::validation::ValidatedRequest;
 use crate::resources::{Pagination, PaginationResult};
-use crate::services::tournaments::TournamentService;
+use crate::services::tournaments::{PaginatedTournamentResource, TournamentService};
 use crate::types::ConnectionPool;
 use axum::extract::State;
 use axum::Json;
@@ -18,7 +18,7 @@ pub(crate) async fn list_brackets(
     // NOTE pool before validated query params for some reason???
     State(pool): State<PgPool>,
     ValidatedRequest(pagination): ValidatedRequest<Pagination>,
-) -> crate::http::Result<Json<PaginationResult>> {
+) -> crate::http::Result<Json<PaginationResult<PaginatedTournamentResource>>> {
     let limit: i64 = pagination.limit.try_into().map_err(internal_error)?;
     let offset: i64 = pagination.offset.try_into().map_err(internal_error)?;
 

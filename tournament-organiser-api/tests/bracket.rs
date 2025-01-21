@@ -4,7 +4,9 @@ use reqwest::StatusCode;
 use sqlx::PgPool;
 use totsugeki_core::matches::Match;
 use totsugeki_core::player::Player;
+use totsugeki_core::ID;
 use tournament_organiser_api::resources::PaginationResult;
+use tournament_organiser_api::services::tournaments::PaginatedTournamentResource;
 use tournament_organiser_api::test_utils::spawn_app;
 use tournament_organiser_api::tournaments::{
     BracketDisplay, BracketState, GenericResourceCreated, PlayerMatchResultReport,
@@ -17,8 +19,8 @@ async fn tournament_is_searchable(db: PgPool) {
 
     let players = vec![];
 
-    let request = tournament_organiser_api::tournaments::CreateBracketForm {
-        bracket_name: "".into(),
+    let request = tournament_organiser_api::tournaments::CreateTournamentForm {
+        tournament_name: "".into(),
         player_names: players,
     };
     let response = app
@@ -45,7 +47,8 @@ async fn create_tournament(db: PgPool) {
 
     let players = vec![];
 
-    let response = app.create_bracket(players).await;
+    // FIXME rename double elimination
+    let response = app.create_tournament(players).await;
 
     let status = response.status();
     assert_eq!(
@@ -83,7 +86,7 @@ async fn cannot_create_tournament_when_unauthenticated(db: PgPool) {
 
     let players = vec![];
 
-    let response = app.create_bracket(players).await;
+    let response = app.create_tournament(players).await;
 
     let status = response.status();
     assert_eq!(
@@ -101,7 +104,7 @@ async fn get_tournament(db: PgPool) {
 
     let players = vec![];
 
-    let response = app.create_bracket(players).await;
+    let response = app.create_tournament(players).await;
 
     let status = response.status();
     assert_eq!(
@@ -129,7 +132,7 @@ async fn get_tournament(db: PgPool) {
     assert!(matches.is_empty());
 }
 
-#[sqlx::test(fixtures("brackets"))]
+#[sqlx::test(fixtures("tournaments"))]
 async fn list_tournaments(db: PgPool) {
     let app = spawn_app(db).await;
     app.login_as_test_user().await;
@@ -149,7 +152,7 @@ async fn list_tournaments(db: PgPool) {
     let status = response.status();
     assert_eq!(status, StatusCode::OK);
 
-    let brackets: PaginationResult = response.json().await.unwrap();
+    let brackets: PaginationResult<PaginatedTournamentResource> = response.json().await.unwrap();
     assert_eq!(brackets.total, 100);
 }
 #[sqlx::test]
@@ -207,18 +210,16 @@ async fn save_tournament(db: PgPool) {
         response.text().await.unwrap()
     );
 }
-#[sqlx::test]
-async fn join_tournament(db: PgPool) {
-    let app = spawn_app(db).await;
+#[sqlx::test(fixtures("3_players_tournament"))]
+async fn join_tournament(mut db: PgPool) {
+    let app = spawn_app(db.clone()).await;
     app.login_as_test_user().await;
 
-    let players = vec![];
+    let mut transaction = db.begin().await.unwrap();
 
-    let response = app.create_bracket(players).await;
-
-    let bracket_id: GenericResourceCreated = response.json().await.unwrap();
-
-    let response = app.join_bracket(bracket_id.id).await;
+    // FIXME use api calls only
+    let id: ID = "62aefc4c-d6ec-4c2f-98f0-b639688cbe0c".try_into().unwrap();
+    let response = app.join_tournament(id).await;
     let status = response.status();
     assert_eq!(
         status,

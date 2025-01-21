@@ -11,7 +11,7 @@ CREATE TABLE match_score
                     OR (0 <= high_seed_player_score)
                 ),
 
-    low_seed_player_score  numeric(4, 0)
+    low_seed_player_score  smallint
         CONSTRAINT bounded_low_seed_player_score
             CHECK (
                 low_seed_player_score IS NULL

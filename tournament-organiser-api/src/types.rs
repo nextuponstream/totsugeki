@@ -33,4 +33,4 @@ pub type AxumJson<T> = axum::Json<T>;
 // pub type StatusCodeAndMessage<T> = Result<(StatusCode, Json<ApiResponse>), T>;
 // FAILS
 // pub type StatusCodeAndMessage = Result<(StatusCode, Json<ApiResponse>), Error>;
-pub type StatusCodeAndMessage = Result<(StatusCode, Json<ApiResponse>), Error>;
+// pub type StatusCodeAndMessage = Result<(StatusCode, Json<ApiResponse>), Error>;

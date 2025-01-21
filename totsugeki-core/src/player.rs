@@ -10,7 +10,13 @@ use thiserror::Error;
 /// Player ID
 #[derive(Hash, Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Ord, PartialOrd, Copy)]
 #[allow(clippy::module_name_repetitions)]
-pub struct PlayerID(ID);
+pub struct PlayerID(pub ID);
+
+impl From<ID> for PlayerID {
+    fn from(value: ID) -> Self {
+        Self::new(value)
+    }
+}
 
 impl PlayerID {
     /// Create player ID

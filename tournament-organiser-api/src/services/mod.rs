@@ -2,4 +2,6 @@
 //!
 //! Services are business logic encapsulated
 
-pub(crate) mod tournaments;
+pub mod tournaments;
+pub(crate) mod traits;
+pub mod users;

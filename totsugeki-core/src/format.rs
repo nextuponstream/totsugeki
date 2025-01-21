@@ -16,6 +16,16 @@ pub enum Format {
     DoubleEliminationBracket,
 }
 
+impl From<String> for Format {
+    fn from(value: String) -> Self {
+        match value {
+            v if v == "single_elimination" => Self::SingleEliminationBracket,
+            v if v == "double_elimination" => Self::DoubleEliminationBracket,
+            _ => unreachable!(),
+        }
+    }
+}
+
 impl std::fmt::Display for Format {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

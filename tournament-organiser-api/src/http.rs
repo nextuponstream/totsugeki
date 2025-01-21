@@ -26,6 +26,17 @@ pub enum Error {
 
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
+        // opaque error
+        let err_msg = match self {
+            Error::SqlxError(e) => e.to_string(),
+            Error::Unrecoverable => "unrecoverable error".to_string(),
+        };
+        // IMPORTANT: when debugging tests, place a breakpoint here
+        // Then you have the error bubble up easily without recompiling the code
+        // using println! everywhere
+        tracing::error!("{err_msg}");
+        // When nasty error occurs, we chose not to reveal the guts of the
+        // program.
         StatusCode::INTERNAL_SERVER_ERROR.into_response()
     }
 }

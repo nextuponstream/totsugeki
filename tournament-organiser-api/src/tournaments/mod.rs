@@ -23,15 +23,20 @@ pub(crate) use crate::tournaments::show::*;
 pub(crate) use crate::tournaments::update_with_result::*;
 pub(crate) use crate::tournaments::user_tournaments::*;
 use axum::{response::IntoResponse, Json as AxumJson};
+use bigdecimal::{BigDecimal, ToPrimitive};
 use chrono::{DateTime, Utc};
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::types::Json as SqlxJson;
 use std::fmt::{Display, Formatter};
+use time::OffsetDateTime;
 use totsugeki_core::bracket::seeding::Seeding;
 use totsugeki_core::bracket::Id;
 use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki_core::format::Format;
+use totsugeki_core::matches::result::MatchFormat;
+use totsugeki_core::matches::{Match, MatchID};
+use totsugeki_core::opponent::Opponent;
 use totsugeki_core::player::{Participants as TotsugekiParticipants, Player, PlayerID};
 use totsugeki_core::validation::AutomaticMatchValidationMode;
 use totsugeki_display::loser_bracket::lines as loser_bracket_lines;
@@ -39,6 +44,7 @@ use totsugeki_display::loser_bracket::reorder as reorder_loser_bracket;
 use totsugeki_display::winner_bracket::lines as winner_bracket_lines;
 use totsugeki_display::winner_bracket::reorder as reorder_winner_bracket;
 use totsugeki_display::{from_participants, BoxElement, MinimalMatch};
+use tracing::instrument::WithSubscriber;
 use uuid::Uuid;
 use validator::Validate;
 
@@ -87,10 +93,10 @@ pub struct BracketDisplay {
 
 /// List of players from which a bracket can be created
 #[derive(Deserialize, Serialize, Debug, Validate)]
-pub struct CreateBracketForm {
+pub struct CreateTournamentForm {
     #[validate(length(min = 1))]
-    /// bracket names
-    pub bracket_name: String,
+    /// tournament name
+    pub tournament_name: String,
     /// player names
     pub player_names: Vec<String>,
 }
@@ -218,25 +224,102 @@ pub(crate) struct TournamentRecord {
     /// name
     pub name: String,
     /// creation date
-    pub created_at: DateTime<Utc>,
-    /// matches (agnostic to tournament format)
-    pub matches: SqlxJson<MatchesRaw>,
-    /// participants
-    pub participants: SqlxJson<TotsugekiParticipants>,
+    pub created_at: OffsetDateTime,
+    /// Format of tournament
+    pub format: totsugeki_core::format::Format,
+}
+
+/// Deserialize in tournament information and double elimination bracket
+#[derive(Serialize, Deserialize, sqlx::FromRow)]
+pub(crate) struct TournamentAugmentedRecord {
+    /// bracket ID
+    pub id: ID,
+    /// name
+    pub name: String,
+    /// creation date
+    pub created_at: OffsetDateTime,
+    /// Format of tournament
+    pub format: totsugeki_core::format::Format,
+    // Players
+    pub players: Vec<PlayerData>, // FIXME convert to Player
+    /// Matches
+    pub matches: Vec<MatchData>,
+}
+
+#[derive(sqlx::Type, Deserialize, Serialize, Clone)]
+pub(crate) struct PlayerData {
+    pub id: ID,
+    pub name: String,
+}
+
+#[derive(sqlx::Type, Deserialize, Serialize, Clone)]
+pub(crate) struct MatchData {
+    // order matters?
+    pub pos: i16,
+    pub match_id: ID,
+    pub format: String,
+    pub format_n: i16,
+    pub high_seed: i16,
+    pub high_seed_player: Option<ID>,
+    pub low_seed: i16,
+    pub low_seed_player: Option<ID>,
+}
+
+impl From<MatchData> for Match {
+    fn from(value: MatchData) -> Self {
+        let players = [value.high_seed_player.into(), value.low_seed_player.into()];
+        let seeds = [
+            value.high_seed.to_usize().expect("high seed"),
+            value.low_seed.to_usize().expect("low seed"),
+        ];
+        let format =
+            MatchFormat::new(value.format_n.to_u8().expect("format n")).expect("match format");
+
+        Match::new(Some(MatchID::from(value.match_id)), players, seeds, format)
+            .expect("match from match data")
+    }
+}
+
+impl From<PlayerData> for Player {
+    fn from(value: PlayerData) -> Self {
+        Player::from((PlayerID(value.id), value.name.as_str()))
+    }
 }
 
 impl TournamentRecord {
     /// Retrieve data from tournament record
-    pub fn parse(self) -> (Tournament, DoubleEliminationBracket) {
-        let tournament = Tournament::new_from_database_record(
-            self.id,
-            self.name,
-            self.participants.0.get_players_list(),
-        );
+    pub fn parse(
+        self,
+        matches: Vec<Match>,
+        players: Vec<Player>,
+    ) -> (Tournament, DoubleEliminationBracket) {
+        let tournament = Tournament::new_from_database_record(self.id, self.name, players.clone());
         let bracket = DoubleEliminationBracket::new(
-            self.matches.0 .0,
-            Seeding::new(self.participants.0.get_player_list())
+            matches,
+            Seeding::new(players.iter().map(Player::get_id).collect())
                 .expect("use seeding from database record"),
+            AutomaticMatchValidationMode::Flexible, // FIXME should be in tournament record
+        );
+
+        (tournament, bracket)
+    }
+}
+
+impl TournamentAugmentedRecord {
+    /// Retrieve data from tournament record
+    pub fn parse(self) -> (Tournament, DoubleEliminationBracket) {
+        // let players = self.players.clone().into_iter().map(|v| v.into()).collect();
+        let players = vec![];
+        let tournament = Tournament::new_from_database_record(self.id, self.name, players);
+        // let bracket = DoubleEliminationBracket::new(
+        //     self.matches.into_iter().map(|v| v.into()).collect(),
+        //     Seeding::new(self.players.into_iter().map(|v| PlayerID(v.id)).collect())
+        //         .expect("use seeding from database record"),
+        //     AutomaticMatchValidationMode::Flexible, // FIXME should be in tournament record
+        // );
+        let bracket = DoubleEliminationBracket::new(
+            vec![],
+            Seeding::new(vec![]).expect("use seeding from database record"),
             AutomaticMatchValidationMode::Flexible, // FIXME should be in tournament record
         );
 

@@ -3,6 +3,7 @@
 use chrono::prelude::*;
 use serde::Deserialize;
 use serde::Serialize;
+use time::OffsetDateTime;
 use totsugeki_core::bracket::Id;
 use validator::{Validate, ValidationError};
 
@@ -56,7 +57,7 @@ pub struct PaginatedGenericResource {
     /// name of resource
     pub name: String,
     /// creation date
-    pub created_at: DateTime<Utc>,
+    pub created_at: OffsetDateTime,
     /// pagination helper
     pub total: Option<i64>,
 }
@@ -66,9 +67,9 @@ pub struct PaginatedGenericResource {
 pub struct GenericResourcesList(pub Vec<GenericResource>);
 /// List of generic resources
 #[derive(Deserialize, Serialize)]
-pub struct PaginationResult {
+pub struct PaginationResult<T> {
     /// total data
     pub total: usize,
     /// resources
-    pub data: Vec<PaginatedGenericResource>,
+    pub data: Vec<T>,
 }

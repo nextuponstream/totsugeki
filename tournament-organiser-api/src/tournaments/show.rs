@@ -13,6 +13,7 @@ use totsugeki_core::player::PlayerID;
 use totsugeki_core::ID;
 use tower_sessions::Session;
 use tracing::instrument;
+use crate::services::tournaments::TournamentService;
 
 /// Returns existing bracket for display purposes
 ///
@@ -36,7 +37,7 @@ pub async fn show_bracket(
     let mut transaction = pool.begin().await.map_err(internal_error)?;
     let (tournament, bracket, is_tournament_organiser) =
     // FIXME wrong error type
-        match TournamentServiceOld::read_for_user(&mut transaction, tournament_id, user_id).await {
+        match TournamentService::read_for_user(&mut transaction, tournament_id, user_id).await {
             Ok(Some(data)) => data,
             Ok(None) => return Err(ErrorSlug::from(StatusCode::NOT_FOUND)),
             Err(e) => {

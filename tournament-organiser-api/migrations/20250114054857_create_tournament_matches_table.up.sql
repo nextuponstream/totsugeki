@@ -1,7 +1,7 @@
 -- Add up migration script here
 CREATE TABLE tournament_matches
 (
-    tournament_id uuid references tournaments (id),
-    match_id      uuid references matches (id),
-    pos           integer CHECK ( pos > 0 )
+    tournament_id uuid     NOT NULL references tournaments (id),
+    match_id      uuid     NOT NULL references matches (id),
+    pos           smallint NOT NULL CHECK ( pos > 0 )
 )

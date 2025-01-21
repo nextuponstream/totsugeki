@@ -196,10 +196,7 @@ export const useBracketStore = defineStore(
     }
 
     async function join() {
-      let response = await httpClient.post(
-        `/tournaments/${bracket.value?.bracket?.id}/join`,
-        {}
-      )
+      let response = await httpClient.post(`/tournaments/${id.value}/join`, {})
       throw new Error('implement')
     }
 

@@ -1,6 +1,7 @@
 //! Opponent
 
 use crate::player::PlayerID;
+use crate::ID;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -19,6 +20,15 @@ impl Opponent {
             format!("{p} {name}")
         } else {
             "?".into()
+        }
+    }
+}
+
+impl From<Option<ID>> for Opponent {
+    fn from(value: Option<ID>) -> Self {
+        match value {
+            Some(id) => Opponent(Some(PlayerID(id))),
+            None => Opponent(None),
         }
     }
 }

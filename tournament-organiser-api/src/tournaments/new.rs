@@ -1,7 +1,7 @@
 //! New unsaved bracket
 
 use crate::tournaments::Tournament;
-use crate::tournaments::{breakdown, CreateBracketForm};
+use crate::tournaments::{breakdown, CreateTournamentForm};
 use axum::response::IntoResponse;
 use axum::Json;
 use http::StatusCode;
@@ -21,11 +21,11 @@ use tracing::instrument;
 /// # Errors
 /// May return 500 error when bracket cannot be parsed
 #[instrument(name = "new_bracket")]
-pub async fn new_bracket(Json(form): Json<CreateBracketForm>) -> impl IntoResponse {
+pub async fn new_bracket(Json(form): Json<CreateTournamentForm>) -> impl IntoResponse {
     tracing::debug!("new bracket");
 
     let mut tournament = Tournament::default();
-    tournament.set_name(form.bracket_name);
+    tournament.set_name(form.tournament_name);
     for name in form.player_names {
         let Ok(()) = tournament.add_participant(Player::new(name)) else {
             // FIXME actual error handling

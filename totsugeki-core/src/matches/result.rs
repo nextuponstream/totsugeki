@@ -58,7 +58,7 @@ impl MatchFormat {
 
     /// New match format (you should use `ft2()` and `ft3()`
     #[allow(unused)]
-    fn new(first_to_n: u8) -> Result<Self, MatchFormatError> {
+    pub fn new(first_to_n: u8) -> Result<Self, MatchFormatError> {
         if first_to_n == 0 {
             Err(MatchFormatError::Invalid(first_to_n))
         } else {

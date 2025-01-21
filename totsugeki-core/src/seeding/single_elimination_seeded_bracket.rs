@@ -100,8 +100,13 @@ pub fn get_balanced_round_matches_top_seed_favored(
                 };
 
                 this_round.push(
-                    Match::new([player_1, player_2], [top_seed, bottom_seed], match_format)
-                        .expect("match"),
+                    Match::new(
+                        None,
+                        [player_1, player_2],
+                        [top_seed, bottom_seed],
+                        match_format,
+                    )
+                    .expect("match"),
                 );
             } else {
                 let top_seed = available_players.remove(0);
@@ -110,6 +115,7 @@ pub fn get_balanced_round_matches_top_seed_favored(
 
                 this_round.push(
                     Match::new(
+                        None,
                         [Opponent(None), Opponent(None)],
                         [top_seed, bottom_seed],
                         match_format,

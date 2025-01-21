@@ -12,7 +12,7 @@ pub struct TestApp {
 }
 
 use super::{app, Expiry, PgPool, PostgresStore, SessionManagerLayer, SocketAddr};
-use crate::tournaments::{BracketState, CreateBracketForm, ID};
+use crate::tournaments::{BracketState, CreateTournamentForm, ID};
 use reqwest::{Client, Response};
 use serde::Serialize;
 use time::Duration;
@@ -23,7 +23,7 @@ use tokio::net::TcpListener;
 /// Example: `http://0.0.0.0:43222`
 #[must_use]
 #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
-pub async fn spawn_app(db: PgPool) -> TestApp {
+pub async fn spawn_app(mut db: PgPool) -> TestApp {
     let listener = TcpListener::bind("0.0.0.0:0".parse::<SocketAddr>().unwrap())
         .await
         .unwrap();
@@ -150,9 +150,9 @@ impl TestApp {
 
     /// `/api/tournaments` POST
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
-    pub async fn create_bracket(&self, players: Vec<String>) -> Response {
-        let request = CreateBracketForm {
-            bracket_name: "placeholder".into(),
+    pub async fn create_tournament(&self, players: Vec<String>) -> Response {
+        let request = CreateTournamentForm {
+            tournament_name: "placeholder".into(),
             player_names: players,
         };
         self.http_client
@@ -200,7 +200,7 @@ impl TestApp {
 
     /// `/api/tournaments/:bracket_id/join` POST
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
-    pub async fn join_bracket(&self, tournament_id: ID) -> Response {
+    pub async fn join_tournament(&self, tournament_id: ID) -> Response {
         self.http_client
             .post(format!(
                 "{}/api/tournaments/{}/join",

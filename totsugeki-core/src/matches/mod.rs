@@ -37,6 +37,12 @@ impl MatchID {
     }
 }
 
+impl From<ID> for MatchID {
+    fn from(value: ID) -> Self {
+        Self(value)
+    }
+}
+
 impl Display for MatchID {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "Match ID {}", self.0)
@@ -429,6 +435,7 @@ impl Match {
     /// Returns an error if both players are the same (two unknown players will
     /// not produce an error)
     pub fn new(
+        id: Option<MatchID>,
         players: [Opponent; 2],
         seeds: [usize; 2],
         format: MatchFormat,
@@ -438,7 +445,7 @@ impl Match {
                 Err(GenerationError::SamePlayer)
             }
             _ => Ok(Self {
-                id: MatchID::new(),
+                id: id.unwrap_or_default(),
                 players,
                 winner: Opponent(None),
                 automatic_loser: Opponent(None),
@@ -464,20 +471,6 @@ impl Match {
             winner: Opponent(None),
             automatic_loser: Opponent(None),
             seeds,
-            reported_results: [None, None],
-            format,
-        }
-    }
-
-    /// Create new looser bracket match where opponents are unknown yet
-    #[must_use]
-    pub fn new_looser_bracket_match(seeds: [usize; 2], format: MatchFormat) -> Self {
-        Match {
-            id: MatchID::new(),
-            players: [Opponent(None), Opponent(None)],
-            seeds,
-            winner: Opponent(None),
-            automatic_loser: Opponent(None),
             reported_results: [None, None],
             format,
         }
@@ -814,7 +807,8 @@ mod tests {
         let p2 = PlayerID::create();
         let player_2 = Opponent(Some(p2));
         let unknown = PlayerID::create();
-        let m = Match::new([player_1, player_2], [1, 2], MatchFormat::default()).expect("match");
+        let m =
+            Match::new(None, [player_1, player_2], [1, 2], MatchFormat::default()).expect("match");
         assert!(m.contains(p1));
         assert!(m.contains(p2));
         assert!(!m.contains(unknown));
@@ -824,7 +818,7 @@ mod tests {
     fn cannot_create_match_with_same_player() {
         let p = PlayerID::create();
         let player = Opponent(Some(p));
-        match Match::new([player, player], [1, 2], MatchFormat::default()) {
+        match Match::new(None, [player, player], [1, 2], MatchFormat::default()) {
             Err(GenerationError::SamePlayer) => {}
             _ => panic!("Expected error but got none"),
         }
@@ -835,6 +829,7 @@ mod tests {
         let p1 = Player::new("p1".into());
         let p2 = Player::new("p2".into());
         let m = Match::new(
+            None,
             [Opponent(Some(p1.get_id())), Opponent(Some(p2.get_id()))],
             [1, 2],
             MatchFormat::default(),
@@ -851,6 +846,7 @@ mod tests {
         );
 
         let m = Match::new(
+            None,
             [Opponent(Some(p1.get_id())), Opponent(Some(p2.get_id()))],
             [1, 2],
             MatchFormat::default(),
@@ -867,6 +863,7 @@ mod tests {
         );
 
         let m = Match::new(
+            None,
             [Opponent(Some(p1.get_id())), Opponent(Some(p2.get_id()))],
             [2, 1],
             MatchFormat::ft2(),
@@ -883,6 +880,7 @@ mod tests {
         );
 
         let m = Match::new(
+            None,
             [Opponent(Some(p1.get_id())), Opponent(Some(p2.get_id()))],
             [2, 1],
             MatchFormat::ft2(),
@@ -904,6 +902,7 @@ mod tests {
         let p1 = Player::new("p1".into());
         let p2 = Player::new("p2".into());
         let m = Match::new(
+            None,
             [Opponent(Some(p1.get_id())), Opponent(Some(p2.get_id()))],
             [1, 2],
             MatchFormat::ft2(),
@@ -912,6 +911,7 @@ mod tests {
         assert!(m.needs_playing());
 
         let m = Match::new(
+            None,
             [Opponent(None), Opponent(Some(p2.get_id()))],
             [1, 2],
             MatchFormat::ft2(),
@@ -919,14 +919,20 @@ mod tests {
         .expect("match");
         assert!(!m.needs_playing());
         let m = Match::new(
+            None,
             [Opponent(Some(p1.get_id())), Opponent(None)],
             [1, 2],
             MatchFormat::ft2(),
         )
         .expect("match");
         assert!(!m.needs_playing());
-        let m = Match::new([Opponent(None), Opponent(None)], [1, 2], MatchFormat::ft2())
-            .expect("match");
+        let m = Match::new(
+            None,
+            [Opponent(None), Opponent(None)],
+            [1, 2],
+            MatchFormat::ft2(),
+        )
+        .expect("match");
         assert!(!m.needs_playing());
     }
 
@@ -988,6 +994,7 @@ mod tests {
         let p1 = PlayerID::create();
         let p2 = PlayerID::create();
         let m = Match::new(
+            None,
             [Opponent(Some(p1)), Opponent(Some(p2))],
             [0, 0],
             MatchFormat::default(),
@@ -1003,6 +1010,7 @@ mod tests {
         let p1 = PlayerID::create();
         let p2 = PlayerID::create();
         let m = Match::new(
+            None,
             [Opponent(Some(p1)), Opponent(Some(p2))],
             [0, 0],
             MatchFormat::default(),
@@ -1018,6 +1026,7 @@ mod tests {
         let p1 = PlayerID::create();
         let p2 = PlayerID::create();
         let m = Match::new(
+            None,
             [Opponent(Some(p1)), Opponent(Some(p2))],
             [0, 0],
             MatchFormat::default(),
@@ -1038,6 +1047,7 @@ mod tests {
         let p1 = PlayerID::create();
         let p2 = PlayerID::create();
         let m = Match::new(
+            None,
             [Opponent(Some(p1)), Opponent(Some(p2))],
             [0, 0],
             MatchFormat::default(),
