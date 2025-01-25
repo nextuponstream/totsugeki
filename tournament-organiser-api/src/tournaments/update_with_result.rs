@@ -1,7 +1,7 @@
 //! Update bracket with result
 
 use crate::http::{internal_error, ErrorSlug};
-use crate::repositories::brackets::TournamentServiceOld;
+use crate::services::tournaments::TournamentService;
 use crate::tournaments::{breakdown, ReportResultInput};
 use axum::extract::{Path, State};
 use axum::response::IntoResponse;
@@ -49,8 +49,7 @@ pub async fn update_with_result(
     tracing::debug!("new reported result");
     let mut transaction = pool.begin().await.map_err(internal_error)?;
     let (tournament, bracket) =
-        match TournamentServiceOld::update_with_result(&mut transaction, tournament_id, &report)
-            .await
+        match TournamentService::update_with_result(&mut transaction, tournament_id, &report).await
         {
             Ok(Some(bracket)) => bracket,
             Ok(None) => return Err(ErrorSlug::from(StatusCode::NOT_FOUND)),

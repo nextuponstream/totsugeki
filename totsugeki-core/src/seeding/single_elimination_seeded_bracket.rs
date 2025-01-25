@@ -41,7 +41,6 @@ pub fn get_balanced_round_matches_top_seed_favored(
     match_format: MatchFormat,
     _late_bracket_configuration: Option<LateBracketConfiguration>,
 ) -> Vec<Match> {
-    // FIXME seeding should be a struct that has been well constructed
     // Matches are built bottom-up:
     // * for n
     // * compute #byes = `next_power_of_two(n)` - n

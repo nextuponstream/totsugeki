@@ -10,6 +10,7 @@ command = ["cargo", "run", "--package", "tournament-organiser-api"]
 need_stdout = true
 on_change_strategy = "kill_then_restart"
 default_watch = true
+background = false
 
 # TODO test
 [jobs.lib]
@@ -73,10 +74,10 @@ command = ["cargo", "run", "--package", "tournament-organiser-api"]
 #need_stdout = false
 #
 ## Run clippy on the default target
-#[jobs.clippy]
-#command = ["cargo", "clippy"]
-#need_stdout = false
-#
+[jobs.clippy]
+command = ["cargo", "clippy"]
+need_stdout = false
+
 ## Run clippy on all targets
 ## To disable some lints, you may change the job this way:
 ##    [jobs.clippy-all]

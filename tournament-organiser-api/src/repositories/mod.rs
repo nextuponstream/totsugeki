@@ -8,6 +8,8 @@
 //! services
 
 pub(crate) mod brackets;
+pub(crate) mod guests;
 pub(crate) mod matches;
 pub(crate) mod players;
+pub(crate) mod tournaments;
 pub(crate) mod users;

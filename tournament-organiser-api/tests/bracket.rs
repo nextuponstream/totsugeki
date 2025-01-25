@@ -200,7 +200,7 @@ async fn save_tournament(db: PgPool) {
         ],
     };
 
-    let response = app.save_bracket(state).await;
+    let response = app.save_tournament(state).await;
 
     let status = response.status();
     assert_eq!(

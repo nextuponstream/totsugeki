@@ -10,23 +10,26 @@ CREATE TABLE matches
     id               uuid,
     PRIMARY KEY (id),
 
-    high_seed        smallint NOT NULL,
-    high_seed_player uuid
-        REFERENCES users (id)
-        CONSTRAINT positive_high_seed CHECK ( high_seed > 0 ),
-
+    high_seed        smallint NOT NULL
+        CONSTRAINT positive_high_seed
+            CHECK ( high_seed > 0 ),
+    high_seed_player uuid REFERENCES players (id),
     low_seed         smallint NOT NULL
-        CONSTRAINT seeds_are_different CHECK ( high_seed <> matches.low_seed )
-        CONSTRAINT positive_low_seed CHECK ( low_seed > 0 ),
+        CONSTRAINT seeds_are_different
+            CHECK ( high_seed <> matches.low_seed )
+        CONSTRAINT positive_low_seed
+            CHECK ( low_seed > 0 ),
     low_seed_player  uuid
-        CONSTRAINT players_are_different CHECK ( low_seed_player != matches.high_seed_player )
-        REFERENCES users (id),
+        CONSTRAINT players_are_different
+            CHECK ( low_seed_player <> matches.high_seed_player )
+        REFERENCES players (id),
 
     format           TEXT     NOT NULL
         CONSTRAINT match_format
             CHECK ( format IN ('first_to_n') ),
     format_n         smallint NOT NULL
-        CONSTRAINT positive_format_n CHECK ( format_n > 0 )
+        CONSTRAINT positive_format_n
+            CHECK ( format_n > 0 )
 );
 
 CREATE INDEX high_seed_player_idx ON matches (high_seed_player);

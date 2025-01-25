@@ -10,7 +10,7 @@ use crate::health_check::health_check;
 use crate::middlewares::authentication::{auth_layer, maybe_auth_layer};
 use crate::tournaments::join_bracket;
 use crate::tournaments::{
-    create_tournament, list_brackets, new_bracket, report_result, save_bracket_from_steps,
+    create_tournament, list_brackets, new_bracket, report_result, save_tournament_from_steps,
     show_bracket, update_with_result, user_tournaments,
 };
 use crate::users::login::login;
@@ -35,7 +35,7 @@ pub(crate) fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router 
         Router::new()
             .route("/", get(list_brackets))
             .route("/", post(create_tournament))
-            .route("/save", post(save_bracket_from_steps))
+            .route("/save", post(save_tournament_from_steps))
             .route("/{tournament_id}/report-result", post(update_with_result))
             .route("/{tournament_id}/join", post(join_bracket)),
     );

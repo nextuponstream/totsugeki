@@ -3,12 +3,7 @@
 //! when you can alt+enter after typing SqlxError to write
 //! `use crate::types::SqlxError;
 
-use crate::tournaments::GenericResourceCreated;
-use crate::ApiResponse;
 use axum::extract::State;
-use axum::response::{IntoResponse, Response};
-use axum::Json;
-use http::{Error, StatusCode};
 use sqlx::{PgPool, Postgres, Transaction};
 
 /// Import type rather than alias all imports of that error

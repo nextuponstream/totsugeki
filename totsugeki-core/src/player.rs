@@ -12,6 +12,12 @@ use thiserror::Error;
 #[allow(clippy::module_name_repetitions)]
 pub struct PlayerID(pub ID);
 
+impl Default for PlayerID {
+    fn default() -> Self {
+        PlayerID(ID::new_v4())
+    }
+}
+
 impl From<ID> for PlayerID {
     fn from(value: ID) -> Self {
         Self::new(value)

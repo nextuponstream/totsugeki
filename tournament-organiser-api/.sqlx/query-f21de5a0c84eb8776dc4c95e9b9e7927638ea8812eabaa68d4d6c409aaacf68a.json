@@ -1,0 +1,76 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nSELECT * from tournament_matches\nLEFT JOIN matches on tournament_matches.match_id = matches.id\nWHERE tournament_id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "tournament_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "match_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "pos",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 3,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "high_seed",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 5,
+        "name": "high_seed_player",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 6,
+        "name": "low_seed",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 7,
+        "name": "low_seed_player",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 8,
+        "name": "format",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "format_n",
+        "type_info": "Int2"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "f21de5a0c84eb8776dc4c95e9b9e7927638ea8812eabaa68d4d6c409aaacf68a"
+}

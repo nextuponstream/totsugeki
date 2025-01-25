@@ -1,19 +1,16 @@
 //! registration
 
-use crate::http::{internal_error, Error, ErrorSlug};
+use crate::http::{Error, ErrorSlug};
 use crate::repositories::users::UserRepository;
-use crate::tournaments::GenericResourceCreated;
-use crate::types::{AxumJson, SqlxError};
 use crate::ApiResponse;
 use argon2::password_hash::SaltString;
 use argon2::Argon2;
 use argon2::PasswordHasher;
 use axum::extract::State;
 use axum::response::{IntoResponse, Json};
-use chrono::prelude::*;
 use http::StatusCode;
 use secrecy::{ExposeSecret, SecretString};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPool;
 use sqlx::{Postgres, Transaction};
 use totsugeki_core::ID;
@@ -36,7 +33,7 @@ pub struct FormInput {
 }
 
 /// User of application
-#[derive(Clone, Debug, Copy)]
+#[derive(sqlx::Type, Serialize, Clone, Debug, Copy, Deserialize)]
 pub struct UserID(pub ID);
 
 impl From<Uuid> for UserID {

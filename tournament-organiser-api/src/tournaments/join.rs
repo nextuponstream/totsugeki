@@ -1,7 +1,7 @@
 //! Register player in bracket
 
 use crate::http::{internal_error, ErrorSlug};
-use crate::repositories::brackets::{Error, TournamentServiceOld};
+use crate::repositories::brackets::Error;
 use crate::repositories::users::UserRepository;
 use crate::services::tournaments::TournamentService;
 use crate::tournaments::{breakdown, TournamentID};
@@ -29,14 +29,11 @@ pub(crate) async fn join_bracket<'a>(
     let user_id: ID = session
         .get(&UserId.to_string())
         .await
-        .map_err(internal_error)?
-        .ok_or_else(|| {
-            tracing::error!("missing user id");
-            ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR)
-        })?;
+        .expect("ID")
+        .expect("user ID");
     let user_id = UserID::from(user_id);
 
-    let mut transaction = pool.begin().await.map_err(internal_error)?;
+    let mut transaction = pool.begin().await?;
     let user = match UserRepository::read(&mut transaction, user_id).await {
         Ok(Some(user)) => user,
         Ok(None) => return Err(ErrorSlug::from(StatusCode::NOT_FOUND)),
@@ -54,9 +51,8 @@ pub(crate) async fn join_bracket<'a>(
             Err(Error::PlayerAlreadyPresent)=> {
                 return Err(ErrorSlug::new(StatusCode::CONFLICT, "player-already-present"));
             }
-            Err(e) => {
-                tracing::error!("{e:?}");
-                return Err(ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR));
+            Err(Error::Sqlx(e)) => {
+                return Err(e.into());
             }
         };
 

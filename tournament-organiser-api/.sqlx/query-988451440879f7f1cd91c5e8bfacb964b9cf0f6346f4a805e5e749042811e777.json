@@ -1,0 +1,49 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT \n            id, \n            name,\n            format,\n            tournaments.created_at,\n            count(*) OVER() AS total from tournaments\n            LEFT JOIN tournament_organisers ON tournaments.id = tournament_organisers.tournament_id\n            WHERE tournament_organisers.user_id = $4\n            ORDER BY\n                CASE WHEN $1 = 'ASC' THEN tournaments.created_at END ASC,\n                CASE WHEN $1 = 'DESC' THEN tournaments.created_at END DESC\n            LIMIT $2\n            OFFSET $3\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "format",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "total",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8",
+        "Int8",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "988451440879f7f1cd91c5e8bfacb964b9cf0f6346f4a805e5e749042811e777"
+}

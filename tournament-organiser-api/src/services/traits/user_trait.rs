@@ -4,7 +4,7 @@ use crate::tournaments::TournamentID;
 use crate::types::{SqlxError, SqlxTransaction};
 use crate::users::registration::UserID;
 
-/// UserTrait
+/// Reusable user queries
 pub trait UserTrait {
     /// True if user `user_id` is tournament organiser of `tournament_id`
     async fn is_tournament_organiser<'a>(

@@ -41,7 +41,6 @@ impl DoubleEliminationBracket {
     ) -> Self {
         let mut matches = vec![];
         if seeding.len() >= 3 {
-            // FIXME remove unwrap, this should never panic
             let mut winner_bracket_matches =
                 crate::seeding::single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored(&seeding, base_match_format, late_bracket_configuration);
             matches.append(&mut winner_bracket_matches);
@@ -54,6 +53,12 @@ impl DoubleEliminationBracket {
             let grand_finals_reset: Match = Match::new_empty([1, 2], base_match_format);
             matches.push(grand_finals_reset);
         }
+
+        // When using ID.unwrap_or_default() by accident, then, you generate the "0" ID. Inserting
+        // that ID multiple time is wrong
+        assert!(matches
+            .iter()
+            .all(|m| matches.iter().filter(|mm| m.id == mm.id).count() == 1));
 
         Self {
             matches,

@@ -65,6 +65,18 @@ impl From<StatusCode> for ErrorSlug {
     }
 }
 
+impl From<SqlxError> for ErrorSlug {
+    fn from(value: SqlxError) -> Self {
+        // good breakpoint to catch errors
+        let msg = value.to_string();
+        tracing::error!("{msg}");
+        ErrorSlug(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Some("Database error".to_string()),
+        )
+    }
+}
+
 impl IntoResponse for ErrorSlug {
     fn into_response(self) -> Response {
         match self {

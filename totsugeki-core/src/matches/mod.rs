@@ -17,8 +17,14 @@ use std::{num::ParseIntError, str::FromStr};
 use thiserror::Error;
 
 /// Match ID
-#[derive(Debug, Default, PartialEq, Eq, Clone, Serialize, Deserialize, Copy)]
-pub struct MatchID(ID);
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize, Copy)]
+pub struct MatchID(pub ID);
+
+impl Default for MatchID {
+    fn default() -> Self {
+        MatchID::new() // default being the ID "000000000..." is wrong
+    }
+}
 
 impl FromStr for MatchID {
     type Err = uuid::Error;
@@ -445,7 +451,9 @@ impl Match {
                 Err(GenerationError::SamePlayer)
             }
             _ => Ok(Self {
-                id: id.unwrap_or_default(),
+                // id: id.unwrap_or_default(),
+                // unwrap_or_default leads to always same match ID: 0000000000000... which is NOT ok
+                id: id.unwrap_or(MatchID::new()),
                 players,
                 winner: Opponent(None),
                 automatic_loser: Opponent(None),

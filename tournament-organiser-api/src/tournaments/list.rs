@@ -4,7 +4,6 @@ use crate::http::internal_error;
 use crate::middlewares::validation::ValidatedRequest;
 use crate::resources::{Pagination, PaginationResult};
 use crate::services::tournaments::{PaginatedTournamentResource, TournamentService};
-use crate::types::ConnectionPool;
 use axum::extract::State;
 use axum::Json;
 use axum_macros::debug_handler;

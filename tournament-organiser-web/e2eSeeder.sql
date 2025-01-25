@@ -71,7 +71,7 @@ VALUES ('62aefc4c-d6ec-4c2f-98f0-b639688cbe0c',
         'e280e49d-21c6-4769-b7f7-c6c664dcf199',
         5);
 
-INSERT INTO players (tournament_id, player_id)
+INSERT INTO players (tournament_id, user_id)
 VALUES ('62aefc4c-d6ec-4c2f-98f0-b639688cbe0c', '8bc83836-d424-4698-8d65-10e288c45cca'),
        ('62aefc4c-d6ec-4c2f-98f0-b639688cbe0c', '6775b1ef-db12-4b76-9269-49321610e0e4'),
        ('62aefc4c-d6ec-4c2f-98f0-b639688cbe0c', '58d1e261-5481-4743-9362-ee3c6e51a6c7');

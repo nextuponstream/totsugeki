@@ -2,7 +2,6 @@
 
 use crate::types::SqlxTransaction;
 use crate::users::registration::{User, UserID, UserRecord};
-use axum::debug_handler;
 use sqlx::error::Error as SqlxError;
 
 /// All methods to query user in database
@@ -37,6 +36,7 @@ impl UserRepository {
         Ok(u)
     }
 
+    /// Returns `true` if user with given `email` exists
     pub async fn exists<'a>(transaction: SqlxTransaction<'a, '_>, email: &str) -> bool {
         sqlx::query_as!(User, "SELECT * from users WHERE email = $1", email,)
             // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71

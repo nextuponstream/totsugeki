@@ -1,7 +1,7 @@
 //! Show bracket
 
 use crate::http::{internal_error, ErrorSlug};
-use crate::repositories::brackets::TournamentServiceOld;
+use crate::services::tournaments::TournamentService;
 use crate::tournaments::breakdown;
 use crate::types::ConnectionPool;
 use crate::users::session::Keys::UserId;
@@ -13,7 +13,6 @@ use totsugeki_core::player::PlayerID;
 use totsugeki_core::ID;
 use tower_sessions::Session;
 use tracing::instrument;
-use crate::services::tournaments::TournamentService;
 
 /// Returns existing bracket for display purposes
 ///
@@ -34,15 +33,14 @@ pub async fn show_bracket(
         .await
         .expect("maybe id of user");
 
-    let mut transaction = pool.begin().await.map_err(internal_error)?;
+    let mut transaction = pool.begin().await?;
     let (tournament, bracket, is_tournament_organiser) =
     // FIXME wrong error type
         match TournamentService::read_for_user(&mut transaction, tournament_id, user_id).await {
             Ok(Some(data)) => data,
             Ok(None) => return Err(ErrorSlug::from(StatusCode::NOT_FOUND)),
             Err(e) => {
-                tracing::error!("{e:?}");
-                return Err(ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR));
+                return Err(e.into());
             }
         };
 

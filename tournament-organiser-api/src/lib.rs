@@ -9,6 +9,7 @@
 #![warn(clippy::unwrap_used)]
 #![forbid(unsafe_code)]
 
+pub mod guests;
 pub mod health_check;
 pub mod http;
 mod middlewares;

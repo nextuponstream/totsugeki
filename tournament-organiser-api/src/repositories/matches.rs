@@ -1,15 +1,13 @@
 //! Store tournament matches
 
-use crate::tournaments::TournamentID;
 use crate::types::{SqlxError, SqlxTransaction};
 use bigdecimal::ToPrimitive;
-use sqlx::types::BigDecimal;
 use totsugeki_core::matches::result::MatchFormat;
 use totsugeki_core::matches::{Match, MatchID};
 use totsugeki_core::opponent::Opponent;
-use totsugeki_core::player::PlayerID;
 use totsugeki_core::ID;
 
+/// Persist matches
 #[derive(Debug)]
 pub(crate) struct MatchRepository {}
 
@@ -22,15 +20,30 @@ impl MatchRepository {
         for m in matches.iter() {
             let high_seed: i8 = m.get_seeds()[0].try_into().unwrap();
             let low_seed: i8 = m.get_seeds()[1].try_into().unwrap();
+            println!("{m}");
+            println!("---");
+            println!(
+                "{}\n{:?}\n{:?}\n{:?}\n{:?}\n{}\n{}",
+                m.get_id().0,
+                high_seed.to_i16(),
+                m.get_players()[0].0.map(|id| id.0),
+                low_seed.to_i16(),
+                m.get_players()[1].0.map(|id| id.0),
+                "first_to_n",
+                2,
+            );
             sqlx::query!(
-                r#"INSERT into matches (
-            high_seed,
-            high_seed_player,
-            low_seed,
-            low_seed_player,
-            format,
-            format_n
-            ) VALUES ($1, $2, $3, $4, $5, $6)"#,
+                r#"
+INSERT into matches (
+id,
+high_seed,
+high_seed_player,
+low_seed,
+low_seed_player,
+format,
+format_n
+) VALUES ($1, $2, $3, $4, $5, $6, $7)"#,
+                m.get_id().0,
                 high_seed.to_i16(),
                 m.get_players()[0].0.map(|id| id.0),
                 low_seed.to_i16(),
@@ -43,35 +56,30 @@ impl MatchRepository {
         }
         Ok(())
     }
-
-    pub async fn get_for_tournament<'a>(
-        transaction: SqlxTransaction<'a, '_>,
-        tournament_id: ID,
-    ) -> Result<Vec<Match>, SqlxError> {
-        let matches = sqlx::query_as!(
-            TournamentMatch,
-            r#"SELECT * from tournament_matches
-            LEFT JOIN matches on tournament_matches.match_id = matches.id
-            WHERE tournament_id = $1"#,
-            tournament_id
-        )
-        .fetch_all(&mut **transaction)
-        .await?;
-        Ok(matches.into_iter().map(|v| v.into()).collect())
-    }
 }
 
-struct TournamentMatch {
-    id: ID,
-    tournament_id: ID,
-    match_id: MatchID,
-    pos: BigDecimal,
-    high_seed_player: Option<ID>,
-    low_seed_player: Option<ID>,
-    high_seed: BigDecimal,
-    low_seed: BigDecimal,
-    format: String,
-    format_n: BigDecimal,
+/// Tournament match
+pub(crate) struct TournamentMatch {
+    /// relationship tournament-match ID
+    pub id: ID,
+    /// tournament ID
+    pub tournament_id: ID,
+    /// match ID
+    pub match_id: MatchID,
+    /// order of match (unique for each match in tournament)
+    pub pos: i16,
+    /// presumed stronger player
+    pub high_seed_player: Option<ID>,
+    /// presumed weakest player
+    pub low_seed_player: Option<ID>,
+    /// left seed (highest seed) for the presumed strongest predicted player
+    pub high_seed: i16,
+    /// right seed (lowest seed) for the presumed weakest predicted player
+    pub low_seed: i16,
+    /// match format (example: first to X)
+    pub format: String,
+    /// additionnal information about match format (example: first to 3)
+    pub format_n: i16,
 }
 
 impl From<TournamentMatch> for Match {

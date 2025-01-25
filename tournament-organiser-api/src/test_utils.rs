@@ -23,7 +23,7 @@ use tokio::net::TcpListener;
 /// Example: `http://0.0.0.0:43222`
 #[must_use]
 #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
-pub async fn spawn_app(mut db: PgPool) -> TestApp {
+pub async fn spawn_app(db: PgPool) -> TestApp {
     let listener = TcpListener::bind("0.0.0.0:0".parse::<SocketAddr>().unwrap())
         .await
         .unwrap();
@@ -188,7 +188,7 @@ impl TestApp {
 
     /// `/api/tournaments/save` POST
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
-    pub async fn save_bracket(&self, state: BracketState) -> Response {
+    pub async fn save_tournament(&self, state: BracketState) -> Response {
         let request = state;
         self.http_client
             .post(format!("{}/api/tournaments/save", self.addr))
