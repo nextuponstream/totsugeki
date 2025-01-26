@@ -1,8 +1,7 @@
 //! Manage matches from bracket
 
 use crate::matches::result::Score;
-use crate::matches::{GenerationError, MatchID};
-use crate::player::PlayerID;
+use crate::matches::GenerationError;
 use crate::{
     matches::{Error as MatchError, Id as MatchId, Match},
     opponent::Opponent,
@@ -19,19 +18,19 @@ pub enum Error {
     Seeding(#[from] SeedingError),
     /// Cannot request information from unknown player
     #[error("Player {0} is unknown in this bracket")]
-    PlayerIsNotParticipant(PlayerID),
+    PlayerIsNotParticipant(ID),
     /// There is no generated matches at this time
     #[error("No matches were generated yet")]
     NoGeneratedMatches,
     /// Player has been disqualified
     #[error("{0} is disqualified")]
-    Disqualified(PlayerID),
+    Disqualified(ID),
     /// Player has won the tournament and has no match left to play
-    #[error("{0} won the tournament and has no matches left to play")]
-    NoNextMatch(PlayerID),
+    #[error("Player {0} won the tournament and has no matches left to play")]
+    NoNextMatch(ID),
     /// Player is eliminated from tournament and has no matches left to play
-    #[error("{0} has been eliminated from the tournament and has no matches left to play")]
-    Eliminated(PlayerID),
+    #[error("Player {0} has been eliminated from the tournament and has no matches left to play")]
+    Eliminated(ID),
     /// Tournament is over
     #[error("Tournament is over")]
     TournamentIsOver,
@@ -39,11 +38,11 @@ pub enum Error {
     #[error("{0}")]
     MatchUpdate(#[from] MatchError),
     /// Player is unknown in this bracket
-    #[error("{0} is unknown. Use one of the following: {1:?}")]
-    UnknownPlayer(PlayerID, Vec<PlayerID>),
+    #[error("Player {0} is unknown. Use one of the following: {1:?}")]
+    UnknownPlayer(ID, Vec<ID>),
     /// No match to play for player
     #[error("There is no matches for you to play")]
-    NoMatchToPlay(PlayerID),
+    NoMatchToPlay(ID),
     /// Referred match is unknown
     #[error("Match {0} is unknown")]
     UnknownMatch(MatchId),
@@ -51,8 +50,8 @@ pub enum Error {
     #[error("There is no match to update")]
     NoMatchToUpdate(Vec<Match>, MatchId),
     /// Fordidden action because player has been disqualified
-    #[error("{0} is disqualified")]
-    ForbiddenDisqualified(PlayerID),
+    #[error("Player {0} is disqualified")]
+    ForbiddenDisqualified(ID),
 }
 
 // FIXME remove
@@ -69,7 +68,7 @@ pub(crate) fn bracket_is_over(bracket_matches: &[Match]) -> bool {
 
 /// Returns true when `player_id` has been disqualified by looking into all
 /// `matches` in the bracket
-pub(crate) fn is_disqualified(player_id: PlayerID, matches: &[Match]) -> bool {
+pub(crate) fn is_disqualified(player_id: ID, matches: &[Match]) -> bool {
     matches
         .iter()
         .any(|m| m.is_automatic_loser_by_disqualification(player_id))
@@ -95,7 +94,7 @@ pub(crate) fn update_bracket_with(bracket: &[Match], updated_match: &Match) -> V
 /// if applicable, the loser of updated match, the expected loser seed that
 /// should be used when sending them in lower bracket and a boolean to indicate
 /// if they are disqualified
-type BracketUpdate = (Vec<Match>, Option<(PlayerID, usize, bool)>);
+type BracketUpdate = (Vec<Match>, Option<(ID, usize, bool)>);
 
 // FIXME should be made on self and consumed
 /// Takes matches in bracket, validate `match_id` and returns updated winner
@@ -108,7 +107,7 @@ type BracketUpdate = (Vec<Match>, Option<(PlayerID, usize, bool)>);
 /// # Errors
 /// thrown when attempting an update for winner/loser bracket match in
 /// loser/winner bracket
-pub(crate) fn update(bracket_matches: &[Match], match_id: MatchID) -> Result<BracketUpdate, Error> {
+pub(crate) fn update(bracket_matches: &[Match], match_id: ID) -> Result<BracketUpdate, Error> {
     let m = bracket_matches
         .iter()
         .find(|m| m.get_id() == match_id)
@@ -216,10 +215,10 @@ pub trait Progression {
     /// # Errors
     /// Thrown when matches have yet to be generated or player has won/been
     /// eliminated
-    fn next_opponent(&self, player_id: PlayerID) -> Result<(Opponent, MatchId), Error>;
+    fn next_opponent(&self, player_id: ID) -> Result<(Opponent, MatchId), Error>;
 
     /// Returns true if player is disqualified
-    fn is_disqualified(&self, player_id: PlayerID) -> bool;
+    fn is_disqualified(&self, player_id: ID) -> bool;
 
     /// Report result of match. Returns updated matches, affected match and new
     /// matches to play
@@ -229,7 +228,7 @@ pub trait Progression {
     /// When player does not belong in bracket
     fn report_result(
         &self,
-        player_id: PlayerID,
+        player_id: ID,
         result: Score,
     ) -> Result<(Vec<Match>, MatchId, Vec<Match>), Error>;
 
@@ -245,9 +244,9 @@ pub trait Progression {
     /// thrown when player does not belong in bracket
     fn tournament_organiser_reports_result(
         &self,
-        player1: PlayerID,
+        player1: ID,
         result: Score,
-        player2: PlayerID,
+        player2: ID,
     ) -> Result<(Vec<Match>, MatchId, Vec<Match>), Error>;
 
     /// Update `match_id` with reported `result` of `player`
@@ -258,7 +257,7 @@ pub trait Progression {
         &self,
         match_id: MatchId,
         result: Score,
-        player_id: PlayerID,
+        player_id: ID,
     ) -> Result<Vec<Match>, Error>;
 
     /// Returns updated matches and matches to play. Uses `match_id` as the

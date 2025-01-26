@@ -4,11 +4,11 @@ pub mod double_elimination_seeded_bracket;
 pub mod single_elimination_seeded_bracket;
 
 use crate::matches::result::MatchFormat;
-use crate::player::PlayerID;
 use crate::{
     matches::Match,
     opponent::Opponent,
     player::{Error as PlayerError, Participants},
+    ID,
 };
 use rand::prelude::*;
 use rand::rngs::OsRng;
@@ -123,7 +123,7 @@ pub fn seed(
 /// number of available players is a multiple of two.
 fn seeding_initial_round(
     available_players_by_seeds: &mut Vec<usize>,
-    seeding: &[PlayerID],
+    seeding: &[ID],
     this_round: &mut Vec<Match>,
     base_match_format: MatchFormat,
 ) {

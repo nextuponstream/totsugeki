@@ -8,11 +8,11 @@ pub mod progression;
 use crate::bracket::late_bracket_configuration::LateBracketConfiguration;
 use crate::bracket::seeding::Seeding;
 use crate::matches::result::{MatchFormat, Score};
-use crate::matches::{Match, MatchID};
+use crate::matches::Match;
 use crate::opponent::Opponent;
-use crate::player::PlayerID;
 use crate::seeding::single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored;
 use crate::validation::AutomaticMatchValidationMode;
+use crate::ID;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -38,13 +38,13 @@ pub enum SingleEliminationReportResultError {
     /// Player is disqualified
     ///
     /// Player ID is valid but disqualified player are not allowed to report
-    #[error("{0} is disqualified")]
-    ForbiddenDisqualified(PlayerID),
+    #[error("Player {0} is disqualified")]
+    ForbiddenDisqualified(ID),
     /// No match to play for player
     ///
     /// May happen if tournament organiser validated right before player did for the same match
-    #[error("There is no matches for {0}")]
-    NoMatchToPlay(PlayerID),
+    #[error("There is no matches for player {0}")]
+    NoMatchToPlay(ID),
 }
 
 impl SingleEliminationBracket {
@@ -117,15 +117,18 @@ impl SingleEliminationBracket {
     /// for the match so far, returns the bracket. Otherwise, returns updated
     /// bracket, match id where result is reported and new generated matches
     ///
+    /// Returns updated bracket, match ID where score was applied and newly
+    /// updated matches
+    ///
     /// # Errors
     /// thrown when result cannot be parsed or a disqualified player reports
     /// # Panics
     /// When `player_id` is unknown
     pub fn report_result(
         self,
-        player_id: PlayerID,
+        player_id: ID,
         result: Score,
-    ) -> Result<(SingleEliminationBracket, MatchID, Vec<Match>), SingleEliminationReportResultError>
+    ) -> Result<(SingleEliminationBracket, ID, Vec<Match>), SingleEliminationReportResultError>
     {
         assert!(
             self.seeding.contains(player_id),
@@ -186,7 +189,7 @@ impl SingleEliminationBracket {
     }
 
     /// Clear previous reported result for `player_id`
-    fn clear_reported_result(self, player_id: PlayerID) -> Self {
+    fn clear_reported_result(self, player_id: ID) -> Self {
         debug_assert!(
             self.matches
                 .iter()

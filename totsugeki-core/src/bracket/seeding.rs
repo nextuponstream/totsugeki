@@ -1,20 +1,20 @@
 //! Update seeding of bracket
 
-use crate::player::PlayerID;
+use crate::ID;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use thiserror::Error;
 
 /// Seeding is an ordered list of player. All players IDs are guaranteed unique
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
-pub struct Seeding(Vec<PlayerID>);
+pub struct Seeding(Vec<ID>);
 
 /// Provided input is unsuitable for seeding
 #[derive(Error, Debug, PartialEq)]
 pub enum Error {
     /// Duplicate player
     #[error("Duplicate player {0}")]
-    DuplicatePlayer(PlayerID),
+    DuplicatePlayer(ID),
 }
 
 impl Seeding {
@@ -22,7 +22,7 @@ impl Seeding {
     ///
     /// # Errors
     /// Player list is unsuitable for seeding
-    pub fn new(player_ids: Vec<PlayerID>) -> Result<Self, Error> {
+    pub fn new(player_ids: Vec<ID>) -> Result<Self, Error> {
         let mut set = HashSet::new();
         for player_id in &player_ids {
             if !set.insert(player_id) {
@@ -34,13 +34,13 @@ impl Seeding {
 
     /// Get seeding
     #[must_use]
-    pub fn get(&self) -> Vec<PlayerID> {
+    pub fn get(&self) -> Vec<ID> {
         self.0.clone()
     }
 
     /// Contains player
     #[must_use]
-    pub fn contains(&self, player_id: PlayerID) -> bool {
+    pub fn contains(&self, player_id: ID) -> bool {
         self.0.contains(&player_id)
     }
 
@@ -63,18 +63,13 @@ mod tests {
 
     #[test]
     fn seed_many_players() {
-        let players = vec![PlayerID::create(), PlayerID::create()];
+        let players = vec![ID::new_v4(), ID::new_v4()];
         assert!(Seeding::new(players).is_ok())
     }
     #[test]
     fn seeding_throws_error_for_duplicate_id() {
-        let duplicate_id = PlayerID::create();
-        let players = vec![
-            PlayerID::create(),
-            PlayerID::create(),
-            duplicate_id,
-            duplicate_id,
-        ];
+        let duplicate_id = ID::new_v4();
+        let players = vec![ID::new_v4(), ID::new_v4(), duplicate_id, duplicate_id];
         assert_eq!(
             Seeding::new(players),
             Err(Error::DuplicatePlayer(duplicate_id))

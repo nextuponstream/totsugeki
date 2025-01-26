@@ -4,7 +4,6 @@ mod query;
 pub mod result;
 
 use crate::matches::result::{MatchFormat, Score};
-use crate::player::PlayerID;
 use crate::{
     opponent::{Opponent, ParsingOpponentError},
     player::Participants,
@@ -16,60 +15,21 @@ use std::fmt::{Display, Formatter};
 use std::{num::ParseIntError, str::FromStr};
 use thiserror::Error;
 
-/// Match ID
-#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize, Copy)]
-pub struct MatchID(pub ID);
-
-impl Default for MatchID {
-    fn default() -> Self {
-        MatchID::new() // default being the ID "000000000..." is wrong
-    }
-}
-
-impl FromStr for MatchID {
-    type Err = uuid::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let id = ID::parse_str(s)?;
-        Ok(MatchID(id))
-    }
-}
-
-impl MatchID {
-    /// Match ID
-    #[must_use]
-    pub fn new() -> Self {
-        Self(ID::new_v4())
-    }
-}
-
-impl From<ID> for MatchID {
-    fn from(value: ID) -> Self {
-        Self(value)
-    }
-}
-
-impl Display for MatchID {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Match ID {}", self.0)
-    }
-}
-
 /// Error while interacting with match
 #[derive(Error, Debug, Clone)]
 pub enum Error {
     /// Can only update match when both player reported
-    #[error("Missing report: {:?} and {:?} were reported", .1[0], .1[1])]
-    MissingReport(MatchID, MatchReportedResult),
+    #[error("Missing report for match ID {0}. {1:?} were reported")]
+    MissingReport(ID, MatchReportedResult),
     /// Players reported different match outcome
     #[error("Players reported different match outcomes: {} and {} were reported", .1[0], .1[1])]
-    PlayersReportedDifferentMatchOutcome(MatchID, [ReportedResult; 2]),
+    PlayersReportedDifferentMatchOutcome(ID, [ReportedResult; 2]),
     /// Mathematical overflow happened, cannot proceed
     #[error("Error. Unable to proceed further.")]
     MathOverflow,
     /// Cannot update match because player is Unknown
     #[error("Player with id \"{0}\" is unknown. Players in this match are: {} VS {}", .1[0], .1[1])]
-    UnknownPlayer(PlayerID, MatchPlayers),
+    UnknownPlayer(ID, MatchPlayers),
     /// Cannot update match result because an opponent is missing
     #[error("Cannot report result in a match where opponent is missing. Current players: {} VS {}", .0[0], .0[1])]
     MissingOpponent(MatchPlayers),
@@ -179,7 +139,7 @@ pub type MatchPlayers = [Opponent; 2];
 #[derive(Debug, Default, PartialEq, Eq, Clone, Serialize, Deserialize, Copy)]
 pub struct Match {
     /// Identifier of match
-    pub(crate) id: MatchID,
+    pub(crate) id: ID,
     /// Participants
     pub(crate) players: MatchPlayers,
     /// seeds\[0\]: top seed
@@ -307,7 +267,7 @@ pub(crate) fn double_elimination_matches_from_partition(
 impl Match {
     /// Clear result from match and returns updated match
     #[must_use]
-    pub(crate) fn clear_reported_result_from(self, player_id: PlayerID) -> Self {
+    pub(crate) fn clear_reported_result_from(self, player_id: ID) -> Self {
         assert!(
             self.contains(player_id),
             "cannot clear result of match for unknown player"
@@ -331,7 +291,7 @@ impl Match {
 
     /// Returns true if one of the player has id `player_id`
     #[must_use]
-    pub fn contains(&self, player_id: PlayerID) -> bool {
+    pub fn contains(&self, player_id: ID) -> bool {
         match self.players {
             [Opponent(Some(p1)), _] if p1 == player_id => true,
             [_, Opponent(Some(p2))] if p2 == player_id => true,
@@ -341,7 +301,7 @@ impl Match {
 
     /// Get id of match
     #[must_use]
-    pub fn get_id(&self) -> MatchID {
+    pub fn get_id(&self) -> ID {
         self.id
     }
 
@@ -372,7 +332,7 @@ impl Match {
     /// Returns true if player the automatic looser of this match is given
     /// player
     #[must_use]
-    pub(crate) fn is_automatic_loser_by_disqualification(&self, player_id: PlayerID) -> bool {
+    pub(crate) fn is_automatic_loser_by_disqualification(&self, player_id: ID) -> bool {
         matches!(self.automatic_loser, Opponent(Some(loser)) if loser == player_id)
     }
 
@@ -407,11 +367,7 @@ impl Match {
     /// Create looser bracket match where opponents are unknown yet
     #[must_use]
     #[cfg(test)]
-    pub(crate) fn looser_bracket_match(
-        id: MatchID,
-        seeds: [usize; 2],
-        format: MatchFormat,
-    ) -> Self {
+    pub(crate) fn loser_bracket_match(id: ID, seeds: [usize; 2], format: MatchFormat) -> Self {
         Match {
             id,
             players: [Opponent(None), Opponent(None)],
@@ -433,7 +389,7 @@ impl Match {
             && self.players[1] != Opponent(None)
     }
 
-    /// Create new match with two opponents
+    /// Create new match with given match `id` and two opponents
     ///
     /// Winner is automatically set if bye opponent is set
     ///
@@ -441,7 +397,7 @@ impl Match {
     /// Returns an error if both players are the same (two unknown players will
     /// not produce an error)
     pub fn new(
-        id: Option<MatchID>,
+        id: Option<ID>,
         players: [Opponent; 2],
         seeds: [usize; 2],
         format: MatchFormat,
@@ -453,7 +409,7 @@ impl Match {
             _ => Ok(Self {
                 // id: id.unwrap_or_default(),
                 // unwrap_or_default leads to always same match ID: 0000000000000... which is NOT ok
-                id: id.unwrap_or(MatchID::new()),
+                id: id.unwrap_or(ID::new_v4()),
                 players,
                 winner: Opponent(None),
                 automatic_loser: Opponent(None),
@@ -474,7 +430,7 @@ impl Match {
     #[must_use]
     pub fn new_empty(seeds: [usize; 2], format: MatchFormat) -> Match {
         Self {
-            id: MatchID::new(),
+            id: ID::new_v4(),
             players: [Opponent(None), Opponent(None)],
             winner: Opponent(None),
             automatic_loser: Opponent(None),
@@ -488,7 +444,7 @@ impl Match {
     ///
     /// # Panics
     /// * looser is not a participant of the match
-    pub fn set_automatic_loser_(&mut self, player_id: PlayerID) {
+    pub fn set_automatic_loser_(&mut self, player_id: ID) {
         assert!(self.contains(player_id), "player {player_id} in match");
 
         let loser = match self.players {
@@ -506,7 +462,7 @@ impl Match {
     /// # Panics
     /// When player does not belong to the match
     #[must_use]
-    pub fn set_automatic_loser(self, player_id: PlayerID) -> Self {
+    pub fn set_automatic_loser(self, player_id: ID) -> Self {
         assert!(self.contains(player_id), "player {player_id} in match");
 
         let loser = match self.players {
@@ -529,7 +485,7 @@ impl Match {
     /// # Panics
     /// * if opponent is already present
     /// * someone was already set
-    pub(crate) fn set_player(self, player_id: PlayerID, higher_seed: bool) -> Self {
+    pub(crate) fn set_player(self, player_id: ID, higher_seed: bool) -> Self {
         assert!(
             !self.contains(player_id),
             "cannot set opponent when already in the match"
@@ -550,7 +506,7 @@ impl Match {
     /// # Panics
     /// If match slot is not empty
     #[must_use]
-    pub fn insert_player(self, player_id: PlayerID, is_player_1: bool) -> Match {
+    pub fn insert_player(self, player_id: ID, is_player_1: bool) -> Match {
         match (is_player_1, self.players) {
             (true, [Opponent(Some(other_player)), _])
             | (false, [_, Opponent(Some(other_player))])
@@ -596,8 +552,8 @@ impl Match {
         }
     }
 
-    /// Set match outcome using reported results. Returns updated match, winner
-    /// id (if possible) and looser id.
+    /// Set match outcome using reported results. Returns updated match, player
+    /// ID of the winner (if exists) and player ID of loser.
     ///
     /// When a player is disqualified (through `automatic_loser`), then outcome
     /// can be updated.
@@ -606,7 +562,7 @@ impl Match {
     /// Returns an error if reported scores don't agree on the winner
     /// # Panics
     /// When one of the players did not report match result
-    pub(crate) fn update_outcome(self) -> Result<(Match, Option<PlayerID>, PlayerID), Error> {
+    pub(crate) fn update_outcome(self) -> Result<(Match, Option<ID>, ID), Error> {
         // if there is a disqualified player, try to set the winner
         if let Opponent(Some(dq_player)) = self.automatic_loser {
             return match self.players {
@@ -712,7 +668,7 @@ impl Match {
     /// # Panics
     /// When referred player is not in the match or opponent has not been defined
     #[must_use]
-    pub fn update_reported_result(self, player_id: PlayerID, result: ReportedResult) -> Self {
+    pub fn update_reported_result(self, player_id: ID, result: ReportedResult) -> Self {
         match self.players {
             [Opponent(None), _] | [_, Opponent(None)] => {
                 panic!("All opponents must be defined before reporting result")
@@ -747,11 +703,11 @@ impl Match {
         }
     }
 
-    /// Returns other player of this match
+    /// Returns the ID of the other player of this match
     ///
     /// # Errors
     /// thrown when there is no other player or player is not in the match
-    pub fn get_other_player(&self, player_id: PlayerID) -> Result<PlayerID, Error> {
+    pub fn get_other_player(&self, player_id: ID) -> Result<ID, Error> {
         match self.players {
             [Opponent(Some(p1)), Opponent(Some(p2))] if p1 == player_id => Ok(p2),
             [Opponent(Some(p1)), Opponent(Some(p2))] if p2 == player_id => Ok(p1),
@@ -806,15 +762,15 @@ pub type Id = uuid::Uuid;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::player::{Player, PlayerID};
+    use crate::player::Player;
 
     #[test]
     fn match_contains_both_players() {
-        let p1 = PlayerID::create();
+        let p1 = ID::new_v4();
         let player_1 = Opponent(Some(p1));
-        let p2 = PlayerID::create();
+        let p2 = ID::new_v4();
         let player_2 = Opponent(Some(p2));
-        let unknown = PlayerID::create();
+        let unknown = ID::new_v4();
         let m =
             Match::new(None, [player_1, player_2], [1, 2], MatchFormat::default()).expect("match");
         assert!(m.contains(p1));
@@ -824,7 +780,7 @@ mod tests {
 
     #[test]
     fn cannot_create_match_with_same_player() {
-        let p = PlayerID::create();
+        let p = ID::new_v4();
         let player = Opponent(Some(p));
         match Match::new(None, [player, player], [1, 2], MatchFormat::default()) {
             Err(GenerationError::SamePlayer) => {}
@@ -986,8 +942,8 @@ mod tests {
     #[test]
     fn insert_players_in_empty_match() {
         let m = Match::default();
-        let p1 = PlayerID::create();
-        let p2 = PlayerID::create();
+        let p1 = ID::new_v4();
+        let p2 = ID::new_v4();
         let m = m.insert_player(p1, true);
         let _m = m.insert_player(p2, false);
 
@@ -999,8 +955,8 @@ mod tests {
     #[test]
     #[should_panic]
     fn cannot_insert_player_if_someone_else_is_already_there_p1_side() {
-        let p1 = PlayerID::create();
-        let p2 = PlayerID::create();
+        let p1 = ID::new_v4();
+        let p2 = ID::new_v4();
         let m = Match::new(
             None,
             [Opponent(Some(p1)), Opponent(Some(p2))],
@@ -1008,15 +964,15 @@ mod tests {
             MatchFormat::default(),
         )
         .expect("match");
-        let p1_intruder = PlayerID::create();
+        let p1_intruder = ID::new_v4();
 
         let _ = m.insert_player(p1_intruder, true);
     }
     #[test]
     #[should_panic]
     fn cannot_insert_player_if_someone_else_is_already_there_p2_side() {
-        let p1 = PlayerID::create();
-        let p2 = PlayerID::create();
+        let p1 = ID::new_v4();
+        let p2 = ID::new_v4();
         let m = Match::new(
             None,
             [Opponent(Some(p1)), Opponent(Some(p2))],
@@ -1025,14 +981,14 @@ mod tests {
         )
         .expect("match");
 
-        let p2_intruder = PlayerID::create();
+        let p2_intruder = ID::new_v4();
         let _ = m.insert_player(p2_intruder, false);
     }
 
     #[test]
     fn insert_player_even_if_already_present() {
-        let p1 = PlayerID::create();
-        let p2 = PlayerID::create();
+        let p1 = ID::new_v4();
+        let p2 = ID::new_v4();
         let m = Match::new(
             None,
             [Opponent(Some(p1)), Opponent(Some(p2))],
@@ -1052,8 +1008,8 @@ mod tests {
 
     #[test]
     fn no_match_score_when_no_winner_is_declared() {
-        let p1 = PlayerID::create();
-        let p2 = PlayerID::create();
+        let p1 = ID::new_v4();
+        let p2 = ID::new_v4();
         let m = Match::new(
             None,
             [Opponent(Some(p1)), Opponent(Some(p2))],

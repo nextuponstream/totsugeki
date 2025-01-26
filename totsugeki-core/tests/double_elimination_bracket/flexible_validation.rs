@@ -2,8 +2,9 @@ use crate::double_elimination_bracket::assert_no_next_match_after_tournament_is_
 use totsugeki_core::bracket::seeding::Seeding;
 use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki_core::matches::result::{MatchFormat, Score};
-use totsugeki_core::player::{Participants, Player, PlayerID};
+use totsugeki_core::player::{Participants, Player};
 use totsugeki_core::validation::AutomaticMatchValidationMode;
+use totsugeki_core::ID;
 
 #[test]
 fn bracket_run_3_man() {
@@ -43,7 +44,7 @@ fn bracket_run_3_man() {
 
 #[test]
 fn run_3_man_bracket() {
-    let mut player_ids = vec![PlayerID::create()]; // padding for readability
+    let mut player_ids = vec![ID::new_v4()]; // padding for readability
     let mut unpadded_player_ids = vec![];
     let mut seeding = Participants::default();
     for i in 1..=3 {
@@ -80,7 +81,7 @@ fn run_3_man_bracket() {
 }
 #[test]
 fn run_5_man_bracket() {
-    let mut player_ids = vec![PlayerID::create()]; // padding for readability
+    let mut player_ids = vec![ID::new_v4()]; // padding for readability
     let mut seeding = Participants::default();
     for i in 1..=5 {
         let player = Player::new(format!("p{i}"));
@@ -169,7 +170,7 @@ fn run_5_man() {
 }
 #[test]
 fn run_8_man_bracket_no_upsets() {
-    let mut player_ids = vec![PlayerID::create()]; // padding for readability
+    let mut player_ids = vec![ID::new_v4()]; // padding for readability
     let mut unpadded_player_ids = vec![];
     let mut seeding = Participants::default();
     for i in 1..=8 {

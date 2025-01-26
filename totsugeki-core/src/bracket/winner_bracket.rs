@@ -81,7 +81,7 @@ mod tests {
     use super::winner_bracket;
     use crate::bracket::seeding::Seeding;
     use crate::matches::Match;
-    use crate::player::PlayerID;
+    use crate::ID;
 
     fn get_matches_and_seeding(n: usize) -> (Vec<Match>, Seeding) {
         let mut matches = vec![];
@@ -90,7 +90,7 @@ mod tests {
             matches.push(Match::default());
         }
         for _i in 1..=n {
-            seeding.push(PlayerID::create());
+            seeding.push(ID::new_v4());
         }
         (matches, Seeding::new(seeding).unwrap())
     }

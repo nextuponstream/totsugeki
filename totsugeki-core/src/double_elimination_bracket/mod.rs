@@ -3,9 +3,10 @@
 use crate::bracket::late_bracket_configuration::LateBracketConfiguration;
 use crate::bracket::seeding::Seeding;
 use crate::matches::result::MatchFormat;
-use crate::matches::{Match, MatchID};
+use crate::matches::Match;
 use crate::seeding::double_elimination_seeded_bracket::get_loser_bracket_matches_top_seed_favored;
 use crate::validation::AutomaticMatchValidationMode;
+use crate::ID;
 use serde::{Deserialize, Serialize};
 
 pub mod disqualification;
@@ -105,7 +106,7 @@ impl DoubleEliminationBracket {
 
     /// Clear all reported results for given match in bracket
     #[must_use]
-    fn clear_reported_result(self, match_id: MatchID) -> Self {
+    fn clear_reported_result(self, match_id: ID) -> Self {
         let mut matches = self.matches.clone();
         let match_to_update = matches
             .iter_mut()

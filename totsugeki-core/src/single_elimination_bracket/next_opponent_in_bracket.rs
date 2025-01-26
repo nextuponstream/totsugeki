@@ -1,13 +1,12 @@
 //! Inspect next opponent for a given player in single elimination bracket
 
-use crate::matches::MatchID;
 use crate::next_opponent::{Error, NextOpponentInBracket};
 use crate::opponent::Opponent;
-use crate::player::PlayerID;
 use crate::single_elimination_bracket::SingleEliminationBracket;
+use crate::ID;
 
 impl NextOpponentInBracket for SingleEliminationBracket {
-    fn next_opponent_in_bracket(&self, player_id: PlayerID) -> Result<(Opponent, MatchID), Error> {
+    fn next_opponent_in_bracket(&self, player_id: ID) -> Result<(Opponent, ID), Error> {
         if self.is_over() {
             let Opponent(Some(winner)) = self.matches.last().expect("matches").winner else {
                 unreachable!("tournament is over but without a winner")

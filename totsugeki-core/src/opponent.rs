@@ -1,18 +1,18 @@
 //! Opponent
 
-use crate::player::PlayerID;
 use crate::ID;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 #[derive(Serialize, Deserialize, Debug, Default, Ord, PartialOrd, Eq, PartialEq, Clone, Copy)]
-/// Your opponent for the next match may not be there
-pub struct Opponent(pub Option<PlayerID>);
+/// Encapsulate the player ID of your opponent for the next match (who may not
+/// exist at this time)
+pub struct Opponent(pub Option<ID>);
 
 impl Opponent {
     /// Get name of player if available
     #[must_use]
-    pub fn get_name(&self, players: &[(PlayerID, String)]) -> String {
+    pub fn get_name(&self, players: &[(ID, String)]) -> String {
         if let Some(player) = self.0 {
             let Some((p, name)) = players.iter().find(|p| p.0 == player) else {
                 unreachable!("player is missing");
@@ -27,7 +27,7 @@ impl Opponent {
 impl From<Option<ID>> for Opponent {
     fn from(value: Option<ID>) -> Self {
         match value {
-            Some(id) => Opponent(Some(PlayerID(id))),
+            Some(id) => Opponent(Some(id)),
             None => Opponent(None),
         }
     }

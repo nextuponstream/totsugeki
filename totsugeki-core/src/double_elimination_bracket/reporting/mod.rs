@@ -2,8 +2,8 @@
 
 use crate::double_elimination_bracket::DoubleEliminationBracket;
 use crate::matches::result::Score;
-use crate::matches::{Match, MatchID, ReportedResult};
-use crate::player::PlayerID;
+use crate::matches::{Match, ReportedResult};
+use crate::ID;
 use thiserror::Error;
 
 /// Report for match
@@ -24,10 +24,10 @@ impl DoubleEliminationBracket {
     /// When data is corrupted
     pub fn tournament_organiser_reports_result(
         self,
-        match_id: MatchID,
-        player1: PlayerID,
+        match_id: ID,
+        player1: ID,
         score: Score,
-        player2: PlayerID,
+        player2: ID,
     ) -> Result<(DoubleEliminationBracket, Vec<Match>), MatchReportError> {
         assert!(
             self.seeding.contains(player1),

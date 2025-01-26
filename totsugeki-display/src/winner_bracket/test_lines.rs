@@ -6,14 +6,15 @@
 mod tests {
     use totsugeki_core::bracket::seeding::Seeding;
     use totsugeki_core::matches::result::MatchFormat;
-    use totsugeki_core::player::{Player, PlayerID};
+    use totsugeki_core::player::Player;
     use totsugeki_core::single_elimination_bracket::SingleEliminationBracket;
     use totsugeki_core::validation::AutomaticMatchValidationMode;
+    use totsugeki_core::ID;
 
     fn get_data(n: usize) -> SingleEliminationBracket {
         let mut seeding = vec![];
         for _ in 0..n {
-            seeding.push(PlayerID::create());
+            seeding.push(ID::new_v4());
         }
         SingleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),

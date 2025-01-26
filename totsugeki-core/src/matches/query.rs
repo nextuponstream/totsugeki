@@ -2,11 +2,11 @@
 
 use crate::matches::Match;
 use crate::opponent::Opponent;
-use crate::player::PlayerID;
+use crate::ID;
 
 impl Match {
-    /// Loser of the match if any
-    pub(crate) fn get_loser(&self) -> Option<PlayerID> {
+    /// returns player ID of the loser of the match if any
+    pub(crate) fn get_loser(&self) -> Option<ID> {
         match (self.winner, self.players) {
             (Opponent(Some(winner_id)), [Opponent(Some(p1)), Opponent(Some(p2))])
                 if winner_id == p1 =>

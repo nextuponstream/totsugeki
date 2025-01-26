@@ -136,13 +136,13 @@ pub fn get_balanced_round_matches_top_seed_favored(
 mod tests {
     use crate::bracket::seeding::Seeding;
     use crate::matches::result::MatchFormat;
-    use crate::matches::MatchID;
     use crate::seeding::single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored;
     use crate::seeding::{seed, Method};
     use crate::{
         matches::Match,
         opponent::Opponent,
         player::{Participants, Player},
+        ID,
     };
     use rand::Rng;
 
@@ -169,7 +169,7 @@ mod tests {
         .unwrap();
         let matches =
             get_balanced_round_matches_top_seed_favored(&seeding, MatchFormat::ft3(), None);
-        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
         let expected_matches = vec![
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -221,7 +221,7 @@ mod tests {
         .unwrap();
         let matches =
             get_balanced_round_matches_top_seed_favored(&seeding, MatchFormat::ft3(), None);
-        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
         let expected_matches = vec![
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -283,7 +283,7 @@ mod tests {
         .unwrap();
         let matches =
             get_balanced_round_matches_top_seed_favored(&seeding, MatchFormat::ft3(), None);
-        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
         let expected_matches = vec![
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -358,7 +358,7 @@ mod tests {
         .unwrap();
         let matches =
             get_balanced_round_matches_top_seed_favored(&seeding, MatchFormat::ft3(), None);
-        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
         let expected_matches = vec![
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -443,7 +443,7 @@ mod tests {
         .unwrap();
         let matches =
             get_balanced_round_matches_top_seed_favored(&seeding, MatchFormat::ft3(), None);
-        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
         let expected_matches = vec![
             Match {
                 id: match_ids.pop().expect("match id"),
@@ -542,7 +542,7 @@ mod tests {
         .unwrap();
         let matches =
             get_balanced_round_matches_top_seed_favored(&seeding, MatchFormat::ft3(), None);
-        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
         let expected_matches = vec![
             Match {
                 id: match_ids.pop().expect("match id"),

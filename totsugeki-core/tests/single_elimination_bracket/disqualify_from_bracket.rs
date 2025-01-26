@@ -2,9 +2,10 @@ use crate::common::assert_outcome;
 use totsugeki_core::bracket::seeding::Seeding;
 use totsugeki_core::matches::result::{MatchFormat, Score};
 use totsugeki_core::opponent::Opponent;
-use totsugeki_core::player::{Player, PlayerID};
+use totsugeki_core::player::Player;
 use totsugeki_core::single_elimination_bracket::SingleEliminationBracket;
 use totsugeki_core::validation::AutomaticMatchValidationMode;
+use totsugeki_core::ID;
 
 #[test]
 fn disqualifying_everyone() {
@@ -53,7 +54,7 @@ fn disqualifying_everyone() {
 fn disqualifying_unknown_player_is_a_no_op() {
     let mut seeding = vec![];
     for _ in 1..=3 {
-        seeding.push(PlayerID::create())
+        seeding.push(ID::new_v4())
     }
     let seeding = Seeding::new(seeding).unwrap();
     let bracket = SingleEliminationBracket::create(
@@ -63,7 +64,7 @@ fn disqualifying_unknown_player_is_a_no_op() {
         None,
     );
 
-    let unknown_player = PlayerID::create();
+    let unknown_player = ID::new_v4();
     let _ = bracket.disqualify_participant_from_bracket(unknown_player);
 }
 

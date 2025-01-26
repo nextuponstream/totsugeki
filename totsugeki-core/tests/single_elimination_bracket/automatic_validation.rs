@@ -4,8 +4,9 @@ use crate::single_elimination_bracket::{
 use totsugeki_core::bracket::seeding::Seeding;
 use totsugeki_core::next_opponent::NextOpponentInBracket;
 use totsugeki_core::opponent::Opponent;
-use totsugeki_core::player::{Participants, Player, PlayerID};
+use totsugeki_core::player::{Participants, Player};
 use totsugeki_core::single_elimination_bracket::SingleEliminationBracket;
+use totsugeki_core::ID;
 
 // FIXME duplicate definition
 fn assert_players_play_each_other(
@@ -38,7 +39,7 @@ fn assert_players_play_each_other(
 fn assert_players_play_each_other_ids(
     player_1: usize,
     player_2: usize,
-    player_ids: &[PlayerID],
+    player_ids: &[ID],
     bracket: &SingleEliminationBracket,
 ) {
     let (next_opponent, match_id_1) = bracket
@@ -71,7 +72,7 @@ mod player_report_before_organiser {
     fn higher_seed_reports_before_to_example2() {
         // in 3 man tournament
         let mut seeding = Participants::default();
-        let mut player_ids = vec![PlayerID::create()]; // padding
+        let mut player_ids = vec![ID::new_v4()]; // padding
         for i in 1..=3 {
             let player = Player::new(format!("p{i}"));
             player_ids.push(player.get_id());
@@ -104,7 +105,7 @@ mod player_report_before_organiser {
     fn lower_seed_reports_before_to_example2() {
         // in 3 man tournament
         let mut seeding = Participants::default();
-        let mut player_ids = vec![PlayerID::create()]; // padding
+        let mut player_ids = vec![ID::new_v4()]; // padding
         for i in 1..=3 {
             let player = Player::new(format!("p{i}"));
             player_ids.push(player.get_id());
@@ -135,7 +136,7 @@ mod player_report_before_organiser {
 
     #[test]
     fn higher_seed_reports_before_to_example1() {
-        let mut player_ids = vec![PlayerID::create()]; // padding for readability
+        let mut player_ids = vec![ID::new_v4()]; // padding for readability
         let mut seeding = vec![];
         for i in 1..=3 {
             let player = Player::new(format!("p{i}"));
@@ -160,7 +161,7 @@ mod player_report_before_organiser {
     }
     #[test]
     fn lower_seed_reports_before_to_example1() {
-        let mut player_ids = vec![PlayerID::create()]; // padding for readability
+        let mut player_ids = vec![ID::new_v4()]; // padding for readability
         let mut seeding = vec![];
         for i in 1..=3 {
             let player = Player::new(format!("p{i}"));
@@ -226,7 +227,7 @@ mod bracket_with_3_participants {
     #[test]
     fn example2() {
         let mut seeding = Participants::default();
-        let mut player_ids = vec![PlayerID::create()]; // padding
+        let mut player_ids = vec![ID::new_v4()]; // padding
         for i in 1..=3 {
             let player = Player::new(format!("p{i}"));
             player_ids.push(player.get_id());
@@ -350,7 +351,7 @@ mod bracket_with_5_participants {
     #[test]
     fn example3() {
         let mut bad_seeding = Participants::default();
-        let mut player_ids = vec![PlayerID::create()]; // padding
+        let mut player_ids = vec![ID::new_v4()]; // padding
         for i in 1..=5 {
             let player = Player::new(format!("p{i}"));
             player_ids.push(player.get_id());

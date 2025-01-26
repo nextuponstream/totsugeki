@@ -6,10 +6,10 @@ use crate::bracket::late_bracket_configuration::LateBracketConfiguration;
 use crate::bracket::seeding::Seeding;
 use crate::matches::result::MatchFormat;
 use crate::matches::Match;
-use crate::player::PlayerID;
+use crate::ID;
 
 /// Get seed of player from seeding
-fn get_seed_of(player: PlayerID, seeding: &Seeding) -> usize {
+fn get_seed_of(player: ID, seeding: &Seeding) -> usize {
     assert!(seeding.contains(player));
     for (i, p) in seeding.get().iter().enumerate() {
         if *p == player {
@@ -120,11 +120,11 @@ pub fn get_loser_bracket_matches_top_seed_favored(
 
 /// qiej
 fn fun_name(
-    p_without_bye: &[PlayerID],
-    p_with_bye: &[PlayerID],
+    p_without_bye: &[ID],
+    p_with_bye: &[ID],
     initial_wave: &mut bool,
-    incoming_players_of_this_wave: &mut Vec<PlayerID>,
-) -> Option<Vec<PlayerID>> {
+    incoming_players_of_this_wave: &mut Vec<ID>,
+) -> Option<Vec<ID>> {
     #[allow(clippy::bool_to_int_with_if)]
     let at_least_half = p_without_bye.len() / 2 + if p_without_bye.len() % 2 == 0 { 0 } else { 1 };
     let (winners_of_p_without_bye, _) = p_without_bye.split_at(at_least_half);
@@ -146,7 +146,7 @@ fn generate_matches_of_first_round_in_wave<'a>(
     seeding: &'a Seeding,
     matches: &'a mut Vec<Match>,
     match_format: MatchFormat,
-) -> (&'a [PlayerID], &'a [PlayerID]) {
+) -> (&'a [ID], &'a [ID]) {
     let p_with_bye = wave.players_with_bye;
     let p_without_bye = wave.players_without_bye;
     let expected_winners = wave.expected_winners;
@@ -169,19 +169,19 @@ fn generate_matches_of_first_round_in_wave<'a>(
 /// are the
 struct Wave<'a> {
     /// oqiwje
-    players_with_bye: &'a [PlayerID],
+    players_with_bye: &'a [ID],
     /// owqijeh
-    players_without_bye: &'a [PlayerID],
+    players_without_bye: &'a [ID],
     /// players that are expected to move on in the matches between players
     /// without byes for this wave
-    expected_winners: &'a [PlayerID],
+    expected_winners: &'a [ID],
     /// players that are not expected to move on in the matches between players
     /// without byes for this wave
-    expected_losers: Vec<PlayerID>,
+    expected_losers: Vec<ID>,
 }
 
 /// Returns wave of players. See `Wave` documentation for more information
-fn form_wave(incoming_players_of_wave: &[PlayerID]) -> Wave {
+fn form_wave(incoming_players_of_wave: &[ID]) -> Wave {
     let byes = match (incoming_players_of_wave.len()).checked_next_power_of_two() {
         Some(next_higher_power_of_two) => next_higher_power_of_two - incoming_players_of_wave.len(),
         None => panic!("math overflow"),
@@ -202,8 +202,8 @@ fn form_wave(incoming_players_of_wave: &[PlayerID]) -> Wave {
 /// Returns `ControlFlow::Break` when the players from the initial wave should
 /// be group together with the player for the next wave
 fn fill_incoming_wave(
-    incoming_wave: &mut Vec<PlayerID>,
-    losers_for_this_round: &[PlayerID],
+    incoming_wave: &mut Vec<ID>,
+    losers_for_this_round: &[ID],
     initial_wave: &mut bool,
     skip_initial_wave_match_generation: bool,
 ) -> ControlFlow<()> {
@@ -221,7 +221,7 @@ fn fill_incoming_wave(
 /// Partitions players by "waves". Waves are made of the winner of the previous
 /// loser bracket round and the incoming player from the winner bracket (who
 /// lost a mathc)
-fn partition_players_of_loser_bracket(seeding: &Seeding) -> Vec<Vec<PlayerID>> {
+fn partition_players_of_loser_bracket(seeding: &Seeding) -> Vec<Vec<ID>> {
     let mut remaining_loosers = seeding.get();
     remaining_loosers.reverse();
     remaining_loosers.pop();
@@ -255,11 +255,12 @@ fn partition_players_of_loser_bracket(seeding: &Seeding) -> Vec<Vec<PlayerID>> {
 mod tests {
     use crate::double_elimination_bracket::DoubleEliminationBracket;
     use crate::matches::result::MatchFormat;
-    use crate::matches::{Match, MatchID};
+    use crate::matches::Match;
     use crate::opponent::Opponent;
     use crate::player::{Participants, Player};
     use crate::seeding::double_elimination_seeded_bracket::get_loser_bracket_matches_top_seed_favored;
     use crate::validation::AutomaticMatchValidationMode;
+    use crate::ID;
 
     #[test]
     fn matches_generation_3_man() {
@@ -282,7 +283,7 @@ mod tests {
             None,
         );
         let matches = double_elimination_bracket.get_matches();
-        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches,
             vec![
@@ -307,17 +308,17 @@ mod tests {
                     reported_results: [None, None],
                     format: MatchFormat::ft3(),
                 },
-                Match::looser_bracket_match(
+                Match::loser_bracket_match(
                     match_ids.pop().expect("id"),
                     [2, 3],
                     MatchFormat::ft3()
                 ),
-                Match::looser_bracket_match(
+                Match::loser_bracket_match(
                     match_ids.pop().expect("id"),
                     [1, 2],
                     MatchFormat::ft3()
                 ),
-                Match::looser_bracket_match(
+                Match::loser_bracket_match(
                     match_ids.pop().expect("id"),
                     [1, 2],
                     MatchFormat::ft3()
@@ -343,17 +344,17 @@ mod tests {
             MatchFormat::ft3(),
             None,
         );
-        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(matches.len(), 2, "expected 2 matches, got: {matches:?}");
         assert_eq!(
             matches,
             vec![
-                Match::looser_bracket_match(
+                Match::loser_bracket_match(
                     match_ids.pop().expect("id"),
                     [3, 4],
                     MatchFormat::ft3()
                 ),
-                Match::looser_bracket_match(
+                Match::loser_bracket_match(
                     match_ids.pop().expect("id"),
                     [2, 3],
                     MatchFormat::ft3()
@@ -379,7 +380,7 @@ mod tests {
             MatchFormat::ft3(),
             None,
         );
-        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
             3,
@@ -392,17 +393,17 @@ mod tests {
         assert_eq!(
             matches,
             vec![
-                Match::looser_bracket_match(
+                Match::loser_bracket_match(
                     match_ids.pop().expect("id"),
                     [4, 5],
                     MatchFormat::ft3()
                 ),
-                Match::looser_bracket_match(
+                Match::loser_bracket_match(
                     match_ids.pop().expect("id"),
                     [3, 4],
                     MatchFormat::ft3()
                 ),
-                Match::looser_bracket_match(
+                Match::loser_bracket_match(
                     match_ids.pop().expect("id"),
                     [2, 3],
                     MatchFormat::ft3()
@@ -426,7 +427,7 @@ mod tests {
             MatchFormat::ft3(),
             None,
         );
-        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
             4,
@@ -437,10 +438,10 @@ mod tests {
                 .collect::<Vec<[usize; 2]>>()
         );
         let expected_matches = vec![
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [3, 6], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [4, 5], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [3, 4], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [2, 3], MatchFormat::ft3()),
         ];
 
         assert_eq!(
@@ -473,7 +474,7 @@ mod tests {
             MatchFormat::ft3(),
             None,
         );
-        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
             5,
@@ -484,11 +485,11 @@ mod tests {
                 .collect::<Vec<[usize; 2]>>(),
         );
         let expected_matches = vec![
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 7], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [6, 7], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [3, 6], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [4, 5], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [3, 4], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [2, 3], MatchFormat::ft3()),
         ];
 
         assert_eq!(
@@ -521,7 +522,7 @@ mod tests {
             MatchFormat::ft3(),
             None,
         );
-        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
             6,
@@ -532,12 +533,12 @@ mod tests {
                 .collect::<Vec<[usize; 2]>>(),
         );
         let expected_matches = vec![
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 8], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 7], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [5, 8], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [6, 7], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [3, 6], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [4, 5], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [3, 4], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [2, 3], MatchFormat::ft3()),
         ];
 
         assert_eq!(
@@ -570,7 +571,7 @@ mod tests {
             MatchFormat::ft3(),
             None,
         );
-        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
             7,
@@ -581,13 +582,13 @@ mod tests {
                 .collect::<Vec<[usize; 2]>>(),
         );
         let expected_matches = vec![
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [8, 9], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 8], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 7], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [8, 9], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [5, 8], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [6, 7], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [3, 6], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [4, 5], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [3, 4], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [2, 3], MatchFormat::ft3()),
         ];
 
         assert_eq!(
@@ -620,7 +621,7 @@ mod tests {
             MatchFormat::ft3(),
             None,
         );
-        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
             8,
@@ -631,14 +632,14 @@ mod tests {
                 .collect::<Vec<[usize; 2]>>(),
         );
         let expected_matches = vec![
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [7, 10], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [8, 9], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 8], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 7], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [7, 10], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [8, 9], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [5, 8], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [6, 7], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [3, 6], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [4, 5], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [3, 4], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [2, 3], MatchFormat::ft3()),
         ];
 
         assert_eq!(
@@ -671,7 +672,7 @@ mod tests {
             MatchFormat::ft3(),
             None,
         );
-        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
             9,
@@ -682,15 +683,15 @@ mod tests {
                 .collect::<Vec<[usize; 2]>>(),
         );
         let expected_matches = vec![
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 11], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [7, 10], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [8, 9], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 8], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 7], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [6, 11], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [7, 10], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [8, 9], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [5, 8], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [6, 7], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [3, 6], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [4, 5], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [3, 4], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [2, 3], MatchFormat::ft3()),
         ];
 
         assert_eq!(
@@ -723,7 +724,7 @@ mod tests {
             MatchFormat::ft3(),
             None,
         );
-        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
             10,
@@ -734,16 +735,16 @@ mod tests {
                 .collect::<Vec<[usize; 2]>>(),
         );
         let expected_matches = vec![
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 12], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 11], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [7, 10], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [8, 9], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 8], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 7], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [5, 12], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [6, 11], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [7, 10], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [8, 9], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [5, 8], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [6, 7], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [3, 6], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [4, 5], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [3, 4], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [2, 3], MatchFormat::ft3()),
         ];
 
         assert_eq!(
@@ -776,7 +777,7 @@ mod tests {
             MatchFormat::ft3(),
             None,
         );
-        let mut match_ids: Vec<MatchID> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
         assert_eq!(
             matches.len(),
             14,
@@ -787,20 +788,20 @@ mod tests {
                 .collect::<Vec<[usize; 2]>>(),
         );
         let expected_matches = vec![
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [9, 16], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [10, 15], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [11, 14], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [12, 13], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 12], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 11], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [7, 10], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [8, 9], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [5, 8], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [6, 7], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 6], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [4, 5], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [3, 4], MatchFormat::ft3()),
-            Match::looser_bracket_match(match_ids.pop().expect("id"), [2, 3], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [9, 16], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [10, 15], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [11, 14], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [12, 13], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [5, 12], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [6, 11], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [7, 10], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [8, 9], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [5, 8], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [6, 7], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [3, 6], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [4, 5], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [3, 4], MatchFormat::ft3()),
+            Match::loser_bracket_match(match_ids.pop().expect("id"), [2, 3], MatchFormat::ft3()),
         ];
 
         assert_eq!(

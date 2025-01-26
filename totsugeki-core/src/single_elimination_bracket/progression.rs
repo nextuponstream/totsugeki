@@ -3,12 +3,12 @@
 use crate::bracket::matches::{bracket_is_over, Error};
 use crate::bracket::progression::new_matches_to_play_for_bracket;
 use crate::matches::result::Score;
-use crate::matches::{Error as MatchError, MatchID};
+use crate::matches::Error as MatchError;
 use crate::matches::{Match, ReportedResult};
-use crate::player::PlayerID;
 use crate::single_elimination_bracket::{
     SingleEliminationBracket, SingleEliminationReportResultError,
 };
+use crate::ID;
 // FIXME add all test for reports from double elimination here too
 
 // TODO force implementation of score report where you are required to tell all players involved
@@ -29,7 +29,7 @@ impl SingleEliminationBracket {
 
     /// Returns true if player is disqualified
     #[must_use]
-    pub fn is_disqualified(&self, player_id: PlayerID) -> bool {
+    pub fn is_disqualified(&self, player_id: ID) -> bool {
         self.matches
             .iter()
             .any(|m| m.is_automatic_loser_by_disqualification(player_id))
@@ -118,9 +118,9 @@ impl SingleEliminationBracket {
     /// Input is invalid for this bracket state
     pub fn update_player_reported_match_result(
         self,
-        match_id: MatchID,
+        match_id: ID,
         result: Score,
-        player_id: PlayerID,
+        player_id: ID,
     ) -> Result<Vec<Match>, SingleEliminationReportResultError> {
         let Some(m) = self.matches.iter().find(|m| m.get_id() == match_id) else {
             panic!("unknown match {match_id}")
@@ -146,10 +146,7 @@ impl SingleEliminationBracket {
     /// Returns updated bracket and new matches to play. Uses `match_id` as the
     /// first match to start updating before looking deeper into the bracket
     #[must_use]
-    pub fn validate_match_result(
-        self,
-        match_id: MatchID,
-    ) -> (SingleEliminationBracket, Vec<Match>) {
+    pub fn validate_match_result(self, match_id: ID) -> (SingleEliminationBracket, Vec<Match>) {
         let old_matches_to_play = self.matches_to_play();
         // FIXME remove unreachable
         // FIXME should return an error because it's used by a library => there must be some
@@ -217,16 +214,19 @@ impl SingleEliminationBracket {
     ///
     /// Technically, it's unnecessary.
     ///
+    /// Returns updated bracked, match ID where score was applied and newly
+    /// updated matches
+    ///
     /// # Errors
     /// thrown when player does not belong in bracket
     /// # Panics
     /// When either `player1` or `player2` is unknown
     pub fn tournament_organiser_reports_result(
         self,
-        player1: PlayerID,
+        player1: ID,
         result: Score,
-        player2: PlayerID,
-    ) -> Result<(SingleEliminationBracket, MatchID, Vec<Match>), SingleEliminationReportResultError>
+        player2: ID,
+    ) -> Result<(SingleEliminationBracket, ID, Vec<Match>), SingleEliminationReportResultError>
     {
         let result_player_1 = ReportedResult(Some(result));
         let bracket = self.clone().clear_reported_result(player1);

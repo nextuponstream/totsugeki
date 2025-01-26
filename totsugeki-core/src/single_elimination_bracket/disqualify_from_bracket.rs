@@ -2,8 +2,8 @@
 
 use crate::matches::Match;
 use crate::opponent::Opponent;
-use crate::player::PlayerID;
 use crate::single_elimination_bracket::SingleEliminationBracket;
+use crate::ID;
 
 impl SingleEliminationBracket {
     /// Disqualify participant from bracket completely. Returns updated bracket and new playable
@@ -14,7 +14,7 @@ impl SingleEliminationBracket {
     #[must_use]
     pub fn disqualify_participant_from_bracket(
         self,
-        player_id: PlayerID,
+        player_id: ID,
     ) -> (SingleEliminationBracket, Option<Vec<Match>>) {
         // in the case where all players are disqualified, the last player being disqualified
         // results in a no-op

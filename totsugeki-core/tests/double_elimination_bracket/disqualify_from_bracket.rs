@@ -3,8 +3,9 @@ use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki_core::matches::result::{MatchFormat, Score};
 use totsugeki_core::matches::Match;
 use totsugeki_core::opponent::Opponent;
-use totsugeki_core::player::{Participants, Player, PlayerID};
+use totsugeki_core::player::{Participants, Player};
 use totsugeki_core::validation::AutomaticMatchValidationMode;
+use totsugeki_core::ID;
 
 // Note: we don't test panics. If a panic occurs, it's a bug that needs
 // programmer attention. If UI sends bad data to backend and violate assertions,
@@ -355,7 +356,7 @@ fn disqualifying_everyone_is_impossible_because_the_last_player_remaining_wins_g
 #[test]
 fn disqualifying_most_in_double_elimination_tournament_and_lowest_expected_seed_in_winners_final() {
     let mut players = vec![Player::new("don't use".into())];
-    let mut p = vec![PlayerID::create()];
+    let mut p = vec![ID::new_v4()];
     let mut bad_seeding = Participants::default();
     for i in 1..=8 {
         let player = Player::new(format!("p{i}"));
@@ -904,10 +905,10 @@ fn fuzzer_incident_01() {
     // * [2, 3] Lp3 VS Wp2
     // * [1, 2] -p4 VS -p2
     // * [1, 2] -?  VS -?
-    let mut p = vec![PlayerID::create()];
+    let mut p = vec![ID::new_v4()];
     let mut seeding = vec![];
     for _ in 1..=4 {
-        let id = PlayerID::create();
+        let id = ID::new_v4();
         p.push(id);
         seeding.push(id);
     }
@@ -968,10 +969,10 @@ fn fuzzer_incident_02() {
     // * [2, 3] Lp7 VS -?
     // * [1, 2] -p1 VS -?
     // * [1, 2] -?  VS -?
-    let mut p = vec![PlayerID::create()];
+    let mut p = vec![ID::new_v4()];
     let mut seeding = vec![];
     for _ in 1..=8 {
-        let id = PlayerID::create();
+        let id = ID::new_v4();
         p.push(id);
         seeding.push(id);
     }
@@ -1048,10 +1049,10 @@ fn fuzzer_incident_03() {
     // 	* [2, 3] Wp2 VS Lp3 | match id: ac034a6c-1a4d-4cba-9bd9-2acca62c5142
     // 	* [1, 2] Lp1 VS -p2 | match id: b725b8fd-b436-43d7-ba03-30ca9ac49c43
     // 	* [1, 2] -?  VS -?  | match id: a61b5bd7-dcad-44c4-bf83-48ebd34b9e30
-    let mut p = vec![PlayerID::create()];
+    let mut p = vec![ID::new_v4()];
     let mut seeding = vec![];
     for _ in 1..=3 {
-        let id = PlayerID::create();
+        let id = ID::new_v4();
         p.push(id);
         seeding.push(id);
     }

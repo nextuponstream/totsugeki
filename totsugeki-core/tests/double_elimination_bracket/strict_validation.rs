@@ -2,11 +2,11 @@ use crate::double_elimination_bracket::assert_no_next_match_after_tournament_is_
 use totsugeki_core::bracket::seeding::Seeding;
 use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki_core::matches::result::{MatchFormat, Score};
-use totsugeki_core::matches::MatchID;
 use totsugeki_core::next_opponent::NextOpponentInBracket;
 use totsugeki_core::opponent::Opponent;
-use totsugeki_core::player::{Participants, Player, PlayerID};
+use totsugeki_core::player::{Participants, Player};
 use totsugeki_core::validation::AutomaticMatchValidationMode;
+use totsugeki_core::ID;
 
 #[cfg(test)]
 pub(crate) fn assert_next_matches(
@@ -56,12 +56,13 @@ pub(crate) fn assert_next_matches(
     }
 }
 
+/// Return updated bracket and match ID where result was applied
 fn report(
     double_elimination_bracket: DoubleEliminationBracket,
-    player1: PlayerID,
+    player1: ID,
     result: Score,
-    player2: PlayerID,
-) -> (DoubleEliminationBracket, MatchID) {
+    player2: ID,
+) -> (DoubleEliminationBracket, ID) {
     let (bracket, m_id, _new_matches) = double_elimination_bracket
         .tournament_organiser_reports_result_dangerous(player1, result, player2)
         .expect("bracket");
@@ -152,7 +153,7 @@ fn bracket_5_man_with_frequent_upsets() {
 #[test]
 fn run_8_man_bracket_with_frequent_upsets() {
     // every 2 matches, there is an upset
-    let mut player_ids = vec![PlayerID::create()]; // padding for readability
+    let mut player_ids = vec![ID::new_v4()]; // padding for readability
     let mut unpadded_player_ids = vec![]; // padding for readability
     let mut seeding = Participants::default();
     for i in 1..=8 {

@@ -4,14 +4,15 @@
 use crate::bracket::matches::Error;
 use crate::bracket::progression::new_matches_to_play_for_bracket;
 use crate::double_elimination_bracket::DoubleEliminationBracket;
-use crate::matches::{double_elimination_matches_from_partition, Match, MatchID};
+use crate::matches::{double_elimination_matches_from_partition, Match};
 use crate::opponent::Opponent;
+use crate::ID;
 
 impl DoubleEliminationBracket {
     /// Validate bracket with match to update in winners bracket
     pub(crate) fn validate_from_winner(
         self,
-        match_id: MatchID,
+        match_id: ID,
     ) -> (DoubleEliminationBracket, Vec<Match>) {
         let (w_bracket, l_bracket, gf, gf_reset) =
             self.partition_matches().expect("enough players");
@@ -92,7 +93,7 @@ impl DoubleEliminationBracket {
     /// Validate bracket with match to validate in losers bracket
     pub(crate) fn validate_from_loser(
         self,
-        match_id: MatchID,
+        match_id: ID,
     ) -> (DoubleEliminationBracket, Vec<Match>) {
         let (w_bracket, l_bracket, gf, gf_reset) =
             self.partition_matches().expect("enough players");
@@ -129,7 +130,7 @@ impl DoubleEliminationBracket {
     /// Validate bracket with match to update either be grand finals or reset
     pub(crate) fn validate_from_finals(
         self,
-        match_id: MatchID,
+        match_id: ID,
     ) -> (DoubleEliminationBracket, Vec<Match>) {
         let (w_bracket, l_bracket, gf, gf_reset) =
             self.partition_matches().expect("enough players");
@@ -152,7 +153,7 @@ impl DoubleEliminationBracket {
 
 /// Update grand finals or reset
 fn update_grand_finals_or_reset(
-    match_id: MatchID,
+    match_id: ID,
     winner_bracket: Vec<Match>,
     loser_bracket: Vec<Match>,
     gf: Match,

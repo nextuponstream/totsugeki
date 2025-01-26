@@ -115,8 +115,9 @@ mod tests {
     use crate::bracket::seeding::Seeding;
     use crate::double_elimination_bracket::DoubleEliminationBracket;
     use crate::matches::result::MatchFormat;
-    use crate::player::{Player, PlayerID};
+    use crate::player::Player;
     use crate::validation::AutomaticMatchValidationMode;
+    use crate::ID;
 
     #[test]
     fn less_than_3_participants_throws_error() {
@@ -132,7 +133,7 @@ mod tests {
         // 1
         let mut seeding = vec![];
         for _ in 1..=1 {
-            seeding.push(PlayerID::create());
+            seeding.push(ID::new_v4());
         }
         let bracket = DoubleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
@@ -152,7 +153,7 @@ mod tests {
         // 2
         let mut seeding = vec![];
         for _i in 1..=2 {
-            seeding.push(PlayerID::create());
+            seeding.push(ID::new_v4());
         }
         let bracket = DoubleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
@@ -175,7 +176,7 @@ mod tests {
         let n = 3;
         let mut seeding = vec![];
         for _i in 1..=n {
-            seeding.push(PlayerID::create());
+            seeding.push(ID::new_v4());
         }
         let bracket = DoubleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
@@ -197,7 +198,7 @@ mod tests {
         let n = 4;
         let mut seeding = vec![];
         for _i in 1..=n {
-            seeding.push(PlayerID::create());
+            seeding.push(ID::new_v4());
         }
         let bracket = DoubleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
@@ -221,7 +222,7 @@ mod tests {
         let n = 5;
         let mut seeding = vec![];
         for _i in 1..=n {
-            seeding.push(PlayerID::create());
+            seeding.push(ID::new_v4());
         }
         let bracket = DoubleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
@@ -247,7 +248,7 @@ mod tests {
         let n = 6;
         let mut seeding = vec![];
         for _i in 1..=n {
-            seeding.push(PlayerID::create());
+            seeding.push(ID::new_v4());
         }
         let bracket = DoubleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
@@ -279,7 +280,7 @@ mod tests {
         let n = 7;
         let mut seeding = vec![];
         for _i in 1..=n {
-            seeding.push(PlayerID::create());
+            seeding.push(ID::new_v4());
         }
         let bracket = DoubleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
@@ -317,7 +318,7 @@ mod tests {
         let n = 8;
         let mut seeding = vec![];
         for _i in 1..=n {
-            seeding.push(PlayerID::create());
+            seeding.push(ID::new_v4());
         }
         let bracket = DoubleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
@@ -365,7 +366,7 @@ mod tests {
         let n = 9;
         let mut seeding = vec![];
         for _i in 1..=n {
-            seeding.push(PlayerID::create());
+            seeding.push(ID::new_v4());
         }
         let bracket = DoubleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
@@ -417,7 +418,7 @@ mod tests {
 
     #[test]
     fn partition_matches_for_3_man_bracket() {
-        let mut player_ids = vec![PlayerID::create()]; // padding for readability
+        let mut player_ids = vec![ID::new_v4()]; // padding for readability
         let mut unpadded_player_ids = vec![];
         for i in 1..=3 {
             let player = Player::new(format!("p{i}"));

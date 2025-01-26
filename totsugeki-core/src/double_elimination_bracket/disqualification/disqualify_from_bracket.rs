@@ -3,7 +3,7 @@
 use crate::double_elimination_bracket::DoubleEliminationBracket;
 use crate::matches::Match;
 use crate::opponent::Opponent;
-use crate::player::PlayerID;
+use crate::ID;
 use thiserror::Error;
 
 /// Cannot disqualify player from bracket
@@ -27,7 +27,7 @@ impl DoubleEliminationBracket {
     /// * enough player in bracket
     pub fn disqualify_participant_from_bracket(
         &self,
-        player_id: PlayerID,
+        player_id: ID,
     ) -> Result<(Self, Option<Vec<Match>>), Error> {
         assert!(self.seeding.contains(player_id), "player is not in bracket");
         assert!(self.seeding.len() >= 3, "enough player in bracket");

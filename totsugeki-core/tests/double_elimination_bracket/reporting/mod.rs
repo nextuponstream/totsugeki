@@ -4,9 +4,8 @@ use totsugeki_core::bracket::seeding::Seeding;
 use totsugeki_core::double_elimination_bracket::reporting::MatchReportError;
 use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki_core::matches::result::{MatchFormat, Score};
-use totsugeki_core::matches::MatchID;
-use totsugeki_core::player::PlayerID;
 use totsugeki_core::validation::AutomaticMatchValidationMode;
+use totsugeki_core::ID;
 
 #[test]
 #[should_panic]
@@ -18,18 +17,13 @@ fn panics_when_bracket_is_empty() {
         None,
     );
 
-    deb.tournament_organiser_reports_result(
-        MatchID::default(),
-        PlayerID::create(),
-        Score(2, 0),
-        PlayerID::create(),
-    )
-    .unwrap();
+    deb.tournament_organiser_reports_result(ID::new_v4(), ID::new_v4(), Score(2, 0), ID::new_v4())
+        .unwrap();
 }
 
 #[test]
 fn reporting_twice_for_the_same_match_throws_error() {
-    let seeding = vec![PlayerID::create(), PlayerID::create(), PlayerID::create()];
+    let seeding = vec![ID::new_v4(), ID::new_v4(), ID::new_v4()];
     let deb = DoubleEliminationBracket::create(
         Seeding::new(seeding).unwrap(),
         AutomaticMatchValidationMode::Flexible,
@@ -49,6 +43,6 @@ fn reporting_twice_for_the_same_match_throws_error() {
     let Err(MatchReportError::AlreadyReported) =
         deb.tournament_organiser_reports_result(match_id_seed_2_vs_seed_3, s2, Score(2, 0), s3)
     else {
-        panic!("MatchReportError::AlreadyReported was not throwned")
+        panic!("MatchReportError::AlreadyReported was not thrown")
     };
 }

@@ -4,60 +4,13 @@ use crate::bracket::seeding::Seeding;
 use crate::ID;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
-use std::str::FromStr;
 use thiserror::Error;
-
-/// Player ID
-#[derive(Hash, Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Ord, PartialOrd, Copy)]
-#[allow(clippy::module_name_repetitions)]
-pub struct PlayerID(pub ID);
-
-impl Default for PlayerID {
-    fn default() -> Self {
-        PlayerID(ID::new_v4())
-    }
-}
-
-impl From<ID> for PlayerID {
-    fn from(value: ID) -> Self {
-        Self::new(value)
-    }
-}
-
-impl PlayerID {
-    /// Create player ID
-    #[must_use]
-    pub fn create() -> Self {
-        Self(ID::new_v4())
-    }
-
-    /// New player ID
-    #[must_use]
-    pub fn new(id: ID) -> Self {
-        Self(id)
-    }
-}
-
-impl FromStr for PlayerID {
-    type Err = uuid::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let id = ID::parse_str(s)?;
-        Ok(PlayerID(id))
-    }
-}
-
-impl Display for PlayerID {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Player ID: {}", self.0)
-    }
-}
 
 /// A player is referenced by their ID and their username
 #[derive(Hash, Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub struct Player {
     /// Player identifier
-    id: PlayerID,
+    id: ID,
     /// Player name
     name: String,
 }
@@ -67,20 +20,20 @@ impl TryFrom<(&str, &str)> for Player {
 
     fn try_from((id, name): (&str, &str)) -> Result<Self, Self::Error> {
         Ok(Player {
-            id: id.parse::<PlayerID>()?,
+            id: id.parse::<ID>()?,
             name: name.into(),
         })
     }
 }
 
-impl From<(PlayerID, String)> for Player {
-    fn from((id, name): (PlayerID, String)) -> Self {
+impl From<(ID, String)> for Player {
+    fn from((id, name): (ID, String)) -> Self {
         Player { id, name }
     }
 }
 
-impl From<(PlayerID, &str)> for Player {
-    fn from((id, name): (PlayerID, &str)) -> Self {
+impl From<(ID, &str)> for Player {
+    fn from((id, name): (ID, &str)) -> Self {
         Player {
             id,
             name: name.to_string(),
@@ -93,14 +46,14 @@ impl Player {
     #[must_use]
     pub fn new(name: String) -> Self {
         Self {
-            id: PlayerID(ID::new_v4()),
+            id: ID::new_v4(),
             name,
         }
     }
 
     /// Get player id
     #[must_use]
-    pub fn get_id(&self) -> PlayerID {
+    pub fn get_id(&self) -> ID {
         self.id
     }
 
@@ -129,7 +82,7 @@ pub enum Error {
     PlayerId(#[from] uuid::Error),
     /// Referenced player is unknown in this group of participants
     #[error("Player {0} is not in this group")]
-    Unknown(PlayerID),
+    Unknown(ID),
 }
 
 impl Participants {
@@ -156,7 +109,7 @@ impl Participants {
     pub fn from_raw_id(players_to_add: Vec<(String, String)>) -> Result<Participants, Error> {
         let mut players = Participants::default();
         for p in players_to_add {
-            let id = p.0.as_str().parse::<PlayerID>()?;
+            let id = p.0.as_str().parse::<ID>()?;
             let p = Player { id, name: p.1 };
             players = match players.add_participant(p) {
                 Ok(updated_players) => updated_players,
@@ -168,11 +121,8 @@ impl Participants {
 
     /// Returns player if present
     #[must_use]
-    pub fn get(&self, participant_id: PlayerID) -> Option<Player> {
-        self.0
-            .iter()
-            .find(|p| p.get_id() == participant_id)
-            .cloned()
+    pub fn get(&self, player_id: ID) -> Option<Player> {
+        self.0.iter().find(|p| p.get_id() == player_id).cloned()
     }
 
     /// Return participants as a list of players
@@ -191,9 +141,10 @@ impl Participants {
         Seeding::new(self.0.iter().map(Player::get_id).collect::<Vec<_>>())
             .expect("seeding from participants")
     }
-    /// Returns seeding, which is the players listed by ID
+    /// Returns seeding, which is an ordered list of player ids, from strongest
+    /// to weakest
     #[must_use]
-    pub fn get_player_list(&self) -> Vec<PlayerID> {
+    pub fn get_player_list(&self) -> Vec<ID> {
         self.0.iter().map(Player::get_id).collect::<Vec<_>>()
     }
 
@@ -206,14 +157,14 @@ impl Participants {
             .clone()
             .iter()
             .map(Player::get_id)
-            .collect::<Vec<PlayerID>>();
+            .collect::<Vec<ID>>();
         players.sort();
         let mut other_players = other_group
             .0
             .clone()
             .iter()
             .map(Player::get_id)
-            .collect::<Vec<PlayerID>>();
+            .collect::<Vec<ID>>();
         other_players.sort();
         players == other_players
     }
@@ -230,16 +181,16 @@ impl Participants {
         self.0.len()
     }
 
-    /// Remove participant
+    /// Remove player
     ///
     /// # Errors
-    /// thrown if participant does not belong to this group
+    /// thrown if player does not belong to this group
     #[must_use]
-    pub fn remove(self, participant_id: PlayerID) -> Self {
+    pub fn remove(self, player_id: ID) -> Self {
         Self(
             self.0
                 .into_iter()
-                .filter(|p| p.get_id() != participant_id)
+                .filter(|p| p.get_id() != player_id)
                 .collect::<Vec<_>>(),
         )
     }
@@ -293,7 +244,7 @@ impl TryFrom<Vec<(&ID, &String)>> for Participants {
         let mut result = Participants::default();
         for p in players {
             let p = Player {
-                id: PlayerID(*p.0),
+                id: *p.0,
                 name: p.1.to_string(),
             };
             result = result.add_participant(p)?;
