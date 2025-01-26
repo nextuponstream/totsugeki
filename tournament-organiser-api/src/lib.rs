@@ -37,6 +37,9 @@ use tower_sessions::{ExpiredDeletion, Expiry, SessionManagerLayer};
 use tower_sessions_sqlx_store::PostgresStore;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+/// Default identifier type
+pub type ID = uuid::Uuid;
+
 /// Name of the app
 static APP: &str = "tournament organiser application";
 /// Port to serve the app. By default, we set what flyio is expecting as

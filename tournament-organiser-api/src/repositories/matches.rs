@@ -26,9 +26,9 @@ impl MatchRepository {
                 "{}\n{:?}\n{:?}\n{:?}\n{:?}\n{}\n{}",
                 m.get_id().0,
                 high_seed.to_i16(),
-                m.get_players()[0].0.map(|id| id.0),
+                m.get_players()[0].0,
                 low_seed.to_i16(),
-                m.get_players()[1].0.map(|id| id.0),
+                m.get_players()[1].0,
                 "first_to_n",
                 2,
             );
@@ -45,9 +45,9 @@ format_n
 ) VALUES ($1, $2, $3, $4, $5, $6, $7)"#,
                 m.get_id().0,
                 high_seed.to_i16(),
-                m.get_players()[0].0.map(|id| id.0),
+                m.get_players()[0].0,
                 low_seed.to_i16(),
-                m.get_players()[1].0.map(|id| id.0),
+                m.get_players()[1].0,
                 "first_to_n",
                 2.into(),
             )

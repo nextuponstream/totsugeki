@@ -18,7 +18,7 @@ use sqlx::PgPool;
 use totsugeki_core::bracket::seeding::Seeding;
 use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki_core::matches::result::MatchFormat;
-use totsugeki_core::player::{Player, PlayerID};
+use totsugeki_core::player::Player;
 use totsugeki_core::validation::AutomaticMatchValidationMode;
 use totsugeki_core::ID;
 use tower_sessions::Session;
@@ -51,7 +51,7 @@ pub(crate) async fn create_tournament(
             tournament
                 .get_players()
                 .into_iter()
-                .map(|tp| PlayerID::new(tp.get_id()))
+                .map(|tp| tp.get_id())
                 .collect(),
         )
         .expect("should form seeding with new player"),
@@ -72,13 +72,13 @@ pub(crate) async fn create_tournament(
     println!("{}", tournament.get_id());
 
     // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
-    tracing::info!("new tournament {}", tournament.get_id().0);
+    tracing::info!("new tournament {}", tournament.get_id());
 
     tracing::debug!("new tournament {:?}", bracket);
     Ok::<(StatusCode, axum::Json<GenericResourceCreated>), Error>((
         StatusCode::CREATED,
         AxumJson(GenericResourceCreated {
-            id: tournament.get_id().0,
+            id: tournament.get_id(),
         }),
     ))
 }

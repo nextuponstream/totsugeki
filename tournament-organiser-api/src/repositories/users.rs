@@ -1,7 +1,8 @@
 //! User repository
 
 use crate::types::SqlxTransaction;
-use crate::users::registration::{User, UserID, UserRecord};
+use crate::users::registration::{User, UserRecord};
+use crate::ID;
 use sqlx::error::Error as SqlxError;
 
 /// All methods to query user in database
@@ -24,12 +25,12 @@ impl UserRepository {
     /// Read user from database
     pub async fn read<'a>(
         transaction: SqlxTransaction<'a, '_>,
-        user_id: UserID,
+        user_id: ID,
     ) -> Result<Option<UserRecord>, Error> {
         let u = sqlx::query_as!(
             UserRecord,
             r#"SELECT id, name, email from users WHERE id = $1"#,
-            user_id.0
+            user_id
         )
         .fetch_optional(&mut **transaction)
         .await?;

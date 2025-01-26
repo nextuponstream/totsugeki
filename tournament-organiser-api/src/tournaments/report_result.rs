@@ -27,9 +27,9 @@ pub async fn report_result(Json(report): Json<ReportResultInput>) -> impl IntoRe
     let tournament = report.tournament;
 
     let Ok((bracket, _, _)) = bracket.tournament_organiser_reports_result_dangerous(
-        report.p1_id,
+        report.player1_id,
         Score(report.score_p1, report.score_p2),
-        report.p2_id,
+        report.player2_id,
     ) else {
         // FIXME actual error handling
         return Err(ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR));

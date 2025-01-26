@@ -33,20 +33,10 @@ pub struct FormInput {
 }
 
 /// User of application
-#[derive(sqlx::Type, Serialize, Clone, Debug, Copy, Deserialize)]
-pub struct UserID(pub ID);
-
-impl From<Uuid> for UserID {
-    fn from(value: Uuid) -> Self {
-        Self(value)
-    }
-}
-
-/// User of application
 #[derive(sqlx::FromRow, Clone, Debug)]
 pub struct User {
     /// Id of user
-    pub id: UserID,
+    pub id: ID,
     /// user name
     pub name: String,
     /// user email address
@@ -62,7 +52,7 @@ pub struct User {
 #[derive(sqlx::FromRow, Clone, Debug)]
 pub struct UserRecord {
     /// Id of user
-    pub id: UserID,
+    pub id: ID,
     /// user name
     pub name: String,
     /// user email address
@@ -72,10 +62,7 @@ pub struct UserRecord {
 async fn get_transaction_from_pool<'a>(
     pg_pool: PgPool,
 ) -> Result<Transaction<'a, Postgres>, ErrorSlug> {
-    Ok(pg_pool
-        .begin()
-        .await
-        .map_err(|_| ErrorSlug::new(StatusCode::INTERNAL_SERVER_ERROR, "sqlx".to_string()))?)
+    Ok(pg_pool.begin().await?)
 }
 
 use axum::debug_handler;

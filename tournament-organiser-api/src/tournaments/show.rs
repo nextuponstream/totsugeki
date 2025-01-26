@@ -9,7 +9,6 @@ use axum::extract::{Path, State};
 use axum::response::IntoResponse;
 use http::StatusCode;
 use totsugeki_core::bracket::Id;
-use totsugeki_core::player::PlayerID;
 use totsugeki_core::ID;
 use tower_sessions::Session;
 use tracing::instrument;
@@ -44,10 +43,9 @@ pub async fn show_bracket(
             }
         };
 
-    transaction.commit().await.map_err(internal_error)?;
-    let player_id = user_id.map(PlayerID::new);
+    transaction.commit().await?;
     Ok((
         StatusCode::OK,
-        breakdown(&tournament, bracket, player_id, is_tournament_organiser),
+        breakdown(&tournament, bracket, user_id, is_tournament_organiser),
     ))
 }

@@ -12,7 +12,8 @@ pub struct TestApp {
 }
 
 use super::{app, Expiry, PgPool, PostgresStore, SessionManagerLayer, SocketAddr};
-use crate::tournaments::{BracketState, CreateTournamentForm, ID};
+use crate::tournaments::{BracketState, CreateTournamentForm};
+use crate::ID;
 use reqwest::{Client, Response};
 use serde::Serialize;
 use time::Duration;

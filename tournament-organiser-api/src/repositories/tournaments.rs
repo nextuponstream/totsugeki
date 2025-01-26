@@ -14,7 +14,7 @@ impl TournamentRepository {
     ) -> Result<(), SqlxError> {
         let _ = sqlx::query!(
             "INSERT INTO tournaments (id, name, format) VALUES ($1, $2, $3)",
-            tournament.get_id().get(), // FIXME this is not good syntax
+            tournament.get_id(),
             tournament.get_name(),
             "double_elimination".to_string(), // FIXME allow other formats
         )

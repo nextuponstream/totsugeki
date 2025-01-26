@@ -1,16 +1,15 @@
 //! Reusable user queries
 
-use crate::tournaments::TournamentID;
 use crate::types::{SqlxError, SqlxTransaction};
-use crate::users::registration::UserID;
+use crate::ID;
 
 /// Reusable user queries
 pub trait UserTrait {
     /// True if user `user_id` is tournament organiser of `tournament_id`
     async fn is_tournament_organiser<'a>(
         transaction: SqlxTransaction<'a, '_>,
-        user_id: UserID,
-        tournament_id: TournamentID,
+        user_id: ID,
+        tournament_id: ID,
     ) -> Result<bool, SqlxError> {
         let is_tournament_organiser = sqlx::query!(
             r#"SELECT tournament_id, user_id 
@@ -18,8 +17,8 @@ pub trait UserTrait {
             WHERE user_id = $1
             AND tournament_id = $2
             "#,
-            user_id.0,
-            tournament_id.get()
+            user_id,
+            tournament_id
         )
         .fetch_optional(&mut **transaction)
         .await?

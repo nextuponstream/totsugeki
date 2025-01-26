@@ -19,7 +19,6 @@ use sqlx::PgPool;
 use totsugeki_core::bracket::seeding::Seeding;
 use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki_core::matches::result::{MatchFormat, Score};
-use totsugeki_core::player::PlayerID;
 use totsugeki_core::validation::AutomaticMatchValidationMode;
 use totsugeki_core::ID;
 use tower_sessions::Session;
@@ -78,7 +77,7 @@ pub async fn save_tournament_from_steps(
             tournament
                 .get_players()
                 .into_iter()
-                .map(|tp| PlayerID::new(tp.get_id()))
+                .map(|tp| tp.get_id())
                 .collect(),
         )
         .expect("should use seeding from tournament organiser input"),
@@ -88,17 +87,23 @@ pub async fn save_tournament_from_steps(
     );
     for r in bracket_state.results {
         let report = Score(r.score_p1, r.score_p2);
-        let Some(p1_mapping) = safe_player_mapping.iter().find(|m| m.0.get_id() == r.p1_id) else {
+        let Some(p1_mapping) = safe_player_mapping
+            .iter()
+            .find(|m| m.0.get_id() == r.player1_id)
+        else {
             return Err(ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR));
         };
-        let Some(p2_mapping) = safe_player_mapping.iter().find(|m| m.0.get_id() == r.p2_id) else {
+        let Some(p2_mapping) = safe_player_mapping
+            .iter()
+            .find(|m| m.0.get_id() == r.player2_id)
+        else {
             return Err(ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR));
         };
         let bracket_copy = bracket.clone();
         bracket = match bracket_copy.tournament_organiser_reports_result_dangerous(
-            PlayerID::new(p1_mapping.1.get_id()),
+            p1_mapping.1.get_id(),
             report,
-            PlayerID::new(p2_mapping.1.get_id()),
+            p2_mapping.1.get_id(),
         ) {
             Ok(b) => b.0,
             Err(err) => {
@@ -129,10 +134,7 @@ pub async fn save_tournament_from_steps(
 
     transaction.commit().await?;
 
-    tracing::info!(
-        "new tournament replayed from steps {}",
-        tournament.get_id().0
-    );
+    tracing::info!("new tournament replayed from steps {}", tournament.get_id());
     tracing::debug!("new tournament replayed from steps {:?}", bracket);
 
     Ok((

@@ -1,29 +1,25 @@
 //! Tournament lifecycle
 
-use crate::guests::{Guest, GuestID};
+use crate::guests::Guest;
 use crate::repositories::brackets::Error;
 use crate::repositories::guests::GuestRepository;
 use crate::repositories::matches::MatchRepository;
 use crate::repositories::players::PlayerRepository;
-use crate::repositories::tournaments::TournamentRepository;
-use crate::repositories::users::UserRepository;
 use crate::services::traits::match_trait::MatchTrait;
 use crate::services::traits::user_trait::UserTrait;
 use crate::tournaments::tournament_players::TournamentPlayer;
-use crate::tournaments::PlayerData;
-use crate::tournaments::{MatchData, ReportResultInput};
-use crate::tournaments::{
-    ParticipantError, Tournament, TournamentAugmentedRecord, TournamentID, TournamentRecord, ID,
-};
+use crate::tournaments::PlayerRecord;
+use crate::tournaments::{MatchRecord, ReportResultInput};
+use crate::tournaments::{ParticipantError, Tournament, TournamentAugmentedRecord};
 use crate::types::{SqlxError, SqlxTransaction};
-use crate::users::registration::{UserID, UserRecord};
+use crate::users::registration::UserRecord;
+use crate::ID;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use totsugeki_core::bracket::seeding::Seeding;
 use totsugeki_core::bracket::Id;
 use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki_core::matches::result::MatchFormat;
-use totsugeki_core::player::{Player, PlayerID};
 use totsugeki_core::validation::AutomaticMatchValidationMode;
 
 /// Create and manage tournaments
@@ -58,7 +54,7 @@ impl TournamentService {
         //  everything associated. Readability
         let _ = sqlx::query!(
             "INSERT INTO tournament_organisers (tournament_id, user_id) VALUES ($1, $2)",
-            tournament.get_id().get(),
+            tournament.get_id(),
             user_id,
         )
         .execute(&mut **transaction)
@@ -73,7 +69,7 @@ impl TournamentService {
     /// Get tournament with matches and players
     pub async fn get_tournament<'a>(
         transaction: SqlxTransaction<'a, '_>,
-        tournament_id: TournamentID,
+        tournament_id: ID,
     ) -> Result<Option<TournamentAugmentedRecord>, SqlxError> {
         Ok(sqlx::query_as!(
             TournamentAugmentedRecord,
@@ -93,9 +89,9 @@ SELECT
                         M.low_seed,
                         M.low_seed_player
         )) 
-    filter ( where ordered_tournament_matches.match_id IS NOT NULL ) as "matches: Vec<MatchData>",
+    filter ( where ordered_tournament_matches.match_id IS NOT NULL ) as "matches: Vec<MatchRecord>",
     ARRAY_AGG(DISTINCT (P.id, COALESCE(U.name, G.name), U.id, G.id)) 
-    filter ( where P.id IS NOT NULL ) as "players: Vec<PlayerData>"
+    filter ( where P.id IS NOT NULL ) as "players: Vec<PlayerRecord>"
 FROM tournaments
          LEFT JOIN (SELECT tournament_id,
                       match_id,
@@ -111,7 +107,7 @@ FROM tournaments
 WHERE tournaments.id = $1
 GROUP BY tournaments.id
             "#,
-            tournament_id.get(),
+            tournament_id,
         )
         // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
         .fetch_optional(&mut **transaction)
@@ -121,7 +117,7 @@ GROUP BY tournaments.id
     /// User joins tournament
     pub async fn join<'a>(
         transaction: SqlxTransaction<'a, '_>,
-        tournament_id: TournamentID,
+        tournament_id: ID,
         user: UserRecord,
     ) -> Result<Option<(Tournament, DoubleEliminationBracket, bool)>, Error> {
         let user_is_player_of_tournament =
@@ -144,8 +140,7 @@ GROUP BY tournaments.id
 
         let (mut tournament, _): (Tournament, _) = tournament_record.parse();
 
-        let tournament_player = TournamentPlayer::new(Some(user.id), None, user.name)
-            .expect("tournament player from user");
+        let tournament_player = TournamentPlayer::new_user(user.id, user.name);
         Self::create_player(transaction, tournament_id, tournament_player.clone()).await?;
         if let Err(e) = tournament.add_player(tournament_player) {
             return match e {
@@ -158,7 +153,7 @@ GROUP BY tournaments.id
                 tournament
                     .get_players()
                     .iter()
-                    .map(|tp| PlayerID::new(tp.get_id()))
+                    .map(|tp| tp.get_id())
                     .collect(),
             )
             .expect("should update seeding of bracket with tournament valid seeding"),
@@ -206,8 +201,7 @@ OFFSET $3
         user_id: Option<ID>,
     ) -> Result<Option<(Tournament, DoubleEliminationBracket, bool)>, SqlxError> {
         let Some(tournament_record) =
-            TournamentService::get_tournament(transaction, TournamentID::from(tournament_id))
-                .await?
+            TournamentService::get_tournament(transaction, tournament_id).await?
         else {
             return Ok(None);
         };
@@ -334,9 +328,10 @@ OFFSET $3
         todo!()
     }
 
+    /// Create `tournament_player` for `tournament_id`
     async fn create_player<'a>(
         transaction: SqlxTransaction<'a, '_>,
-        tournament_id: TournamentID,
+        tournament_id: ID,
         tournament_player: TournamentPlayer,
     ) -> Result<(), SqlxError> {
         assert!(tournament_player.get_user().is_some() ^ tournament_player.get_guest().is_some());
@@ -347,8 +342,8 @@ OFFSET $3
 INSERT INTO players (id, tournament_id, user_id) VALUES ($1, $2, $3);             
                 "#,
                     tournament_player.get_id(),
-                    tournament_id.get(),
-                    user_id.0
+                    tournament_id,
+                    user_id
                 )
                 .execute(&mut **transaction)
                 .await?;
@@ -362,10 +357,10 @@ INSERT INTO players (id, tournament_id, user_id) VALUES ($1, $2, $3);
     /// Add guests from names
     pub async fn add_guests_as_tournament_players<'a>(
         transaction: SqlxTransaction<'a, '_>,
-        tournament_id: TournamentID,
+        tournament_id: ID,
         guest_names: Vec<String>,
     ) -> Result<Vec<TournamentPlayer>, SqlxError> {
-        let guest_ids = GuestRepository::add_many(transaction, guest_names.clone()).await?;
+        let guest_ids = GuestRepository::create_many(transaction, guest_names.clone()).await?;
         let guests = guest_ids
             .iter()
             .zip(guest_names)

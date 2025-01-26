@@ -1,10 +1,8 @@
 //! Tournament player definition
 
-use crate::guests::GuestID;
-use crate::tournaments::ID;
-use crate::users::registration::UserID;
+use crate::ID;
 use serde::Deserialize;
-use totsugeki_core::player::{Player, PlayerID};
+use totsugeki_core::player::Player;
 
 /// Tournament player refer to either a real user or a guest (but NEVER both)
 #[derive(Debug, Clone, Deserialize)]
@@ -12,59 +10,47 @@ pub struct TournamentPlayer {
     /// Player ID
     pub id: ID,
     /// User ID
-    pub user_id: Option<UserID>,
+    pub user_id: Option<ID>,
     /// Guest ID
-    pub guest_id: Option<GuestID>,
+    pub guest_id: Option<ID>,
     /// Name of player
     pub name: String,
 }
 
 impl From<TournamentPlayer> for Player {
     fn from(value: TournamentPlayer) -> Self {
-        Player::from((PlayerID::new(value.id), value.name))
+        Player::from((value.id, value.name))
     }
 }
 
-/// Cannot create tournament player
-#[derive(Debug)]
-pub enum Error {
-    /// Either user ID or guest ID
-    EitherOneOrTheOther(Option<UserID>, Option<GuestID>),
-}
-
 impl TournamentPlayer {
-    /// Create new tournament player
-    pub fn new(
-        user_id: Option<UserID>,
-        guest_id: Option<GuestID>,
-        name: String,
-    ) -> Result<TournamentPlayer, Error> {
-        if let Some(user_id) = user_id {
-            Ok(TournamentPlayer {
-                id: ID::new_v4(),
-                user_id: Some(user_id),
-                guest_id: None,
-                name,
-            })
-        } else if let Some(guest_id) = guest_id {
-            Ok(TournamentPlayer {
-                id: ID::new_v4(),
-                user_id: None,
-                guest_id: Some(guest_id),
-                name,
-            })
-        } else {
-            Err(Error::EitherOneOrTheOther(user_id, guest_id))
+    /// Instantiate tournament player from `user_id`
+    pub fn new_user(user_id: ID, name: String) -> TournamentPlayer {
+        TournamentPlayer {
+            id: ID::new_v4(),
+            user_id: Some(user_id),
+            guest_id: None,
+            name,
+        }
+    }
+
+    /// Instantiate tournament player for new guest
+    pub fn new_guest(name: String) -> TournamentPlayer {
+        TournamentPlayer {
+            id: ID::new_v4(),
+            user_id: None,
+            guest_id: Some(ID::new_v4()),
+            name,
         }
     }
 
     /// Get user ID of player
-    pub fn get_user(&self) -> Option<UserID> {
+    pub fn get_user(&self) -> Option<ID> {
         self.user_id
     }
 
     /// Get guest ID of player
-    pub fn get_guest(&self) -> Option<GuestID> {
+    pub fn get_guest(&self) -> Option<ID> {
         self.guest_id
     }
 

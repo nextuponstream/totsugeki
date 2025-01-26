@@ -13,7 +13,6 @@ pub(crate) mod update_with_result;
 mod user_tournaments;
 
 // Flatten exports when reusing
-use crate::guests::GuestID;
 pub(crate) use crate::tournaments::create::*;
 pub(crate) use crate::tournaments::join::*;
 pub(crate) use crate::tournaments::list::*;
@@ -24,13 +23,13 @@ pub(crate) use crate::tournaments::show::*;
 use crate::tournaments::tournament_players::TournamentPlayer;
 pub(crate) use crate::tournaments::update_with_result::*;
 pub(crate) use crate::tournaments::user_tournaments::*;
-use crate::users::registration::UserID;
+use crate::ID;
 use axum::{response::IntoResponse, Json as AxumJson};
 use bigdecimal::ToPrimitive;
 use chrono::{DateTime, Utc};
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
-use std::fmt::{Display, Formatter};
+use std::fmt::Formatter;
 use time::OffsetDateTime;
 use totsugeki_core::bracket::seeding::Seeding;
 use totsugeki_core::bracket::Id;
@@ -38,7 +37,7 @@ use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki_core::format::Format;
 use totsugeki_core::matches::result::MatchFormat;
 use totsugeki_core::matches::{Match, MatchID};
-use totsugeki_core::player::{Player, PlayerID};
+use totsugeki_core::player::Player;
 use totsugeki_core::validation::AutomaticMatchValidationMode;
 use totsugeki_display::loser_bracket::lines as loser_bracket_lines;
 use totsugeki_display::loser_bracket::reorder as reorder_loser_bracket;
@@ -56,9 +55,9 @@ pub struct ReportResultInput {
     /// tournament
     pub tournament: Tournament,
     /// First player
-    pub p1_id: PlayerID,
+    pub player1_id: ID,
     /// Second player
-    pub p2_id: PlayerID,
+    pub player2_id: ID,
     /// player 1 score
     pub score_p1: u8,
     /// player 2 score
@@ -109,9 +108,9 @@ pub struct CreateTournamentForm {
 #[derive(Deserialize, Serialize, Debug)]
 pub struct PlayerMatchResultReport {
     /// high seed player
-    pub p1_id: PlayerID,
+    pub player1_id: ID,
     /// low seed player
-    pub p2_id: PlayerID,
+    pub player2_id: ID,
     /// score of player 1
     pub score_p1: u8,
     /// score of player 2
@@ -133,7 +132,7 @@ pub struct BracketState {
 fn breakdown(
     tournament: &Tournament,
     bracket: DoubleEliminationBracket,
-    user_id: Option<PlayerID>,
+    user_id: Option<ID>,
     is_tournament_organiser: bool,
 ) -> impl IntoResponse {
     // TODO test if tracing shows from which methods it was called
@@ -280,13 +279,14 @@ pub(crate) struct TournamentAugmentedRecord {
     pub format: Format,
     /// Players of tournament
     // FIXME alway return array and not null for empty array
-    pub players: Option<Vec<PlayerData>>,
+    pub players: Option<Vec<PlayerRecord>>,
     /// Matches
-    pub matches: Option<Vec<MatchData>>,
+    pub matches: Option<Vec<MatchRecord>>,
 }
 
+/// Represents a tournament player from the `players` database table
 #[derive(sqlx::Type, Deserialize, Serialize, Clone)]
-pub(crate) struct PlayerData {
+pub(crate) struct PlayerRecord {
     /// User ID of player
     pub id: ID,
     /// Name of player
@@ -298,19 +298,20 @@ pub(crate) struct PlayerData {
     pub guest_id: Option<ID>,
 }
 
-impl From<PlayerData> for TournamentPlayer {
-    fn from(value: PlayerData) -> Self {
+impl From<PlayerRecord> for TournamentPlayer {
+    fn from(value: PlayerRecord) -> Self {
         Self {
             id: value.id,
-            user_id: value.user_id.map(|id| UserID::from(id)),
-            guest_id: value.guest_id.map(|id| GuestID::new(id)),
+            user_id: value.user_id,
+            guest_id: value.guest_id,
             name: value.name.expect("name"),
         }
     }
 }
 
+/// Represents a match retrieved from the `matches` database table.
 #[derive(sqlx::Type, Deserialize, Serialize, Clone)]
-pub(crate) struct MatchData {
+pub(crate) struct MatchRecord {
     /// Index of match, useful for display purpose
     pub pos: i16,
     /// Match ID
@@ -329,8 +330,8 @@ pub(crate) struct MatchData {
     pub low_seed_player: Option<ID>,
 }
 
-impl From<MatchData> for Match {
-    fn from(value: MatchData) -> Self {
+impl From<MatchRecord> for Match {
+    fn from(value: MatchRecord) -> Self {
         let players = [value.high_seed_player.into(), value.low_seed_player.into()];
         let seeds = [
             value.high_seed.to_usize().expect("high seed"),
@@ -344,9 +345,9 @@ impl From<MatchData> for Match {
     }
 }
 
-impl From<PlayerData> for Player {
-    fn from(value: PlayerData) -> Self {
-        Player::from((PlayerID(value.id), value.name.expect("name").as_str()))
+impl From<PlayerRecord> for Player {
+    fn from(value: PlayerRecord) -> Self {
+        Player::from((value.id, value.name.expect("name").as_str()))
     }
 }
 
@@ -374,7 +375,7 @@ impl TournamentAugmentedRecord {
 impl From<TournamentAugmentedRecord> for Tournament {
     fn from(value: TournamentAugmentedRecord) -> Self {
         Self {
-            id: TournamentID::from(value.id),
+            id: value.id,
             name: value.name,
             start_time: None, // FIXME
             end_time: None,   // FIXME
@@ -383,38 +384,6 @@ impl From<TournamentAugmentedRecord> for Tournament {
                 players.into_iter().map(|p| p.into()).collect()
             }),
         }
-    }
-}
-
-/// Identifier
-pub type ID = Uuid;
-
-/// ID format for tournament
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
-pub struct TournamentID(ID);
-
-impl Default for TournamentID {
-    fn default() -> Self {
-        TournamentID(ID::new_v4())
-    }
-}
-
-impl TournamentID {
-    /// Get uuid
-    pub fn get(&self) -> ID {
-        self.0
-    }
-}
-
-impl From<Uuid> for TournamentID {
-    fn from(value: Uuid) -> Self {
-        Self(value)
-    }
-}
-
-impl Display for TournamentID {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
     }
 }
 
@@ -428,8 +397,8 @@ impl Display for TournamentID {
 #[derive(Clone, Debug, Deserialize)]
 #[allow(unused)]
 pub struct Tournament {
-    /// Identifier of this bracket
-    id: TournamentID,
+    /// Identifier of tournament
+    id: ID,
     /// Name of tournament
     name: String,
     /// Advertised start time
@@ -445,7 +414,7 @@ pub struct Tournament {
 impl Default for Tournament {
     fn default() -> Self {
         Self {
-            id: TournamentID(ID::new_v4()),
+            id: ID::new_v4(),
             name: String::new(),
             start_time: None,
             end_time: None,
@@ -470,7 +439,7 @@ pub struct Participants(pub Vec<Player>);
 
 impl Participants {
     /// Ordered list for seeding
-    pub fn get_seeding(&self) -> Vec<PlayerID> {
+    pub fn get_seeding(&self) -> Vec<ID> {
         self.0.iter().map(Player::get_id).collect()
     }
 }
@@ -489,18 +458,16 @@ impl Tournament {
     }
 
     /// Create new guests from `guest_names`
-    pub fn add_guests(&mut self, guest_names: Vec<String>) {
+    pub fn add_guests(&mut self, guest_names: &[String]) {
         for (index, guest_name) in guest_names.iter().enumerate() {
-            let tournament_player =
-                TournamentPlayer::new(None, Some(GuestID::default()), guest_name.clone())
-                    .expect("tournament player from new guest");
-            self.players.push(tournament_player)
+            let tournament_player = TournamentPlayer::new_guest(guest_name.clone());
+            self.players.push(tournament_player);
         }
     }
 
     /// Get ID
     #[must_use]
-    pub fn get_id(&self) -> TournamentID {
+    pub fn get_id(&self) -> ID {
         self.id
     }
 
