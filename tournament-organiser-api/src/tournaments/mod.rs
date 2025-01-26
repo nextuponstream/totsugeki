@@ -29,14 +29,13 @@ use bigdecimal::ToPrimitive;
 use chrono::{DateTime, Utc};
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
-use std::fmt::Formatter;
 use time::OffsetDateTime;
 use totsugeki_core::bracket::seeding::Seeding;
 use totsugeki_core::bracket::Id;
 use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki_core::format::Format;
 use totsugeki_core::matches::result::MatchFormat;
-use totsugeki_core::matches::{Match, MatchID};
+use totsugeki_core::matches::Match;
 use totsugeki_core::player::Player;
 use totsugeki_core::validation::AutomaticMatchValidationMode;
 use totsugeki_display::loser_bracket::lines as loser_bracket_lines;
@@ -44,7 +43,6 @@ use totsugeki_display::loser_bracket::reorder as reorder_loser_bracket;
 use totsugeki_display::winner_bracket::lines as winner_bracket_lines;
 use totsugeki_display::winner_bracket::reorder as reorder_winner_bracket;
 use totsugeki_display::{from_participants, BoxElement, MinimalMatch};
-use uuid::Uuid;
 use validator::Validate;
 
 /// List of players from which a bracket can be created
@@ -340,8 +338,7 @@ impl From<MatchRecord> for Match {
         let format =
             MatchFormat::new(value.format_n.to_u8().expect("format n")).expect("match format");
 
-        Match::new(Some(MatchID::from(value.match_id)), players, seeds, format)
-            .expect("match from match data")
+        Match::new(Some(value.match_id), players, seeds, format).expect("match from match data")
     }
 }
 

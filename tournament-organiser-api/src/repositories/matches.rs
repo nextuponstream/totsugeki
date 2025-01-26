@@ -3,7 +3,7 @@
 use crate::types::{SqlxError, SqlxTransaction};
 use bigdecimal::ToPrimitive;
 use totsugeki_core::matches::result::MatchFormat;
-use totsugeki_core::matches::{Match, MatchID};
+use totsugeki_core::matches::Match;
 use totsugeki_core::opponent::Opponent;
 use totsugeki_core::ID;
 
@@ -24,7 +24,7 @@ impl MatchRepository {
             println!("---");
             println!(
                 "{}\n{:?}\n{:?}\n{:?}\n{:?}\n{}\n{}",
-                m.get_id().0,
+                m.get_id(),
                 high_seed.to_i16(),
                 m.get_players()[0].0,
                 low_seed.to_i16(),
@@ -43,7 +43,7 @@ low_seed_player,
 format,
 format_n
 ) VALUES ($1, $2, $3, $4, $5, $6, $7)"#,
-                m.get_id().0,
+                m.get_id(),
                 high_seed.to_i16(),
                 m.get_players()[0].0,
                 low_seed.to_i16(),
@@ -65,7 +65,7 @@ pub(crate) struct TournamentMatch {
     /// tournament ID
     pub tournament_id: ID,
     /// match ID
-    pub match_id: MatchID,
+    pub match_id: ID,
     /// order of match (unique for each match in tournament)
     pub pos: i16,
     /// presumed stronger player
