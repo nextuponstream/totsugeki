@@ -1,6 +1,5 @@
 //! New unsaved bracket
 
-use crate::guests::Guest;
 use crate::tournaments::tournament_players::TournamentPlayer;
 use crate::tournaments::Tournament;
 use crate::tournaments::{breakdown, CreateTournamentForm};
@@ -10,7 +9,6 @@ use http::StatusCode;
 use totsugeki_core::bracket::seeding::Seeding;
 use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki_core::matches::result::MatchFormat;
-use totsugeki_core::player::Player;
 use totsugeki_core::validation::AutomaticMatchValidationMode;
 use tracing::instrument;
 

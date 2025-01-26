@@ -1,6 +1,6 @@
 //! Reusable match queries
 
-use crate::repositories::matches::TournamentMatch;
+use crate::repositories::matches::TournamentMatchRecord;
 use crate::types::{SqlxError, SqlxTransaction};
 use totsugeki_core::matches::Match;
 use totsugeki_core::ID;
@@ -8,12 +8,12 @@ use totsugeki_core::ID;
 /// Reusable match queries
 pub trait MatchTrait {
     /// Get matches of given `tournament_id`
-    async fn get_for_tournament<'a>(
+    async fn get_matches_for_tournament<'a>(
         transaction: SqlxTransaction<'a, '_>,
         tournament_id: ID,
     ) -> Result<Vec<Match>, SqlxError> {
         let matches = sqlx::query_as!(
-            TournamentMatch,
+            TournamentMatchRecord,
             r#"
 SELECT * from tournament_matches
 LEFT JOIN matches on tournament_matches.match_id = matches.id

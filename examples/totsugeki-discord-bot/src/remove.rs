@@ -12,9 +12,9 @@ use totsugeki_core::bracket::seeding::Seeding;
 use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki_core::format::Format;
 use totsugeki_core::matches::result::MatchFormat;
-use totsugeki_core::player::PlayerID;
 use totsugeki_core::single_elimination_bracket::SingleEliminationBracket;
 use totsugeki_core::validation::AutomaticMatchValidationMode;
+use totsugeki_core::ID;
 use tracing::{info, span, Level};
 
 #[command]
@@ -23,7 +23,7 @@ use tracing::{info, span, Level};
 async fn remove(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let span = span!(Level::INFO, "Remove player from bracket");
     span.in_scope(|| async {
-        let player_id = args.single::<PlayerID>()?;
+        let player_id = args.single::<ID>()?;
 
         let data = ctx.data.read().await;
         let config = data.get::<Config>().expect("filename").clone();
@@ -38,7 +38,7 @@ async fn remove(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                 let seeding = seeding
                     .into_iter()
                     .filter(|id| *id != player_id)
-                    .collect::<Vec<PlayerID>>();
+                    .collect::<Vec<ID>>();
                 let seb = SingleEliminationBracket::create(
                     Seeding::new(seeding).expect("seeding from player list"),
                     AutomaticMatchValidationMode::Flexible,
@@ -63,7 +63,7 @@ async fn remove(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                 let seeding = seeding
                     .into_iter()
                     .filter(|id| *id != player_id)
-                    .collect::<Vec<PlayerID>>();
+                    .collect::<Vec<ID>>();
                 let deb = DoubleEliminationBracket::create(
                     Seeding::new(seeding).expect("seeding from player list"),
                     AutomaticMatchValidationMode::Flexible,

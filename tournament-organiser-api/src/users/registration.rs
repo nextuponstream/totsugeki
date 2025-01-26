@@ -1,21 +1,21 @@
 //! registration
 
-use crate::http::{Error, ErrorSlug};
+use crate::http::Error;
 use crate::repositories::users::UserRepository;
 use crate::ApiResponse;
 use argon2::password_hash::SaltString;
 use argon2::Argon2;
 use argon2::PasswordHasher;
+use axum::debug_handler;
 use axum::extract::State;
 use axum::response::{IntoResponse, Json};
 use http::StatusCode;
 use secrecy::{ExposeSecret, SecretString};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use sqlx::postgres::PgPool;
-use sqlx::{Postgres, Transaction};
+use time::OffsetDateTime;
 use totsugeki_core::ID;
 use tracing::instrument;
-use uuid::Uuid;
 use zxcvbn::zxcvbn;
 
 /// User registration form input with secret input to avoid it being exposed
@@ -58,15 +58,6 @@ pub struct UserRecord {
     /// user email address
     pub email: String,
 }
-
-async fn get_transaction_from_pool<'a>(
-    pg_pool: PgPool,
-) -> Result<Transaction<'a, Postgres>, ErrorSlug> {
-    Ok(pg_pool.begin().await?)
-}
-
-use axum::debug_handler;
-use time::OffsetDateTime;
 
 /// `/register` endpoint for health check
 #[instrument(name = "user_registration", skip(pool))]

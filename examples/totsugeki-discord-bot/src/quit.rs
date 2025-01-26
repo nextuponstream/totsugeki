@@ -12,9 +12,9 @@ use totsugeki_core::bracket::seeding::Seeding;
 use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki_core::format::Format;
 use totsugeki_core::matches::result::MatchFormat;
-use totsugeki_core::player::PlayerID;
 use totsugeki_core::single_elimination_bracket::SingleEliminationBracket;
 use totsugeki_core::validation::AutomaticMatchValidationMode;
+use totsugeki_core::ID;
 use tracing::{info, span, warn, Level};
 
 #[command]
@@ -45,7 +45,7 @@ async fn quit(ctx: &Context, msg: &Message) -> CommandResult {
                 let seeding = seeding
                     .into_iter()
                     .filter(|id| *id != player.get_id())
-                    .collect::<Vec<PlayerID>>();
+                    .collect::<Vec<ID>>();
                 let seb = SingleEliminationBracket::create(
                     Seeding::new(seeding).expect("seeding should not contain user"),
                     AutomaticMatchValidationMode::Flexible,
@@ -70,7 +70,7 @@ async fn quit(ctx: &Context, msg: &Message) -> CommandResult {
                 let seeding = seeding
                     .into_iter()
                     .filter(|id| *id != player.get_id())
-                    .collect::<Vec<PlayerID>>();
+                    .collect::<Vec<ID>>();
                 let deb = DoubleEliminationBracket::create(
                     Seeding::new(seeding).expect("seeding should not contain user"),
                     AutomaticMatchValidationMode::Flexible,

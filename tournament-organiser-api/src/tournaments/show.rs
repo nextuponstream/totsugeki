@@ -1,6 +1,6 @@
 //! Show bracket
 
-use crate::http::{internal_error, ErrorSlug};
+use crate::http::ErrorSlug;
 use crate::services::tournaments::TournamentService;
 use crate::tournaments::breakdown;
 use crate::types::ConnectionPool;

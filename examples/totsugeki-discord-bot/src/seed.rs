@@ -13,9 +13,9 @@ use totsugeki_core::bracket::seeding::Seeding;
 use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki_core::format::Format;
 use totsugeki_core::matches::result::MatchFormat;
-use totsugeki_core::player::PlayerID;
 use totsugeki_core::single_elimination_bracket::SingleEliminationBracket;
 use totsugeki_core::validation::AutomaticMatchValidationMode;
+use totsugeki_core::ID;
 use tracing::{info, span, warn, Level};
 
 #[command]
@@ -25,7 +25,7 @@ use tracing::{info, span, warn, Level};
 async fn seed(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let span = span!(Level::INFO, "Seed bracket command");
     span.in_scope(|| async {
-        let players = args.iter::<PlayerID>().collect::<Result<Vec<_>, _>>()?;
+        let players = args.iter::<ID>().collect::<Result<Vec<_>, _>>()?;
 
         let data = ctx.data.read().await;
         let config = data.get::<Config>().expect("filename").clone();

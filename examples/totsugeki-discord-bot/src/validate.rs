@@ -10,8 +10,8 @@ use serenity::{
     model::channel::Message,
 };
 use totsugeki_core::format::Format;
-use totsugeki_core::matches::MatchID;
 use totsugeki_core::opponent::Opponent;
+use totsugeki_core::ID;
 use tracing::{info, span, Level};
 
 #[command]
@@ -20,7 +20,7 @@ use tracing::{info, span, Level};
 async fn validate(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let span = span!(Level::INFO, "Validate match in bracket command");
     span.in_scope(|| async {
-        let match_id = args.parse::<MatchID>()?;
+        let match_id = args.parse::<ID>()?;
 
         let data = ctx.data.read().await;
         let config = data.get::<Config>().expect("filename").clone();

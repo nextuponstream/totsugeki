@@ -86,7 +86,8 @@ impl IntoResponse for ErrorSlug {
     }
 }
 
-/// Log the error and give an opaque response
+/// Log the error and give an opaque response. You should try to implement
+/// From<...> IntoResponse instead of using this if possible.
 ///
 /// Because of the orphan rule, this becomes necessary. Otherwise, you'd do
 /// someSqlxOperation?; within a function that returns `AxumResponse`
@@ -99,7 +100,9 @@ impl IntoResponse for ErrorSlug {
 ///
 /// idea: <https://github.com/tokio-rs/axum/blob/52ae7bb904cc374ad0acdc08ae03760a71d95ac2/examples/sqlx-postgres/src/main.rs>
 pub(crate) fn internal_error<E: Debug>(err: E) -> ErrorSlug {
-    tracing::error!("{err:?}");
+    // place a break point here when debugging
+    let msg = format!("{err:?}");
+    tracing::error!("{msg}");
     ErrorSlug::new(StatusCode::INTERNAL_SERVER_ERROR, "internal-error")
 }
 

@@ -211,13 +211,10 @@ async fn save_tournament(db: PgPool) {
     );
 }
 #[sqlx::test(fixtures("3_players_tournament"))]
-async fn join_tournament(mut db: PgPool) {
-    let app = spawn_app(db.clone()).await;
+async fn join_tournament(db: PgPool) {
+    let app = spawn_app(db).await;
     app.login_as_test_user().await;
 
-    let mut transaction = db.begin().await.unwrap();
-
-    // FIXME use api calls only
     let id: ID = "62aefc4c-d6ec-4c2f-98f0-b639688cbe0c".try_into().unwrap();
     let response = app.join_tournament(id).await;
     let status = response.status();

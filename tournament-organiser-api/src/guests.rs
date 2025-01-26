@@ -1,7 +1,6 @@
 //! Guest user definition
 
 use crate::ID;
-use serde::{Deserialize, Serialize};
 
 /// Guests are not real users
 pub struct Guest(pub(crate) ID, pub(crate) String);

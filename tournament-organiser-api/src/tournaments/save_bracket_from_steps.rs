@@ -1,12 +1,9 @@
 //! Save bracket from steps
 
-use crate::guests::Guest;
-use crate::http::{internal_error, ErrorSlug};
-use crate::repositories::guests::GuestRepository;
+use crate::http::ErrorSlug;
 use crate::repositories::players::PlayerRepository;
 use crate::repositories::tournaments::TournamentRepository;
 use crate::services::tournaments::TournamentService;
-use crate::tournaments::tournament_players::TournamentPlayer;
 use crate::tournaments::Tournament;
 use crate::tournaments::{breakdown, BracketState};
 use crate::users::session::Keys;

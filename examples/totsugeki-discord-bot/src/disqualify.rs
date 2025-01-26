@@ -9,7 +9,7 @@ use serenity::{
 };
 use std::{io::prelude::*, path::Path};
 use totsugeki_core::format::Format;
-use totsugeki_core::player::PlayerID;
+use totsugeki_core::ID;
 use tracing::{info, span, warn, Level};
 
 #[command]
@@ -19,7 +19,7 @@ use tracing::{info, span, warn, Level};
 async fn disqualify(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let span = span!(Level::INFO, "Disqualify player from bracket");
     span.in_scope(|| async {
-        let player_id = args.single::<PlayerID>()?;
+        let player_id = args.single::<ID>()?;
         let data = ctx.data.read().await;
         let config = data.get::<Config>().expect("filename").clone();
         let bracket_data = data.get::<Data>().expect("data").clone();

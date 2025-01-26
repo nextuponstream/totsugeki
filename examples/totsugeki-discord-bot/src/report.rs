@@ -10,9 +10,8 @@ use serenity::{
 use std::{io::prelude::*, path::Path};
 use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki_core::format::Format;
-use totsugeki_core::player::PlayerID;
 use totsugeki_core::validation::AutomaticMatchValidationMode;
-use totsugeki_core::{matches::ReportedResult, opponent::Opponent};
+use totsugeki_core::{matches::ReportedResult, opponent::Opponent, ID};
 use tracing::{info, span, warn, Level};
 
 #[command]
@@ -165,9 +164,9 @@ async fn tournament_organiser_reports(
     // NOTE: workaround since instrument macro conflict with discords
     let span = span!(Level::INFO, "Report bracket command");
     span.in_scope(|| async {
-        let player1 = args.single::<PlayerID>()?;
+        let player1 = args.single::<ID>()?;
         let reported_result = args.single::<ReportedResult>()?;
-        let player2 = args.single::<PlayerID>()?;
+        let player2 = args.single::<ID>()?;
 
         let data = ctx.data.read().await;
         let config = data.get::<Config>().expect("filename").clone();

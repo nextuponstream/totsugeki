@@ -456,7 +456,7 @@ impl Tournament {
 
     /// Create new guests from `guest_names`
     pub fn add_guests(&mut self, guest_names: &[String]) {
-        for (index, guest_name) in guest_names.iter().enumerate() {
+        for guest_name in guest_names {
             let tournament_player = TournamentPlayer::new_guest(guest_name.clone());
             self.players.push(tournament_player);
         }

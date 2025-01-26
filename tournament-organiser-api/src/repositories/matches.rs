@@ -58,8 +58,8 @@ format_n
     }
 }
 
-/// Tournament match
-pub(crate) struct TournamentMatch {
+/// Tournament match from database
+pub(crate) struct TournamentMatchRecord {
     /// relationship tournament-match ID
     pub id: ID,
     /// tournament ID
@@ -78,12 +78,12 @@ pub(crate) struct TournamentMatch {
     pub low_seed: i16,
     /// match format (example: first to X)
     pub format: String,
-    /// additionnal information about match format (example: first to 3)
+    /// additional information about match format (example: first to 3)
     pub format_n: i16,
 }
 
-impl From<TournamentMatch> for Match {
-    fn from(value: TournamentMatch) -> Self {
+impl From<TournamentMatchRecord> for Match {
+    fn from(value: TournamentMatchRecord) -> Self {
         let seeds: [usize; 2] = [
             value.high_seed.to_usize().expect("high seed"),
             value.low_seed.to_usize().expect("low seed"),
