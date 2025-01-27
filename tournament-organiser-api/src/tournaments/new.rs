@@ -5,6 +5,7 @@ use crate::tournaments::Tournament;
 use crate::tournaments::{breakdown, CreateTournamentForm};
 use axum::response::IntoResponse;
 use axum::Json;
+use bigdecimal::ToPrimitive;
 use http::StatusCode;
 use totsugeki_core::bracket::seeding::Seeding;
 use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
@@ -26,8 +27,9 @@ pub async fn new_bracket(Json(form): Json<CreateTournamentForm>) -> impl IntoRes
 
     let mut tournament = Tournament::default();
     tournament.set_name(form.tournament_name);
-    for name in form.player_names {
-        let tournament_player = TournamentPlayer::new_guest(name);
+    for (index, name) in form.player_names.iter().enumerate() {
+        let tournament_player =
+            TournamentPlayer::new_guest(name.clone(), (index + 1).to_i16().unwrap());
         let Ok(()) = tournament.add_player(tournament_player) else {
             // FIXME actual error handling
             return Err(StatusCode::INTERNAL_SERVER_ERROR);

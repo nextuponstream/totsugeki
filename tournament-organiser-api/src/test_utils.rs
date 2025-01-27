@@ -12,12 +12,13 @@ pub struct TestApp {
 }
 
 use super::{app, Expiry, PgPool, PostgresStore, SessionManagerLayer, SocketAddr};
-use crate::tournaments::{BracketState, CreateTournamentForm};
+use crate::tournaments::{BracketState, CreateTournamentForm, ReportResultInput};
 use crate::ID;
 use reqwest::{Client, Response};
 use serde::Serialize;
 use time::Duration;
 use tokio::net::TcpListener;
+use totsugeki_core::matches::result::Score;
 
 /// Returns address to connect to new application (with random available port)
 ///
@@ -84,12 +85,13 @@ impl TestApp {
     /// register user through `/api/register` endpoint with a POST request
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
     pub async fn register(&self, request: &FormUserInput) -> Response {
+        let url = format!("{}/api/register", self.addr);
         self.http_client
-            .post(format!("{}/api/register", self.addr))
+            .post(&url)
             .json(request)
             .send()
             .await
-            .expect("request done")
+            .unwrap_or_else(|err| panic!("POST request to {url}: {err}"))
     }
 
     /// login user through `/api/login` endpoint with a POST request and store
@@ -97,23 +99,25 @@ impl TestApp {
     /// future requests
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
     pub async fn login(&self, request: &LoginForm) -> Response {
+        let url = format!("{}/api/login", self.addr);
         self.http_client
-            .post(format!("{}/api/login", self.addr))
+            .post(&url)
             .basic_auth(&request.email, Some(&request.password))
             .send()
             .await
-            .expect("request done")
+            .unwrap_or_else(|err| panic!("POST request to {url}: {err}"))
     }
 
     /// `/api/users DELETE` Delete user if logged in. User deleted is logged-in
     /// user. You must log in for this request to succeed.
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
     pub async fn delete_user(&self) -> Response {
+        let url = format!("{}/api/users", self.addr);
         self.http_client
-            .delete(format!("{}/api/users", self.addr))
+            .delete(&url)
             .send()
             .await
-            .expect("request done")
+            .unwrap_or_else(|err| panic!("DELETE request to {url}: {err}"))
     }
 
     /// Chains user registration and user login for a new user.
@@ -156,59 +160,81 @@ impl TestApp {
             tournament_name: "placeholder".into(),
             player_names: players,
         };
+        let url = format!("{}/api/tournaments", self.addr);
         self.http_client
-            .post(format!("{}/api/tournaments", self.addr))
+            .post(&url)
             .json(&request)
             .send()
             .await
-            .expect("request done")
+            .unwrap_or_else(|err| panic!("POST request to {url}: {err}"))
     }
 
     /// `/api/tournaments/:id` GET
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
     pub async fn get_tournament(&self, id: ID) -> Response {
+        let url = format!("{}/api/tournaments/{id}", self.addr);
         self.http_client
-            .get(format!("{}/api/tournaments/{id}", self.addr))
+            .get(&url)
             .send()
             .await
-            .expect("request done")
+            .unwrap_or_else(|err| panic!("GET request to {url}: {err}"))
     }
 
     /// `/api/tournaments` GET
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
     pub async fn list_brackets(&self, limit: u32, offset: u32) -> Response {
+        let url = format!(
+            "{}/api/tournaments?limit={}&offset={}&sort_order=DESC",
+            self.addr, limit, offset
+        );
         self.http_client
-            .get(format!(
-                "{}/api/tournaments?limit={}&offset={}&sort_order=DESC",
-                self.addr, limit, offset
-            ))
+            .get(&url)
             .send()
             .await
-            .expect("request done")
+            .unwrap_or_else(|err| panic!("GET request to {url}: {err}"))
     }
 
     /// `/api/tournaments/save` POST
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
     pub async fn save_tournament(&self, state: BracketState) -> Response {
         let request = state;
+        let url = format!("{}/api/tournaments/save", self.addr);
         self.http_client
-            .post(format!("{}/api/tournaments/save", self.addr))
+            .post(&url)
             .json(&request)
             .send()
             .await
-            .expect("request done")
+            .unwrap_or_else(|err| panic!("POST request to {url}: {err}"))
     }
 
     /// `/api/tournaments/:bracket_id/join` POST
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
     pub async fn join_tournament(&self, tournament_id: ID) -> Response {
+        let url = format!("{}/api/tournaments/{}/join", self.addr, tournament_id);
         self.http_client
-            .post(format!(
-                "{}/api/tournaments/{}/join",
-                self.addr, tournament_id
-            ))
+            .post(&url)
             .send()
             .await
-            .expect("request done")
+            .unwrap_or_else(|err| panic!("POST request to {url}: {err}"))
+    }
+
+    /// `/api/tournaments/:tournament_id/report` POST
+    #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
+    pub async fn report_score_for_tournament(&self, tournament_id: ID, score: Score) -> Response {
+        let url = format!("{}/api/tournaments/{}/score", self.addr, tournament_id);
+        let pink_player_id = "dab8c793-f134-44f5-aa7e-87fa644ba9c4";
+        let john_mid_player_id = "75e3cf69-f89b-40f1-a047-00b55701e1b0";
+        // FIXME when sending 0-0, should respond 400
+        self.http_client
+            .post(&url)
+            .json(&ReportResultInput {
+                player1_id: pink_player_id.try_into().unwrap(),
+                player2_id: john_mid_player_id.try_into().unwrap(),
+                score_p1: 2,
+                score_p2: 0,
+            })
+            .send()
+            .await
+            .unwrap_or_else(|err| panic!("POST request to {url}: {err}"))
     }
 }

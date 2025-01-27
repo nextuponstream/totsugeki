@@ -3,9 +3,12 @@
 -- need to persist the info that 1 player has joined the tournament
 CREATE TABLE players
 (
-    id            uuid NOT NULL DEFAULT gen_random_uuid(),
+    id            uuid     NOT NULL DEFAULT gen_random_uuid(),
     PRIMARY KEY (id),
-    tournament_id uuid NOT NULL REFERENCES tournaments (id),
+    tournament_id uuid     NOT NULL REFERENCES tournaments (id),
+    seeding_index smallint NOT NULL
+        CONSTRAINT seeding_index
+            CHECK (seeding_index > 0),
     user_id       uuid REFERENCES users (id),
     guest_id      uuid REFERENCES guests (id)
         -- user_id XOR guest_id

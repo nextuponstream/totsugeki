@@ -5,6 +5,7 @@ use crate::tournaments::tournament_players::TournamentPlayer;
 use crate::tournaments::PlayerRecord;
 use crate::types::{SqlxError, SqlxTransaction};
 use crate::ID;
+use bigdecimal::ToPrimitive;
 
 /// Persist players of tournament
 pub struct PlayerRepository {}
@@ -39,13 +40,14 @@ AND tournament_id = $2
         guests: Vec<Guest>,
     ) -> Result<Vec<TournamentPlayer>, SqlxError> {
         let mut players = vec![];
-        for guest in guests {
+        for (index, guest) in guests.iter().enumerate() {
             let player_id = sqlx::query!(
                 r#"
-INSERT INTO players (tournament_id, guest_id) VALUEs ($1, $2) RETURNING id;
+INSERT INTO players (tournament_id, guest_id, seeding_index) VALUEs ($1, $2, $3) RETURNING id;
               "#,
                 tournament_id,
                 guest.get_id(),
+                (index + 1).to_i16().unwrap(),
             )
             .fetch_one(&mut **transaction)
             .await?
@@ -55,6 +57,7 @@ INSERT INTO players (tournament_id, guest_id) VALUEs ($1, $2) RETURNING id;
                 user_id: None,
                 guest_id: Some(guest.get_id()),
                 name: guest.get_name(),
+                seeding: (index + 1).try_into().expect("seeding"),
             };
             players.push(player);
         }
@@ -74,7 +77,8 @@ SELECT
     players.id,
     user_id,
     guest_id,
-    COALESCE (U.name, G.name, '') as name
+    COALESCE (U.name, G.name, '') as name,
+    seeding_index
 FROM players
 LEFT JOIN users U ON players.user_id = U.id
 LEFT JOIN guests G ON players.guest_id = G.id

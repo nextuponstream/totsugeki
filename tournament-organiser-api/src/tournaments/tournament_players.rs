@@ -15,6 +15,8 @@ pub struct TournamentPlayer {
     pub guest_id: Option<ID>,
     /// Name of player
     pub name: String,
+    /// Seeding of player
+    pub seeding: i16,
 }
 
 impl From<TournamentPlayer> for Player {
@@ -25,22 +27,24 @@ impl From<TournamentPlayer> for Player {
 
 impl TournamentPlayer {
     /// Instantiate tournament player from `user_id`
-    pub fn new_user(user_id: ID, name: String) -> TournamentPlayer {
+    pub fn new_user(user_id: ID, name: String, seeding: i16) -> TournamentPlayer {
         TournamentPlayer {
             id: ID::new_v4(),
             user_id: Some(user_id),
             guest_id: None,
             name,
+            seeding,
         }
     }
 
     /// Instantiate tournament player for new guest
-    pub fn new_guest(name: String) -> TournamentPlayer {
+    pub fn new_guest(name: String, seeding: i16) -> TournamentPlayer {
         TournamentPlayer {
             id: ID::new_v4(),
             user_id: None,
             guest_id: Some(ID::new_v4()),
             name,
+            seeding,
         }
     }
 

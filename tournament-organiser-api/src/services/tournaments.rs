@@ -14,12 +14,13 @@ use crate::tournaments::{ParticipantError, Tournament, TournamentAugmentedRecord
 use crate::types::{SqlxError, SqlxTransaction};
 use crate::users::registration::UserRecord;
 use crate::ID;
+use bigdecimal::ToPrimitive;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use totsugeki_core::bracket::seeding::Seeding;
 use totsugeki_core::bracket::Id;
 use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
-use totsugeki_core::matches::result::MatchFormat;
+use totsugeki_core::matches::result::{MatchFormat, Score};
 use totsugeki_core::validation::AutomaticMatchValidationMode;
 
 /// Create and manage tournaments
@@ -90,7 +91,7 @@ SELECT
                         M.low_seed_player
         )) 
     filter ( where ordered_tournament_matches.match_id IS NOT NULL ) as "matches: Vec<MatchRecord>",
-    ARRAY_AGG(DISTINCT (P.id, COALESCE(U.name, G.name), U.id, G.id)) 
+    ARRAY_AGG(DISTINCT (P.id, COALESCE(U.name, G.name), U.id, G.id, P.seeding_index)) 
     filter ( where P.id IS NOT NULL ) as "players: Vec<PlayerRecord>"
 FROM tournaments
          LEFT JOIN (SELECT tournament_id,
@@ -140,7 +141,10 @@ GROUP BY tournaments.id
 
         let (mut tournament, _): (Tournament, _) = tournament_record.parse();
 
-        let tournament_player = TournamentPlayer::new_user(user.id, user.name);
+        let seeding = tournament.get_players().iter().count() + 1;
+
+        let tournament_player =
+            TournamentPlayer::new_user(user.id, user.name, seeding.to_i16().unwrap());
         Self::create_player(transaction, tournament_id, tournament_player.clone()).await?;
         if let Err(e) = tournament.add_player(tournament_player) {
             return match e {
@@ -294,38 +298,23 @@ OFFSET $3
         Option<(Tournament, DoubleEliminationBracket)>,
         crate::tournaments::update_with_result::Error,
     > {
-        // let Some(tournament_record) = sqlx::query_as!(
-        // TournamentRecord,
-        // r#"SELECT id, name, matches as "matches: SqlxJson<MatchesRaw>", created_at, participants as "participants: SqlxJson<Participants>" from tournaments WHERE id = $1"#,
-        // tournament_id,
-        // )
-        //     // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
-        //     .fetch_optional(&mut **transaction)
-        //     .await?
-        //     else {
-        //         return Ok(None);
-        //     };
-        // let (tournament, bracket) = tournament_record.parse();
-        //
-        // // FIXME actual error handling
-        // let (bracket, _, _) = bracket.tournament_organiser_reports_result_dangerous(
-        //     report.p1_id,
-        //     Score(report.score_p1, report.score_p2),
-        //     report.p2_id,
-        // )?;
-        // let _r = sqlx::query!(
-        //     r#"
-        // UPDATE tournaments
-        //     SET matches = $1
-        // WHERE id = $2
-        // "#,
-        //     SqlxJson(bracket.get_matches()) as _,
-        //     tournament.get_id().0,
-        // )
-        // .execute(&mut **transaction)
-        // .await?;
-        // Ok(Some((tournament, bracket)))
-        todo!()
+        let Some(tournament) =
+            TournamentService::get_tournament(transaction, tournament_id).await?
+        else {
+            return Ok(None);
+        };
+
+        let double_elimination_bracket: DoubleEliminationBracket = tournament.clone().into();
+        // FIXME actual error handling
+        let (double_elimination_bracket, _, _) = double_elimination_bracket
+            .tournament_organiser_reports_result_dangerous(
+                report.player1_id,
+                Score(report.score_p1, report.score_p2),
+                report.player2_id,
+            )?;
+        let tournament = Tournament::from(tournament);
+        MatchRepository::update_many(transaction, double_elimination_bracket.get_matches()).await?;
+        Ok(Some((tournament.into(), double_elimination_bracket)))
     }
 
     /// Create `tournament_player` for `tournament_id`
@@ -339,11 +328,12 @@ OFFSET $3
             (Some(user_id), None) => {
                 sqlx::query!(
                     r#"
-INSERT INTO players (id, tournament_id, user_id) VALUES ($1, $2, $3);             
+INSERT INTO players (id, tournament_id, user_id, seeding_index) VALUES ($1, $2, $3, $4);             
                 "#,
                     tournament_player.get_id(),
                     tournament_id,
-                    user_id
+                    user_id,
+                    tournament_player.seeding
                 )
                 .execute(&mut **transaction)
                 .await?;

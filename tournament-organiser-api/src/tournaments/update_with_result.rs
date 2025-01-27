@@ -54,10 +54,7 @@ pub async fn update_with_result(
             Ok(Some(bracket)) => bracket,
             Ok(None) => return Err(ErrorSlug::from(StatusCode::NOT_FOUND)),
             Err(Error::SqlxError(e)) => {
-                tracing::error!(
-                    "Cannot update tournament {tournament_id} with result {report:?}: {e:?}"
-                );
-                return Err(ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR));
+                return Err(e.into());
             }
             Err(Error::App(e)) => {
                 tracing::warn!(
@@ -68,6 +65,6 @@ pub async fn update_with_result(
                 return Err(ErrorSlug::new(StatusCode::BAD_REQUEST, e.to_string()));
             }
         };
-    transaction.commit().await.map_err(internal_error)?;
+    transaction.commit().await?;
     Ok(breakdown(&tournament, bracket, None, true))
 }

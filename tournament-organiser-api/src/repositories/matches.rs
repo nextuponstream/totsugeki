@@ -20,18 +20,18 @@ impl MatchRepository {
         for m in matches.iter() {
             let high_seed: i8 = m.get_seeds()[0].try_into().unwrap();
             let low_seed: i8 = m.get_seeds()[1].try_into().unwrap();
-            println!("{m}");
-            println!("---");
-            println!(
-                "{}\n{:?}\n{:?}\n{:?}\n{:?}\n{}\n{}",
-                m.get_id(),
-                high_seed.to_i16(),
-                m.get_players()[0].0,
-                low_seed.to_i16(),
-                m.get_players()[1].0,
-                "first_to_n",
-                2,
-            );
+            // println!("{m}");
+            // println!("---");
+            // println!(
+            //     "{}\n{:?}\n{:?}\n{:?}\n{:?}\n{}\n{}",
+            //     m.get_id(),
+            //     high_seed.to_i16(),
+            //     m.get_players()[0].0,
+            //     low_seed.to_i16(),
+            //     m.get_players()[1].0,
+            //     "first_to_n",
+            //     2,
+            // );
             sqlx::query!(
                 r#"
 INSERT into matches (
@@ -43,6 +43,51 @@ low_seed_player,
 format,
 format_n
 ) VALUES ($1, $2, $3, $4, $5, $6, $7)"#,
+                m.get_id(),
+                high_seed.to_i16(),
+                m.get_players()[0].0,
+                low_seed.to_i16(),
+                m.get_players()[1].0,
+                "first_to_n",
+                2.into(),
+            )
+            .execute(&mut **transaction)
+            .await?;
+        }
+        Ok(())
+    }
+
+    pub async fn update_many<'a>(
+        transaction: SqlxTransaction<'a, '_>,
+        matches: Vec<Match>,
+    ) -> Result<(), SqlxError> {
+        for m in matches.iter() {
+            let high_seed: i8 = m.get_seeds()[0].try_into().unwrap();
+            let low_seed: i8 = m.get_seeds()[1].try_into().unwrap();
+            // println!("{m}");
+            // println!("---");
+            // println!(
+            //     "{}\n{:?}\n{:?}\n{:?}\n{:?}\n{}\n{}",
+            //     m.get_id(),
+            //     high_seed.to_i16(),
+            //     m.get_players()[0].0,
+            //     low_seed.to_i16(),
+            //     m.get_players()[1].0,
+            //     "first_to_n",
+            //     2,
+            // );
+            sqlx::query!(
+                r#"
+UPDATE matches
+SET
+    high_seed = $2,
+    high_seed_player = $3,
+    low_seed = $4,
+    low_seed_player = $5,
+    format = $6,
+    format_n = $7
+WHERE id = $1
+"#,
                 m.get_id(),
                 high_seed.to_i16(),
                 m.get_players()[0].0,

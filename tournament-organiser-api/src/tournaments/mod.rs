@@ -46,12 +46,8 @@ use totsugeki_display::{from_participants, BoxElement, MinimalMatch};
 use validator::Validate;
 
 /// List of players from which a bracket can be created
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ReportResultInput {
-    /// current state of the bracket
-    pub bracket: DoubleEliminationBracket,
-    /// tournament
-    pub tournament: Tournament,
     /// First player
     pub player1_id: ID,
     /// Second player
@@ -265,7 +261,7 @@ pub(crate) struct TournamentRecord {
 }
 
 /// Deserialize in tournament information and double elimination bracket
-#[derive(Serialize, Deserialize, sqlx::FromRow)]
+#[derive(Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub(crate) struct TournamentAugmentedRecord {
     /// bracket ID
     pub id: ID,
@@ -282,6 +278,33 @@ pub(crate) struct TournamentAugmentedRecord {
     pub matches: Option<Vec<MatchRecord>>,
 }
 
+impl From<TournamentAugmentedRecord> for DoubleEliminationBracket {
+    fn from(value: TournamentAugmentedRecord) -> Self {
+        let seeding = value
+            .players
+            .map(|v| {
+                let mut v = v.clone();
+                v.sort_by(|a, b| (a.seeding_index - b.seeding_index).cmp(&a.seeding_index));
+                v.into_iter().map(|pr| pr.id).collect::<Vec<ID>>()
+            })
+            .unwrap_or_default();
+        let matches = value
+            .matches
+            .map(|mmatches| {
+                mmatches
+                    .into_iter()
+                    .map(|m| m.into())
+                    .collect::<Vec<Match>>()
+            })
+            .unwrap_or_default();
+        DoubleEliminationBracket::new(
+            matches,
+            Seeding::new(seeding).expect("seeding"),
+            AutomaticMatchValidationMode::Flexible,
+        )
+    }
+}
+
 /// Represents a tournament player from the `players` database table
 #[derive(sqlx::Type, Deserialize, Serialize, Clone)]
 pub(crate) struct PlayerRecord {
@@ -294,6 +317,8 @@ pub(crate) struct PlayerRecord {
     pub user_id: Option<ID>,
     /// Guest ID if any
     pub guest_id: Option<ID>,
+    /// Seeding of player
+    pub seeding_index: i16,
 }
 
 impl From<PlayerRecord> for TournamentPlayer {
@@ -303,6 +328,7 @@ impl From<PlayerRecord> for TournamentPlayer {
             user_id: value.user_id,
             guest_id: value.guest_id,
             name: value.name.expect("name"),
+            seeding: value.seeding_index,
         }
     }
 }
@@ -456,8 +482,9 @@ impl Tournament {
 
     /// Create new guests from `guest_names`
     pub fn add_guests(&mut self, guest_names: &[String]) {
-        for guest_name in guest_names {
-            let tournament_player = TournamentPlayer::new_guest(guest_name.clone());
+        for (index, guest_name) in guest_names.iter().enumerate() {
+            let tournament_player =
+                TournamentPlayer::new_guest(guest_name.clone(), (index + 1).to_i16().unwrap());
             self.players.push(tournament_player);
         }
     }

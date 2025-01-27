@@ -20,20 +20,21 @@ use tracing::instrument;
 /// Error 500 if a user gets out of sync with the bracket in the database and
 /// the one displayed in the web page
 // TODO report should be at debug level
-#[instrument(name = "report_result", skip(report))]
-pub async fn report_result(Json(report): Json<ReportResultInput>) -> impl IntoResponse {
-    tracing::debug!("new reported result");
-    let bracket = report.bracket;
-    let tournament = report.tournament;
-
-    let Ok((bracket, _, _)) = bracket.tournament_organiser_reports_result_dangerous(
-        report.player1_id,
-        Score(report.score_p1, report.score_p2),
-        report.player2_id,
-    ) else {
-        // FIXME actual error handling
-        return Err(ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR));
-    };
-    // People allowed to report are tournament organiser
-    Ok((StatusCode::OK, breakdown(&tournament, bracket, None, true)))
+#[instrument(name = "score", skip(report))]
+pub async fn score(Json(report): Json<ReportResultInput>) -> impl IntoResponse {
+    todo!()
+    // tracing::debug!("new reported result");
+    // let bracket = report.bracket;
+    // let tournament = report.tournament;
+    //
+    // let Ok((bracket, _, _)) = bracket.tournament_organiser_reports_result_dangerous(
+    //     report.player1_id,
+    //     Score(report.score_p1, report.score_p2),
+    //     report.player2_id,
+    // ) else {
+    //     // FIXME actual error handling
+    //     return Err(ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR));
+    // };
+    // // People allowed to report are tournament organiser
+    // Ok((StatusCode::OK, breakdown(&tournament, bracket, None, true)))
 }
