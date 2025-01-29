@@ -53,8 +53,8 @@ impl Player {
 
     /// Get player id
     #[must_use]
-    pub fn get_id(&self) -> ID {
-        self.id
+    pub fn get_id(&self) -> &ID {
+        &self.id
     }
 
     /// Get player name
@@ -92,12 +92,12 @@ impl Participants {
     /// thrown if player is already present
     // FIXME only 1 error variant at play in this method, then extract error
     // enum
-    pub fn add_participant(self, new_player: Player) -> Result<Self, Error> {
+    pub fn add_participant(self, new_player: &Player) -> Result<Self, Error> {
         if self.0.iter().any(|p| p.get_id() == new_player.get_id()) {
             Err(Error::AlreadyPresent)
         } else {
             let mut updated_participants = self.0;
-            updated_participants.push(new_player);
+            updated_participants.push(new_player.clone());
             Ok(Self(updated_participants))
         }
     }
@@ -111,17 +111,14 @@ impl Participants {
         for p in players_to_add {
             let id = p.0.as_str().parse::<ID>()?;
             let p = Player { id, name: p.1 };
-            players = match players.add_participant(p) {
-                Ok(updated_players) => updated_players,
-                Err(e) => return Err(e),
-            };
+            players = players.add_participant(&p)?;
         }
         Ok(players)
     }
 
     /// Returns player if present
     #[must_use]
-    pub fn get(&self, player_id: ID) -> Option<Player> {
+    pub fn get(&self, player_id: &ID) -> Option<Player> {
         self.0.iter().find(|p| p.get_id() == player_id).cloned()
     }
 
@@ -138,32 +135,35 @@ impl Participants {
     /// Participant player list is corrupted
     #[must_use]
     pub fn get_seeding(&self) -> Seeding {
-        Seeding::new(self.0.iter().map(Player::get_id).collect::<Vec<_>>())
-            .expect("seeding from participants")
+        Seeding::new(
+            self.0
+                .iter()
+                .map(|p| p.get_id().to_owned())
+                .collect::<Vec<_>>(),
+        )
+        .expect("seeding from participants")
     }
     /// Returns seeding, which is an ordered list of player ids, from strongest
     /// to weakest
     #[must_use]
     pub fn get_player_list(&self) -> Vec<ID> {
-        self.0.iter().map(Player::get_id).collect::<Vec<_>>()
+        self.0
+            .iter()
+            .map(|p| p.get_id().to_owned())
+            .collect::<Vec<_>>()
     }
 
     /// Returns true if both group of participants have the same players,
     /// disregarding order
     #[must_use]
     pub fn have_same_participants(&self, other_group: &Participants) -> bool {
-        let mut players = self
-            .0
-            .clone()
-            .iter()
-            .map(Player::get_id)
-            .collect::<Vec<ID>>();
+        let mut players = self.0.clone().iter().map(|p| p.id).collect::<Vec<ID>>();
         players.sort();
         let mut other_players = other_group
             .0
             .clone()
             .iter()
-            .map(Player::get_id)
+            .map(|p| p.id)
             .collect::<Vec<ID>>();
         other_players.sort();
         players == other_players
@@ -186,7 +186,7 @@ impl Participants {
     /// # Errors
     /// thrown if player does not belong to this group
     #[must_use]
-    pub fn remove(self, player_id: ID) -> Self {
+    pub fn remove(self, player_id: &ID) -> Self {
         Self(
             self.0
                 .into_iter()
@@ -231,7 +231,7 @@ impl TryFrom<Vec<Player>> for Participants {
     fn try_from(players: Vec<Player>) -> Result<Self, Self::Error> {
         let mut result = Participants::default();
         for p in players {
-            result = result.add_participant(p)?;
+            result = result.add_participant(&p)?;
         }
         Ok(result)
     }
@@ -247,7 +247,7 @@ impl TryFrom<Vec<(&ID, &String)>> for Participants {
                 id: *p.0,
                 name: p.1.to_string(),
             };
-            result = result.add_participant(p)?;
+            result = result.add_participant(&p)?;
         }
         Ok(result)
     }
@@ -261,10 +261,8 @@ mod tests {
     fn adding_two_same_players_returns_error() {
         let same_player = Player::new("same_player".to_string());
         let players = Participants::default();
-        let players = players
-            .add_participant(same_player.clone())
-            .expect("players");
-        match players.add_participant(same_player) {
+        let players = players.add_participant(&same_player).expect("players");
+        match players.add_participant(&same_player) {
             Err(Error::AlreadyPresent) => {}
             Err(e) => panic!("expected AlreadyPresent but got {e:?}"),
             Ok(_) => panic!("expected error but got none"),

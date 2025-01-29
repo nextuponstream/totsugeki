@@ -163,19 +163,19 @@ mod tests {
             players
                 .get_players_list()
                 .iter()
-                .map(Player::get_id)
+                .map(|p| p.get_id().to_owned())
                 .collect::<Vec<_>>(),
         )
         .unwrap();
         let matches =
             get_balanced_round_matches_top_seed_favored(&seeding, MatchFormat::ft3(), None);
-        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<ID> = matches.iter().map(|m| m.id).rev().collect();
         let expected_matches = vec![
             Match {
                 id: match_ids.pop().expect("match id"),
                 players: [
-                    Opponent(Some(pink.get_id())),
-                    Opponent(Some(cute_cat.get_id())),
+                    Opponent(Some(pink.get_id().to_owned())),
+                    Opponent(Some(cute_cat.get_id().to_owned())),
                 ],
                 seeds: [2, 3],
                 winner: Opponent(None),
@@ -185,7 +185,7 @@ mod tests {
             },
             Match {
                 id: match_ids.pop().expect("match id"),
-                players: [Opponent(Some(diego.get_id())), Opponent(None)],
+                players: [Opponent(Some(diego.get_id().to_owned())), Opponent(None)],
                 seeds: [1, 2],
                 winner: Opponent(None),
                 automatic_loser: Opponent(None),
@@ -215,19 +215,19 @@ mod tests {
             players
                 .get_players_list()
                 .iter()
-                .map(Player::get_id)
+                .map(|p| p.get_id().to_owned())
                 .collect::<Vec<_>>(),
         )
         .unwrap();
         let matches =
             get_balanced_round_matches_top_seed_favored(&seeding, MatchFormat::ft3(), None);
-        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<ID> = matches.iter().map(|m| m.id).rev().collect();
         let expected_matches = vec![
             Match {
                 id: match_ids.pop().expect("match id"),
                 players: [
-                    Opponent(Some(diego.get_id())),
-                    Opponent(Some(cute_cat.get_id())),
+                    Opponent(Some(diego.get_id().to_owned())),
+                    Opponent(Some(cute_cat.get_id().to_owned())),
                 ],
                 seeds: [1, 4],
                 winner: Opponent(None),
@@ -237,7 +237,10 @@ mod tests {
             },
             Match {
                 id: match_ids.pop().expect("match id"),
-                players: [Opponent(Some(pink.get_id())), Opponent(Some(guy.get_id()))],
+                players: [
+                    Opponent(Some(pink.get_id().to_owned())),
+                    Opponent(Some(guy.get_id().to_owned())),
+                ],
                 seeds: [2, 3],
                 winner: Opponent(None),
                 automatic_loser: Opponent(None),
@@ -277,19 +280,19 @@ mod tests {
             players
                 .get_players_list()
                 .iter()
-                .map(Player::get_id)
+                .map(|p| p.get_id().to_owned())
                 .collect::<Vec<_>>(),
         )
         .unwrap();
         let matches =
             get_balanced_round_matches_top_seed_favored(&seeding, MatchFormat::ft3(), None);
-        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<ID> = matches.iter().map(|m| m.id).rev().collect();
         let expected_matches = vec![
             Match {
                 id: match_ids.pop().expect("match id"),
                 players: [
-                    Opponent(Some(guy.get_id())),
-                    Opponent(Some(cute_cat.get_id())),
+                    Opponent(Some(guy.get_id().to_owned())),
+                    Opponent(Some(cute_cat.get_id().to_owned())),
                 ],
                 seeds: [4, 5],
                 winner: Opponent(None),
@@ -299,7 +302,7 @@ mod tests {
             },
             Match {
                 id: match_ids.pop().expect("match id"),
-                players: [Opponent(Some(diego.get_id())), Opponent(None)],
+                players: [Opponent(Some(diego.get_id().to_owned())), Opponent(None)],
                 seeds: [1, 4],
                 winner: Opponent(None),
                 automatic_loser: Opponent(None),
@@ -309,8 +312,8 @@ mod tests {
             Match {
                 id: match_ids.pop().expect("match id"),
                 players: [
-                    Opponent(Some(pink.get_id())),
-                    Opponent(Some(average_player.get_id())),
+                    Opponent(Some(pink.get_id().to_owned())),
+                    Opponent(Some(average_player.get_id().to_owned())),
                 ],
                 seeds: [2, 3],
                 winner: Opponent(None),
@@ -352,19 +355,19 @@ mod tests {
             players
                 .get_players_list()
                 .iter()
-                .map(Player::get_id)
+                .map(|p| p.get_id().to_owned())
                 .collect::<Vec<_>>(),
         )
         .unwrap();
         let matches =
             get_balanced_round_matches_top_seed_favored(&seeding, MatchFormat::ft3(), None);
-        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<ID> = matches.iter().map(|m| m.id).rev().collect();
         let expected_matches = vec![
             Match {
                 id: match_ids.pop().expect("match id"),
                 players: [
-                    Opponent(Some(pink_nemesis.get_id())),
-                    Opponent(Some(cute_cat.get_id())),
+                    Opponent(Some(pink_nemesis.get_id().to_owned())),
+                    Opponent(Some(cute_cat.get_id().to_owned())),
                 ],
                 seeds: [3, 6],
                 winner: Opponent(None),
@@ -375,8 +378,8 @@ mod tests {
             Match {
                 id: match_ids.pop().expect("match id"),
                 players: [
-                    Opponent(Some(average_player.get_id())),
-                    Opponent(Some(guy.get_id())),
+                    Opponent(Some(average_player.get_id().to_owned())),
+                    Opponent(Some(guy.get_id().to_owned())),
                 ],
                 seeds: [4, 5],
                 winner: Opponent(None),
@@ -386,7 +389,7 @@ mod tests {
             },
             Match {
                 id: match_ids.pop().expect("match id"),
-                players: [Opponent(Some(diego.get_id())), Opponent(None)],
+                players: [Opponent(Some(diego.get_id().to_owned())), Opponent(None)],
                 seeds: [1, 4],
                 winner: Opponent(None),
                 automatic_loser: Opponent(None),
@@ -395,7 +398,7 @@ mod tests {
             },
             Match {
                 id: match_ids.pop().expect("match id"),
-                players: [Opponent(Some(pink.get_id())), Opponent(None)],
+                players: [Opponent(Some(pink.get_id().to_owned())), Opponent(None)],
                 seeds: [2, 3],
                 winner: Opponent(None),
                 automatic_loser: Opponent(None),
@@ -437,19 +440,19 @@ mod tests {
             players
                 .get_players_list()
                 .iter()
-                .map(Player::get_id)
+                .map(|p| p.get_id().to_owned())
                 .collect::<Vec<_>>(),
         )
         .unwrap();
         let matches =
             get_balanced_round_matches_top_seed_favored(&seeding, MatchFormat::ft3(), None);
-        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<ID> = matches.iter().map(|m| m.id).rev().collect();
         let expected_matches = vec![
             Match {
                 id: match_ids.pop().expect("match id"),
                 players: [
-                    Opponent(Some(pink.get_id())),
-                    Opponent(Some(cute_cat.get_id())),
+                    Opponent(Some(pink.get_id().to_owned())),
+                    Opponent(Some(cute_cat.get_id().to_owned())),
                 ],
                 seeds: [2, 7],
                 winner: Opponent(None),
@@ -460,8 +463,8 @@ mod tests {
             Match {
                 id: match_ids.pop().expect("match id"),
                 players: [
-                    Opponent(Some(pink_nemesis.get_id())),
-                    Opponent(Some(fg_enjoyer.get_id())),
+                    Opponent(Some(pink_nemesis.get_id().to_owned())),
+                    Opponent(Some(fg_enjoyer.get_id().to_owned())),
                 ],
                 seeds: [3, 6],
                 winner: Opponent(None),
@@ -472,8 +475,8 @@ mod tests {
             Match {
                 id: match_ids.pop().expect("match id"),
                 players: [
-                    Opponent(Some(average_player.get_id())),
-                    Opponent(Some(guy.get_id())),
+                    Opponent(Some(average_player.get_id().to_owned())),
+                    Opponent(Some(guy.get_id().to_owned())),
                 ],
                 seeds: [4, 5],
                 winner: Opponent(None),
@@ -483,7 +486,7 @@ mod tests {
             },
             Match {
                 id: match_ids.pop().expect("match id"),
-                players: [Opponent(Some(diego.get_id())), Opponent(None)],
+                players: [Opponent(Some(diego.get_id().to_owned())), Opponent(None)],
                 seeds: [1, 4],
                 winner: Opponent(None),
                 automatic_loser: Opponent(None),
@@ -536,19 +539,19 @@ mod tests {
             players
                 .get_players_list()
                 .iter()
-                .map(Player::get_id)
+                .map(|p| p.get_id().to_owned())
                 .collect::<Vec<_>>(),
         )
         .unwrap();
         let matches =
             get_balanced_round_matches_top_seed_favored(&seeding, MatchFormat::ft3(), None);
-        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<ID> = matches.iter().map(|m| m.id).rev().collect();
         let expected_matches = vec![
             Match {
                 id: match_ids.pop().expect("match id"),
                 players: [
-                    Opponent(Some(diego.get_id())),
-                    Opponent(Some(cute_cat.get_id())),
+                    Opponent(Some(diego.get_id().to_owned())),
+                    Opponent(Some(cute_cat.get_id().to_owned())),
                 ],
                 seeds: [1, 8],
                 winner: Opponent(None),
@@ -559,8 +562,8 @@ mod tests {
             Match {
                 id: match_ids.pop().expect("match id"),
                 players: [
-                    Opponent(Some(pink.get_id())),
-                    Opponent(Some(fg_enjoyer.get_id())),
+                    Opponent(Some(pink.get_id().to_owned())),
+                    Opponent(Some(fg_enjoyer.get_id().to_owned())),
                 ],
                 seeds: [2, 7],
                 winner: Opponent(None),
@@ -571,8 +574,8 @@ mod tests {
             Match {
                 id: match_ids.pop().expect("match id"),
                 players: [
-                    Opponent(Some(pink_nemesis.get_id())),
-                    Opponent(Some(guy.get_id())),
+                    Opponent(Some(pink_nemesis.get_id().to_owned())),
+                    Opponent(Some(guy.get_id().to_owned())),
                 ],
                 seeds: [3, 6],
                 winner: Opponent(None),
@@ -583,8 +586,8 @@ mod tests {
             Match {
                 id: match_ids.pop().expect("match id"),
                 players: [
-                    Opponent(Some(big_body_enjoyer.get_id())),
-                    Opponent(Some(average_player.get_id())),
+                    Opponent(Some(big_body_enjoyer.get_id().to_owned())),
+                    Opponent(Some(average_player.get_id().to_owned())),
                 ],
                 seeds: [4, 5],
                 winner: Opponent(None),
@@ -640,7 +643,7 @@ mod tests {
                 players
                     .get_players_list()
                     .iter()
-                    .map(Player::get_id)
+                    .map(|p| p.get_id().to_owned())
                     .collect::<Vec<_>>(),
             )
             .unwrap();

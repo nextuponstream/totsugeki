@@ -126,7 +126,7 @@ impl SingleEliminationBracket {
     /// When `player_id` is unknown
     pub fn report_result(
         self,
-        player_id: ID,
+        player_id: &ID,
         result: Score,
     ) -> Result<(SingleEliminationBracket, ID, Vec<Match>), SingleEliminationReportResultError>
     {
@@ -139,14 +139,14 @@ impl SingleEliminationBracket {
         }
         if self.is_disqualified(player_id) {
             return Err(SingleEliminationReportResultError::ForbiddenDisqualified(
-                player_id,
+                *player_id,
             ));
         }
         let old_matches = self.matches_to_play();
         let match_to_update = self
             .get_matches()
             .into_iter()
-            .find(|m| m.contains(player_id) && m.get_winner() == Opponent(None));
+            .find(|m| m.contains(player_id) && *m.get_winner() == Opponent(None));
         let seeding = self.seeding.clone();
         let automatic_match_progression = self.automatic_match_validation_mode;
         match match_to_update {
@@ -182,25 +182,27 @@ impl SingleEliminationBracket {
                     .filter(|m| !old_matches.iter().any(|old_m| old_m.get_id() == m.get_id()))
                     .map(Clone::clone)
                     .collect();
-                Ok((bracket, affected_match_id, new_matches))
+                Ok((bracket, *affected_match_id, new_matches))
             }
-            None => Err(SingleEliminationReportResultError::NoMatchToPlay(player_id)),
+            None => Err(SingleEliminationReportResultError::NoMatchToPlay(
+                *player_id,
+            )),
         }
     }
 
     /// Clear previous reported result for `player_id`
-    fn clear_reported_result(self, player_id: ID) -> Self {
+    fn clear_reported_result(self, player_id: &ID) -> Self {
         debug_assert!(
             self.matches
                 .iter()
-                .filter(|m| m.contains(player_id) && m.get_winner() == Opponent(None))
+                .filter(|m| m.contains(player_id) && *m.get_winner() == Opponent(None))
                 .count()
                 <= 1
         );
         let match_to_update = self
             .matches
             .iter()
-            .find(|m| m.contains(player_id) && m.get_winner() == Opponent(None));
+            .find(|m| m.contains(player_id) && *m.get_winner() == Opponent(None));
         match match_to_update {
             Some(m_to_clear) => {
                 let m_to_clear = (*m_to_clear).clear_reported_result_from(player_id);

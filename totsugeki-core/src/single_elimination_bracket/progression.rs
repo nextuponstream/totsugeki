@@ -29,7 +29,7 @@ impl SingleEliminationBracket {
 
     /// Returns true if player is disqualified
     #[must_use]
-    pub fn is_disqualified(&self, player_id: ID) -> bool {
+    pub fn is_disqualified(&self, player_id: &ID) -> bool {
         self.matches
             .iter()
             .any(|m| m.is_automatic_loser_by_disqualification(player_id))
@@ -118,9 +118,9 @@ impl SingleEliminationBracket {
     /// Input is invalid for this bracket state
     pub fn update_player_reported_match_result(
         self,
-        match_id: ID,
+        match_id: &ID,
         result: Score,
-        player_id: ID,
+        player_id: &ID,
     ) -> Result<Vec<Match>, SingleEliminationReportResultError> {
         let Some(m) = self.matches.iter().find(|m| m.get_id() == match_id) else {
             panic!("unknown match {match_id}")
@@ -146,7 +146,7 @@ impl SingleEliminationBracket {
     /// Returns updated bracket and new matches to play. Uses `match_id` as the
     /// first match to start updating before looking deeper into the bracket
     #[must_use]
-    pub fn validate_match_result(self, match_id: ID) -> (SingleEliminationBracket, Vec<Match>) {
+    pub fn validate_match_result(self, match_id: &ID) -> (SingleEliminationBracket, Vec<Match>) {
         let old_matches_to_play = self.matches_to_play();
         // FIXME remove unreachable
         // FIXME should return an error because it's used by a library => there must be some
@@ -223,9 +223,9 @@ impl SingleEliminationBracket {
     /// When either `player1` or `player2` is unknown
     pub fn tournament_organiser_reports_result(
         self,
-        player1: ID,
+        player1: &ID,
         result: Score,
-        player2: ID,
+        player2: &ID,
     ) -> Result<(SingleEliminationBracket, ID, Vec<Match>), SingleEliminationReportResultError>
     {
         let result_player_1 = ReportedResult(Some(result));
@@ -263,7 +263,7 @@ mod tests {
         let Opponent(Some(next_opponent)) = next_opponent else {
             panic!("expected player");
         };
-        assert_eq!(next_opponent, player_ids[player_2].get_id());
+        assert_eq!(next_opponent, *player_ids[player_2].get_id());
 
         let (next_opponent, match_id_2) = s
             .next_opponent_in_bracket(player_ids[player_2].get_id())
@@ -271,7 +271,7 @@ mod tests {
         let Opponent(Some(next_opponent)) = next_opponent else {
             panic!("expected player")
         };
-        assert_eq!(next_opponent, player_ids[player_1].get_id());
+        assert_eq!(next_opponent, *player_ids[player_1].get_id());
 
         assert_eq!(
             match_id_1, match_id_2,
@@ -286,7 +286,7 @@ mod tests {
         for i in 1..=3 {
             let player = Player::new(format!("p{i}"));
             p.push(player.clone());
-            seeding.push(player.get_id());
+            seeding.push(player.get_id().to_owned());
         }
         let seeding = Seeding::new(seeding).unwrap();
         let auto = AutomaticMatchValidationMode::Flexible;

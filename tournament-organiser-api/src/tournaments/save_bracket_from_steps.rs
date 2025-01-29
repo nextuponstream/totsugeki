@@ -74,7 +74,7 @@ pub async fn save_tournament_from_steps(
             tournament
                 .get_players()
                 .into_iter()
-                .map(|tp| tp.get_id())
+                .map(|tp| tp.get_id().to_owned())
                 .collect(),
         )
         .expect("should use seeding from tournament organiser input"),
@@ -86,13 +86,13 @@ pub async fn save_tournament_from_steps(
         let report = Score(r.score_p1, r.score_p2);
         let Some(p1_mapping) = safe_player_mapping
             .iter()
-            .find(|m| m.0.get_id() == r.player1_id)
+            .find(|m| *m.0.get_id() == r.player1_id)
         else {
             return Err(ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR));
         };
         let Some(p2_mapping) = safe_player_mapping
             .iter()
-            .find(|m| m.0.get_id() == r.player2_id)
+            .find(|m| *m.0.get_id() == r.player2_id)
         else {
             return Err(ErrorSlug::from(StatusCode::INTERNAL_SERVER_ERROR));
         };

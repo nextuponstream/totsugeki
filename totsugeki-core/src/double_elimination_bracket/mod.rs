@@ -34,6 +34,8 @@ pub struct DoubleEliminationBracket {
 impl DoubleEliminationBracket {
     /// Generate matches for a new bracket using `seeding` and other configuration
     #[must_use]
+    #[allow(clippy::missing_panics_doc)]
+    // reason: assertion to avoid regression
     pub fn create(
         seeding: Seeding,
         automatic_match_validation_mode: AutomaticMatchValidationMode,
@@ -100,8 +102,8 @@ impl DoubleEliminationBracket {
 
     /// Get matches
     #[must_use]
-    pub fn get_matches(&self) -> Vec<Match> {
-        self.matches.clone()
+    pub fn get_matches(&self) -> &[Match] {
+        &self.matches
     }
 
     /// Clear all reported results for given match in bracket

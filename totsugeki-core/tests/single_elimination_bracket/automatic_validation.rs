@@ -20,14 +20,14 @@ fn assert_players_play_each_other(
     else {
         panic!("No next opponent")
     };
-    assert_eq!(next_opponent, player_ids[player_2].get_id());
+    assert_eq!(next_opponent, *player_ids[player_2].get_id());
 
     let Ok((Opponent(Some(next_opponent)), match_id_2)) =
         bracket.next_opponent_in_bracket(player_ids[player_2].get_id())
     else {
         panic!("No next opponent")
     };
-    assert_eq!(next_opponent, player_ids[player_1].get_id());
+    assert_eq!(next_opponent, *player_ids[player_1].get_id());
 
     assert_eq!(
         match_id_1, match_id_2,
@@ -43,14 +43,14 @@ fn assert_players_play_each_other_ids(
     bracket: &SingleEliminationBracket,
 ) {
     let (next_opponent, match_id_1) = bracket
-        .next_opponent_in_bracket(player_ids[player_1])
+        .next_opponent_in_bracket(&player_ids[player_1])
         .expect("next opponent");
     let Opponent(Some(next_opponent)) = next_opponent else {
         panic!("expected player")
     };
     assert_eq!(next_opponent, player_ids[player_2]);
     let (next_opponent, match_id_2) = bracket
-        .next_opponent_in_bracket(player_ids[player_2])
+        .next_opponent_in_bracket(&player_ids[player_2])
         .expect("next opponent");
     let Opponent(Some(next_opponent)) = next_opponent else {
         panic!("expected player")
@@ -75,13 +75,13 @@ mod player_report_before_organiser {
         let mut player_ids = vec![ID::new_v4()]; // padding
         for i in 1..=3 {
             let player = Player::new(format!("p{i}"));
-            player_ids.push(player.get_id());
-            seeding = seeding.add_participant(player).expect("updated seeding");
+            player_ids.push(*player.get_id());
+            seeding = seeding.add_participant(&player).expect("updated seeding");
         }
         let seeding = seeding
             .get_players_list()
             .iter()
-            .map(Player::get_id)
+            .map(|p| p.get_id().to_owned())
             .collect::<Vec<_>>();
 
         let bracket = SingleEliminationBracket::create(
@@ -94,10 +94,10 @@ mod player_report_before_organiser {
 
         // player 2 reports before TO does
         let (bracket, _, _) = bracket
-            .report_result(player_ids[2], Score(2, 0))
+            .report_result(&player_ids[2], Score(2, 0))
             .expect("matches");
         let (_, _, _) = bracket
-            .tournament_organiser_reports_result(player_ids[2], Score(2, 0), player_ids[3])
+            .tournament_organiser_reports_result(&player_ids[2], Score(2, 0), &player_ids[3])
             .expect("matches");
     }
 
@@ -108,13 +108,13 @@ mod player_report_before_organiser {
         let mut player_ids = vec![ID::new_v4()]; // padding
         for i in 1..=3 {
             let player = Player::new(format!("p{i}"));
-            player_ids.push(player.get_id());
-            seeding = seeding.add_participant(player).expect("updated seeding");
+            player_ids.push(*player.get_id());
+            seeding = seeding.add_participant(&player).expect("updated seeding");
         }
         let seeding = seeding
             .get_players_list()
             .iter()
-            .map(Player::get_id)
+            .map(|p| p.get_id().to_owned())
             .collect::<Vec<_>>();
 
         let bracket = SingleEliminationBracket::create(
@@ -127,10 +127,10 @@ mod player_report_before_organiser {
 
         // player 3 reports before TO does
         let (bracket, _, _) = bracket
-            .report_result(player_ids[3], Score(0, 2))
+            .report_result(&player_ids[3], Score(0, 2))
             .expect("matches");
         let (_, _, _) = bracket
-            .tournament_organiser_reports_result(player_ids[2], Score(2, 0), player_ids[3])
+            .tournament_organiser_reports_result(&player_ids[2], Score(2, 0), &player_ids[3])
             .expect("matches");
     }
 
@@ -140,8 +140,8 @@ mod player_report_before_organiser {
         let mut seeding = vec![];
         for i in 1..=3 {
             let player = Player::new(format!("p{i}"));
-            player_ids.push(player.get_id());
-            seeding.push(player.get_id());
+            player_ids.push(*player.get_id());
+            seeding.push(*player.get_id());
         }
 
         // player 2 reports before TO does
@@ -153,10 +153,10 @@ mod player_report_before_organiser {
         );
         assert_players_play_each_other_ids(2, 3, &player_ids, &bracket);
         let (bracket, _, _) = bracket
-            .report_result(player_ids[2], Score(2, 0))
+            .report_result(&player_ids[2], Score(2, 0))
             .expect("bracket");
         let (_, _, _) = bracket
-            .tournament_organiser_reports_result(player_ids[2], Score(2, 0), player_ids[3])
+            .tournament_organiser_reports_result(&player_ids[2], Score(2, 0), &player_ids[3])
             .expect("bracket");
     }
     #[test]
@@ -165,8 +165,8 @@ mod player_report_before_organiser {
         let mut seeding = vec![];
         for i in 1..=3 {
             let player = Player::new(format!("p{i}"));
-            player_ids.push(player.get_id());
-            seeding.push(player.get_id());
+            player_ids.push(*player.get_id());
+            seeding.push(*player.get_id());
         }
 
         // player 3 reports before TO does
@@ -178,10 +178,10 @@ mod player_report_before_organiser {
         );
         assert_players_play_each_other_ids(2, 3, &player_ids, &bracket);
         let (bracket, _, _) = bracket
-            .report_result(player_ids[3], Score(0, 2))
+            .report_result(&player_ids[3], Score(0, 2))
             .expect("bracket");
         let (_, _, _) = bracket
-            .tournament_organiser_reports_result(player_ids[2], Score(2, 0), player_ids[3])
+            .tournament_organiser_reports_result(&player_ids[2], Score(2, 0), &player_ids[3])
             .expect("bracket");
     }
 }
@@ -198,7 +198,7 @@ mod bracket_with_3_participants {
         for i in 1..=3 {
             let player = Player::new(format!("p{i}"));
             p.push(player.clone());
-            seeding.push(player.get_id());
+            seeding.push(*player.get_id());
         }
         let seb = SingleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
@@ -230,13 +230,13 @@ mod bracket_with_3_participants {
         let mut player_ids = vec![ID::new_v4()]; // padding
         for i in 1..=3 {
             let player = Player::new(format!("p{i}"));
-            player_ids.push(player.get_id());
-            seeding = seeding.add_participant(player).expect("updated seeding");
+            player_ids.push(*player.get_id());
+            seeding = seeding.add_participant(&player).expect("updated seeding");
         }
         let seeding = seeding
             .get_players_list()
             .iter()
-            .map(Player::get_id)
+            .map(|p| p.get_id().to_owned())
             .collect::<Vec<_>>();
         let bracket = SingleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
@@ -249,14 +249,14 @@ mod bracket_with_3_participants {
         assert_eq!(bracket.matches_to_play().len(), 1);
         assert_players_play_each_other_ids(2, 3, &player_ids, &bracket);
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(player_ids[2], Score(2, 0), player_ids[3])
+            .tournament_organiser_reports_result(&player_ids[2], Score(2, 0), &player_ids[3])
             .expect("matches");
-        assert_ne!(bracket.get_matches()[0].get_winner(), Opponent(None));
+        assert_ne!(*bracket.get_matches()[0].get_winner(), Opponent(None));
         assert_eq!(new_matches.len(), 1, "grand finals match generated");
         assert_players_play_each_other_ids(1, 2, &player_ids, &bracket);
         assert_eq!(bracket.matches_to_play().len(), 1);
         let (bracket, _, new_matches) = bracket
-            .tournament_organiser_reports_result(player_ids[1], Score(0, 2), player_ids[2])
+            .tournament_organiser_reports_result(&player_ids[1], Score(0, 2), &player_ids[2])
             .expect("matches");
         assert!(bracket.matches_to_play().is_empty());
         assert!(new_matches.is_empty());
@@ -276,7 +276,7 @@ mod bracket_with_5_participants {
         for i in 1..=5 {
             let player = Player::new(format!("p{i}"));
             p.push(player.clone());
-            seeding.push(player.get_id());
+            seeding.push(*player.get_id());
         }
         let bracket = SingleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
@@ -313,7 +313,7 @@ mod bracket_with_5_participants {
         for i in 1..=5 {
             let player = Player::new(format!("p{i}"));
             p.push(player.clone());
-            seeding.push(player.get_id());
+            seeding.push(*player.get_id());
         }
         let bracket = SingleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
@@ -354,15 +354,15 @@ mod bracket_with_5_participants {
         let mut player_ids = vec![ID::new_v4()]; // padding
         for i in 1..=5 {
             let player = Player::new(format!("p{i}"));
-            player_ids.push(player.get_id());
+            player_ids.push(*player.get_id());
             bad_seeding = bad_seeding
-                .add_participant(player)
+                .add_participant(&player)
                 .expect("updated seeding");
         }
         let seeding = bad_seeding
             .get_players_list()
             .iter()
-            .map(Player::get_id)
+            .map(|p| p.get_id().to_owned())
             .collect::<Vec<_>>();
 
         let bracket = SingleEliminationBracket::create(
@@ -374,19 +374,19 @@ mod bracket_with_5_participants {
         assert_eq!(bracket.get_matches().len(), 4);
         assert_eq!(bracket.matches_to_play().len(), 2);
         let (bracket, _, _new_matches) = bracket
-            .tournament_organiser_reports_result(player_ids[4], Score(2, 0), player_ids[5])
+            .tournament_organiser_reports_result(&player_ids[4], Score(2, 0), &player_ids[5])
             .expect("bracket");
         assert_eq!(bracket.matches_to_play().len(), 2);
         let (bracket, _, _new_matches) = bracket
-            .tournament_organiser_reports_result(player_ids[2], Score(0, 2), player_ids[3])
+            .tournament_organiser_reports_result(&player_ids[2], Score(0, 2), &player_ids[3])
             .expect("bracket");
         assert_eq!(bracket.matches_to_play().len(), 1);
         let (bracket, _, _new_matches) = bracket
-            .tournament_organiser_reports_result(player_ids[1], Score(2, 0), player_ids[4])
+            .tournament_organiser_reports_result(&player_ids[1], Score(2, 0), &player_ids[4])
             .expect("bracket");
         assert_eq!(bracket.matches_to_play().len(), 1);
         let (bracket, _, _new_matches) = bracket
-            .tournament_organiser_reports_result(player_ids[1], Score(2, 0), player_ids[3])
+            .tournament_organiser_reports_result(&player_ids[1], Score(2, 0), &player_ids[3])
             .expect("bracket");
         if !bracket.is_over() {
             for m in bracket.get_matches() {
@@ -404,7 +404,7 @@ mod bracket_with_5_participants {
         for i in 1..=5 {
             let player = Player::new(format!("p{i}"));
             p.push(player.clone());
-            seeding.push(player.get_id());
+            seeding.push(*player.get_id());
         }
         let bracket = SingleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
@@ -452,7 +452,7 @@ mod bracket_with_8_participants {
         for i in 1..=8 {
             let player = Player::new(format!("p{i}"));
             p.push(player.clone());
-            seeding.push(player.get_id());
+            seeding.push(*player.get_id());
         }
         let bracket = SingleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
@@ -513,8 +513,8 @@ mod bracket_with_8_participants {
         for i in 1..=8 {
             let player = Player::new(format!("p{i}"));
             p.push(player.clone());
-            seeding.push(player.get_id());
-            bad_seeding = bad_seeding.add_participant(player).expect("new player");
+            seeding.push(*player.get_id());
+            bad_seeding = bad_seeding.add_participant(&player).expect("new player");
         }
         let bracket = SingleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
@@ -580,7 +580,7 @@ mod bracket_with_9_participants {
         for i in 1..=9 {
             let player = Player::new(format!("p{i}"));
             p.push(player.clone());
-            seeding.push(player.get_id());
+            seeding.push(*player.get_id());
         }
         let bracket = SingleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),
@@ -646,7 +646,7 @@ mod bracket_with_9_participants {
         for i in 1..=9 {
             let player = Player::new(format!("p{i}"));
             p.push(player.clone());
-            seeding.push(player.get_id());
+            seeding.push(*player.get_id());
         }
         let bracket = SingleEliminationBracket::create(
             Seeding::new(seeding).unwrap(),

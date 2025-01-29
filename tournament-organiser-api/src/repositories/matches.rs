@@ -13,13 +13,17 @@ pub(crate) struct MatchRepository {}
 
 impl MatchRepository {
     /// Save matches to database
-    pub async fn store_many<'a>(
-        transaction: SqlxTransaction<'a, '_>,
-        matches: Vec<Match>,
+    pub async fn store_many(
+        transaction: SqlxTransaction<'_, '_>,
+        matches: &[Match],
     ) -> Result<(), SqlxError> {
-        for m in matches.iter() {
-            let high_seed: i8 = m.get_seeds()[0].try_into().unwrap();
-            let low_seed: i8 = m.get_seeds()[1].try_into().unwrap();
+        for m in matches {
+            let high_seed: i8 = m.get_seeds()[0]
+                .try_into()
+                .expect("type coercion for high seed");
+            let low_seed: i8 = m.get_seeds()[1]
+                .try_into()
+                .expect("type coercion for low seed");
             // println!("{m}");
             // println!("---");
             // println!(
@@ -57,13 +61,18 @@ format_n
         Ok(())
     }
 
-    pub async fn update_many<'a>(
-        transaction: SqlxTransaction<'a, '_>,
-        matches: Vec<Match>,
+    /// Update many matches
+    pub async fn update_many(
+        transaction: SqlxTransaction<'_, '_>,
+        matches: &[Match],
     ) -> Result<(), SqlxError> {
-        for m in matches.iter() {
-            let high_seed: i8 = m.get_seeds()[0].try_into().unwrap();
-            let low_seed: i8 = m.get_seeds()[1].try_into().unwrap();
+        for m in matches {
+            let high_seed: i8 = m.get_seeds()[0]
+                .try_into()
+                .expect("type coercion for high seed");
+            let low_seed: i8 = m.get_seeds()[1]
+                .try_into()
+                .expect("type coercion for low seed");
             // println!("{m}");
             // println!("---");
             // println!(
@@ -104,6 +113,7 @@ WHERE id = $1
 }
 
 /// Tournament match from database
+#[allow(dead_code)]
 pub(crate) struct TournamentMatchRecord {
     /// relationship tournament-match ID
     pub id: ID,
@@ -130,12 +140,23 @@ pub(crate) struct TournamentMatchRecord {
 impl From<TournamentMatchRecord> for Match {
     fn from(value: TournamentMatchRecord) -> Self {
         let seeds: [usize; 2] = [
-            value.high_seed.to_usize().expect("high seed"),
-            value.low_seed.to_usize().expect("low seed"),
+            value
+                .high_seed
+                .to_usize()
+                .expect("type coercion for high seed"),
+            value
+                .low_seed
+                .to_usize()
+                .expect("type coercion for low seed"),
         ];
         let players: [Opponent; 2] = [value.high_seed_player.into(), value.low_seed_player.into()];
-        let format: MatchFormat =
-            MatchFormat::new(value.format_n.to_u8().expect("first to n")).unwrap();
-        Match::new(Some(value.match_id), players, seeds, format).expect("match")
+        let format: MatchFormat = MatchFormat::new(
+            value
+                .format_n
+                .to_u8()
+                .expect("type coercion for format additional information"),
+        )
+        .expect("well formed match format");
+        Match::new(Some(value.match_id), players, seeds, format).expect("well formed match")
     }
 }

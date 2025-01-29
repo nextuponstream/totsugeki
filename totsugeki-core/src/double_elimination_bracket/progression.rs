@@ -69,13 +69,13 @@ impl DoubleEliminationBracket {
     /// * FIXME use struct `BracketResult` (Unsigned integer x2)
     pub fn report_result_dangerous(
         self,
-        player_id: ID,
+        player_id: &ID,
         result: Score,
     ) -> Result<(Vec<Match>, ID, Vec<Match>), DoubleEliminationReportResultError> {
         assert!(self.seeding.contains(player_id));
         if crate::bracket::matches::is_disqualified(player_id, &self.matches) {
             return Err(DoubleEliminationReportResultError::ForbiddenDisqualified(
-                player_id,
+                *player_id,
             ));
         }
 
@@ -83,13 +83,15 @@ impl DoubleEliminationBracket {
         let Some(m) = self
             .matches
             .iter()
-            .find(|m| m.contains(player_id) && m.get_winner() == Opponent(None))
+            .find(|m| m.contains(player_id) && *m.get_winner() == Opponent(None))
         else {
-            return Err(DoubleEliminationReportResultError::NoMatchToPlay(player_id));
+            return Err(DoubleEliminationReportResultError::NoMatchToPlay(
+                *player_id,
+            ));
         };
-        let affected_match_id = m.get_id();
+        let affected_match_id = *m.get_id();
         let bracket =
-            self.update_player_reported_match_result(affected_match_id, result, player_id);
+            self.update_player_reported_match_result(&affected_match_id, result, player_id);
 
         let bracket =
             if bracket.automatic_match_validation_mode == AutomaticMatchValidationMode::Strict {
@@ -98,7 +100,7 @@ impl DoubleEliminationBracket {
                 bracket.matches.iter().find(|m| m.id == affected_match_id)
             {
                 if match_to_validate.has_all_player_reports() {
-                    bracket.validate_match_result(affected_match_id).0
+                    bracket.validate_match_result(&affected_match_id).0
                 } else {
                     bracket
                 }
@@ -122,9 +124,9 @@ impl DoubleEliminationBracket {
     #[must_use]
     pub fn update_player_reported_match_result(
         self,
-        match_id: ID,
+        match_id: &ID,
         result: Score,
-        player_id: ID,
+        player_id: &ID,
     ) -> Self {
         let Some(m) = self.matches.iter().find(|m| m.get_id() == match_id) else {
             panic!("unknown match")
@@ -167,14 +169,22 @@ impl DoubleEliminationBracket {
     /// * FIXME add test When `match_id` is unknown
     /// * FIXME add test When validating `match_id` is not possible
     #[must_use]
-    pub fn validate_match_result(self, match_id: ID) -> (DoubleEliminationBracket, Vec<Match>) {
-        assert_eq!(self.matches.iter().filter(|m| m.id == match_id).count(), 1);
+    pub fn validate_match_result(self, match_id: &ID) -> (DoubleEliminationBracket, Vec<Match>) {
+        assert_eq!(
+            self.matches
+                .iter()
+                .filter(|m| m.get_id() == match_id)
+                .count(),
+            1
+        );
         // NOTE: w_bracket -> winner bracket
         //       l_bracket -> loser bracket
         let (w_bracket, l_bracket, _gf, _gf_reset) =
             self.partition_matches().expect("enough players");
-        let match_to_validate_is_in_winner_bracket = w_bracket.iter().any(|m| m.id == match_id);
-        let match_to_validate_is_in_loser_bracket = l_bracket.iter().any(|m| m.id == match_id);
+        let match_to_validate_is_in_winner_bracket =
+            w_bracket.iter().any(|m| m.get_id() == match_id);
+        let match_to_validate_is_in_loser_bracket =
+            l_bracket.iter().any(|m| m.get_id() == match_id);
         if match_to_validate_is_in_winner_bracket {
             self.validate_from_winner(match_id)
         } else if match_to_validate_is_in_loser_bracket {
@@ -220,7 +230,7 @@ impl DoubleEliminationBracket {
 /// `loser` is a `Player`
 pub(crate) fn update_loser_bracket_after_updating_winners_bracket(
     l_bracket: &[Match],
-    loser: ID,
+    loser: &ID,
     is_disqualified_from_winners: bool,
     expected_loser_seed: usize,
 ) -> Vec<Match> {
@@ -236,7 +246,7 @@ pub(crate) fn update_loser_bracket_after_updating_winners_bracket(
         };
         let l_bracket = match l_bracket
             .iter()
-            .find(|m| m.contains(loser) && m.get_winner() == Opponent(None))
+            .find(|m| m.contains(loser) && *m.get_winner() == Opponent(None))
         {
             Some(match_to_set_dq) => {
                 let match_to_set_dq = (*match_to_set_dq).set_automatic_loser(loser);
@@ -260,7 +270,7 @@ pub(crate) fn update_loser_bracket_after_updating_winners_bracket(
 
 /// Place player with `Player` id `loser` from winner's bracket into loser
 /// bracket using seed of `expected_loser_seed`. Returns updated loser bracket
-fn send_to_losers(loser_bracket: &[Match], loser: ID, expected_loser_seed: usize) -> Vec<Match> {
+fn send_to_losers(loser_bracket: &[Match], loser: &ID, expected_loser_seed: usize) -> Vec<Match> {
     let loser_match = loser_bracket
         .iter()
         .find(|m| m.is_first_loser_match(expected_loser_seed))
@@ -296,9 +306,9 @@ impl DoubleEliminationBracket {
     /// FIXME add test Reporting result for people that are not playing each other
     pub fn tournament_organiser_reports_result_dangerous(
         self,
-        player1_id: ID,
+        player1_id: &ID,
         result: Score,
-        player2_id: ID,
+        player2_id: &ID,
     ) -> Result<(DoubleEliminationBracket, ID, Vec<Match>), DoubleEliminationReportResultError>
     {
         assert!(

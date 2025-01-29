@@ -28,8 +28,12 @@ pub async fn new_bracket(Json(form): Json<CreateTournamentForm>) -> impl IntoRes
     let mut tournament = Tournament::default();
     tournament.set_name(form.tournament_name);
     for (index, name) in form.player_names.iter().enumerate() {
-        let tournament_player =
-            TournamentPlayer::new_guest(name.clone(), (index + 1).to_i16().unwrap());
+        let tournament_player = TournamentPlayer::new_guest(
+            name.clone(),
+            (index + 1)
+                .to_i16()
+                .expect("infer seeding from insertion order"),
+        );
         let Ok(()) = tournament.add_player(tournament_player) else {
             // FIXME actual error handling
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
@@ -40,7 +44,7 @@ pub async fn new_bracket(Json(form): Json<CreateTournamentForm>) -> impl IntoRes
             tournament
                 .get_players()
                 .into_iter()
-                .map(|tp| tp.get_id())
+                .map(|tp| tp.get_id().to_owned())
                 .collect(),
         )
         .expect("should use seeding from tournament organiser input"),

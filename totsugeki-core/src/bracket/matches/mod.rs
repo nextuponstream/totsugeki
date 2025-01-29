@@ -68,7 +68,7 @@ pub(crate) fn bracket_is_over(bracket_matches: &[Match]) -> bool {
 
 /// Returns true when `player_id` has been disqualified by looking into all
 /// `matches` in the bracket
-pub(crate) fn is_disqualified(player_id: ID, matches: &[Match]) -> bool {
+pub(crate) fn is_disqualified(player_id: &ID, matches: &[Match]) -> bool {
     matches
         .iter()
         .any(|m| m.is_automatic_loser_by_disqualification(player_id))
@@ -107,20 +107,20 @@ type BracketUpdate = (Vec<Match>, Option<(ID, usize, bool)>);
 /// # Errors
 /// thrown when attempting an update for winner/loser bracket match in
 /// loser/winner bracket
-pub(crate) fn update(bracket_matches: &[Match], match_id: ID) -> Result<BracketUpdate, Error> {
+pub(crate) fn update(bracket_matches: &[Match], match_id: &ID) -> Result<BracketUpdate, Error> {
     let m = bracket_matches
         .iter()
         .find(|m| m.get_id() == match_id)
         .expect("should find match to update");
     // declare winner if there is one
-    let is_disqualified = m.get_automatic_loser() != Opponent(None);
+    let is_disqualified = m.get_automatic_loser() != &Opponent(None);
     let (updated_m, winner, loser) = (*m).update_outcome()?;
     let seed_of_expected_winner = updated_m.get_seeds()[0];
     let expected_loser_seed = updated_m.get_seeds()[1];
     let bracket = update_bracket_with(bracket_matches, &updated_m);
 
     let last_match = bracket.last().expect("there should be matches in bracket");
-    if last_match.get_id() == m.id {
+    if last_match.get_id() == &m.id {
         return Ok((bracket, Some((loser, expected_loser_seed, is_disqualified))));
     }
 
@@ -136,7 +136,7 @@ pub(crate) fn update(bracket_matches: &[Match], match_id: ID) -> Result<BracketU
                 .find(|m| m.get_seeds().contains(&seed_of_expected_winner))
                 .expect("match where winner of updated match plays next");
             let updated_match =
-                (*m).insert_player(winner_id, m.get_seeds()[0] == seed_of_expected_winner);
+                (*m).insert_player(&winner_id, m.get_seeds()[0] == seed_of_expected_winner);
             update_bracket_with(&bracket, &updated_match)
         }
         None => bracket,
@@ -152,7 +152,8 @@ pub(crate) fn update(bracket_matches: &[Match], match_id: ID) -> Result<BracketU
         .iter()
         .any(Match::needs_update_because_of_disqualified_participant)
     {
-        let to_update = bracket
+        let bracket_copy = bracket.clone();
+        let to_update = bracket_copy
             .iter()
             .find(|m| m.needs_update_because_of_disqualified_participant())
             .expect("match with disqualified player");

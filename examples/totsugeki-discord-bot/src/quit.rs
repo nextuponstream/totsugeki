@@ -44,7 +44,7 @@ async fn quit(ctx: &Context, msg: &Message) -> CommandResult {
                 let seeding = single_elimination_bracket.get_seeding().get();
                 let seeding = seeding
                     .into_iter()
-                    .filter(|id| *id != player.get_id())
+                    .filter(|id| id != player.get_id())
                     .collect::<Vec<ID>>();
                 let seb = SingleEliminationBracket::create(
                     Seeding::new(seeding).expect("seeding should not contain user"),
@@ -69,7 +69,7 @@ async fn quit(ctx: &Context, msg: &Message) -> CommandResult {
                 let seeding = double_elimination_bracket.get_seeding().get();
                 let seeding = seeding
                     .into_iter()
-                    .filter(|id| *id != player.get_id())
+                    .filter(|id| id != player.get_id())
                     .collect::<Vec<ID>>();
                 let deb = DoubleEliminationBracket::create(
                     Seeding::new(seeding).expect("seeding should not contain user"),

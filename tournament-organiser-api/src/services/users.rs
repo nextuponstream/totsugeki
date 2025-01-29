@@ -1,4 +1,4 @@
-//!
+//! User business logic
 
 use crate::services::traits::user_trait::UserTrait;
 

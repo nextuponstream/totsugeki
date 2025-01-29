@@ -21,7 +21,7 @@ mod tests {
 
         for i in 1..=8000 {
             let p = Player::new(format!("p{i}"));
-            seeding.push(p.get_id());
+            seeding.push(p.get_id().to_owned());
             players.push(p);
         }
 

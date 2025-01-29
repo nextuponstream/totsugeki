@@ -38,7 +38,7 @@ pub(crate) fn new_matches_to_play_for_bracket(
 pub(crate) fn winner_of_bracket(bracket: &[Match]) -> Option<ID> {
     match bracket.last() {
         Some(m) => match m.get_winner() {
-            Opponent(Some(p)) => Some(p),
+            Opponent(Some(p)) => Some(*p),
             Opponent(None) => None,
         },
         None => None,

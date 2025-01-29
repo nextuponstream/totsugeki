@@ -12,8 +12,8 @@ pub struct PlayerRepository {}
 
 impl PlayerRepository {
     /// Returns `true` if `user_id` is a player of `tournament_id`
-    pub async fn is_user_a_player_in_tournament<'a>(
-        transaction: SqlxTransaction<'a, '_>,
+    pub async fn is_user_a_player_in_tournament(
+        transaction: SqlxTransaction<'_, '_>,
         user_id: ID,
         tournament_id: ID,
     ) -> Result<bool, SqlxError> {
@@ -34,8 +34,8 @@ AND tournament_id = $2
     }
 
     /// Add guests as tournament players
-    pub async fn add_guests<'a>(
-        transaction: SqlxTransaction<'a, '_>,
+    pub async fn add_guests(
+        transaction: SqlxTransaction<'_, '_>,
         tournament_id: ID,
         guests: Vec<Guest>,
     ) -> Result<Vec<TournamentPlayer>, SqlxError> {
@@ -47,7 +47,7 @@ INSERT INTO players (tournament_id, guest_id, seeding_index) VALUEs ($1, $2, $3)
               "#,
                 tournament_id,
                 guest.get_id(),
-                (index + 1).to_i16().unwrap(),
+                (index + 1).to_i16().expect("type coercion"),
             )
             .fetch_one(&mut **transaction)
             .await?
@@ -55,8 +55,8 @@ INSERT INTO players (tournament_id, guest_id, seeding_index) VALUEs ($1, $2, $3)
             let player = TournamentPlayer {
                 id: player_id,
                 user_id: None,
-                guest_id: Some(guest.get_id()),
-                name: guest.get_name(),
+                guest_id: Some(guest.get_id().to_owned()),
+                name: guest.get_name().to_owned(),
                 seeding: (index + 1).try_into().expect("seeding"),
             };
             players.push(player);
@@ -66,8 +66,8 @@ INSERT INTO players (tournament_id, guest_id, seeding_index) VALUEs ($1, $2, $3)
     }
 
     /// Read all players for `tournament_id`
-    pub async fn read_for_tournament<'a>(
-        transaction: SqlxTransaction<'a, '_>,
+    pub async fn read_for_tournament(
+        transaction: SqlxTransaction<'_, '_>,
         tournament_id: ID,
     ) -> Result<Vec<TournamentPlayer>, SqlxError> {
         let players = sqlx::query_as!(
@@ -88,6 +88,6 @@ WHERE tournament_id = $1
         )
         .fetch_all(&mut **transaction)
         .await?;
-        Ok(players.into_iter().map(|pd| pd.into()).collect())
+        Ok(players.into_iter().map(std::convert::Into::into).collect())
     }
 }

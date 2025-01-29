@@ -20,6 +20,8 @@ pub mod opponent;
 pub mod player;
 pub mod seeding;
 pub mod single_elimination_bracket;
+#[cfg(test)]
+pub mod test_utils;
 pub mod validation;
 
 /// ID for bracket, players...

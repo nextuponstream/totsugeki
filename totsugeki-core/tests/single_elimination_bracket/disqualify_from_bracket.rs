@@ -1,4 +1,5 @@
 use crate::common::assert_outcome;
+use crate::common::TestUtils;
 use totsugeki_core::bracket::seeding::Seeding;
 use totsugeki_core::matches::result::{MatchFormat, Score};
 use totsugeki_core::opponent::Opponent;
@@ -14,7 +15,7 @@ fn disqualifying_everyone() {
     for i in 1..=8 {
         let player = Player::new(format!("p{i}"));
         p.push(player.clone());
-        seeding.push(player.get_id());
+        seeding.push(*player.get_id());
     }
     let seeding = Seeding::new(seeding).unwrap();
     let auto = AutomaticMatchValidationMode::Strict;
@@ -65,7 +66,7 @@ fn disqualifying_unknown_player_is_a_no_op() {
     );
 
     let unknown_player = ID::new_v4();
-    let _ = bracket.disqualify_participant_from_bracket(unknown_player);
+    let _ = bracket.disqualify_participant_from_bracket(&unknown_player);
 }
 
 #[test]
@@ -75,7 +76,7 @@ fn opponent_of_disqualified_player_can_play_their_next_match() {
     for i in 1..=3 {
         let player = Player::new(format!("p{i}"));
         p.push(player.clone());
-        seeding.push(player.get_id());
+        seeding.push(*player.get_id());
     }
     let bracket = SingleEliminationBracket::create(
         Seeding::new(seeding).unwrap(),
@@ -114,7 +115,7 @@ fn disqualifying_player_sets_looser_of_their_current_match() {
     for i in 1..=3 {
         let player = Player::new(format!("p{i}"));
         p.push(player.clone());
-        seeding.push(player.get_id());
+        seeding.push(*player.get_id());
     }
     let bracket = SingleEliminationBracket::create(
         Seeding::new(seeding).unwrap(),
@@ -126,7 +127,7 @@ fn disqualifying_player_sets_looser_of_their_current_match() {
     let (bracket, match_id_p2, _new_matches) = bracket
         .tournament_organiser_reports_result(p[2].get_id(), Score(2, 0), p[3].get_id())
         .unwrap();
-    let (bracket, _) = bracket.validate_match_result(match_id_p2);
+    let (bracket, _) = bracket.validate_match_result(&match_id_p2);
 
     assert!(
         !bracket.get_matches().iter().any(
@@ -148,22 +149,16 @@ fn disqualifying_player_sets_looser_of_their_current_match() {
         bracket
             .get_matches()
             .iter()
-            .all(|m| m.get_winner() != Opponent(None)),
+            .all(|m| *m.get_winner() != Opponent(None)),
         "expected all matches were played"
     );
 }
 
 #[test]
 fn disqualifying_player_sets_their_opponent_as_the_winner_and_they_move_to_their_next_match() {
-    let mut p = vec![Player::new("don't use".into())];
-    let mut seeding = vec![];
-    for i in 1..=3 {
-        let player = Player::new(format!("p{i}"));
-        p.push(player.clone());
-        seeding.push(player.get_id());
-    }
+    let (seeding, (p, _), _) = TestUtils::seeding_for_n_players(3);
     let bracket = SingleEliminationBracket::create(
-        Seeding::new(seeding).unwrap(),
+        seeding,
         AutomaticMatchValidationMode::Strict,
         MatchFormat::ft3(),
         None,

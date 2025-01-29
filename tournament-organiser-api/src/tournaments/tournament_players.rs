@@ -59,7 +59,7 @@ impl TournamentPlayer {
     }
 
     /// Get ID of player
-    pub fn get_id(&self) -> ID {
-        self.id
+    pub fn get_id(&self) -> &ID {
+        &self.id
     }
 }

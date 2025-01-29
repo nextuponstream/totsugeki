@@ -42,7 +42,7 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
             Format::SingleEliminationBracket => {
                 let seeding = single_elimination_bracket.get_seeding();
                 let mut players = seeding.get();
-                players.push(player.get_id());
+                players.push(player.get_id().to_owned());
                 let seeding = match Seeding::new(players) {
                     Ok(r) => r,
                     Err(e) => {
@@ -74,7 +74,7 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
             Format::DoubleEliminationBracket => {
                 let seeding = double_elimination_bracket.get_seeding();
                 let mut players = seeding.get();
-                players.push(player.get_id());
+                players.push(*player.get_id());
                 let seeding = match Seeding::new(players) {
                     Ok(r) => r,
                     Err(e) => {

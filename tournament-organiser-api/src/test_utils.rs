@@ -230,8 +230,8 @@ impl TestApp {
             .json(&ReportResultInput {
                 player1_id: pink_player_id.try_into().unwrap(),
                 player2_id: john_mid_player_id.try_into().unwrap(),
-                score_p1: 2,
-                score_p2: 0,
+                score_p1: score.0,
+                score_p2: score.1,
             })
             .send()
             .await

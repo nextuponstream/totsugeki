@@ -45,8 +45,10 @@ pub struct PaginatedTournamentResource {
 
 impl TournamentService {
     /// Create tournament and set creator `user_id` as tournament organiser
-    pub async fn create_tournament_organiser_and_matches<'a>(
-        transaction: SqlxTransaction<'a, '_>,
+    /// # Errors
+    /// Returns an error if communication with the database fails.
+    pub async fn create_tournament_organiser_and_matches(
+        transaction: SqlxTransaction<'_, '_>,
         tournament: &Tournament,
         double_elimination_bracket: &DoubleEliminationBracket,
         user_id: ID,
@@ -68,11 +70,14 @@ impl TournamentService {
     }
 
     /// Get tournament with matches and players
-    pub async fn get_tournament<'a>(
-        transaction: SqlxTransaction<'a, '_>,
+    ///
+    /// # Errors
+    /// Returns an error if communication with the database fails.
+    pub async fn get_tournament(
+        transaction: SqlxTransaction<'_, '_>,
         tournament_id: ID,
     ) -> Result<Option<TournamentAugmentedRecord>, SqlxError> {
-        Ok(sqlx::query_as!(
+        sqlx::query_as!(
             TournamentAugmentedRecord,
             r#"
 SELECT
@@ -112,12 +117,19 @@ GROUP BY tournaments.id
         )
         // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
         .fetch_optional(&mut **transaction)
-        .await?)
+        .await
     }
 
-    /// User joins tournament
-    pub async fn join<'a>(
-        transaction: SqlxTransaction<'a, '_>,
+    /// `user` joins `tournament_id`
+    ///
+    /// # Errors
+    /// If user has already joined tournament. This function may also return an error if
+    /// communication with the database fails.
+    ///
+    /// # Panics
+    /// If type coercion fails
+    pub async fn join(
+        transaction: SqlxTransaction<'_, '_>,
         tournament_id: ID,
         user: UserRecord,
     ) -> Result<Option<(Tournament, DoubleEliminationBracket, bool)>, Error> {
@@ -141,10 +153,13 @@ GROUP BY tournaments.id
 
         let (mut tournament, _): (Tournament, _) = tournament_record.parse();
 
-        let seeding = tournament.get_players().iter().count() + 1;
+        let seeding = tournament.get_players().len() + 1;
 
-        let tournament_player =
-            TournamentPlayer::new_user(user.id, user.name, seeding.to_i16().unwrap());
+        let tournament_player = TournamentPlayer::new_user(
+            user.id,
+            user.name,
+            seeding.to_i16().expect("coerced type for seeding"),
+        );
         Self::create_player(transaction, tournament_id, tournament_player.clone()).await?;
         if let Err(e) = tournament.add_player(tournament_player) {
             return match e {
@@ -157,7 +172,7 @@ GROUP BY tournaments.id
                 tournament
                     .get_players()
                     .iter()
-                    .map(|tp| tp.get_id())
+                    .map(|tp| *tp.get_id())
                     .collect(),
             )
             .expect("should update seeding of bracket with tournament valid seeding"),
@@ -169,10 +184,14 @@ GROUP BY tournaments.id
         Ok(Some((tournament, bracket, is_tournament_organiser)))
     }
 
-    /// List all tournaments belonging to `user_id`
-    pub async fn list<'a>(
-        transaction: SqlxTransaction<'a, '_>,
-        sort_order: String,
+    /// List all tournaments belonging to `user_id`. Uses table column name to `sort` the output and
+    /// paginates the output with `limit` and `offset`.
+    ///
+    /// # Errors
+    /// Returns an error if communication with the database fails.
+    pub async fn list(
+        transaction: SqlxTransaction<'_, '_>,
+        sort: String,
         limit: i64,
         offset: i64,
     ) -> Result<Vec<PaginatedTournamentResource>, SqlxError> {
@@ -187,7 +206,7 @@ ORDER BY
 LIMIT $2
 OFFSET $3
             "#,
-            sort_order,
+            sort,
             limit,
             offset
         )
@@ -199,8 +218,11 @@ OFFSET $3
 
     /// Returns tournament in database and boolean if user is a tournament
     /// organiser of that tournament
-    pub async fn read_for_user<'a>(
-        transaction: SqlxTransaction<'a, '_>,
+    ///
+    /// # Errors
+    /// Returns an error if communication with the database fails.
+    pub async fn read_for_user(
+        transaction: SqlxTransaction<'_, '_>,
         tournament_id: ID,
         user_id: Option<ID>,
     ) -> Result<Option<(Tournament, DoubleEliminationBracket, bool)>, SqlxError> {
@@ -229,12 +251,7 @@ OFFSET $3
         //             return Ok(None);
         //         };
         let is_tournament_organiser = if let Some(user_id) = user_id {
-            TournamentService::is_tournament_organiser(
-                transaction,
-                user_id.into(),
-                tournament_id.into(),
-            )
-            .await?
+            TournamentService::is_tournament_organiser(transaction, user_id, tournament_id).await?
         } else {
             false
         };
@@ -245,8 +262,11 @@ OFFSET $3
     }
 
     /// List all brackets belonging to `user_id`
-    pub async fn user_tournaments<'a>(
-        transaction: SqlxTransaction<'a, '_>,
+    ///
+    /// # Errors
+    /// Returns an error if communication with the database fails.
+    pub async fn user_tournaments(
+        transaction: SqlxTransaction<'_, '_>,
         sort_order: String,
         limit: i64,
         offset: i64,
@@ -290,8 +310,11 @@ OFFSET $3
     }
 
     /// Update bracket with result
-    pub async fn update_with_result<'a>(
-        transaction: SqlxTransaction<'a, '_>,
+    ///
+    /// # Errors
+    /// When report is incompatible with bracket state
+    pub async fn update_with_result(
+        transaction: SqlxTransaction<'_, '_>,
         tournament_id: ID,
         report: &ReportResultInput,
     ) -> Result<
@@ -308,18 +331,18 @@ OFFSET $3
         // FIXME actual error handling
         let (double_elimination_bracket, _, _) = double_elimination_bracket
             .tournament_organiser_reports_result_dangerous(
-                report.player1_id,
+                &report.player1_id,
                 Score(report.score_p1, report.score_p2),
-                report.player2_id,
+                &report.player2_id,
             )?;
         let tournament = Tournament::from(tournament);
         MatchRepository::update_many(transaction, double_elimination_bracket.get_matches()).await?;
-        Ok(Some((tournament.into(), double_elimination_bracket)))
+        Ok(Some((tournament, double_elimination_bracket)))
     }
 
     /// Create `tournament_player` for `tournament_id`
-    async fn create_player<'a>(
-        transaction: SqlxTransaction<'a, '_>,
+    async fn create_player(
+        transaction: SqlxTransaction<'_, '_>,
         tournament_id: ID,
         tournament_player: TournamentPlayer,
     ) -> Result<(), SqlxError> {
@@ -339,14 +362,17 @@ INSERT INTO players (id, tournament_id, user_id, seeding_index) VALUES ($1, $2, 
                 .await?;
                 Ok(())
             }
-            (None, Some(guest)) => todo!(),
+            (None, Some(_guest)) => todo!(),
             _ => unreachable!(),
         }
     }
 
     /// Add guests from names
-    pub async fn add_guests_as_tournament_players<'a>(
-        transaction: SqlxTransaction<'a, '_>,
+    ///
+    /// # Errors
+    /// When database constraint check fails
+    pub async fn add_guests_as_tournament_players(
+        transaction: SqlxTransaction<'_, '_>,
         tournament_id: ID,
         guest_names: Vec<String>,
     ) -> Result<Vec<TournamentPlayer>, SqlxError> {

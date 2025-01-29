@@ -40,8 +40,8 @@ impl Seeding {
 
     /// Contains player
     #[must_use]
-    pub fn contains(&self, player_id: ID) -> bool {
-        self.0.contains(&player_id)
+    pub fn contains(&self, player_id: &ID) -> bool {
+        self.0.contains(player_id)
     }
 
     /// Number of players

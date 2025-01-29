@@ -49,7 +49,7 @@ pub(crate) async fn create_tournament(
             tournament
                 .get_players()
                 .into_iter()
-                .map(|tp| tp.get_id())
+                .map(|tp| *tp.get_id())
                 .collect(),
         )
         .expect("should form seeding with new player"),

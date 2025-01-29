@@ -27,7 +27,7 @@ impl DoubleEliminationBracket {
     /// * enough player in bracket
     pub fn disqualify_participant_from_bracket(
         &self,
-        player_id: ID,
+        player_id: &ID,
     ) -> Result<(Self, Option<Vec<Match>>), Error> {
         assert!(self.seeding.contains(player_id), "player is not in bracket");
         assert!(self.seeding.len() >= 3, "enough player in bracket");
@@ -42,15 +42,15 @@ impl DoubleEliminationBracket {
         let mut matches_to_update = self.matches.clone();
         let Some(m) = matches_to_update.iter_mut().rev().find(|m| {
             m.contains(player_id)
-                && m.get_winner() == Opponent(None)
-                && m.get_automatic_loser() == Opponent(None)
+                && *m.get_winner() == Opponent(None)
+                && *m.get_automatic_loser() == Opponent(None)
         }) else {
             panic!("Could not find match to disqualify player")
         };
 
         // disqualify player then validate match result to update double elimination bracket
         m.set_automatic_loser_(player_id);
-        let initial_match_for_disqualification_id = m.id;
+        let initial_match_for_disqualification_id = *m.get_id();
         let bracket = DoubleEliminationBracket::new(
             matches_to_update,
             self.seeding.clone(),
@@ -58,13 +58,13 @@ impl DoubleEliminationBracket {
         );
 
         // move disqualified player as far as possible
-        let (bracket, _) = bracket.validate_match_result(initial_match_for_disqualification_id);
+        let (bracket, _) = bracket.validate_match_result(&initial_match_for_disqualification_id);
 
         // FIXME use next_opponent and check if opponent is already here
-        let mut matches_to_update = bracket.get_matches();
+        let mut matches_to_update = bracket.get_matches().to_owned();
         let Some(match_in_losers) = matches_to_update
             .iter_mut()
-            .find(|m| m.contains(player_id) && m.get_winner() == Opponent(None))
+            .find(|m| m.contains(player_id) && *m.get_winner() == Opponent(None))
         else {
             return Ok((
                 bracket.clone(),
@@ -73,17 +73,17 @@ impl DoubleEliminationBracket {
         };
         // DQ them in loser bracket and validate result again
         match_in_losers.set_automatic_loser_(player_id);
-        let match_in_loser_id = match_in_losers.id;
+        let match_in_loser_id = *match_in_losers.get_id();
         let match_in_loser_can_be_validated = match_in_losers.has_all_player_reports();
-        let matches_to_update = matches_to_update.clone();
+        let matches_to_update = matches_to_update;
         let bracket = DoubleEliminationBracket::new(
-            matches_to_update.clone(),
+            matches_to_update,
             self.seeding.clone(),
             self.automatic_match_validation_mode,
         );
 
         if match_in_loser_can_be_validated {
-            let (bracket, _) = bracket.validate_match_result(match_in_loser_id);
+            let (bracket, _) = bracket.validate_match_result(&match_in_loser_id);
             Ok((
                 bracket.clone(),
                 bracket.new_playable_matches(&old_playable_matches),

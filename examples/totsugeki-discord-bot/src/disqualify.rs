@@ -31,7 +31,7 @@ async fn disqualify(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
         let (data, _new_playable_matches) = match format {
             Format::SingleEliminationBracket => {
                 let (seb, new_playable_matches) =
-                    single_elimination_bracket.disqualify_participant_from_bracket(player_id);
+                    single_elimination_bracket.disqualify_participant_from_bracket(&player_id);
                 *bracket_data = (
                     format,
                     users.clone(),
@@ -50,7 +50,7 @@ async fn disqualify(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
             }
             Format::DoubleEliminationBracket => {
                 let (deb, new_playable_matches) = match double_elimination_bracket
-                    .disqualify_participant_from_bracket(player_id)
+                    .disqualify_participant_from_bracket(&player_id)
                 {
                     Ok(r) => r,
                     Err(e) => {

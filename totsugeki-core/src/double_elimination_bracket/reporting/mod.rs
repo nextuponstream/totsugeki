@@ -24,10 +24,10 @@ impl DoubleEliminationBracket {
     /// When data is corrupted
     pub fn tournament_organiser_reports_result(
         self,
-        match_id: ID,
-        player1: ID,
+        match_id: &ID,
+        player1: &ID,
         score: Score,
-        player2: ID,
+        player2: &ID,
     ) -> Result<(DoubleEliminationBracket, Vec<Match>), MatchReportError> {
         assert!(
             self.seeding.contains(player1),
@@ -43,7 +43,7 @@ impl DoubleEliminationBracket {
 
         let match_to_update = matches
             .iter_mut()
-            .find(|m| m.id == match_id)
+            .find(|m| m.get_id() == match_id)
             .expect("match to update");
         if match_to_update.is_over() {
             return Err(MatchReportError::AlreadyReported);

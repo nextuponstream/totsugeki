@@ -8,8 +8,8 @@ pub struct TournamentRepository {}
 
 impl TournamentRepository {
     /// Create tournament
-    pub async fn create<'a>(
-        transaction: SqlxTransaction<'a, '_>,
+    pub async fn create(
+        transaction: SqlxTransaction<'_, '_>,
         tournament: &Tournament,
     ) -> Result<(), SqlxError> {
         let _ = sqlx::query!(

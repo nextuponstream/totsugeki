@@ -17,8 +17,13 @@ fn panics_when_bracket_is_empty() {
         None,
     );
 
-    deb.tournament_organiser_reports_result(ID::new_v4(), ID::new_v4(), Score(2, 0), ID::new_v4())
-        .unwrap();
+    deb.tournament_organiser_reports_result(
+        &ID::new_v4(),
+        &ID::new_v4(),
+        Score(2, 0),
+        &ID::new_v4(),
+    )
+    .unwrap();
 }
 
 #[test]
@@ -30,18 +35,18 @@ fn reporting_twice_for_the_same_match_throws_error() {
         MatchFormat::ft2(),
         None,
     );
-    let match_id_seed_2_vs_seed_3 = deb.get_matches()[0].get_id();
+    let match_id_seed_2_vs_seed_3 = *deb.get_matches()[0].get_id();
 
     let players = deb.get_seeding().get();
     let s2 = players[1];
     let s3 = players[2];
     assert!(!deb.get_matches()[0].is_over());
     let (deb, _n) = deb
-        .tournament_organiser_reports_result(match_id_seed_2_vs_seed_3, s2, Score(2, 0), s3)
+        .tournament_organiser_reports_result(&match_id_seed_2_vs_seed_3, &s2, Score(2, 0), &s3)
         .unwrap();
     assert!(deb.get_matches()[0].is_over());
     let Err(MatchReportError::AlreadyReported) =
-        deb.tournament_organiser_reports_result(match_id_seed_2_vs_seed_3, s2, Score(2, 0), s3)
+        deb.tournament_organiser_reports_result(&match_id_seed_2_vs_seed_3, &s2, Score(2, 0), &s3)
     else {
         panic!("MatchReportError::AlreadyReported was not thrown")
     };

@@ -6,8 +6,8 @@ use crate::ID;
 /// Reusable user queries
 pub trait UserTrait {
     /// True if user `user_id` is tournament organiser of `tournament_id`
-    async fn is_tournament_organiser<'a>(
-        transaction: SqlxTransaction<'a, '_>,
+    async fn is_tournament_organiser(
+        transaction: SqlxTransaction<'_, '_>,
         user_id: ID,
         tournament_id: ID,
     ) -> Result<bool, SqlxError> {

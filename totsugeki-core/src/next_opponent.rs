@@ -12,7 +12,7 @@ pub trait NextOpponentInBracket {
     /// # Errors
     /// Given a certain state of the bracket, this player will may not have
     /// opponent even if the bracket progresses further
-    fn next_opponent_in_bracket(&self, player_id: ID) -> Result<(Opponent, ID), Error>;
+    fn next_opponent_in_bracket(&self, player_id: &ID) -> Result<(Opponent, ID), Error>;
 }
 
 #[derive(Error, Debug)]

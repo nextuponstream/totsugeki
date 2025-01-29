@@ -87,7 +87,7 @@ impl IntoResponse for ErrorSlug {
 }
 
 /// Log the error and give an opaque response. You should try to implement
-/// From<...> IntoResponse instead of using this if possible.
+/// `IntoResponse` instead of using this if possible.
 ///
 /// Because of the orphan rule, this becomes necessary. Otherwise, you'd do
 /// someSqlxOperation?; within a function that returns `AxumResponse`

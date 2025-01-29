@@ -1,33 +1,11 @@
-//! Test commons for integrations tests. Contains a copy of test utils for unit
-//! tests from the `totsugeki_core` library.
-//!
-//! This may go out of sync!!! But the alternatives of creating a test feature
-//! "test_utils" or making a `TestUtils` struct public in the `totsugeki_core`
-//! library hurts my souls. Duplication it is.
+//! Test utils for unit tests and integration tests
 
-use totsugeki_core::bracket::seeding::Seeding;
-use totsugeki_core::matches::Match;
-use totsugeki_core::opponent::Opponent;
-use totsugeki_core::player::{Participants, Player};
-use totsugeki_core::ID;
-
-/// There is a match with a given `winner` and `loser`
-pub fn assert_outcome(matches: &[Match], winner: &Player, loser: &Player) {
-    assert!(
-        matches.iter().any(|m| matches!((
-                m.contains(winner.get_id()),
-                m.contains(loser.get_id()),
-                m.get_winner()
-            ), (true, true, Opponent(Some(match_winner))) if match_winner == winner.get_id())),
-        "No match where {} wins against {}",
-        winner.get_name(),
-        loser.get_name()
-    );
-}
-
-// ------------------------------ copy from `totsugeki_core` test utils
+use crate::bracket::seeding::Seeding;
+use crate::player::{Participants, Player};
+use crate::ID;
 
 /// Test utils for sharing between unit tests and integration tests
+#[cfg(test)]
 pub struct TestUtils {}
 
 /// All relevant test functions that can be
@@ -40,7 +18,7 @@ impl TestUtils {
     /// and 3
     pub fn seeding_for_n_players(
         n: usize,
-    ) -> (Seeding, (Vec<Player>, Vec<ID>), (Vec<Player>, Vec<ID>)) {
+    ) -> (Seeding, (Vec<Player>, Vec<ID>), ((Vec<Player>, Vec<ID>))) {
         let mut padded_players = vec![Player::new("don't use".into())]; // padding for readability
         let mut unpadded_players = vec![]; // padding for readability
         let mut padded_player_ids = vec![ID::default()];

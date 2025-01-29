@@ -130,7 +130,10 @@ impl BoxElement {
 /// `participants` to fill in name of players.
 #[must_use]
 pub fn from_participants(m: &Match, seeding: &[Player]) -> MinimalMatch {
-    let players: Vec<(ID, String)> = seeding.iter().map(|p| (p.get_id(), p.get_name())).collect();
+    let players: Vec<(ID, String)> = seeding
+        .iter()
+        .map(|p| (*p.get_id(), p.get_name()))
+        .collect();
 
     // TODO find out if storing both player name and id is better than storing
     //  only the id and doing some work to get back id and name.
@@ -145,7 +148,7 @@ pub fn from_participants(m: &Match, seeding: &[Player]) -> MinimalMatch {
     let top_seed = m.get_players()[0].get_name(&players);
     let bottom_seed = m.get_players()[1].get_name(&players);
     MinimalMatch {
-        id: m.get_id(),
+        id: *m.get_id(),
         players: [
             Player::from((p1, top_seed)),
             Player::from((p2, bottom_seed)),

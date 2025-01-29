@@ -14,7 +14,7 @@ impl SingleEliminationBracket {
     #[must_use]
     pub fn disqualify_participant_from_bracket(
         self,
-        player_id: ID,
+        player_id: &ID,
     ) -> (SingleEliminationBracket, Option<Vec<Match>>) {
         // in the case where all players are disqualified, the last player being disqualified
         // results in a no-op
@@ -23,7 +23,7 @@ impl SingleEliminationBracket {
             .matches
             .iter()
             .rev()
-            .position(|m| m.contains(player_id) && m.get_winner() == Opponent(None))
+            .position(|m| m.contains(player_id) && *m.get_winner() == Opponent(None))
         {
             let pos = self.matches.len() - 1 - rev_pos_of_match_with_disqualified_player;
             let updated_match = self.matches[pos].set_automatic_loser(player_id);
@@ -33,7 +33,7 @@ impl SingleEliminationBracket {
                 matches: updated_matches,
                 ..self
             };
-            let (b, _) = b.validate_match_result(updated_match.id);
+            let (b, _) = b.validate_match_result(&updated_match.id);
             let new_matches_to_play = b.matches_to_play();
             let new_playable_matches = new_matches_to_play
                 .into_iter()

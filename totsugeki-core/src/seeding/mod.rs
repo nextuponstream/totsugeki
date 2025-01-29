@@ -168,12 +168,12 @@ mod tests {
         assert_seeding_returns_not_enough_player_error(players.clone(), players.clone());
 
         players = players
-            .add_participant(Player::new("player1".to_string()))
+            .add_participant(&Player::new("player1".to_string()))
             .expect("player added");
         assert_seeding_returns_not_enough_player_error(players.clone(), players.clone());
 
         players = players
-            .add_participant(Player::new("player2".to_string()))
+            .add_participant(&Player::new("player2".to_string()))
             .expect("player added");
         assert_seeding_returns_not_enough_player_error(players.clone(), players.clone());
 

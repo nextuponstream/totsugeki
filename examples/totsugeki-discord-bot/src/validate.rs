@@ -31,7 +31,8 @@ async fn validate(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 
         let (data, new_matches) = match format {
             Format::SingleEliminationBracket => {
-                let (seb, new_matches) = single_elimination_bracket.validate_match_result(match_id);
+                let (seb, new_matches) =
+                    single_elimination_bracket.validate_match_result(&match_id);
                 (
                     Data {
                         users,
@@ -43,7 +44,8 @@ async fn validate(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
                 )
             }
             Format::DoubleEliminationBracket => {
-                let (deb, new_matches) = double_elimination_bracket.validate_match_result(match_id);
+                let (deb, new_matches) =
+                    double_elimination_bracket.validate_match_result(&match_id);
                 (
                     Data {
                         users,
@@ -66,7 +68,7 @@ async fn validate(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
                 Opponent(Some(p)) => p,
                 Opponent(None) => panic!("cannot parse opponent"),
             };
-            new_matches_message = format!("{}\n{} VS {}", new_matches_message, player1, player2);
+            new_matches_message = format!("{}\n{} VS {}", new_matches_message, &player1, &player2);
         }
 
         let j = serde_json::to_string(&data).expect("bracket");

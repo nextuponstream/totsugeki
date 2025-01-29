@@ -123,13 +123,13 @@ pub struct BracketState {
 }
 
 /// Breaks down bracket in small parts to be presented by UI
+#[allow(clippy::too_many_lines)]
 fn breakdown(
     tournament: &Tournament,
     bracket: DoubleEliminationBracket,
     user_id: Option<ID>,
     is_tournament_organiser: bool,
 ) -> impl IntoResponse {
-    // TODO test if tracing shows from which methods it was called
     let winner_bracket_rounds = match bracket.partition_winner_bracket() {
         Ok(winner_bracket_matches) => {
             let mut winner_bracket_rounds = vec![];
@@ -142,7 +142,7 @@ fn breakdown(
                             &tournament
                                 .get_players()
                                 .into_iter()
-                                .map(|v| v.into())
+                                .map(std::convert::Into::into)
                                 .collect::<Vec<Player>>(),
                         )
                     })
@@ -172,7 +172,7 @@ fn breakdown(
                             &tournament
                                 .get_players()
                                 .into_iter()
-                                .map(|tp| tp.into())
+                                .map(std::convert::Into::into)
                                 .collect::<Vec<Player>>(),
                         )
                     })
@@ -196,7 +196,7 @@ fn breakdown(
                 &tournament
                     .get_players()
                     .into_iter()
-                    .map(|tp| tp.into())
+                    .map(std::convert::Into::into)
                     .collect::<Vec<Player>>(),
             );
             let gf_reset = from_participants(
@@ -204,7 +204,7 @@ fn breakdown(
                 &tournament
                     .get_players()
                     .into_iter()
-                    .map(|tp| tp.into())
+                    .map(std::convert::Into::into)
                     .collect::<Vec<Player>>(),
             );
             (Some(gf), Some(gf_reset))
@@ -213,7 +213,7 @@ fn breakdown(
     };
 
     let is_participant = match user_id {
-        Some(participant_id) => bracket.get_seeding().contains(participant_id),
+        Some(participant_id) => bracket.get_seeding().contains(&participant_id),
         None => false,
     };
 
@@ -228,15 +228,15 @@ fn breakdown(
             tournament
                 .get_players()
                 .into_iter()
-                .map(|tp| tp.into())
+                .map(std::convert::Into::into)
                 .collect::<Vec<Player>>(),
         ),
         bracket,
         is_participant,
         is_tournament_organiser,
     };
-    tracing::info!("displaying bracket {}", tournament.get_id());
-    tracing::debug!("displaying bracket {:?}", bracket);
+    tracing::info!("displaying tournament {}", tournament.get_id());
+    tracing::debug!("displaying tournament {:?}", bracket);
     (StatusCode::OK, AxumJson(bracket)).into_response()
 }
 
@@ -262,7 +262,7 @@ pub(crate) struct TournamentRecord {
 
 /// Deserialize in tournament information and double elimination bracket
 #[derive(Clone, Serialize, Deserialize, sqlx::FromRow)]
-pub(crate) struct TournamentAugmentedRecord {
+pub struct TournamentAugmentedRecord {
     /// bracket ID
     pub id: ID,
     /// name
@@ -293,7 +293,7 @@ impl From<TournamentAugmentedRecord> for DoubleEliminationBracket {
             .map(|mmatches| {
                 mmatches
                     .into_iter()
-                    .map(|m| m.into())
+                    .map(std::convert::Into::into)
                     .collect::<Vec<Match>>()
             })
             .unwrap_or_default();
@@ -307,7 +307,7 @@ impl From<TournamentAugmentedRecord> for DoubleEliminationBracket {
 
 /// Represents a tournament player from the `players` database table
 #[derive(sqlx::Type, Deserialize, Serialize, Clone)]
-pub(crate) struct PlayerRecord {
+pub struct PlayerRecord {
     /// User ID of player
     pub id: ID,
     /// Name of player
@@ -335,14 +335,14 @@ impl From<PlayerRecord> for TournamentPlayer {
 
 /// Represents a match retrieved from the `matches` database table.
 #[derive(sqlx::Type, Deserialize, Serialize, Clone)]
-pub(crate) struct MatchRecord {
+pub struct MatchRecord {
     /// Index of match, useful for display purpose
     pub pos: i16,
     /// Match ID
     pub match_id: ID,
     /// Match format (example: first to X)
     pub format: String,
-    /// Additionnal match format information (example: first to 3)
+    /// Additional match format information (example: first to 3)
     pub format_n: i16,
     /// left seed (highest seed) for the presumed strongest predicted player
     pub high_seed: i16,
@@ -376,18 +376,23 @@ impl From<PlayerRecord> for Player {
 
 impl TournamentAugmentedRecord {
     /// Retrieve data from tournament record
+    ///
+    /// # Panics
+    /// If seeding inferred from database is malformed
+    #[must_use]
     pub fn parse(self) -> (Tournament, DoubleEliminationBracket) {
-        // let players = self.players.clone().into_iter().map(|v| v.into()).collect();
+        let matches: Vec<Match> = self
+            .matches
+            .clone()
+            .map(|mm| mm.into_iter().map(std::convert::Into::into).collect())
+            .unwrap_or_default();
         let tournament: Tournament = self.into();
-        // let bracket = DoubleEliminationBracket::new(
-        //     self.matches.into_iter().map(|v| v.into()).collect(),
-        //     Seeding::new(self.players.into_iter().map(|v| PlayerID(v.id)).collect())
-        //         .expect("use seeding from database record"),
-        //     AutomaticMatchValidationMode::Flexible, // FIXME should be in tournament record
-        // );
+        let mut tps = tournament.players.clone();
+        tps.sort_by(|a, b| (a.seeding - b.seeding).cmp(&a.seeding));
         let bracket = DoubleEliminationBracket::new(
-            vec![],
-            Seeding::new(vec![]).expect("use seeding from database record"),
+            matches,
+            Seeding::new(tps.into_iter().map(|p| p.get_id().to_owned()).collect())
+                .expect("seeding from player database records"),
             AutomaticMatchValidationMode::Flexible, // FIXME should be in tournament record
         );
 
@@ -404,7 +409,7 @@ impl From<TournamentAugmentedRecord> for Tournament {
             end_time: None,   // FIXME
             format: value.format,
             players: value.players.map_or(vec![], |players| {
-                players.into_iter().map(|p| p.into()).collect()
+                players.into_iter().map(std::convert::Into::into).collect()
             }),
         }
     }
@@ -460,13 +465,6 @@ pub enum ParticipantError {
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct Participants(pub Vec<Player>);
 
-impl Participants {
-    /// Ordered list for seeding
-    pub fn get_seeding(&self) -> Vec<ID> {
-        self.0.iter().map(Player::get_id).collect()
-    }
-}
-
 impl Tournament {
     /// Add player to tournament
     /// # Errors
@@ -481,10 +479,15 @@ impl Tournament {
     }
 
     /// Create new guests from `guest_names`
+    ///
+    /// # Panics
+    /// When guest name list is too big
     pub fn add_guests(&mut self, guest_names: &[String]) {
         for (index, guest_name) in guest_names.iter().enumerate() {
-            let tournament_player =
-                TournamentPlayer::new_guest(guest_name.clone(), (index + 1).to_i16().unwrap());
+            let tournament_player = TournamentPlayer::new_guest(
+                guest_name.clone(),
+                (index + 1).to_i16().expect("infer seeding insertion order"),
+            );
             self.players.push(tournament_player);
         }
     }

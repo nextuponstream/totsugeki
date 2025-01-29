@@ -212,11 +212,11 @@ impl Match {
     pub fn summary_with_name(&self, participants: &Participants) -> String {
         // TODO nitpick could be nicer, results of 3-4 refactoring of types...
         let p1 = match self.players[0] {
-            Opponent(Some(id)) => participants.get(id).expect("player").get_name(),
+            Opponent(Some(id)) => participants.get(&id).expect("player").get_name(),
             Opponent(None) => Opponent(None).to_string(),
         };
         let p2 = match self.players[1] {
-            Opponent(Some(id)) => participants.get(id).expect("player").get_name(),
+            Opponent(Some(id)) => participants.get(&id).expect("player").get_name(),
             Opponent(None) => Opponent(None).to_string(),
         };
 
@@ -267,17 +267,17 @@ pub(crate) fn double_elimination_matches_from_partition(
 impl Match {
     /// Clear result from match and returns updated match
     #[must_use]
-    pub(crate) fn clear_reported_result_from(self, player_id: ID) -> Self {
+    pub(crate) fn clear_reported_result_from(self, player_id: &ID) -> Self {
         assert!(
             self.contains(player_id),
             "cannot clear result of match for unknown player"
         );
         match self.players {
-            [Opponent(Some(p1)), _] if p1 == player_id => Self {
+            [Opponent(Some(p1)), _] if &p1 == player_id => Self {
                 reported_results: [None, self.reported_results[1]],
                 ..self
             },
-            [_, Opponent(Some(p2))] if p2 == player_id => Self {
+            [_, Opponent(Some(p2))] if &p2 == player_id => Self {
                 reported_results: [self.reported_results[0], None],
                 ..self
             },
@@ -291,30 +291,30 @@ impl Match {
 
     /// Returns true if one of the player has id `player_id`
     #[must_use]
-    pub fn contains(&self, player_id: ID) -> bool {
+    pub fn contains(&self, player_id: &ID) -> bool {
         match self.players {
-            [Opponent(Some(p1)), _] if p1 == player_id => true,
-            [_, Opponent(Some(p2))] if p2 == player_id => true,
+            [Opponent(Some(p1)), _] if p1 == *player_id => true,
+            [_, Opponent(Some(p2))] if p2 == *player_id => true,
             _ => false,
         }
     }
 
     /// Get id of match
     #[must_use]
-    pub fn get_id(&self) -> ID {
-        self.id
+    pub fn get_id(&self) -> &ID {
+        &self.id
     }
 
     /// Get automatic looser of match. Loosers are always players
     #[must_use]
-    pub fn get_automatic_loser(&self) -> Opponent {
-        self.automatic_loser
+    pub fn get_automatic_loser(&self) -> &Opponent {
+        &self.automatic_loser
     }
 
     /// Get players for this match
     #[must_use]
-    pub fn get_players(&self) -> MatchPlayers {
-        self.players
+    pub fn get_players(&self) -> &MatchPlayers {
+        &self.players
     }
 
     /// Get seeds of (predicted) player
@@ -325,15 +325,15 @@ impl Match {
 
     /// Get winner of match. Winners are players
     #[must_use]
-    pub fn get_winner(&self) -> Opponent {
-        self.winner
+    pub fn get_winner(&self) -> &Opponent {
+        &self.winner
     }
 
     /// Returns true if player the automatic looser of this match is given
     /// player
     #[must_use]
-    pub(crate) fn is_automatic_loser_by_disqualification(&self, player_id: ID) -> bool {
-        matches!(self.automatic_loser, Opponent(Some(loser)) if loser == player_id)
+    pub(crate) fn is_automatic_loser_by_disqualification(&self, player_id: &ID) -> bool {
+        matches!(self.automatic_loser, Opponent(Some(loser)) if &loser == player_id)
     }
 
     #[must_use]
@@ -444,12 +444,12 @@ impl Match {
     ///
     /// # Panics
     /// * looser is not a participant of the match
-    pub fn set_automatic_loser_(&mut self, player_id: ID) {
+    pub fn set_automatic_loser_(&mut self, player_id: &ID) {
         assert!(self.contains(player_id), "player {player_id} in match");
 
         let loser = match self.players {
-            [Opponent(Some(p1)), _] if p1 == player_id => self.players[0],
-            [_, Opponent(Some(p2))] if p2 == player_id => self.players[1],
+            [Opponent(Some(p1)), _] if &p1 == player_id => self.players[0],
+            [_, Opponent(Some(p2))] if &p2 == player_id => self.players[1],
             _ => Opponent(None),
         };
 
@@ -462,12 +462,12 @@ impl Match {
     /// # Panics
     /// When player does not belong to the match
     #[must_use]
-    pub fn set_automatic_loser(self, player_id: ID) -> Self {
+    pub fn set_automatic_loser(self, player_id: &ID) -> Self {
         assert!(self.contains(player_id), "player {player_id} in match");
 
         let loser = match self.players {
-            [Opponent(Some(p1)), _] if p1 == player_id => self.players[0],
-            [_, Opponent(Some(p2))] if p2 == player_id => self.players[1],
+            [Opponent(Some(p1)), _] if &p1 == player_id => self.players[0],
+            [_, Opponent(Some(p2))] if &p2 == player_id => self.players[1],
             _ => Opponent(None),
         };
 
@@ -485,12 +485,12 @@ impl Match {
     /// # Panics
     /// * if opponent is already present
     /// * someone was already set
-    pub(crate) fn set_player(self, player_id: ID, higher_seed: bool) -> Self {
+    pub(crate) fn set_player(self, player_id: &ID, higher_seed: bool) -> Self {
         assert!(
             !self.contains(player_id),
             "cannot set opponent when already in the match"
         );
-        let player = Opponent(Some(player_id));
+        let player = Opponent(Some(*player_id));
         let players = if higher_seed {
             assert_eq!(self.players[0], Opponent(None));
             [player, self.players[1]]
@@ -506,17 +506,17 @@ impl Match {
     /// # Panics
     /// If match slot is not empty
     #[must_use]
-    pub fn insert_player(self, player_id: ID, is_player_1: bool) -> Match {
+    pub fn insert_player(self, player_id: &ID, is_player_1: bool) -> Match {
         match (is_player_1, self.players) {
             (true, [Opponent(Some(other_player)), _])
             | (false, [_, Opponent(Some(other_player))])
-                if player_id != other_player =>
+                if player_id != &other_player =>
             {
                 panic!("player {player_id} is already in match {}", self.id);
             }
             _ => {}
         }
-        let player = Opponent(Some(player_id));
+        let player = Opponent(Some(*player_id));
         let players = if is_player_1 {
             [player, self.players[1]]
         } else {
@@ -668,12 +668,12 @@ impl Match {
     /// # Panics
     /// When referred player is not in the match or opponent has not been defined
     #[must_use]
-    pub fn update_reported_result(self, player_id: ID, result: ReportedResult) -> Self {
+    pub fn update_reported_result(self, player_id: &ID, result: ReportedResult) -> Self {
         match self.players {
             [Opponent(None), _] | [_, Opponent(None)] => {
                 panic!("All opponents must be defined before reporting result")
             }
-            [Opponent(Some(player1)), Opponent(Some(_))] if player1 == player_id => {
+            [Opponent(Some(player1)), Opponent(Some(_))] if &player1 == player_id => {
                 let mut reported_results = self.reported_results;
                 reported_results[0] = result.0;
                 Match {
@@ -686,7 +686,7 @@ impl Match {
                     format: self.format,
                 }
             }
-            [Opponent(Some(_)), Opponent(Some(player2))] if player2 == player_id => {
+            [Opponent(Some(_)), Opponent(Some(player2))] if &player2 == player_id => {
                 let mut reported_results = self.reported_results;
                 reported_results[1] = result.0;
                 Match {
@@ -773,9 +773,9 @@ mod tests {
         let unknown = ID::new_v4();
         let m =
             Match::new(None, [player_1, player_2], [1, 2], MatchFormat::default()).expect("match");
-        assert!(m.contains(p1));
-        assert!(m.contains(p2));
-        assert!(!m.contains(unknown));
+        assert!(m.contains(&p1));
+        assert!(m.contains(&p2));
+        assert!(!m.contains(&unknown));
     }
 
     #[test]
@@ -794,7 +794,7 @@ mod tests {
         let p2 = Player::new("p2".into());
         let m = Match::new(
             None,
-            [Opponent(Some(p1.get_id())), Opponent(Some(p2.get_id()))],
+            [Opponent(Some(*p1.get_id())), Opponent(Some(*p2.get_id()))],
             [1, 2],
             MatchFormat::default(),
         )
@@ -811,7 +811,7 @@ mod tests {
 
         let m = Match::new(
             None,
-            [Opponent(Some(p1.get_id())), Opponent(Some(p2.get_id()))],
+            [Opponent(Some(*p1.get_id())), Opponent(Some(*p2.get_id()))],
             [1, 2],
             MatchFormat::default(),
         )
@@ -828,7 +828,7 @@ mod tests {
 
         let m = Match::new(
             None,
-            [Opponent(Some(p1.get_id())), Opponent(Some(p2.get_id()))],
+            [Opponent(Some(*p1.get_id())), Opponent(Some(*p2.get_id()))],
             [2, 1],
             MatchFormat::ft2(),
         )
@@ -845,7 +845,7 @@ mod tests {
 
         let m = Match::new(
             None,
-            [Opponent(Some(p1.get_id())), Opponent(Some(p2.get_id()))],
+            [Opponent(Some(*p1.get_id())), Opponent(Some(*p2.get_id()))],
             [2, 1],
             MatchFormat::ft2(),
         )
@@ -867,7 +867,7 @@ mod tests {
         let p2 = Player::new("p2".into());
         let m = Match::new(
             None,
-            [Opponent(Some(p1.get_id())), Opponent(Some(p2.get_id()))],
+            [Opponent(Some(*p1.get_id())), Opponent(Some(*p2.get_id()))],
             [1, 2],
             MatchFormat::ft2(),
         )
@@ -876,7 +876,7 @@ mod tests {
 
         let m = Match::new(
             None,
-            [Opponent(None), Opponent(Some(p2.get_id()))],
+            [Opponent(None), Opponent(Some(*p2.get_id()))],
             [1, 2],
             MatchFormat::ft2(),
         )
@@ -884,7 +884,7 @@ mod tests {
         assert!(!m.needs_playing());
         let m = Match::new(
             None,
-            [Opponent(Some(p1.get_id())), Opponent(None)],
+            [Opponent(Some(*p1.get_id())), Opponent(None)],
             [1, 2],
             MatchFormat::ft2(),
         )
@@ -944,12 +944,12 @@ mod tests {
         let m = Match::default();
         let p1 = ID::new_v4();
         let p2 = ID::new_v4();
-        let m = m.insert_player(p1, true);
-        let _m = m.insert_player(p2, false);
+        let m = m.insert_player(&p1, true);
+        let _m = m.insert_player(&p2, false);
 
         let m = Match::default();
-        let m = m.insert_player(p2, false);
-        let _m = m.insert_player(p1, true);
+        let m = m.insert_player(&p2, false);
+        let _m = m.insert_player(&p1, true);
     }
 
     #[test]
@@ -966,7 +966,7 @@ mod tests {
         .expect("match");
         let p1_intruder = ID::new_v4();
 
-        let _ = m.insert_player(p1_intruder, true);
+        let _ = m.insert_player(&p1_intruder, true);
     }
     #[test]
     #[should_panic]
@@ -982,7 +982,7 @@ mod tests {
         .expect("match");
 
         let p2_intruder = ID::new_v4();
-        let _ = m.insert_player(p2_intruder, false);
+        let _ = m.insert_player(&p2_intruder, false);
     }
 
     #[test]
@@ -997,13 +997,13 @@ mod tests {
         )
         .expect("match");
 
-        let m = m.insert_player(p1, true);
-        let m = m.insert_player(p1, true);
-        let m = m.insert_player(p1, true);
+        let m = m.insert_player(&p1, true);
+        let m = m.insert_player(&p1, true);
+        let m = m.insert_player(&p1, true);
 
-        let m = m.insert_player(p2, false);
-        let m = m.insert_player(p2, false);
-        let _m = m.insert_player(p2, false);
+        let m = m.insert_player(&p2, false);
+        let m = m.insert_player(&p2, false);
+        let _m = m.insert_player(&p2, false);
     }
 
     #[test]

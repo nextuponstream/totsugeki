@@ -1,11 +1,13 @@
 //! Report result without saving to database
 
-use crate::http::ErrorSlug;
-use crate::tournaments::{breakdown, ReportResultInput};
+// use crate::http::ErrorSlug;
+// use crate::tournaments::breakdown;
+use crate::tournaments::ReportResultInput;
 use axum::response::IntoResponse;
 use axum::Json;
 use http::StatusCode;
-use totsugeki_core::matches::result::Score;
+// use totsugeki_core::matches::result::Score;
+use crate::ApiResponse;
 use tracing::instrument;
 
 /// Returns updated bracket with result. Because there is no persistence, it's
@@ -20,9 +22,11 @@ use tracing::instrument;
 /// Error 500 if a user gets out of sync with the bracket in the database and
 /// the one displayed in the web page
 // TODO report should be at debug level
-#[instrument(name = "score", skip(report))]
-pub async fn score(Json(report): Json<ReportResultInput>) -> impl IntoResponse {
-    todo!()
+#[instrument(name = "score", skip(_report))]
+pub async fn score(Json(_report): Json<ReportResultInput>) -> impl IntoResponse {
+    todo!();
+    #[allow(unreachable_code)]
+    (StatusCode::OK, Json(ApiResponse::default())).into_response()
     // tracing::debug!("new reported result");
     // let bracket = report.bracket;
     // let tournament = report.tournament;

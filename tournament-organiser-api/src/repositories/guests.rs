@@ -8,8 +8,8 @@ pub struct GuestRepository {}
 
 impl GuestRepository {
     /// Create many guests from `names` and returns created guest ID's
-    pub async fn create_many<'a>(
-        transaction: SqlxTransaction<'a, '_>,
+    pub async fn create_many(
+        transaction: SqlxTransaction<'_, '_>,
         names: Vec<String>,
     ) -> Result<Vec<ID>, SqlxError> {
         let mut guest_ids = vec![];

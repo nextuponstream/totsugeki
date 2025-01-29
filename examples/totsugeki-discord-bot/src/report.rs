@@ -82,7 +82,7 @@ async fn report(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                 new_matches
             }
             Format::DoubleEliminationBracket => {
-                let seeding = double_elimination_bracket.get_seeding();
+                let seeding = double_elimination_bracket.get_seeding().clone();
                 let (double_elimination_bracket_matches, _, new_matches) =
                     match double_elimination_bracket.report_result_dangerous(
                         player.get_id(),
@@ -97,7 +97,7 @@ async fn report(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                     };
                 let deb = DoubleEliminationBracket::new(
                     double_elimination_bracket_matches,
-                    seeding,
+                    seeding.clone(),
                     AutomaticMatchValidationMode::Flexible, // FIXME should be user provided
                 );
                 *bracket_data = (
@@ -183,9 +183,9 @@ async fn tournament_organiser_reports(
             Format::SingleEliminationBracket => {
                 let (seb, _match_id, new_playable_matches) = match single_elimination_bracket
                     .tournament_organiser_reports_result(
-                        player1,
+                        &player1,
                         reported_result.0.expect("user input"),
-                        player2,
+                        &player2,
                     ) {
                     Ok(r) => r,
                     Err(e) => {
@@ -211,9 +211,9 @@ async fn tournament_organiser_reports(
             Format::DoubleEliminationBracket => {
                 let (deb, _match_id, new_playable_matches) = match double_elimination_bracket
                     .tournament_organiser_reports_result_dangerous(
-                        player1,
+                        &player1,
                         reported_result.0.expect("user input"),
-                        player2,
+                        &player2,
                     ) {
                     Ok(r) => r,
                     Err(e) => {

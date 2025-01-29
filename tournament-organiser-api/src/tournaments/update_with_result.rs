@@ -15,7 +15,7 @@ use tracing::instrument;
 
 /// Cannot update double elimination bracket with result
 #[derive(Error, Debug)]
-pub(crate) enum Error {
+pub enum Error {
     /// Potentially recoverable
     #[error("{0}")]
     App(

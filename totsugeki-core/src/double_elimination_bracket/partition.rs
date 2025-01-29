@@ -422,8 +422,8 @@ mod tests {
         let mut unpadded_player_ids = vec![];
         for i in 1..=3 {
             let player = Player::new(format!("p{i}"));
-            player_ids.push(player.get_id());
-            unpadded_player_ids.push(player.get_id());
+            player_ids.push(player.get_id().to_owned());
+            unpadded_player_ids.push(player.get_id().to_owned());
         }
         let bracket = DoubleEliminationBracket::create(
             Seeding::new(unpadded_player_ids).unwrap(),

@@ -37,7 +37,7 @@ fn assert_next_matches(
         };
         assert_eq!(
             p,
-            opponent2.get_id(),
+            *opponent2.get_id(),
             "expected {opponent2} for {opponent1} but got {p}"
         );
         let (next_opponent, _) = bracket
@@ -48,7 +48,7 @@ fn assert_next_matches(
         };
         assert_eq!(
             p,
-            opponent1.get_id(),
+            *opponent1.get_id(),
             "expected {opponent1} for {opponent2} but got {p}"
         );
     }
@@ -56,7 +56,7 @@ fn assert_next_matches(
 
 fn assert_no_next_match_after_tournament_is_over(bracket: &SingleEliminationBracket) {
     for player in bracket.get_seeding().get().iter() {
-        match bracket.next_opponent_in_bracket(*player) {
+        match bracket.next_opponent_in_bracket(player) {
             Ok(_) => {
                 panic!()
             }

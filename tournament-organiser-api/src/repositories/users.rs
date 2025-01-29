@@ -23,8 +23,8 @@ impl From<SqlxError> for Error {
 
 impl UserRepository {
     /// Read user from database
-    pub async fn read<'a>(
-        transaction: SqlxTransaction<'a, '_>,
+    pub async fn read(
+        transaction: SqlxTransaction<'_, '_>,
         user_id: ID,
     ) -> Result<Option<UserRecord>, Error> {
         let u = sqlx::query_as!(
@@ -38,7 +38,7 @@ impl UserRepository {
     }
 
     /// Returns `true` if user with given `email` exists
-    pub async fn exists<'a>(transaction: SqlxTransaction<'a, '_>, email: &str) -> bool {
+    pub async fn exists(transaction: SqlxTransaction<'_, '_>, email: &str) -> bool {
         sqlx::query_as!(User, "SELECT * from users WHERE email = $1", email,)
             // https://github.com/tokio-rs/axum/blob/1e5be5bb693f825ece664518f3aa6794f03bfec6/examples/sqlx-postgres/src/main.rs#L71
             .fetch_optional(&mut **transaction)

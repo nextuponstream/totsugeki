@@ -9,10 +9,10 @@ use crate::matches::Match;
 use crate::ID;
 
 /// Get seed of player from seeding
-fn get_seed_of(player: ID, seeding: &Seeding) -> usize {
+fn get_seed_of(player: &ID, seeding: &Seeding) -> usize {
     assert!(seeding.contains(player));
     for (i, p) in seeding.get().iter().enumerate() {
-        if *p == player {
+        if p == player {
             return i + 1;
         }
     }
@@ -87,8 +87,8 @@ pub fn get_loser_bracket_matches_top_seed_favored(
         let mut other_opponents = expected_losers.to_vec();
         other_opponents.reverse();
         for (o1, o2) in expected_winners.iter().zip(other_opponents.iter()) {
-            let seed_o1 = get_seed_of(*o1, seeding);
-            let seed_o2 = get_seed_of(*o2, seeding);
+            let seed_o1 = get_seed_of(o1, seeding);
+            let seed_o2 = get_seed_of(o2, seeding);
             let m = Match::new_empty([seed_o1, seed_o2], match_format);
             matches.push(m);
         }
@@ -104,8 +104,8 @@ pub fn get_loser_bracket_matches_top_seed_favored(
         let mut expected_loosers = expected_loosers.to_vec();
         expected_loosers.reverse();
         for (o1, o2) in expected_winners.iter().zip(expected_loosers.iter()) {
-            let seed_o1 = get_seed_of(*o1, seeding);
-            let seed_o2 = get_seed_of(*o2, seeding);
+            let seed_o1 = get_seed_of(o1, seeding);
+            let seed_o2 = get_seed_of(o2, seeding);
             let m = Match::new_empty([seed_o1, seed_o2], match_format);
             matches.push(m);
         }
@@ -152,8 +152,8 @@ fn generate_matches_of_first_round_in_wave<'a>(
     let expected_winners = wave.expected_winners;
     let expected_losers = wave.expected_losers;
     for (o1, o2) in expected_winners.iter().zip(expected_losers.iter()) {
-        let seed_o1 = get_seed_of(*o1, seeding);
-        let seed_o2 = get_seed_of(*o2, seeding);
+        let seed_o1 = get_seed_of(o1, seeding);
+        let seed_o2 = get_seed_of(o2, seeding);
         let m = Match::new_empty([seed_o1, seed_o2], match_format);
         matches.push(m);
     }
@@ -259,6 +259,7 @@ mod tests {
     use crate::opponent::Opponent;
     use crate::player::{Participants, Player};
     use crate::seeding::double_elimination_seeded_bracket::get_loser_bracket_matches_top_seed_favored;
+    use crate::test_utils::TestUtils;
     use crate::validation::AutomaticMatchValidationMode;
     use crate::ID;
 
@@ -283,15 +284,15 @@ mod tests {
             None,
         );
         let matches = double_elimination_bracket.get_matches();
-        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<ID> = matches.iter().map(|m| m.id).rev().collect();
         assert_eq!(
             matches,
             vec![
                 Match {
                     id: match_ids.pop().expect("id"),
                     players: [
-                        Opponent(Some(players[2].get_id())),
-                        Opponent(Some(players[3].get_id()))
+                        Opponent(Some(players[2].get_id().to_owned())),
+                        Opponent(Some(players[3].get_id().to_owned()))
                     ],
                     seeds: [2, 3],
                     winner: Opponent(None),
@@ -301,7 +302,10 @@ mod tests {
                 },
                 Match {
                     id: match_ids.pop().expect("id"),
-                    players: [Opponent(Some(players[1].get_id())), Opponent(None)],
+                    players: [
+                        Opponent(Some(players[1].get_id().to_owned())),
+                        Opponent(None)
+                    ],
                     seeds: [1, 2],
                     winner: Opponent(None),
                     automatic_loser: Opponent(None),
@@ -335,8 +339,8 @@ mod tests {
         let mut seeding = vec![];
         for _ in 0..4 {
             let player = Player::new(String::new());
-            seeding.push(player.get_id());
-            participants = participants.add_participant(player).expect("participant");
+            seeding.push(player.get_id().to_owned());
+            participants = participants.add_participant(&player).expect("participant");
         }
 
         let matches = get_loser_bracket_matches_top_seed_favored(
@@ -344,7 +348,7 @@ mod tests {
             MatchFormat::ft3(),
             None,
         );
-        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
+        let mut match_ids: Vec<ID> = matches.iter().map(|m| m.id).rev().collect();
         assert_eq!(matches.len(), 2, "expected 2 matches, got: {matches:?}");
         assert_eq!(
             matches,
@@ -367,20 +371,11 @@ mod tests {
 
     #[test]
     fn match_generation_5_man() {
-        let mut participants = Participants::default();
-        let mut seeding = vec![];
-        for _ in 0..5 {
-            let player = Player::new(String::new());
-            seeding.push(player.get_id());
-            participants = participants.add_participant(player).expect("participant");
-        }
+        let (seeding, _, _) = TestUtils::seeding_for_n_players(5);
 
-        let matches = get_loser_bracket_matches_top_seed_favored(
-            &participants.get_seeding(),
-            MatchFormat::ft3(),
-            None,
-        );
-        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
+        let matches =
+            get_loser_bracket_matches_top_seed_favored(&seeding, MatchFormat::ft3(), None);
+        let mut match_ids: Vec<ID> = matches.iter().map(|m| m.id).rev().collect();
         assert_eq!(
             matches.len(),
             3,
@@ -414,20 +409,11 @@ mod tests {
 
     #[test]
     fn match_generation_6_man() {
-        let mut participants = Participants::default();
-        let mut seeding = vec![];
-        for _ in 0..6 {
-            let player = Player::new(String::new());
-            seeding.push(player.get_id());
-            participants = participants.add_participant(player).expect("participant");
-        }
+        let (seeding, _, _) = TestUtils::seeding_for_n_players(6);
 
-        let matches = get_loser_bracket_matches_top_seed_favored(
-            &participants.get_seeding(),
-            MatchFormat::ft3(),
-            None,
-        );
-        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
+        let matches =
+            get_loser_bracket_matches_top_seed_favored(&seeding, MatchFormat::ft3(), None);
+        let mut match_ids: Vec<ID> = matches.iter().map(|m| m.id).rev().collect();
         assert_eq!(
             matches.len(),
             4,
@@ -461,20 +447,11 @@ mod tests {
 
     #[test]
     fn match_generation_7_man() {
-        let mut participants = Participants::default();
-        let mut seeding = vec![];
-        for _ in 0..7 {
-            let player = Player::new(String::new());
-            seeding.push(player.get_id());
-            participants = participants.add_participant(player).expect("participant");
-        }
+        let (seeding, _, _) = TestUtils::seeding_for_n_players(7);
 
-        let matches = get_loser_bracket_matches_top_seed_favored(
-            &participants.get_seeding(),
-            MatchFormat::ft3(),
-            None,
-        );
-        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
+        let matches =
+            get_loser_bracket_matches_top_seed_favored(&seeding, MatchFormat::ft3(), None);
+        let mut match_ids: Vec<ID> = matches.iter().map(|m| m.id).rev().collect();
         assert_eq!(
             matches.len(),
             5,
@@ -509,20 +486,11 @@ mod tests {
 
     #[test]
     fn match_generation_8_man() {
-        let mut participants = Participants::default();
-        let mut seeding = vec![];
-        for _ in 0..8 {
-            let player = Player::new(String::new());
-            seeding.push(player.get_id());
-            participants = participants.add_participant(player).expect("participant");
-        }
+        let (seeding, _, _) = TestUtils::seeding_for_n_players(8);
 
-        let matches = get_loser_bracket_matches_top_seed_favored(
-            &participants.get_seeding(),
-            MatchFormat::ft3(),
-            None,
-        );
-        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
+        let matches =
+            get_loser_bracket_matches_top_seed_favored(&seeding, MatchFormat::ft3(), None);
+        let mut match_ids: Vec<ID> = matches.iter().map(|m| m.id).rev().collect();
         assert_eq!(
             matches.len(),
             6,
@@ -558,20 +526,10 @@ mod tests {
 
     #[test]
     fn match_generation_9_man() {
-        let mut participants = Participants::default();
-        let mut seeding = vec![];
-        for _ in 0..9 {
-            let player = Player::new(String::new());
-            seeding.push(player.get_id());
-            participants = participants.add_participant(player).expect("participant");
-        }
-
-        let matches = get_loser_bracket_matches_top_seed_favored(
-            &participants.get_seeding(),
-            MatchFormat::ft3(),
-            None,
-        );
-        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
+        let (seeding, _, _) = TestUtils::seeding_for_n_players(9);
+        let matches =
+            get_loser_bracket_matches_top_seed_favored(&seeding, MatchFormat::ft3(), None);
+        let mut match_ids: Vec<ID> = matches.iter().map(|m| m.id).rev().collect();
         assert_eq!(
             matches.len(),
             7,
@@ -608,20 +566,10 @@ mod tests {
 
     #[test]
     fn match_generation_10_man() {
-        let mut participants = Participants::default();
-        let mut seeding = vec![];
-        for _ in 0..10 {
-            let player = Player::new(String::new());
-            seeding.push(player.get_id());
-            participants = participants.add_participant(player).expect("participant");
-        }
-
-        let matches = get_loser_bracket_matches_top_seed_favored(
-            &participants.get_seeding(),
-            MatchFormat::ft3(),
-            None,
-        );
-        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
+        let (seeding, _, _) = TestUtils::seeding_for_n_players(10);
+        let matches =
+            get_loser_bracket_matches_top_seed_favored(&seeding, MatchFormat::ft3(), None);
+        let mut match_ids: Vec<ID> = matches.iter().map(|m| m.id).rev().collect();
         assert_eq!(
             matches.len(),
             8,
@@ -659,20 +607,10 @@ mod tests {
 
     #[test]
     fn double_elimination_match_generation_11_man() {
-        let mut participants = Participants::default();
-        let mut seeding = vec![];
-        for _ in 0..11 {
-            let player = Player::new(String::new());
-            seeding.push(player.get_id());
-            participants = participants.add_participant(player).expect("participant");
-        }
-
-        let matches = get_loser_bracket_matches_top_seed_favored(
-            &participants.get_seeding(),
-            MatchFormat::ft3(),
-            None,
-        );
-        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
+        let (seeding, _, _) = TestUtils::seeding_for_n_players(11);
+        let matches =
+            get_loser_bracket_matches_top_seed_favored(&seeding, MatchFormat::ft3(), None);
+        let mut match_ids: Vec<ID> = matches.iter().map(|m| m.id).rev().collect();
         assert_eq!(
             matches.len(),
             9,
@@ -711,20 +649,10 @@ mod tests {
 
     #[test]
     fn double_elimination_match_generation_12_man() {
-        let mut participants = Participants::default();
-        let mut seeding = vec![];
-        for _ in 0..12 {
-            let player = Player::new(String::new());
-            seeding.push(player.get_id());
-            participants = participants.add_participant(player).expect("participant");
-        }
-
-        let matches = get_loser_bracket_matches_top_seed_favored(
-            &participants.get_seeding(),
-            MatchFormat::ft3(),
-            None,
-        );
-        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
+        let (seeding, _, _) = TestUtils::seeding_for_n_players(12);
+        let matches =
+            get_loser_bracket_matches_top_seed_favored(&seeding, MatchFormat::ft3(), None);
+        let mut match_ids: Vec<ID> = matches.iter().map(|m| m.id).rev().collect();
         assert_eq!(
             matches.len(),
             10,
@@ -764,20 +692,10 @@ mod tests {
 
     #[test]
     fn double_elimination_match_generation_16_man() {
-        let mut participants = Participants::default();
-        let mut seeding = vec![];
-        for _ in 0..16 {
-            let player = Player::new(String::new());
-            seeding.push(player.get_id());
-            participants = participants.add_participant(player).expect("participant");
-        }
-
-        let matches = get_loser_bracket_matches_top_seed_favored(
-            &participants.get_seeding(),
-            MatchFormat::ft3(),
-            None,
-        );
-        let mut match_ids: Vec<ID> = matches.iter().map(Match::get_id).rev().collect();
+        let (seeding, _, _) = TestUtils::seeding_for_n_players(16);
+        let matches =
+            get_loser_bracket_matches_top_seed_favored(&seeding, MatchFormat::ft3(), None);
+        let mut match_ids: Vec<ID> = matches.iter().map(|m| m.id).rev().collect();
         assert_eq!(
             matches.len(),
             14,

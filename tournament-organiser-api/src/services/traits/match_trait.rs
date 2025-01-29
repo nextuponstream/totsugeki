@@ -6,10 +6,11 @@ use totsugeki_core::matches::Match;
 use totsugeki_core::ID;
 
 /// Reusable match queries
+#[allow(dead_code)]
 pub trait MatchTrait {
     /// Get matches of given `tournament_id`
-    async fn get_matches_for_tournament<'a>(
-        transaction: SqlxTransaction<'a, '_>,
+    async fn get_matches_for_tournament(
+        transaction: SqlxTransaction<'_, '_>,
         tournament_id: ID,
     ) -> Result<Vec<Match>, SqlxError> {
         let matches = sqlx::query_as!(
@@ -23,6 +24,6 @@ WHERE tournament_id = $1
         )
         .fetch_all(&mut **transaction)
         .await?;
-        Ok(matches.into_iter().map(|v| v.into()).collect())
+        Ok(matches.into_iter().map(std::convert::Into::into).collect())
     }
 }

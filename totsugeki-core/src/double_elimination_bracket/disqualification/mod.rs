@@ -9,7 +9,7 @@ mod disqualify_from_match;
 impl DoubleEliminationBracket {
     /// Returns `true` if player is disqualified
     #[must_use]
-    pub fn is_disqualified(&self, player_id: ID) -> bool {
+    pub fn is_disqualified(&self, player_id: &ID) -> bool {
         crate::bracket::matches::is_disqualified(player_id, &self.matches)
     }
 }
