@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nUPDATE matches\nSET\n    high_seed = $2,\n    high_seed_player = $3,\n    low_seed = $4,\n    low_seed_player = $5,\n    format = $6,\n    format_n = $7\nWHERE id = $1\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int2",
+        "Uuid",
+        "Int2",
+        "Uuid",
+        "Text",
+        "Int2"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5048773a95273e9ce4ee1c94182d2b8897bdad41525421121191895aac14061e"
+}
