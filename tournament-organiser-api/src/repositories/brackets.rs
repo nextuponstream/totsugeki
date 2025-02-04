@@ -1,4 +1,4 @@
-//! Bracket persistence 
+//! Bracket persistence
 
 use crate::types::SqlxError;
 use serde::{Deserialize, Serialize};

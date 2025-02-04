@@ -47,8 +47,11 @@ pub enum Error {
 /// Match generation error
 #[derive(Error, Debug)]
 pub enum GenerationError {
+    /// Winner is either declared or inferred, but not declared AND inferred
+    #[error("Winner {0} is already inferred from automatic loser {1}")]
+    InferredWinner(ID, ID),
     /// Cannot instantiate match with two same player
-    #[error("Error. Cannot use same player as both player of a match.")]
+    #[error("Cannot use same player as both player of a match.")]
     SamePlayer,
 }
 
@@ -404,7 +407,9 @@ impl Match {
         winner: Opponent,
         automatic_loser: Opponent,
     ) -> Result<Match, GenerationError> {
-        assert!(winner.0.is_none() || automatic_loser.0.is_none());
+        if let (Some(w), Some(l)) = (winner.0, automatic_loser.0) {
+            return Err(GenerationError::InferredWinner(w, l));
+        }
         match players {
             [Opponent(Some(p1)), Opponent(Some(p2))] if p1 == p2 => {
                 Err(GenerationError::SamePlayer)

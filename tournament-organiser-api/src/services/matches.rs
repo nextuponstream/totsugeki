@@ -12,6 +12,11 @@ pub struct MatchService;
 
 impl MatchService {
     /// Report score for a match
+    ///
+    /// # Errors
+    /// Returns an error if communication with the database fails.
+    /// # Panics
+    /// When data validation is missing and last defense is triggered
     pub async fn report_score(
         transaction: SqlxTransaction<'_, '_>,
         match_id: &ID,
@@ -50,6 +55,11 @@ impl MatchService {
     }
 
     /// Update many matches with corresponding scores
+    ///
+    /// # Errors
+    /// Returns an error if communication with the database fails.
+    /// # Panics
+    /// Failed type coercion
     pub async fn update_many(
         transaction: SqlxTransaction<'_, '_>,
         matches: &[Match],
