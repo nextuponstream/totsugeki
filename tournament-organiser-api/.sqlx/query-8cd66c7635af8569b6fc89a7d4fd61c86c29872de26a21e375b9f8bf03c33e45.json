@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nSELECT\n    tournaments.id,\n    tournaments.name,\n    tournaments.format,\n    tournaments.created_at,\n    ARRAY_AGG(DISTINCT (\n                        ordered_tournament_matches.pos,\n                        ordered_tournament_matches.match_id,\n                        M.format,\n                        M.format_n,\n                        M.high_seed,\n                        M.high_seed_player,\n                        M.low_seed,\n                        M.low_seed_player,\n                        S.winner,\n                        S.automatic_loser\n        ) ORDER BY (ordered_tournament_matches.pos,\n                       ordered_tournament_matches.match_id,\n                       M.format,\n                       M.format_n,\n                       M.high_seed,\n                       M.high_seed_player,\n                       M.low_seed,\n                       M.low_seed_player,\n                       S.winner,\n                       S.automatic_loser\n           ) ASC) \n    filter ( where ordered_tournament_matches.match_id IS NOT NULL ) as \"matches: Vec<MatchRecord>\",\n    ARRAY_AGG(DISTINCT (P.id, COALESCE(U.name, G.name), U.id, G.id, P.seeding_index)) \n    filter ( where P.id IS NOT NULL ) as \"players: Vec<PlayerRecord>\"\nFROM tournaments\n         LEFT JOIN (SELECT tournament_id,\n                      match_id,\n                      tournament_matches.pos\n               from tournament_matches\n               ORDER BY pos) as ordered_tournament_matches\n              ON tournaments.id = ordered_tournament_matches.tournament_id\n\n         LEFT JOIN players P ON ordered_tournament_matches.tournament_id = P.tournament_id\n         LEFT JOIN users U ON P.user_id = U.id\n         LEFT JOIN guests G ON P.guest_id = G.id\n         LEFT JOIN matches M ON M.id = ordered_tournament_matches.match_id\n         LEFT JOIN match_final_scores S ON M.id = S.match_id\nWHERE tournaments.id = $1\nGROUP BY tournaments.id\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "format",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "matches: Vec<MatchRecord>",
+        "type_info": "RecordArray"
+      },
+      {
+        "ordinal": 5,
+        "name": "players: Vec<PlayerRecord>",
+        "type_info": "RecordArray"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "8cd66c7635af8569b6fc89a7d4fd61c86c29872de26a21e375b9f8bf03c33e45"
+}

@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nINSERT INTO match_final_scores (\n    match_id,\n    high_seed_player_score,\n    low_seed_player_score,\n    winner,\n    automatic_loser\n) VALUES ($1, $2, $3, $4, $5)\nON CONFLICT (match_id) DO UPDATE\n    SET high_seed_player_score = excluded.high_seed_player_score,\n        low_seed_player_score  = excluded.low_seed_player_score,\n        winner                 = excluded.winner,\n        automatic_loser        = excluded.automatic_loser\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int2",
+        "Int2",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6dc367bce5c2ede02c7bf2b4e6c15a65c2fdff2acf883b3857ce572a53608edb"
+}
