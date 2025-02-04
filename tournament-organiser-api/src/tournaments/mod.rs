@@ -337,21 +337,25 @@ impl From<PlayerRecord> for TournamentPlayer {
 #[derive(sqlx::Type, Deserialize, Serialize, Clone)]
 pub struct MatchRecord {
     /// Index of match, useful for display purpose
-    pub pos: i16,
+    pub(crate) pos: i16,
     /// Match ID
-    pub match_id: ID,
+    pub(crate) match_id: ID,
     /// Match format (example: first to X)
-    pub format: String,
+    pub(crate) format: String,
     /// Additional match format information (example: first to 3)
-    pub format_n: i16,
+    pub(crate) format_n: i16,
     /// left seed (highest seed) for the presumed strongest predicted player
-    pub high_seed: i16,
+    pub(crate) high_seed: i16,
     /// presumed stronger player
-    pub high_seed_player: Option<ID>,
+    pub(crate) high_seed_player: Option<ID>,
     /// right seed (lowest seed) for the presumed weakest predicted player
-    pub low_seed: i16,
+    pub(crate) low_seed: i16,
     /// presumed weakest player
-    pub low_seed_player: Option<ID>,
+    pub(crate) low_seed_player: Option<ID>,
+    /// winner of the match if any
+    pub(crate) winner: Option<ID>,
+    /// loser by disqualification if any
+    pub(crate) automatic_loser: Option<ID>,
 }
 
 impl From<MatchRecord> for Match {
@@ -364,7 +368,15 @@ impl From<MatchRecord> for Match {
         let format =
             MatchFormat::new(value.format_n.to_u8().expect("format n")).expect("match format");
 
-        Match::new(Some(value.match_id), players, seeds, format).expect("match from match data")
+        Match::new(
+            Some(value.match_id),
+            players,
+            seeds,
+            format,
+            value.winner.into(),
+            value.automatic_loser.into(),
+        )
+        .expect("match from match data")
     }
 }
 

@@ -104,6 +104,8 @@ pub fn get_balanced_round_matches_top_seed_favored(
                         [player_1, player_2],
                         [top_seed, bottom_seed],
                         match_format,
+                        Opponent(None),
+                        Opponent(None),
                     )
                     .expect("match"),
                 );
@@ -118,6 +120,8 @@ pub fn get_balanced_round_matches_top_seed_favored(
                         [Opponent(None), Opponent(None)],
                         [top_seed, bottom_seed],
                         match_format,
+                        Opponent(None),
+                        Opponent(None),
                     )
                     .expect("match"),
                 );

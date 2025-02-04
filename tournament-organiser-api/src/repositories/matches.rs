@@ -60,56 +60,6 @@ format_n
         }
         Ok(())
     }
-
-    /// Update many matches
-    pub async fn update_many(
-        transaction: SqlxTransaction<'_, '_>,
-        matches: &[Match],
-    ) -> Result<(), SqlxError> {
-        for m in matches {
-            let high_seed: i8 = m.get_seeds()[0]
-                .try_into()
-                .expect("type coercion for high seed");
-            let low_seed: i8 = m.get_seeds()[1]
-                .try_into()
-                .expect("type coercion for low seed");
-            // println!("{m}");
-            // println!("---");
-            // println!(
-            //     "{}\n{:?}\n{:?}\n{:?}\n{:?}\n{}\n{}",
-            //     m.get_id(),
-            //     high_seed.to_i16(),
-            //     m.get_players()[0].0,
-            //     low_seed.to_i16(),
-            //     m.get_players()[1].0,
-            //     "first_to_n",
-            //     2,
-            // );
-            sqlx::query!(
-                r#"
-UPDATE matches
-SET
-    high_seed = $2,
-    high_seed_player = $3,
-    low_seed = $4,
-    low_seed_player = $5,
-    format = $6,
-    format_n = $7
-WHERE id = $1
-"#,
-                m.get_id(),
-                high_seed.to_i16(),
-                m.get_players()[0].0,
-                low_seed.to_i16(),
-                m.get_players()[1].0,
-                "first_to_n",
-                2.into(),
-            )
-            .execute(&mut **transaction)
-            .await?;
-        }
-        Ok(())
-    }
 }
 
 /// Tournament match from database
@@ -157,6 +107,14 @@ impl From<TournamentMatchRecord> for Match {
                 .expect("type coercion for format additional information"),
         )
         .expect("well formed match format");
-        Match::new(Some(value.match_id), players, seeds, format).expect("well formed match")
+        Match::new(
+            Some(value.match_id),
+            players,
+            seeds,
+            format,
+            Opponent(None),
+            Opponent(None),
+        )
+        .expect("well formed match")
     }
 }

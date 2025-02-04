@@ -20,8 +20,10 @@
 -- this.
 CREATE TABLE tournament_organisers
 (
+    id            uuid        NOT NULL DEFAULT gen_random_uuid(),
+    PRIMARY KEY (id),
     tournament_id uuid        NOT NULL REFERENCES tournaments ON DELETE CASCADE,
     user_id       uuid        NOT NULL REFERENCES users ON DELETE CASCADE,
-    PRIMARY KEY (tournament_id, user_id),
+    CONSTRAINT unique_user_per_tournament UNIQUE (tournament_id, user_id),
     created_at    timestamptz NOT NULL default current_timestamp
 );

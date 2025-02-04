@@ -5,6 +5,7 @@ use crate::repositories::brackets::Error;
 use crate::repositories::guests::GuestRepository;
 use crate::repositories::matches::MatchRepository;
 use crate::repositories::players::PlayerRepository;
+use crate::services::matches::MatchService;
 use crate::services::traits::match_trait::MatchTrait;
 use crate::services::traits::user_trait::UserTrait;
 use crate::tournaments::tournament_players::TournamentPlayer;
@@ -93,8 +94,20 @@ SELECT
                         M.high_seed,
                         M.high_seed_player,
                         M.low_seed,
-                        M.low_seed_player
-        )) 
+                        M.low_seed_player,
+                        S.winner,
+                        S.automatic_loser
+        ) ORDER BY (ordered_tournament_matches.pos,
+                       ordered_tournament_matches.match_id,
+                       M.format,
+                       M.format_n,
+                       M.high_seed,
+                       M.high_seed_player,
+                       M.low_seed,
+                       M.low_seed_player,
+                       S.winner,
+                       S.automatic_loser
+           ) ASC) 
     filter ( where ordered_tournament_matches.match_id IS NOT NULL ) as "matches: Vec<MatchRecord>",
     ARRAY_AGG(DISTINCT (P.id, COALESCE(U.name, G.name), U.id, G.id, P.seeding_index)) 
     filter ( where P.id IS NOT NULL ) as "players: Vec<PlayerRecord>"
@@ -110,6 +123,7 @@ FROM tournaments
          LEFT JOIN users U ON P.user_id = U.id
          LEFT JOIN guests G ON P.guest_id = G.id
          LEFT JOIN matches M ON M.id = ordered_tournament_matches.match_id
+         LEFT JOIN match_final_scores S ON M.id = S.match_id
 WHERE tournaments.id = $1
 GROUP BY tournaments.id
             "#,
@@ -284,7 +298,7 @@ OFFSET $3
         let tournaments = sqlx::query_as!(
             PaginatedTournamentResource,
             r#"SELECT 
-            id, 
+            tournaments.id, 
             name,
             format,
             tournaments.created_at,
@@ -336,7 +350,7 @@ OFFSET $3
                 &report.player2_id,
             )?;
         let tournament = Tournament::from(tournament);
-        MatchRepository::update_many(transaction, double_elimination_bracket.get_matches()).await?;
+        MatchService::update_many(transaction, double_elimination_bracket.get_matches()).await?;
         Ok(Some((tournament, double_elimination_bracket)))
     }
 

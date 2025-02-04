@@ -141,6 +141,8 @@ fn seeding_initial_round(
             ],
             [top_seed, bottom_seed],
             base_match_format,
+            Opponent(None),
+            Opponent(None),
         )
         .expect("match"),
     );

@@ -12,6 +12,7 @@ use totsugeki_core::player::{Participants, Player};
 use totsugeki_core::ID;
 
 /// There is a match with a given `winner` and `loser`
+#[allow(dead_code)]
 pub fn assert_outcome(matches: &[Match], winner: &Player, loser: &Player) {
     assert!(
         matches.iter().any(|m| matches!((

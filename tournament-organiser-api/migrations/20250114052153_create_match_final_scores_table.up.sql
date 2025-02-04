@@ -1,10 +1,10 @@
 -- Add up migration script here
-CREATE TABLE match_score
+CREATE TABLE match_final_scores
 (
     match_id               uuid REFERENCES matches (id),
-    report_id              uuid REFERENCES match_reports (id),
+    PRIMARY KEY (match_id),
 
-    high_seed_player_score numeric(4, 0)
+    high_seed_player_score smallint
         CONSTRAINT bounded_high_seed_player_score
             CHECK (
                 high_seed_player_score IS NULL
@@ -20,9 +20,8 @@ CREATE TABLE match_score
 
     CONSTRAINT final_score_sanity_check
         CHECK (
-            NOT (high_seed_player_score IS NULL AND low_seed_player_score IS NULL)
-                AND NOT (high_seed_player_score = 0 AND low_seed_player_score = 0)
-            )
+            NOT (high_seed_player_score = 0 AND low_seed_player_score = 0)
+            ),
 
     -- NOTE: "PostgreSQL does not support CHECK constraints that reference table
     -- data other than the new or updated row being checked" (see https://www.postgresql.org/docs/current/ddl-constraints.html)
@@ -30,4 +29,10 @@ CREATE TABLE match_score
     -- match format.
     -- Example:
     -- 10-0 is not possible for first to 3
+
+    winner                 uuid REFERENCES players (id),
+    -- must assert that winner is a player in the match application side
+    automatic_loser        uuid REFERENCES players (id)
+        CONSTRAINT winner_is_not_loser CHECK ( winner IS NULL OR automatic_loser IS NULL )
+    -- must assert that automatic loser is a player in the match application side
 )

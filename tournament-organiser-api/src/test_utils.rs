@@ -220,16 +220,20 @@ impl TestApp {
 
     /// `/api/tournaments/:tournament_id/report` POST
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
-    pub async fn report_score_for_tournament(&self, tournament_id: ID, score: Score) -> Response {
+    pub async fn report_score_for_tournament(
+        &self,
+        tournament_id: &ID,
+        score: Score,
+        high_seed_player_id: &ID,
+        low_seed_player_id: &ID,
+    ) -> Response {
         let url = format!("{}/api/tournaments/{}/score", self.addr, tournament_id);
-        let pink_player_id = "dab8c793-f134-44f5-aa7e-87fa644ba9c4";
-        let john_mid_player_id = "75e3cf69-f89b-40f1-a047-00b55701e1b0";
         // FIXME when sending 0-0, should respond 400
         self.http_client
             .post(&url)
             .json(&ReportResultInput {
-                player1_id: pink_player_id.try_into().unwrap(),
-                player2_id: john_mid_player_id.try_into().unwrap(),
+                player1_id: high_seed_player_id.to_owned(),
+                player2_id: low_seed_player_id.to_owned(),
                 score_p1: score.0,
                 score_p2: score.1,
             })

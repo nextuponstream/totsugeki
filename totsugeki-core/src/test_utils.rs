@@ -18,7 +18,7 @@ impl TestUtils {
     /// and 3
     pub fn seeding_for_n_players(
         n: usize,
-    ) -> (Seeding, (Vec<Player>, Vec<ID>), ((Vec<Player>, Vec<ID>))) {
+    ) -> (Seeding, (Vec<Player>, Vec<ID>), (Vec<Player>, Vec<ID>)) {
         let mut padded_players = vec![Player::new("don't use".into())]; // padding for readability
         let mut unpadded_players = vec![]; // padding for readability
         let mut padded_player_ids = vec![ID::default()];

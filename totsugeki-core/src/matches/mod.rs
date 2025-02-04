@@ -401,7 +401,10 @@ impl Match {
         players: [Opponent; 2],
         seeds: [usize; 2],
         format: MatchFormat,
+        winner: Opponent,
+        automatic_loser: Opponent,
     ) -> Result<Match, GenerationError> {
+        assert!(winner.0.is_none() || automatic_loser.0.is_none());
         match players {
             [Opponent(Some(p1)), Opponent(Some(p2))] if p1 == p2 => {
                 Err(GenerationError::SamePlayer)
@@ -411,8 +414,8 @@ impl Match {
                 // unwrap_or_default leads to always same match ID: 0000000000000... which is NOT ok
                 id: id.unwrap_or(ID::new_v4()),
                 players,
-                winner: Opponent(None),
-                automatic_loser: Opponent(None),
+                winner,
+                automatic_loser,
                 seeds,
                 reported_results: [None, None],
                 format,
@@ -771,8 +774,15 @@ mod tests {
         let p2 = ID::new_v4();
         let player_2 = Opponent(Some(p2));
         let unknown = ID::new_v4();
-        let m =
-            Match::new(None, [player_1, player_2], [1, 2], MatchFormat::default()).expect("match");
+        let m = Match::new(
+            None,
+            [player_1, player_2],
+            [1, 2],
+            MatchFormat::default(),
+            Opponent(None),
+            Opponent(None),
+        )
+        .expect("match");
         assert!(m.contains(&p1));
         assert!(m.contains(&p2));
         assert!(!m.contains(&unknown));
@@ -782,7 +792,14 @@ mod tests {
     fn cannot_create_match_with_same_player() {
         let p = ID::new_v4();
         let player = Opponent(Some(p));
-        match Match::new(None, [player, player], [1, 2], MatchFormat::default()) {
+        match Match::new(
+            None,
+            [player, player],
+            [1, 2],
+            MatchFormat::default(),
+            Opponent(None),
+            Opponent(None),
+        ) {
             Err(GenerationError::SamePlayer) => {}
             _ => panic!("Expected error but got none"),
         }
@@ -797,6 +814,8 @@ mod tests {
             [Opponent(Some(*p1.get_id())), Opponent(Some(*p2.get_id()))],
             [1, 2],
             MatchFormat::default(),
+            Opponent(None),
+            Opponent(None),
         )
         .expect("match");
         assert!(!m.is_over());
@@ -814,6 +833,8 @@ mod tests {
             [Opponent(Some(*p1.get_id())), Opponent(Some(*p2.get_id()))],
             [1, 2],
             MatchFormat::default(),
+            Opponent(None),
+            Opponent(None),
         )
         .expect("match");
         assert!(!m.is_over());
@@ -831,6 +852,8 @@ mod tests {
             [Opponent(Some(*p1.get_id())), Opponent(Some(*p2.get_id()))],
             [2, 1],
             MatchFormat::ft2(),
+            Opponent(None),
+            Opponent(None),
         )
         .expect("match");
         assert!(!m.is_over());
@@ -848,6 +871,8 @@ mod tests {
             [Opponent(Some(*p1.get_id())), Opponent(Some(*p2.get_id()))],
             [2, 1],
             MatchFormat::ft2(),
+            Opponent(None),
+            Opponent(None),
         )
         .expect("match");
         assert!(!m.is_over());
@@ -870,6 +895,8 @@ mod tests {
             [Opponent(Some(*p1.get_id())), Opponent(Some(*p2.get_id()))],
             [1, 2],
             MatchFormat::ft2(),
+            Opponent(None),
+            Opponent(None),
         )
         .expect("match");
         assert!(m.needs_playing());
@@ -879,6 +906,8 @@ mod tests {
             [Opponent(None), Opponent(Some(*p2.get_id()))],
             [1, 2],
             MatchFormat::ft2(),
+            Opponent(None),
+            Opponent(None),
         )
         .expect("match");
         assert!(!m.needs_playing());
@@ -887,6 +916,8 @@ mod tests {
             [Opponent(Some(*p1.get_id())), Opponent(None)],
             [1, 2],
             MatchFormat::ft2(),
+            Opponent(None),
+            Opponent(None),
         )
         .expect("match");
         assert!(!m.needs_playing());
@@ -895,6 +926,8 @@ mod tests {
             [Opponent(None), Opponent(None)],
             [1, 2],
             MatchFormat::ft2(),
+            Opponent(None),
+            Opponent(None),
         )
         .expect("match");
         assert!(!m.needs_playing());
@@ -962,6 +995,8 @@ mod tests {
             [Opponent(Some(p1)), Opponent(Some(p2))],
             [0, 0],
             MatchFormat::default(),
+            Opponent(None),
+            Opponent(None),
         )
         .expect("match");
         let p1_intruder = ID::new_v4();
@@ -978,6 +1013,8 @@ mod tests {
             [Opponent(Some(p1)), Opponent(Some(p2))],
             [0, 0],
             MatchFormat::default(),
+            Opponent(None),
+            Opponent(None),
         )
         .expect("match");
 
@@ -994,6 +1031,8 @@ mod tests {
             [Opponent(Some(p1)), Opponent(Some(p2))],
             [0, 0],
             MatchFormat::default(),
+            Opponent(None),
+            Opponent(None),
         )
         .expect("match");
 
@@ -1015,6 +1054,8 @@ mod tests {
             [Opponent(Some(p1)), Opponent(Some(p2))],
             [0, 0],
             MatchFormat::default(),
+            Opponent(None),
+            Opponent(None),
         )
         .expect("match");
 
