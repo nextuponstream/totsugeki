@@ -30,7 +30,7 @@ pub(crate) fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router 
     );
 
     // TODO declare that router in brackets and import
-    let bracket_routes = Router::new().nest(
+    let tournament_routes = Router::new().nest(
         "/tournaments",
         Router::new()
             .route("/", get(list_brackets))
@@ -41,7 +41,7 @@ pub(crate) fn api(pool: Pool<Postgres>, session_store: PostgresStore) -> Router 
     );
     let protected_routes = Router::new()
         .merge(user_routes)
-        .merge(bracket_routes)
+        .merge(tournament_routes)
         .layer(axum::middleware::from_fn_with_state(
             session_store.clone(),
             auth_layer,

@@ -4,7 +4,7 @@
     :class="scoreClass(scores, index, otherIndex)"
   >
     <div class="place-self-center">
-      {{ !isPaddingMatch ? scores[index] : '&#8205;' }}
+      {{ !isPaddingMatch ? (scores ? scores[index] : '?') : '&#8205;' }}
     </div>
   </div>
 </template>

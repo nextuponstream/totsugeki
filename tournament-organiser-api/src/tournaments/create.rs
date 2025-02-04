@@ -38,7 +38,7 @@ pub(crate) async fn create_tournament(
     let mut tournament = Tournament::default();
     tournament.set_name(form.tournament_name);
     TournamentRepository::create(&mut transaction, &tournament).await?;
-    let _guest_ids = TournamentService::add_guests_as_tournament_players(
+    let tournament_players = TournamentService::add_guests_as_tournament_players(
         &mut transaction,
         tournament.id,
         form.player_names,
@@ -46,8 +46,7 @@ pub(crate) async fn create_tournament(
     .await?;
     let bracket = DoubleEliminationBracket::create(
         Seeding::new(
-            tournament
-                .get_players()
+            tournament_players
                 .into_iter()
                 .map(|tp| *tp.get_id())
                 .collect(),

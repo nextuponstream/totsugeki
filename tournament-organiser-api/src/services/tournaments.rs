@@ -3,7 +3,6 @@
 use crate::guests::Guest;
 use crate::repositories::brackets::Error;
 use crate::repositories::guests::GuestRepository;
-use crate::repositories::matches::MatchRepository;
 use crate::repositories::players::PlayerRepository;
 use crate::services::matches::MatchService;
 use crate::services::traits::match_trait::MatchTrait;
@@ -65,7 +64,12 @@ impl TournamentService {
         .await?;
 
         // FIXME high seed player fk... probably a mapping error
-        MatchRepository::store_many(transaction, double_elimination_bracket.get_matches()).await?;
+        MatchService::create(
+            transaction,
+            &tournament.id,
+            double_elimination_bracket.get_matches(),
+        )
+        .await?;
 
         Ok(())
     }

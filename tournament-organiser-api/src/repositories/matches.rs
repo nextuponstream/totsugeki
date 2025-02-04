@@ -17,6 +17,7 @@ impl MatchRepository {
         transaction: SqlxTransaction<'_, '_>,
         matches: &[Match],
     ) -> Result<(), SqlxError> {
+        tracing::debug!("Creating {} matches", matches.len());
         for m in matches {
             let high_seed: i8 = m.get_seeds()[0]
                 .try_into()

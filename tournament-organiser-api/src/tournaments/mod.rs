@@ -438,9 +438,9 @@ impl From<TournamentAugmentedRecord> for Tournament {
 #[allow(unused)]
 pub struct Tournament {
     /// Identifier of tournament
-    id: ID,
+    pub(crate) id: ID,
     /// Name of tournament
-    name: String,
+    pub(crate) name: String,
     /// Advertised start time
     start_time: Option<DateTime<Utc>>,
     /// Advertised end time

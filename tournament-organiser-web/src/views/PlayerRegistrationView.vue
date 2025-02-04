@@ -88,7 +88,7 @@ provide('formErrors', formErrors)
 // FIXME empty bracket name does not create 401
 
 async function onSubmit(values: { bracketName: string }) {
-  bracketStore.formCreate.bracket_name = values.bracketName
+  bracketStore.formCreate.tournament_name = values.bracketName
   await createBracketFromPlayers()
 }
 
@@ -102,6 +102,6 @@ const submitForm = handleSubmit((values: any) => {
 }, onInvalidSubmit)
 
 onMounted(() => {
-  setFieldValue('bracketName', bracketStore.formCreate.bracket_name)
+  setFieldValue('bracketName', bracketStore.formCreate.tournament_name)
 })
 </script>

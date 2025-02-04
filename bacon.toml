@@ -53,6 +53,7 @@ env.NODE_ENV = ""
 # Technically, it's http://localhost:8080 but vite proxy server changes the
 # request. 
 env.PORT = "8080"
+env.RUST_LOG = "debug"
 # https://github.com/Canop/bacon/issues/287#issuecomment-2564630055
 command = ["cargo", "run", "--package", "tournament-organiser-api"]
 

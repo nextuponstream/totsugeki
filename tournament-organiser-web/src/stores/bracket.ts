@@ -5,7 +5,7 @@ import { httpClient } from '@/httpClient'
 type Player = { name: string; index: number }
 
 interface BracketCreationForm {
-  bracket_name: string
+  tournament_name: string
   player_names: Player[]
 }
 
@@ -41,7 +41,7 @@ export const useBracketStore = defineStore(
     const isSaved: Ref<boolean> = ref(true)
     const formCreate: Ref<BracketCreationForm> = ref({
       player_names: [],
-      bracket_name: '',
+      tournament_name: '',
     })
     const counter = ref(0)
     const reportedResults: Ref<MatchResult[]> = ref([])
@@ -80,11 +80,11 @@ export const useBracketStore = defineStore(
      * @param loggedIn
      * @throws Error when something goes wrong with the API
      */
-    async function createBracket(loggedIn: boolean) {
+    async function createTournament(loggedIn: boolean) {
       console.debug(`creating tournament with ${loggedIn ? 'user' : 'guest'}`)
       let url = `/${loggedIn ? '' : 'guest/'}tournaments`
       let response = await httpClient.post(url, {
-        bracket_name: formCreate.value.bracket_name,
+        tournament_name: formCreate.value.tournament_name,
         player_names: formCreate.value.player_names.map((p) => p.name),
       })
       let r = await response.json()
@@ -99,7 +99,7 @@ export const useBracketStore = defineStore(
         isSaved.value = false
       }
       reportedResults.value = []
-      formCreate.value = { player_names: [], bracket_name: '' }
+      formCreate.value = { player_names: [], tournament_name: '' }
     }
 
     /**
@@ -203,7 +203,7 @@ export const useBracketStore = defineStore(
     return {
       id,
       setBracketId,
-      createBracket,
+      createBracket: createTournament,
       getDisplayableBracket,
       reportResult,
       addPlayerInForm,

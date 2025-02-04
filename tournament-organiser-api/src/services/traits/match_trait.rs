@@ -16,8 +16,19 @@ pub trait MatchTrait {
         let matches = sqlx::query_as!(
             TournamentMatchRecord,
             r#"
-SELECT * from tournament_matches
-LEFT JOIN matches on tournament_matches.match_id = matches.id
+SELECT 
+   id,
+   tournament_id,
+   match_id,
+   pos,
+   M.format,
+   M.format_n,
+   M.high_seed,
+   M.high_seed_player,
+   M.low_seed,
+   M.low_seed_player
+FROM tournament_matches
+LEFT JOIN matches M on tournament_matches.match_id = M.id
 WHERE tournament_id = $1
             "#,
             tournament_id

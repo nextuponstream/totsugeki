@@ -50,7 +50,7 @@ function onInvalidSubmit({ values, errors, results }: any) {
  */
 function onSubmit(values: any) {
   formErrors.value = {}
-  bracketStore.formCreate.bracket_name = values.bracket
+  bracketStore.formCreate.tournament_name = values.bracket
   emits('newBracket')
 }
 </script>

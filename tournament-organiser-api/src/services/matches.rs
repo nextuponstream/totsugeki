@@ -1,5 +1,6 @@
 //! Matches lifecycle
 
+use crate::repositories::matches::MatchRepository;
 use crate::repositories::reports::ReportRepository;
 use crate::types::{SqlxError, SqlxTransaction};
 use crate::ID;
@@ -139,6 +140,39 @@ ON CONFLICT (match_id) DO UPDATE
             .execute(&mut **transaction)
             .await?;
         }
+        Ok(())
+    }
+
+    /// Create matches for tournament
+    ///
+    /// # Errors
+    /// Returns an error if communication with the database fails.
+    /// # Panics
+    /// Failed type coercion
+    pub async fn create(
+        transaction: SqlxTransaction<'_, '_>,
+        tournament_id: &ID,
+        matches: &[Match],
+    ) -> Result<(), SqlxError> {
+        MatchRepository::store_many(transaction, matches).await?;
+
+        for (index, m) in matches.iter().enumerate() {
+            sqlx::query!(
+                r#"
+INSERT INTO tournament_matches (
+    tournament_id,
+    match_id,        
+    pos
+) VALUES ($1, $2, $3)    
+        "#,
+                tournament_id,
+                m.get_id(),
+                (index + 1).to_i16().expect("type coercion of position"),
+            )
+            .execute(&mut **transaction)
+            .await?;
+        }
+
         Ok(())
     }
 }
