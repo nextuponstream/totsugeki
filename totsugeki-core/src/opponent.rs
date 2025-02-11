@@ -14,10 +14,10 @@ impl Opponent {
     #[must_use]
     pub fn get_name(&self, players: &[(ID, String)]) -> String {
         if let Some(player) = self.0 {
-            let Some((p, name)) = players.iter().find(|p| p.0 == player) else {
+            let Some((_p, name)) = players.iter().find(|p| p.0 == player) else {
                 unreachable!("player is missing");
             };
-            format!("{p} {name}")
+            name.to_string()
         } else {
             "?".into()
         }

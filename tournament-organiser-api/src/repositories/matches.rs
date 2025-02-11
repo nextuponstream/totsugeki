@@ -115,6 +115,7 @@ impl From<TournamentMatchRecord> for Match {
             format,
             Opponent(None),
             Opponent(None),
+            None,
         )
         .expect("well formed match")
     }

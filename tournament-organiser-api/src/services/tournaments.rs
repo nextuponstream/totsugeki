@@ -100,7 +100,9 @@ SELECT
                         M.low_seed,
                         M.low_seed_player,
                         S.winner,
-                        S.automatic_loser
+                        S.automatic_loser,
+                        S.high_seed_player_score,
+                        S.low_seed_player_score
         ) ORDER BY (ordered_tournament_matches.pos,
                        ordered_tournament_matches.match_id,
                        M.format,
@@ -110,7 +112,9 @@ SELECT
                        M.low_seed,
                        M.low_seed_player,
                        S.winner,
-                       S.automatic_loser
+                       S.automatic_loser,
+                       S.high_seed_player_score,
+                       S.low_seed_player_score
            ) ASC) 
     filter ( where ordered_tournament_matches.match_id IS NOT NULL ) as "matches: Vec<MatchRecord>",
     ARRAY_AGG(DISTINCT (P.id, COALESCE(U.name, G.name), U.id, G.id, P.seeding_index)) 

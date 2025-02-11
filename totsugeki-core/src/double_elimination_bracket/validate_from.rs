@@ -75,6 +75,7 @@ impl DoubleEliminationBracket {
                     gf.format,
                     Opponent(None),
                     Opponent(None),
+                    None,
                 )
                 .expect("grand final reset")
                 .set_automatic_loser(&winner_of_winner_bracket)

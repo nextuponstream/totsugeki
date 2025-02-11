@@ -44,11 +44,11 @@
 import draggable from 'vuedraggable'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useBracketStore } from '@/stores/bracket'
+import { useTournamentStore } from '@/stores/tournament'
 import DangerBtn from './ui/buttons/DangerBtn.vue'
 
 const { t } = useI18n({})
-const bracketStore = useBracketStore()
+const bracketStore = useTournamentStore()
 const dragging = ref(false)
 const enabled = ref(true)
 const noPlayers = computed(() => {

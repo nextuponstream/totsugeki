@@ -2,7 +2,7 @@ interface Match {
   id: string
   players: { name: string; id: string }[]
   seeds: number[]
-  score: number[]
+  score: number[] | null
   row_hint: number | null
 }
 
@@ -26,7 +26,7 @@ interface RawBracket {
 
 type Participants = Player[]
 
-interface Bracket {
+interface DoubleEliminationBracket {
   winner_bracket: Match[][]
   winner_bracket_lines: Lines[][]
   loser_bracket: Match[][]

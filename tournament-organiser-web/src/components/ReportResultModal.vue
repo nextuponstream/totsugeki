@@ -39,7 +39,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { useBracketStore } from '@/stores/bracket'
+import { useTournamentStore } from '@/stores/tournament'
 import { ref, computed, onUpdated, provide } from 'vue'
 import BlurredBackground from '@/components/ui/modals/BlurredBackground.vue'
 import { prefixKey } from '@/config'
@@ -55,7 +55,7 @@ const hide = ref(false)
 const scoreP1 = ref(0)
 const scoreP2 = ref(0)
 const emits = defineEmits(['update:modelValue'])
-const bracketStore = useBracketStore()
+const bracketStore = useTournamentStore()
 const userStore = useUserStore()
 
 provide(prefixKey, 'report-result-modal')

@@ -143,6 +143,7 @@ fn seeding_initial_round(
             base_match_format,
             Opponent(None),
             Opponent(None),
+            None,
         )
         .expect("match"),
     );

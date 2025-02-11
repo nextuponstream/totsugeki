@@ -37,11 +37,12 @@ import PlayerRegistration from '@/components/PlayerRegistration.vue'
 import { onMounted, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { useBracketStore } from '@/stores/bracket'
+import { useTournamentStore } from '@/stores/tournament'
 import { useUserStore } from '@/stores/user'
 import FormInput from '@/components/ui/FormInput.vue'
 import { object, string } from 'yup'
 import { useForm, Form } from 'vee-validate'
+import { RouteNames } from '@/router'
 
 // NOTE: while not very important, I find it disturbing that the "save bracket"
 // button is not put at the bottom of the page. But then, I don't want a form
@@ -51,7 +52,7 @@ import { useForm, Form } from 'vee-validate'
 const { t } = useI18n({})
 const router = useRouter()
 
-const bracketStore = useBracketStore()
+const bracketStore = useTournamentStore()
 const userStore = useUserStore()
 
 const schema = object({
@@ -66,11 +67,11 @@ const [bracketName, bracketNameAttrs] = defineField('name')
 async function createBracketFromPlayers() {
   let loggedIn: boolean = userStore.id !== null
   try {
-    await bracketStore.createBracket(loggedIn)
+    await bracketStore.createTournament(loggedIn)
     if (loggedIn) {
       await router.push({
-        name: 'bracket',
-        params: { bracketId: bracketStore.id },
+        name: RouteNames.tournaments.show,
+        params: { tournamentId: bracketStore.id },
       })
     } else {
       await router.push({ name: 'bracket-guest' })

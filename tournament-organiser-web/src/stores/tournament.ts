@@ -4,7 +4,7 @@ import { httpClient } from '@/httpClient'
 
 type Player = { name: string; index: number }
 
-interface BracketCreationForm {
+interface TournamentCreationForm {
   tournament_name: string
   player_names: Player[]
 }
@@ -31,15 +31,16 @@ interface PaginationResponse {
   data: any
 }
 
-export const useBracketStore = defineStore(
-  'bracket',
+export const useTournamentStore = defineStore(
+  'tournament',
   () => {
     const id: Ref<string | undefined> = ref(undefined)
-    const bracket: Ref<Bracket | undefined> = ref(undefined)
+    const bracket: Ref<DoubleEliminationBracket | undefined> = ref(undefined)
     const participants: Ref<Participants | undefined> = ref(undefined)
-    const bracketList: Ref<Bracket[] | undefined> = ref(undefined)
+    const tournamentList: Ref<DoubleEliminationBracket[] | undefined> =
+      ref(undefined)
     const isSaved: Ref<boolean> = ref(true)
-    const formCreate: Ref<BracketCreationForm> = ref({
+    const formCreate: Ref<TournamentCreationForm> = ref({
       player_names: [],
       tournament_name: '',
     })
@@ -52,7 +53,7 @@ export const useBracketStore = defineStore(
       total: 0,
     })
 
-    function setBracketId(newId: string) {
+    function setTournamentId(newId: string) {
       id.value = newId
     }
 
@@ -106,10 +107,10 @@ export const useBracketStore = defineStore(
      * Fetch bracket details depending on bracket ID in store.
      * @throws Error when something goes wrong with the API
      */
-    async function getDisplayableBracket() {
+    async function getDisplayableTournament() {
       let response = await httpClient.get(`/tournaments/${id.value}`)
       let r = await response.json()
-      console.debug('updating bracket store', r)
+      console.debug('updating tournament store', r)
       // console.log(bracket.value?.winner_bracket)
       // console.log(r.winner_bracket)
       bracket.value = r
@@ -135,14 +136,12 @@ export const useBracketStore = defineStore(
       //  to the user, hit f5 and all results should still be there
       if (bracket.value) {
         console.debug(`submitting result for bracket...`)
-        let path = dryRun
-          ? `/report-result`
-          : `/tournaments/${id.value}/report-result`
+        let path = dryRun ? `/score` : `/tournaments/${id.value}/score`
 
         let response = await httpClient.post(path, {
           bracket: bracket.value.bracket,
-          p1_id: players[0].id,
-          p2_id: players[1].id,
+          player1_id: players[0].id,
+          player2_id: players[1].id,
           score_p1: scoreP1,
           score_p2: scoreP2,
         })
@@ -164,7 +163,7 @@ export const useBracketStore = defineStore(
      * actually a valid bracket.
      * @throws Error when something goes wrong with the API
      */
-    async function saveBracket() {
+    async function saveTournament() {
       // use /tournaments/save endpoint
       if (reportedResults.value && bracket.value?.bracket?.seeding) {
         console.debug(`submitting result for bracket...`)
@@ -191,7 +190,7 @@ export const useBracketStore = defineStore(
         `/user/${userId}/tournaments?limit=${pagination.value.limit}&offset=${pagination.value.offset}&sort_order=${pagination.value.sortOrder}`
       )
       let paginationResult: PaginationResponse = await response.json()
-      bracketList.value = paginationResult.data
+      tournamentList.value = paginationResult.data
       pagination.value.total = paginationResult.total
     }
 
@@ -202,17 +201,17 @@ export const useBracketStore = defineStore(
 
     return {
       id,
-      setBracketId,
-      createBracket: createTournament,
-      getDisplayableBracket,
+      setTournamentId,
+      createTournament,
+      getDisplayableTournament,
       reportResult,
       addPlayerInForm,
       removePlayerInForm,
       removeAllPlayersInForm,
-      saveBracket,
+      saveTournament,
       getBracketsFrom,
       bracket,
-      bracketList,
+      bracketList: tournamentList,
       isSaved,
       formCreate,
       reportedResults, // export ref so localStorage is updated with that value

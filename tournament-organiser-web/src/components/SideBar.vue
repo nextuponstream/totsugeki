@@ -14,7 +14,7 @@
       <NavLink
         v-if="userStore.id"
         data-test-id="my-brackets"
-        to="/user/brackets"
+        :to="$router.resolve({ name: RouteNames.users.tournaments })"
         @click="toggleMenu"
         >{{ $t('navbar.myBrackets') }}
       </NavLink>
@@ -22,7 +22,10 @@
       <NavLink to="/about" data-test-id="about" @click="toggleMenu">
         {{ $t('generic.about') }}
       </NavLink>
-      <NavLink v-if="userStore.id" to="/user/dashboard" @click="toggleMenu"
+      <NavLink
+        v-if="userStore.id"
+        :to="$router.resolve({ name: RouteNames.users.dashboard })"
+        @click="toggleMenu"
         >{{ $t('generic.profile') }}
       </NavLink>
     </div>
@@ -37,6 +40,7 @@ import { prefixKey, showMenuKey } from '@/config'
 import SelectLanguage from '@/components/ui/SelectLanguage.vue'
 import RegisterLogin from '@/components/ui/RegisterLogin.vue'
 import BlurredBackground from '@/components/ui/modals/BlurredBackground.vue'
+import { RouteNames } from '@/router'
 
 const userStore = useUserStore()
 const emits = defineEmits(['toggleMenu'])

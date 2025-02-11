@@ -25,7 +25,7 @@
     >
       <template #body="slotProps">
         <a
-          :href="`/brackets/${slotProps.data.id}`"
+          :href="tournamentHref(slotProps.data.id)"
           :data-test-id="slotProps.data.id"
           style="color: blue; text-decoration: underline"
         >
@@ -44,17 +44,18 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
-import { useBracketStore } from '@/stores/bracket'
+import { useTournamentStore } from '@/stores/tournament'
 import { nameFallback } from '@/helpers'
 
 const userStore = useUserStore()
-const bracketStore = useBracketStore()
+const bracketStore = useTournamentStore()
 
 import DataTable, {
   type DataTablePageEvent,
   type DataTableSortEvent,
 } from 'primevue/datatable'
 import Column from 'primevue/column'
+import { RouteNames } from '@/router'
 
 onMounted(async () => {
   await bracketStore.getBracketsFrom(userStore.id!)
@@ -63,6 +64,15 @@ onMounted(async () => {
 function paginatorUpdate(_e: DataTablePageEvent) {
   // console.debug(JSON.stringify(_e))
   bracketStore.getBracketsFrom(userStore.id!)
+}
+
+function tournamentHref(this: any, id: number) {
+  // TODO recursion problem
+  // return this.$router.resolve({
+  //   name: RouteNames.tournaments.show,
+  //   params: { tournament_id: id },
+  // })
+  return `/tournaments/${id}`
 }
 
 function sortEvent(e: DataTableSortEvent) {

@@ -1,0 +1,76 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nSELECT \n   id,\n   tournament_id,\n   match_id,\n   pos,\n   M.format,\n   M.format_n,\n   M.high_seed,\n   M.high_seed_player,\n   M.low_seed,\n   M.low_seed_player\nFROM tournament_matches\nLEFT JOIN matches M on tournament_matches.match_id = M.id\nWHERE tournament_id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "tournament_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "match_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "pos",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 4,
+        "name": "format",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "format_n",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 6,
+        "name": "high_seed",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 7,
+        "name": "high_seed_player",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 8,
+        "name": "low_seed",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 9,
+        "name": "low_seed_player",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "921d093272b798dcecd7649fef958e0b3555dcad888f224b788de778bbc06b7d"
+}

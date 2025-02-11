@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nINSERT INTO tournament_matches (\n    tournament_id,\n    match_id,        \n    pos\n) VALUES ($1, $2, $3)    \n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int2"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3f6e22933bc6004dbcea5b80b24b4e62a46164f54765291430766be484224aea"
+}

@@ -8,7 +8,7 @@
   <div v-if="isGuest">{{ bracketName }}</div>
   <ExternalLink
     v-else
-    :link-name="bracketStore.bracket?.bracket!.name"
+    :link-name="tournamentStore.bracket?.bracket!.name"
   ></ExternalLink>
   <div v-if="showJoinLink">
     <other-btn @click="showJoinModal">{{ $t('bracketView.join') }}</other-btn>
@@ -25,12 +25,11 @@
     {{ t('bracketView.unsavedWarning') }}
   </div>
   <div v-if="hasEnoughPlayersToDisplay">
-    {{ JSON.stringify(bracketStore.bracket?.winner_bracket) }}
     <ShowBracket
-      :bracket="bracketStore.bracket?.winner_bracket"
-      :lines="bracketStore.bracket?.winner_bracket_lines"
-      :grand-finals="bracketStore.bracket?.grand_finals"
-      :grand-finals-reset="bracketStore.bracket?.grand_finals_reset"
+      :bracket="tournamentStore.bracket?.winner_bracket"
+      :lines="tournamentStore.bracket?.winner_bracket_lines"
+      :grand-finals="tournamentStore.bracket?.grand_finals"
+      :grand-finals-reset="tournamentStore.bracket?.grand_finals_reset"
       test-id-prefix="winner"
       @show-result-modal="showResultModal"
     >
@@ -38,8 +37,8 @@
     </ShowBracket>
     <ShowBracket
       class="pt-6"
-      :bracket="bracketStore.bracket?.loser_bracket"
-      :lines="bracketStore.bracket?.loser_bracket_lines"
+      :bracket="tournamentStore.bracket?.loser_bracket"
+      :lines="tournamentStore.bracket?.loser_bracket_lines"
       test-id-prefix="loser"
       @show-result-modal="showResultModal"
     >
@@ -55,7 +54,7 @@ import { ref, onMounted, computed, h } from 'vue'
 import ShowBracket from '@/components/ShowBracket.vue'
 import { useI18n } from 'vue-i18n'
 import ReportResultModal from '@/components/ReportResultModal.vue'
-import { useBracketStore } from '@/stores/bracket'
+import { useTournamentStore } from '@/stores/tournament'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import SubmitBtn from '@/components/ui/buttons/SubmitBtn.vue'
@@ -63,7 +62,7 @@ import { RouteNames } from '@/router'
 import ExternalLink from '@/components/ui/ExternalLink.vue'
 import JoinBracketConfirmModal from '@/components/JoinBracketConfirmModal.vue'
 
-const bracketStore = useBracketStore()
+const tournamentStore = useTournamentStore()
 const userStore = useUserStore()
 
 const route = useRoute()
@@ -76,11 +75,11 @@ const props = defineProps({
 })
 
 const unsavedBracketCanBeSavedAction = computed(() => {
-  return userStore.id !== null && !bracketStore.isSaved
+  return userStore.id !== null && !tournamentStore.isSaved
 })
 
 const unsavedBracketCanBeSavedWarning = computed(() => {
-  return userStore.id === null && !bracketStore.isSaved
+  return userStore.id === null && !tournamentStore.isSaved
 })
 
 onMounted(async () => {
@@ -88,11 +87,11 @@ onMounted(async () => {
   if (props.isGuest) {
     return
   }
-  let id = route.params.bracketId
+  let id = route.params.tournamentId
   if (typeof id === 'string') {
-    bracketStore.setBracketId(id)
-    await bracketStore.getDisplayableBracket()
-  } else if (userStore.id === null && bracketStore.bracket) {
+    tournamentStore.setTournamentId(id)
+    await tournamentStore.getDisplayableTournament()
+  } else if (userStore.id === null && tournamentStore.bracket) {
     // NOTE: when in dev, reloading a bracket page for the guest view might
     // throw the following error because pinia store is not reloaded before
     // component finishes loading even though it's fine?
@@ -124,11 +123,11 @@ function showResultModal(
 }
 
 async function saveAndRedirectToNewBracketPage() {
-  await bracketStore.saveBracket()
-  if (bracketStore.bracket?.bracket?.id) {
+  await tournamentStore.saveTournament()
+  if (tournamentStore.bracket?.bracket?.id) {
     await router.push({
-      name: RouteNames.bracket.show,
-      params: { bracketId: bracketStore.bracket?.bracket.id },
+      name: RouteNames.tournaments.show,
+      params: { bracketId: tournamentStore.bracket?.bracket.id },
     })
   } else {
     throw new Error('missing bracket id to redirect')
@@ -136,20 +135,20 @@ async function saveAndRedirectToNewBracketPage() {
 }
 
 const bracketName = computed(() => {
-  return bracketStore.bracket?.bracket!.name
+  return tournamentStore.bracket?.bracket!.name
 })
 
 const hasEnoughPlayersToDisplay = computed(() => {
-  if (bracketStore.participants?.length) {
-    return bracketStore.participants?.length >= 3
+  if (tournamentStore.participants?.length) {
+    return tournamentStore.participants?.length >= 3
   }
   return false
 })
 
 const showJoinLink = computed(() => {
   return (
-    !bracketStore.bracket?.is_participant &&
-    !bracketStore.bracket?.is_tournament_organiser
+    !tournamentStore.bracket?.is_participant &&
+    !tournamentStore.bracket?.is_tournament_organiser
   )
 })
 
@@ -161,7 +160,7 @@ function showJoinModal() {
 
 async function joinBracket() {
   showJoin.value = false
-  await bracketStore.join()
+  await tournamentStore.join()
 }
 </script>
 <style scoped>

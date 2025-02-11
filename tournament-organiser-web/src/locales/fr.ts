@@ -1,6 +1,6 @@
 export default {
   app: 'Totsugeki',
-  bracketForm: {
+  tournamentForm: {
     title: 'Créer une nouvelle bracket',
     nameLabel: 'Nom de la bracket',
     namePlaceholder: 'Weekly #',

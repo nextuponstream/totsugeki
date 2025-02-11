@@ -113,3 +113,49 @@ describe('allow creating brackets without signing up', () => {
     cy.url().should('not.contain', '/brackets/guest')
   })
 })
+
+describe('TO managed bracket for 3 guests', () => {
+  let weeklyName = `weekly-name-${Date.now()}`
+  let createdTournamentId: string | undefined = undefined
+  it('after TO creates a bracket with 3 temporary people', () => {
+    cy.testUserLogin()
+    cy.visit('/')
+
+    cy.get('[name=tournament]').type(weeklyName)
+    cy.get('[data-test-id=next-form]').click()
+
+    cy.get('[name=name]').type('p1{enter}')
+    cy.get('[name=name]').type('p2{enter}')
+    cy.get('[name=name]').type('p3{enter}')
+
+    cy.intercept('POST', '/api/tournaments').as('createTournament')
+
+    cy.get('[data-test-id=start-bracket]').click()
+
+    cy.wait('@createTournament').then((interception) => {
+      assert.equal(interception.response!.statusCode, 201)
+    })
+
+    cy.contains('p1')
+    cy.contains('p2')
+    cy.contains('p3').then(() => {
+      cy.url()
+        .should('not.contain', 'create')
+        .should('contain', '/tournaments/')
+        .then((url) => {
+          const re = /\/tournaments\/(?<tournamentId>.*)/
+          const { tournamentId } = re.exec(url)!.groups!
+          createdTournamentId = tournamentId
+        })
+    })
+  })
+  it('TO starts the bracket and reports score', () => {
+    cy.testUserLogin()
+    cy.visit(`/tournaments/${createdTournamentId}`)
+    cy.submitResult(2, 3, 2, 1, 'winner')
+    cy.submitResult(1, 2, 0, 2, 'winner')
+    cy.submitResult(2, 3, 2, 0, 'loser')
+    cy.submitResult(1, 2, 0, 2, 'grand-finals')
+    cy.submitResult(1, 2, 2, 0, 'grand-finals-reset')
+  })
+})

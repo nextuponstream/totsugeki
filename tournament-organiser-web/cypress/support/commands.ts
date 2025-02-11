@@ -97,11 +97,11 @@ Cypress.Commands.add(
     cy.get(`[data-test-id=${bracket}-${firstSeed}-${secondSeed}]`).click()
     cy.contains(`${scoreP1} - ${scoreP2}`).click()
 
-    cy.intercept('POST', '/api/report-result').as('reportFirstMatch')
+    cy.intercept('POST', '/api/tournaments/*/score').as('reportMatch')
 
     cy.get('[data-test-id=submit-match-result]').click()
 
-    cy.wait('@reportFirstMatch').then((interception) => {
+    cy.wait('@reportMatch').then((interception) => {
       assert.equal(interception.response?.statusCode, 200)
     })
   }

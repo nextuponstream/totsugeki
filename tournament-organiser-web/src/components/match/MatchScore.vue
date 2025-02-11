@@ -11,7 +11,7 @@
 <script setup lang="ts">
 const props = defineProps<{
   isPaddingMatch: boolean
-  scores: number[]
+  scores: number[] | undefined
   index: number
   otherIndex: number
 }>()

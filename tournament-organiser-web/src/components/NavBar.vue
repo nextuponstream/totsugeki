@@ -21,7 +21,7 @@
       </NavLink>
       <NavLink
         v-if="userStore.id && !showMenu"
-        to="/user/dashboard"
+        :to="$router.resolve({ name: RouteNames.users.dashboard })"
         class="hidden sm:block"
         >{{ $t('generic.profile') }}
       </NavLink>
@@ -38,6 +38,7 @@ import { useUserStore } from '@/stores/user'
 import { showMenuKey } from '@/config'
 import SelectLanguage from '@/components/ui/SelectLanguage.vue'
 import RegisterLogin from '@/components/ui/RegisterLogin.vue'
+import { RouteNames } from '@/router'
 
 const userStore = useUserStore()
 const emits = defineEmits(['toggleMenu'])

@@ -34,14 +34,14 @@ import router, { RouteNames } from '@/router'
 import { useI18n } from 'vue-i18n'
 import { object, string } from 'yup'
 import { useUserStore } from '@/stores/user'
-import { useBracketStore } from '@/stores/bracket'
+import { useTournamentStore } from '@/stores/tournament'
 import { useToastStore } from '@/stores/toast'
 import { useModalStore } from '@/stores/modal'
 import { prefixKey } from '@/config'
 
 const { t } = useI18n({})
 const userStore = useUserStore()
-const bracketStore = useBracketStore()
+const bracketStore = useTournamentStore()
 const modalStore = useModalStore()
 const toastStore = useToastStore()
 
@@ -88,9 +88,9 @@ async function onSubmit(values: any) {
       modalStore.activeModal = null
       toastStore.success(t('login'))
       if (bracketStore.isSaved) {
-        await router.push({ name: RouteNames.user.dashboard })
+        await router.push({ name: RouteNames.users.dashboard })
       } else {
-        await router.push({ name: RouteNames.bracket.guest })
+        await router.push({ name: RouteNames.tournaments.guest })
       }
 
       break

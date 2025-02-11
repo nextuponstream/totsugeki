@@ -34,7 +34,7 @@ use totsugeki_core::bracket::seeding::Seeding;
 use totsugeki_core::bracket::Id;
 use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
 use totsugeki_core::format::Format;
-use totsugeki_core::matches::result::MatchFormat;
+use totsugeki_core::matches::result::{MatchFormat, Score};
 use totsugeki_core::matches::Match;
 use totsugeki_core::player::Player;
 use totsugeki_core::validation::AutomaticMatchValidationMode;
@@ -356,6 +356,10 @@ pub struct MatchRecord {
     pub(crate) winner: Option<ID>,
     /// loser by disqualification if any
     pub(crate) automatic_loser: Option<ID>,
+    /// Score of match for high seed player
+    pub(crate) high_seed_player_score: Option<i16>,
+    /// Score of match for low seed player
+    pub(crate) low_seed_player_score: Option<i16>,
 }
 
 impl From<MatchRecord> for Match {
@@ -367,6 +371,16 @@ impl From<MatchRecord> for Match {
         ];
         let format =
             MatchFormat::new(value.format_n.to_u8().expect("format n")).expect("match format");
+        let reported_results = if let (Some(high_score), Some(low_score)) =
+            (value.high_seed_player_score, value.low_seed_player_score)
+        {
+            Some(Score(
+                high_score.to_u8().expect("type coercion"),
+                low_score.to_u8().expect("type coercion"),
+            ))
+        } else {
+            None
+        };
 
         Match::new(
             Some(value.match_id),
@@ -375,6 +389,7 @@ impl From<MatchRecord> for Match {
             format,
             value.winner.into(),
             value.automatic_loser.into(),
+            reported_results,
         )
         .expect("match from match data")
     }

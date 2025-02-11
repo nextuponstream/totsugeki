@@ -1,19 +1,19 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomePage from '../views/CreateBracketView.vue'
+import HomePage from '../views/CreateTournamentView.vue'
 import { useUserStore } from '@/stores/user'
 
 export const RouteNames = {
   home: 'home',
   logout: 'logout',
-  user: {
+  users: {
     register: 'registerUser',
     dashboard: 'userDashboard',
-    brackets: 'userBrackets',
+    tournaments: 'userTournament',
   },
-  bracket: {
-    create: 'bracketCreate',
-    show: 'bracket',
-    guest: 'bracket-guest',
+  tournaments: {
+    create: 'tournamentCreate',
+    show: 'tournamentShow',
+    guest: 'tournament-guest',
   },
   about: 'about',
   notFound: 'notFound',
@@ -36,21 +36,21 @@ const router = createRouter({
       component: () => import('../views/AboutView.vue'),
     },
     {
-      path: '/brackets/create',
-      name: RouteNames.bracket.create,
+      path: '/tournaments/create',
+      name: RouteNames.tournaments.create,
       component: () => import('../views/PlayerRegistrationView.vue'),
     },
     {
-      path: '/brackets/:bracketId',
-      name: RouteNames.bracket.show,
+      path: '/tournaments/:tournamentId',
+      name: RouteNames.tournaments.show,
       props: { isGuest: false },
-      component: () => import('../views/BracketView.vue'),
+      component: () => import('../views/TournamentView.vue'),
     },
     {
-      path: '/brackets/guest',
-      name: RouteNames.bracket.guest,
+      path: '/tournaments/guest',
+      name: RouteNames.tournaments.guest,
       props: { isGuest: true },
-      component: () => import('../views/BracketView.vue'),
+      component: () => import('../views/TournamentView.vue'),
     },
     {
       path: '/404',
@@ -59,11 +59,11 @@ const router = createRouter({
     },
     {
       path: '/register',
-      name: RouteNames.user.register,
+      name: RouteNames.users.register,
       component: () => import('../views/users/UserRegistrationView.vue'),
     },
     {
-      path: '/user',
+      path: '/users',
       meta: { requiresAuth: true },
       children: [
         {
@@ -73,13 +73,13 @@ const router = createRouter({
         },
         {
           path: 'dashboard',
-          name: RouteNames.user.dashboard,
+          name: RouteNames.users.dashboard,
           component: () => import('../views/users/UserDashboardView.vue'),
         },
         {
-          path: 'brackets',
-          name: RouteNames.user.brackets,
-          component: () => import('../views/users/UserBracketsView.vue'),
+          path: 'tournaments',
+          name: RouteNames.users.tournaments,
+          component: () => import('../views/users/UserTournamentView.vue'),
         },
       ],
     },

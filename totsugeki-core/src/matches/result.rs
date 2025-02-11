@@ -9,6 +9,14 @@ use thiserror::Error;
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Score(pub u8, pub u8);
 
+impl Score {
+    /// Reverse score
+    #[must_use]
+    pub fn reverse(&self) -> Self {
+        Self(self.1, self.0)
+    }
+}
+
 /// Match result
 #[derive(Debug)]
 pub struct MatchScore(Score, MatchFormat);

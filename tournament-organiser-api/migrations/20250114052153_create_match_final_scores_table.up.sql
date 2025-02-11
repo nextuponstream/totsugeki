@@ -33,6 +33,8 @@ CREATE TABLE match_final_scores
     winner                 uuid REFERENCES players (id),
     -- must assert that winner is a player in the match application side
     automatic_loser        uuid REFERENCES players (id)
-        CONSTRAINT winner_is_not_loser CHECK ( winner IS NULL OR automatic_loser IS NULL )
+        CONSTRAINT winner_is_not_loser CHECK ( winner IS NULL OR automatic_loser IS NULL ),
     -- must assert that automatic loser is a player in the match application side
+
+    created_at             timestamptz NOT NULL default current_timestamp
 )

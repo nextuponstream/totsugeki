@@ -406,6 +406,7 @@ impl Match {
         format: MatchFormat,
         winner: Opponent,
         automatic_loser: Opponent,
+        final_score: Option<Score>,
     ) -> Result<Match, GenerationError> {
         if let (Some(w), Some(l)) = (winner.0, automatic_loser.0) {
             return Err(GenerationError::InferredWinner(w, l));
@@ -422,7 +423,11 @@ impl Match {
                 winner,
                 automatic_loser,
                 seeds,
-                reported_results: [None, None],
+                reported_results: if let Some(final_score) = final_score {
+                    [Some(final_score), Some(final_score.reverse())]
+                } else {
+                    [None, None]
+                },
                 format,
             }),
         }
@@ -786,6 +791,7 @@ mod tests {
             MatchFormat::default(),
             Opponent(None),
             Opponent(None),
+            None,
         )
         .expect("match");
         assert!(m.contains(&p1));
@@ -804,6 +810,7 @@ mod tests {
             MatchFormat::default(),
             Opponent(None),
             Opponent(None),
+            None,
         ) {
             Err(GenerationError::SamePlayer) => {}
             _ => panic!("Expected error but got none"),
@@ -821,6 +828,7 @@ mod tests {
             MatchFormat::default(),
             Opponent(None),
             Opponent(None),
+            None,
         )
         .expect("match");
         assert!(!m.is_over());
@@ -840,6 +848,7 @@ mod tests {
             MatchFormat::default(),
             Opponent(None),
             Opponent(None),
+            None,
         )
         .expect("match");
         assert!(!m.is_over());
@@ -859,6 +868,7 @@ mod tests {
             MatchFormat::ft2(),
             Opponent(None),
             Opponent(None),
+            None,
         )
         .expect("match");
         assert!(!m.is_over());
@@ -878,6 +888,7 @@ mod tests {
             MatchFormat::ft2(),
             Opponent(None),
             Opponent(None),
+            None,
         )
         .expect("match");
         assert!(!m.is_over());
@@ -902,6 +913,7 @@ mod tests {
             MatchFormat::ft2(),
             Opponent(None),
             Opponent(None),
+            None,
         )
         .expect("match");
         assert!(m.needs_playing());
@@ -913,6 +925,7 @@ mod tests {
             MatchFormat::ft2(),
             Opponent(None),
             Opponent(None),
+            None,
         )
         .expect("match");
         assert!(!m.needs_playing());
@@ -923,6 +936,7 @@ mod tests {
             MatchFormat::ft2(),
             Opponent(None),
             Opponent(None),
+            None,
         )
         .expect("match");
         assert!(!m.needs_playing());
@@ -933,6 +947,7 @@ mod tests {
             MatchFormat::ft2(),
             Opponent(None),
             Opponent(None),
+            None,
         )
         .expect("match");
         assert!(!m.needs_playing());
@@ -1002,6 +1017,7 @@ mod tests {
             MatchFormat::default(),
             Opponent(None),
             Opponent(None),
+            None,
         )
         .expect("match");
         let p1_intruder = ID::new_v4();
@@ -1020,6 +1036,7 @@ mod tests {
             MatchFormat::default(),
             Opponent(None),
             Opponent(None),
+            None,
         )
         .expect("match");
 
@@ -1038,6 +1055,7 @@ mod tests {
             MatchFormat::default(),
             Opponent(None),
             Opponent(None),
+            None,
         )
         .expect("match");
 
@@ -1061,6 +1079,7 @@ mod tests {
             MatchFormat::default(),
             Opponent(None),
             Opponent(None),
+            None,
         )
         .expect("match");
 
