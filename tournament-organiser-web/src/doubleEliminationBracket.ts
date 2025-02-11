@@ -1,12 +1,6 @@
-interface Match {
-  id: string
-  players: { name: string; id: string }[]
-  seeds: number[]
-  score: number[] | null
-  row_hint: number | null
-}
+import type { Match } from '@/match'
 
-interface Lines {
+export interface Lines {
   left_border: boolean
   bottom_border: boolean
 }
@@ -24,9 +18,9 @@ interface RawBracket {
   seeding?: string[]
 }
 
-type Participants = Player[]
+export type Participants = Player[]
 
-interface DoubleEliminationBracket {
+export interface DoubleEliminationBracket {
   winner_bracket: Match[][]
   winner_bracket_lines: Lines[][]
   loser_bracket: Match[][]

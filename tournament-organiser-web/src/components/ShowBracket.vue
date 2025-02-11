@@ -107,6 +107,8 @@
 <script setup lang="ts">
 import { type PropType, computed } from 'vue'
 import MatchNode from '@/components/MatchNode.vue'
+import type { Lines } from '@/doubleEliminationBracket'
+import type { Match } from '@/match'
 
 const props = defineProps({
   testIdPrefix: {

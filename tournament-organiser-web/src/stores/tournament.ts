@@ -1,6 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref, type Ref } from 'vue'
 import { httpClient } from '@/httpClient'
+import type {
+  DoubleEliminationBracket,
+  Participants,
+} from '@/doubleEliminationBracket'
 
 type Player = { name: string; index: number }
 

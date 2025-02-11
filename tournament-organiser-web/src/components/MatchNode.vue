@@ -42,17 +42,10 @@
 <script setup lang="ts">
 import { computed, type PropType } from 'vue'
 import MatchScore from './match/MatchScore.vue'
+import { type Match } from '@/match'
 
 // TODO hover only for matches for which you can submit scores
 // FIXME nitpick lines do not flow pixel perfectly into/out of matches https://github.com/nextuponstream/totsugeki/issues/38
-
-interface Match {
-  id: string
-  players: { name: string; id: string }[]
-  seeds: number[]
-  score: number[]
-  row_hint: number | null
-}
 
 const props = defineProps({
   match: {
