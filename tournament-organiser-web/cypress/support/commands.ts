@@ -50,7 +50,7 @@ Cypress.Commands.add(
 
     cy.wait('@registration').then((interception) => {
       assert.isNotNull(interception.response, 'response')
-      assert.equal(interception.response?.statusCode, 200)
+      assert.equal(interception.response?.statusCode, 201)
     })
     cy.url().should('not.contain', 'register')
   }

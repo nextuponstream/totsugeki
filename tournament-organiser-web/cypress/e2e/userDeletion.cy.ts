@@ -6,7 +6,7 @@ it('allows new registered user to be deleted', () => {
 
   cy.login(email, password)
 
-  cy.visit('/user/dashboard')
+  cy.visit('/users/dashboard')
 
   cy.contains('Delete my account').click()
   cy.get('[name=deleteEmail]').type(email)
