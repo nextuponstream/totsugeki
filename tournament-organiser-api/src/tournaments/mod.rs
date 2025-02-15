@@ -47,6 +47,23 @@ use validator::Validate;
 
 /// List of players from which a bracket can be created
 #[derive(Debug, Serialize, Deserialize)]
+pub struct GuestReportResultInput {
+    /// Bracket as json
+    pub bracket: DoubleEliminationBracket,
+    /// Tournament as json
+    pub tournament: Tournament,
+    /// First player
+    pub player1_id: ID,
+    /// Second player
+    pub player2_id: ID,
+    /// player 1 score
+    pub score_p1: u8,
+    /// player 2 score
+    pub score_p2: u8,
+}
+
+/// List of players from which a bracket can be created
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ReportResultInput {
     /// First player
     pub player1_id: ID,
@@ -60,7 +77,7 @@ pub struct ReportResultInput {
 
 /// Bracket to display. When there is less than 3 players, then there is nothing
 /// to display
-#[derive(Serialize, Debug, Deserialize)]
+#[derive(Clone, Serialize, Debug, Deserialize)]
 pub struct BracketDisplay {
     /// Winner bracket matches and lines to draw
     pub winner_bracket: Option<Vec<Vec<MinimalMatch>>>,
@@ -74,14 +91,28 @@ pub struct BracketDisplay {
     pub grand_finals: Option<MinimalMatch>,
     /// Grand finals reset
     pub grand_finals_reset: Option<MinimalMatch>,
-    /// Bracket object to update
-    pub bracket: DoubleEliminationBracket,
     /// true if user requesting the data is also a TO
     pub is_tournament_organiser: bool,
     /// true if user requesting the data participates
     pub is_participant: bool,
     /// Participants (seeding + names)
     pub participants: Participants,
+    /// Raw tournament object
+    pub tournament: Tournament,
+    /// Bracket object to update
+    pub bracket: DoubleEliminationBracket,
+}
+
+impl From<BracketDisplay> for DoubleEliminationBracket {
+    fn from(value: BracketDisplay) -> Self {
+        value.bracket
+    }
+}
+
+impl From<BracketDisplay> for Tournament {
+    fn from(value: BracketDisplay) -> Self {
+        value.tournament
+    }
 }
 
 /// List of players from which a bracket can be created
@@ -226,14 +257,16 @@ fn breakdown(
         grand_finals_reset: gf_reset,
         participants: Participants(
             tournament
+                .clone()
                 .get_players()
                 .into_iter()
                 .map(std::convert::Into::into)
                 .collect::<Vec<Player>>(),
         ),
-        bracket,
         is_participant,
         is_tournament_organiser,
+        bracket,
+        tournament: tournament.clone(),
     };
     tracing::info!("displaying tournament {}", tournament.get_id());
     tracing::debug!("displaying tournament {:?}", bracket);
@@ -449,7 +482,7 @@ impl From<TournamentAugmentedRecord> for Tournament {
 ///
 /// These information may not be necessary to running the bracket, but they are
 /// necessary for player
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[allow(unused)]
 pub struct Tournament {
     /// Identifier of tournament

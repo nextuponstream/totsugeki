@@ -7,7 +7,7 @@ describe('creating brackets as a registered user', () => {
     cy.testUserLogin()
     cy.visit('/')
 
-    cy.get('[name=bracket]').type(weeklyName)
+    cy.get('[name=tournament]').type(weeklyName)
     cy.get('[data-test-id=next-form]').click()
 
     cy.get('[name=name]').type('p1{enter}')
@@ -16,7 +16,7 @@ describe('creating brackets as a registered user', () => {
 
     cy.intercept('POST', '/api/tournaments').as('createTournament')
 
-    cy.get('[data-test-id=start-bracket]').click()
+    cy.get('[data-test-id=start-tournament]').click()
 
     cy.wait('@createTournament').then((interception) => {
       assert.equal(interception.response?.statusCode, 201)
@@ -26,7 +26,7 @@ describe('creating brackets as a registered user', () => {
     cy.contains('p2')
     cy.contains('p3').then(() => {
       cy.url()
-        .should('contain', '/brackets/')
+        .should('contain', '/tournaments/')
         .then((v) => {
           url = v
         })
@@ -37,14 +37,14 @@ describe('creating brackets as a registered user', () => {
     cy.visit('/')
 
     cy.intercept(`/api/user/${TEST_USER.id}/tournaments*`).as(
-      'userPaginatedBrackets'
+      'userPaginatedTournament'
     )
 
     cy.get('[data-test-id=menu]').click()
-    cy.get('[data-test-id=my-brackets]').click()
-    cy.url().should('contain', `/user/tournaments`)
+    cy.get('[data-test-id=my-tournaments]').click()
+    cy.url().should('contain', `/users/tournaments`)
 
-    cy.wait('@userPaginatedBrackets').then((interception) => {
+    cy.wait('@userPaginatedTournament').then((interception) => {
       expect(interception.response)
       if (interception.response) {
         expect(
@@ -60,6 +60,7 @@ describe('creating brackets as a registered user', () => {
     })
   })
 })
+
 describe('allow creating brackets without signing up', () => {
   let weeklyName = `weekly-name-${Date.now()}`
   let email = `someMail-${Date.now()}@gmail.com`
@@ -68,22 +69,22 @@ describe('allow creating brackets without signing up', () => {
     cy.guestSession(weeklyName, email)
     cy.visit('/')
 
-    cy.get('[name=bracket]').type(weeklyName)
+    cy.get('[name=tournament]').type(weeklyName)
     cy.get('[data-test-id=next-form]').click()
 
     cy.get('[name=name]').type('p1{enter}')
     cy.get('[name=name]').type('p2{enter}')
     cy.get('[name=name]').type('p3{enter}')
 
-    cy.intercept('POST', '/api/guest/tournaments').as('createBracket')
+    cy.intercept('POST', '/api/guests/tournaments').as('createTournament')
 
-    cy.get('[data-test-id=start-bracket]').click()
+    cy.get('[data-test-id=start-tournament]').click()
 
-    cy.wait('@createBracket').then((interception) => {
+    cy.wait('@createTournament').then((interception) => {
       assert.equal(interception.response?.statusCode, 200)
     })
 
-    cy.url().should('contain', '/brackets/guest')
+    cy.url().should('contain', '/tournaments/guest')
     cy.contains('p1')
     cy.contains('p2')
     cy.contains('p3')
@@ -113,7 +114,6 @@ describe('allow creating brackets without signing up', () => {
     cy.url().should('not.contain', '/brackets/guest')
   })
 })
-
 describe('TO managed bracket for 3 guests', () => {
   let weeklyName = `weekly-name-${Date.now()}`
   let createdTournamentId: string | undefined = undefined
@@ -130,7 +130,7 @@ describe('TO managed bracket for 3 guests', () => {
 
     cy.intercept('POST', '/api/tournaments').as('createTournament')
 
-    cy.get('[data-test-id=start-bracket]').click()
+    cy.get('[data-test-id=start-tournament]').click()
 
     cy.wait('@createTournament').then((interception) => {
       assert.equal(interception.response!.statusCode, 201)

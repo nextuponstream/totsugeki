@@ -13,7 +13,7 @@
       <RegisterLogin></RegisterLogin>
       <NavLink
         v-if="userStore.id"
-        data-test-id="my-brackets"
+        data-test-id="my-tournaments"
         :to="$router.resolve({ name: RouteNames.users.tournaments })"
         @click="toggleMenu"
         >{{ $t('navbar.myBrackets') }}

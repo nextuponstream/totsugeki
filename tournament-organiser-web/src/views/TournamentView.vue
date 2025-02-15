@@ -124,18 +124,18 @@ function showResultModal(
 
 async function saveAndRedirectToNewBracketPage() {
   await tournamentStore.saveTournament()
-  if (tournamentStore.bracket?.bracket?.id) {
+  if (tournamentStore.bracket?.tournament?.id) {
     await router.push({
       name: RouteNames.tournaments.show,
-      params: { bracketId: tournamentStore.bracket?.bracket.id },
+      params: { tournamentId: tournamentStore.bracket.tournament.id },
     })
   } else {
-    throw new Error('missing bracket id to redirect')
+    throw new Error('missing tournament id to redirect')
   }
 }
 
 const bracketName = computed(() => {
-  return tournamentStore.bracket?.bracket!.name
+  return tournamentStore.bracket?.tournament?.name
 })
 
 const hasEnoughPlayersToDisplay = computed(() => {

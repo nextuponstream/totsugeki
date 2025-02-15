@@ -1,11 +1,11 @@
 //! Tournament player definition
 
 use crate::ID;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use totsugeki_core::player::Player;
 
 /// Tournament player refer to either a real user or a guest (but NEVER both)
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TournamentPlayer {
     /// Player ID
     pub id: ID,

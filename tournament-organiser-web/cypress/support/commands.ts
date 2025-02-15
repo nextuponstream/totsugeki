@@ -106,38 +106,59 @@ Cypress.Commands.add(
     })
   }
 )
+Cypress.Commands.add(
+  'submitResultAsGuest',
+  (
+    firstSeed: number,
+    secondSeed: number,
+    scoreP1: number,
+    scoreP2: number,
+    bracket: Bracket
+  ) => {
+    cy.get(`[data-test-id=${bracket}-${firstSeed}-${secondSeed}]`).click()
+    cy.contains(`${scoreP1} - ${scoreP2}`).click()
+
+    cy.intercept('POST', '/api/report-result').as('reportMatch')
+
+    cy.get('[data-test-id=submit-match-result]').click()
+
+    cy.wait('@reportMatch').then((interception) => {
+      assert.equal(interception.response?.statusCode, 200)
+    })
+  }
+)
 
 Cypress.Commands.add('guestSession', (weeklyName: string, email: string) => {
   cy.session(['guest', weeklyName, email], () => {
     cy.visit('/')
 
-    cy.get('[name=bracket]').type(weeklyName)
+    cy.get('[name=tournament]').type(weeklyName)
     cy.get('[data-test-id=next-form]').click()
 
     cy.get('[name=name]').type('p1{enter}')
     cy.get('[name=name]').type('p2{enter}')
     cy.get('[name=name]').type('p3{enter}')
 
-    cy.intercept('POST', '/api/guest/tournaments').as('createTournaments')
+    cy.intercept('POST', '/api/guests/tournaments').as('createTournaments')
 
-    cy.get('[data-test-id=start-bracket]').click()
+    cy.get('[data-test-id=start-tournament]').click()
 
     cy.wait('@createTournaments').then((interception) => {
       assert.equal(interception.response?.statusCode, 200)
     })
 
-    cy.url().should('contain', '/brackets/')
+    cy.url().should('contain', '/tournaments/')
 
     cy.contains('p1')
     cy.contains('p2')
     cy.contains('p3')
     cy.contains('This bracket is currently unsaved')
 
-    cy.submitResult(2, 3, 2, 1, 'winner')
-    cy.submitResult(1, 2, 0, 2, 'winner')
-    cy.submitResult(2, 3, 2, 0, 'loser')
-    cy.submitResult(1, 2, 0, 2, 'grand-finals')
-    cy.submitResult(1, 2, 2, 0, 'grand-finals-reset')
+    cy.submitResultAsGuest(2, 3, 2, 1, 'winner')
+    cy.submitResultAsGuest(1, 2, 0, 2, 'winner')
+    cy.submitResultAsGuest(2, 3, 2, 0, 'loser')
+    cy.submitResultAsGuest(1, 2, 0, 2, 'grand-finals')
+    cy.submitResultAsGuest(1, 2, 2, 0, 'grand-finals-reset')
   })
 })
 
@@ -217,6 +238,14 @@ declare global {
       testUserLogin(): Chainable<void>
 
       submitResult(
+        firstSeed: number,
+        secondSeed: number,
+        scoreP1: number,
+        scoreP2: number,
+        bracket: Bracket
+      ): Chainable<void>
+
+      submitResultAsGuest(
         firstSeed: number,
         secondSeed: number,
         scoreP1: number,

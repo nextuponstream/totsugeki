@@ -11,7 +11,7 @@
       </div>
 
       <div class="flex">
-        <submit-btn data-test-id="start-bracket">
+        <submit-btn data-test-id="start-tournament">
           {{ $t('registration.startBracket') }}
         </submit-btn>
       </div>
@@ -74,7 +74,7 @@ async function createBracketFromPlayers() {
         params: { tournamentId: bracketStore.id },
       })
     } else {
-      await router.push({ name: 'bracket-guest' })
+      await router.push({ name: RouteNames.tournaments.guest })
     }
   } catch (e) {
     console.error(e)

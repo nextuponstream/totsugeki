@@ -10,7 +10,7 @@ interface Player {
   name: string
 }
 
-interface RawBracket {
+export interface RawBracket {
   id?: string
   name?: string
 
@@ -28,6 +28,7 @@ export interface DoubleEliminationBracket {
   grand_finals: Match | undefined
   grand_finals_reset: Match | undefined
   bracket: RawBracket | undefined
+  tournament: Tournament | undefined
   is_participant: boolean
   is_tournament_organiser: boolean
   tournament_id: string

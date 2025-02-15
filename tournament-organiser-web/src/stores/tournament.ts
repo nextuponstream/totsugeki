@@ -4,6 +4,7 @@ import { httpClient } from '@/httpClient'
 import type {
   DoubleEliminationBracket,
   Participants,
+  RawBracket,
 } from '@/doubleEliminationBracket'
 
 type Player = { name: string; index: number }
@@ -14,8 +15,8 @@ interface TournamentCreationForm {
 }
 
 interface MatchResult {
-  p1_id: string
-  p2_id: string
+  player1_id: string
+  player2_id: string
   score_p1: number
   score_p2: number
 }
@@ -87,7 +88,7 @@ export const useTournamentStore = defineStore(
      */
     async function createTournament(loggedIn: boolean) {
       console.debug(`creating tournament with ${loggedIn ? 'user' : 'guest'}`)
-      let url = `/${loggedIn ? '' : 'guest/'}tournaments`
+      let url = `/${loggedIn ? '' : 'guests/'}tournaments`
       let response = await httpClient.post(url, {
         tournament_name: formCreate.value.tournament_name,
         player_names: formCreate.value.player_names.map((p) => p.name),
@@ -140,10 +141,11 @@ export const useTournamentStore = defineStore(
       //  to the user, hit f5 and all results should still be there
       if (bracket.value) {
         console.debug(`submitting result for bracket...`)
-        let path = dryRun ? `/score` : `/tournaments/${id.value}/score`
+        let path = dryRun ? `/report-result` : `/tournaments/${id.value}/score`
 
         let response = await httpClient.post(path, {
           bracket: bracket.value.bracket,
+          tournament: bracket.value.tournament,
           player1_id: players[0].id,
           player2_id: players[1].id,
           score_p1: scoreP1,
@@ -151,8 +153,8 @@ export const useTournamentStore = defineStore(
         })
         bracket.value = await response.json()
         reportedResults.value.push({
-          p1_id: players[0].id,
-          p2_id: players[1].id,
+          player1_id: players[0].id,
+          player2_id: players[1].id,
           score_p1: scoreP1,
           score_p2: scoreP2,
         })
@@ -171,15 +173,17 @@ export const useTournamentStore = defineStore(
       // use /tournaments/save endpoint
       if (reportedResults.value && bracket.value?.bracket?.seeding) {
         console.debug(`submitting result for bracket...`)
-        let player_names = bracket.value.bracket.seeding
         let response = await httpClient.post(`/tournaments/save`, {
-          // bracket_name: bracket.value?.bracket?.name, // FIXME
+          // FIXME tournament_name
+          bracket_name: bracket.value?.tournament?.name,
           results: reportedResults.value,
-          players: player_names,
+          // FIXME use players from tournament and delete participants
+          players: participants.value,
         })
         reportedResults.value = []
         isSaved.value = true
         bracket.value = await response.json()
+        // save tournament aside from bracket
       } else {
         throw new Error('missing bracket in store for reporting result')
       }
