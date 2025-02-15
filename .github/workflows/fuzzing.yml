@@ -133,5 +133,5 @@ jobs:
       - run: rustup toolchain install nightly --component llvm-tools-preview || true
       # did timeout once and exited with code 1
       # you could add -timeout_exitcode=0 but let's limit the imput size
-      - run: cargo +nightly fuzz run very_big_brackets_de -- -max_total_time=60
+      - run: cargo +nightly fuzz run very_big_brackets_de -- -max_total_time=60 -rss_limit_mb=0
 

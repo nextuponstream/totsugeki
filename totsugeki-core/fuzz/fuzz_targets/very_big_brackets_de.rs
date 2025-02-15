@@ -76,7 +76,7 @@ fuzz_target!(|data: (BigOnlineBracketEvents, u128)| {
                 if *index_event >= matches.len() {
                     continue;
                 }
-                let m = matches.get(*index_event).expect("match");
+                let m = matches.get(*index_event).expect("match").to_owned();
 
                 // Some matches are already over because of a disqualification event.
                 // Then there is no need to trigger an event on those.
@@ -119,13 +119,11 @@ fuzz_target!(|data: (BigOnlineBracketEvents, u128)| {
                             result = result.reverse();
                         }
                         if !bracket.is_over() {
-                            bracket = match bracket
-                                .clone()
-                                .tournament_organiser_reports_result_dangerous(
-                                    p1,
-                                    result.0.unwrap(),
-                                    p2,
-                                ) {
+                            bracket = match bracket.tournament_organiser_reports_result_dangerous(
+                                p1,
+                                result.0.unwrap(),
+                                p2,
+                            ) {
                                 Ok((b, _, _)) => b,
                                 Err(e) => panic!("TO can't report result: {e}"),
                             };
