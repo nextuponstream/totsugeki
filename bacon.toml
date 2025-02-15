@@ -44,6 +44,8 @@ command = ["bash", "bacon_command_chain_web.sh"]
 [jobs.e2e]
 need_stdout = true
 on_change_strategy = "kill_then_restart"
+kill = ["kill", "-s", "INT"]
+background = false
 default_watch = true
 env.DB_USERNAME = "toa"
 env.DB_PASSWORD = "toa"
