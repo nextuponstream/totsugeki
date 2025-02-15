@@ -5,7 +5,9 @@
     @confirmed="joinBracket"
   ></JoinBracketConfirmModal>
 
-  <div v-if="isGuest">{{ bracketName }}</div>
+  <div v-if="isGuest">
+    {{ bracketName }}{{ tournamentStore.bracket?.tournament?.name }}
+  </div>
   <ExternalLink
     v-else
     :link-name="tournamentStore.bracket?.bracket!.name"

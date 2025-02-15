@@ -53,6 +53,8 @@ pub(crate) async fn join_bracket<'a>(
             }
         };
 
+    transaction.commit().await?;
+
     Ok(breakdown(
         &tournament,
         bracket,

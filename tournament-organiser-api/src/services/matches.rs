@@ -142,6 +142,26 @@ ON CONFLICT (match_id) DO UPDATE
         }
         Ok(())
     }
+    /// Delete all matches of given tournament
+    ///
+    /// # Errors
+    /// Returns an error if communication with the database fails.
+    pub async fn delete(
+        transaction: SqlxTransaction<'_, '_>,
+        tournament_id: &ID,
+    ) -> Result<(), SqlxError> {
+        sqlx::query!(
+            r#"
+DELETE FROM tournament_matches
+WHERE tournament_id = $1;
+        "#,
+            tournament_id,
+        )
+        .execute(&mut **transaction)
+        .await?;
+
+        Ok(())
+    }
 
     /// Create matches for tournament
     ///

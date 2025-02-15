@@ -203,6 +203,9 @@ GROUP BY tournaments.id
             None,
         );
 
+        MatchService::delete(transaction, &tournament_id).await?;
+        MatchService::create(transaction, &tournament.id, bracket.get_matches()).await?;
+
         Ok(Some((tournament, bracket, is_tournament_organiser)))
     }
 

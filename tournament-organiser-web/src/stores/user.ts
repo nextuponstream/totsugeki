@@ -65,6 +65,7 @@ export const useUserStore = defineStore(
           let body = await response.json()
           // store user ID and prefer logged in view from now on
           id.value = body.user_id
+          infos.name = body.name
           return 200
         } else {
           throw new Error('expected json response')

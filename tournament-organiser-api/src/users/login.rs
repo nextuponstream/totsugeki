@@ -30,6 +30,8 @@ pub struct Credentials {
 struct SuccessfulLogin {
     /// User ID
     user_id: ID,
+    /// User name
+    name: String,
 }
 
 /// `/login` endpoint
@@ -74,7 +76,7 @@ pub(crate) async fn login(
     // Only time we try to log a query error rather than expect so we can do a
     // sanity check that migrations were ran
     let row = match sqlx::query!(
-        "SELECT id, password from users WHERE email = $1",
+        "SELECT id, name, password from users WHERE email = $1",
         credentials.email,
     )
     .fetch_optional(&pool)
@@ -86,8 +88,8 @@ pub(crate) async fn login(
             panic!("user row: {e}");
         }
     };
-    let (user_id, password) = match row {
-        Some(r) => (r.id, r.password),
+    let (user_id, name, password) = match row {
+        Some(r) => (r.id, r.name, r.password),
         None => return (StatusCode::NOT_FOUND).into_response(),
     };
     // Not use fixed params with new constructor rather than rely on defaults
@@ -107,5 +109,5 @@ pub(crate) async fn login(
         .expect("user_id key insert in session");
     session.save().await.expect("updated session");
     tracing::info!("successful login {} ({})", email, user_id);
-    (StatusCode::OK, Json(SuccessfulLogin { user_id })).into_response()
+    (StatusCode::OK, Json(SuccessfulLogin { user_id, name })).into_response()
 }
