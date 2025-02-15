@@ -8,6 +8,7 @@
         <i class="pi pi-bars"></i>
       </NavLink>
       <NavLink to="/" text="Home" />
+      {{ userStore.infos.name }}
     </div>
     <div class="flex gap-2 items-center justify-self-end">
       <SelectLanguage v-if="!showMenu"></SelectLanguage>

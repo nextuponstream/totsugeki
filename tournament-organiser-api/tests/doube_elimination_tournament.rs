@@ -12,7 +12,7 @@ use tournament_organiser_api::tournaments::{
     BracketDisplay, BracketState, GenericResourceCreated, PlayerMatchResultReport,
 };
 
-#[sqlx::test]
+#[sqlx::test(fixtures("user"))]
 async fn tournament_is_searchable(db: PgPool) {
     let app = spawn_app(db).await;
     app.login_as_test_user().await;
@@ -40,7 +40,7 @@ async fn tournament_is_searchable(db: PgPool) {
     );
 }
 
-#[sqlx::test]
+#[sqlx::test(fixtures("user"))]
 async fn create_tournament(db: PgPool) {
     let app = spawn_app(db).await;
     app.login_as_test_user().await;
@@ -59,7 +59,7 @@ async fn create_tournament(db: PgPool) {
     );
     let _id: GenericResourceCreated = response.json().await.unwrap();
 }
-#[sqlx::test]
+#[sqlx::test(fixtures("user"))]
 async fn cannot_create_tournament_without_data(db: PgPool) {
     let app = spawn_app(db).await;
     app.login_as_test_user().await;
@@ -97,7 +97,7 @@ async fn cannot_create_tournament_when_unauthenticated(db: PgPool) {
     );
 }
 
-#[sqlx::test]
+#[sqlx::test(fixtures("user"))]
 async fn get_tournament(db: PgPool) {
     let app = spawn_app(db).await;
     app.login_as_test_user().await;
@@ -132,7 +132,7 @@ async fn get_tournament(db: PgPool) {
     assert!(matches.is_empty());
 }
 
-#[sqlx::test(fixtures("tournaments"))]
+#[sqlx::test(fixtures("tournaments", "user"))]
 async fn list_tournaments(db: PgPool) {
     let app = spawn_app(db).await;
     app.login_as_test_user().await;
@@ -155,7 +155,7 @@ async fn list_tournaments(db: PgPool) {
     let brackets: PaginationResult<PaginatedTournamentResource> = response.json().await.unwrap();
     assert_eq!(brackets.total, 100);
 }
-#[sqlx::test]
+#[sqlx::test(fixtures("user"))]
 async fn save_tournament(db: PgPool) {
     let app = spawn_app(db).await;
     app.login_as_test_user().await;

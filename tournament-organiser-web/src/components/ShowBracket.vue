@@ -18,6 +18,7 @@
               v-for="match in element.match"
               :key="match.id"
               :match="match"
+              :disabled="!isTournamentOrganiser"
               :test-id-prefix="testIdPrefix"
               @click="showResultModal(match.id, match.players)"
             />
@@ -51,6 +52,7 @@
         <MatchNode
           :match="bracketFinalMatch"
           :test-id-prefix="testIdPrefix"
+          :disabled="!isTournamentOrganiser"
           @click="
             showResultModal(bracketFinalMatch.id, bracketFinalMatch.players)
           "
@@ -73,6 +75,7 @@
         <MatchNode
           :match="grandFinals"
           test-id-prefix="grand-finals"
+          :disabled="!isTournamentOrganiser"
           @click="showResultModal(grandFinals.id, grandFinals.players)"
         />
       </div>
@@ -96,6 +99,7 @@
         <MatchNode
           :match="grandFinalsReset"
           test-id-prefix="grand-finals-reset"
+          :disabled="!isTournamentOrganiser"
           @click="
             showResultModal(grandFinalsReset.id, grandFinalsReset.players)
           "
@@ -109,7 +113,9 @@ import { type PropType, computed } from 'vue'
 import MatchNode from '@/components/MatchNode.vue'
 import type { Lines } from '@/doubleEliminationBracket'
 import type { Match } from '@/match'
+import { useTournamentStore } from '@/stores/tournament'
 
+const tournamentStore = useTournamentStore()
 const props = defineProps({
   testIdPrefix: {
     type: String,
@@ -193,6 +199,13 @@ function showResultModal(
   matchId: string,
   players: { name: string; id: string }[]
 ) {
+  if (!isTournamentOrganiser.value) {
+    return
+  }
   emits('showResultModal', matchId, players)
 }
+
+const isTournamentOrganiser = computed(() => {
+  return tournamentStore.bracket?.is_tournament_organiser
+})
 </script>

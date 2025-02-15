@@ -124,24 +124,9 @@ impl TestApp {
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
     pub async fn login_as_test_user(&self) {
         let response = self
-            .register(&FormUserInput {
-                name: "jean".into(),
-                email: "jean@bon.ch".into(),
-                password: "verySecurePassword#123456789?".into(),
-            })
-            .await;
-
-        let status = response.status();
-        assert!(
-            status.is_success(),
-            "status: {status}, response: \"{}\"",
-            response.text().await.unwrap()
-        );
-
-        let response = self
             .login(&LoginForm {
-                email: "jean@bon.ch".into(),
-                password: "verySecurePassword#123456789?".into(),
+                email: "test@user.ch".into(),
+                password: "securePass123#".into(),
             })
             .await;
 
