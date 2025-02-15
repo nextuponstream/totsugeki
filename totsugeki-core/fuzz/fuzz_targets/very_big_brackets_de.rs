@@ -1,16 +1,13 @@
 #![no_main]
 
-use libfuzzer_sys::fuzz_target;
 extern crate libfuzzer_sys;
+use libfuzzer_sys::fuzz_target;
 
-use chrono::prelude::*;
 use itertools::Itertools;
 use num_bigint::BigInt;
-use totsugeki_core::{
-    bracket::Bracket, format::Format, matches::ReportedResult, opponent::Opponent, player::Player,
-    seeding::Method,
-};
-use totsugeki_fuzz::{BigOnlineBracketEvents, MatchEvent};
+use totsugeki_core::matches::result::Score;
+use totsugeki_core::{matches::ReportedResult, opponent::Opponent};
+use totsugeki_fuzz::{get, BigOnlineBracketEvents, BracketFormat, MatchEvent};
 
 // Fuzz thoroughly for 256 players (big online brackets)
 // 2100 player was realistic but it is already EXTREMELY SLOW TO FUZZ
@@ -23,7 +20,7 @@ fuzz_target!(|data: (BigOnlineBracketEvents, u128)| {
 
     let total_players = (total_events + 1) / 2; // 2 * n - 1 = t_e
 
-    let format = Format::DoubleElimination;
+    let format = BracketFormat::DoubleElimination;
 
     let mut min_permutations: BigInt = 5.into();
     let mut min_player_count = 3;
@@ -47,21 +44,8 @@ fuzz_target!(|data: (BigOnlineBracketEvents, u128)| {
 
         // required events in this loop
         let event_count = 2 * player_count - 1;
-        let mut bracket = Bracket::new(
-            "",
-            format,
-            Method::Strict,
-            Utc.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap(),
-            true,
-        );
-
-        let mut players = vec![Player::new(String::default())];
-        for i in 1..=player_count {
-            let player = Player::new(format!("p{i}"));
-            players.push(player.clone());
-            bracket = bracket.join(player).expect("");
-        }
-        let mut bracket = bracket.start().expect("bracket started").0;
+        let (_, deb) = get(format, player_count);
+        let mut bracket = deb.unwrap();
 
         let mut permutations = (0..event_count).permutations(event_count);
 
@@ -102,8 +86,8 @@ fuzz_target!(|data: (BigOnlineBracketEvents, u128)| {
                 match e {
                     MatchEvent::Disqualification(is_player_1) => {
                         let player = match (is_player_1, m.get_players()) {
-                            (true, [Opponent::Player(id), _]) => id,
-                            (false, [_, Opponent::Player(id)]) => id,
+                            (true, [Opponent(Some(id)), _]) => id,
+                            (false, [_, Opponent(Some(id))]) => id,
                             _ => {
                                 continue;
                             }
@@ -111,8 +95,10 @@ fuzz_target!(|data: (BigOnlineBracketEvents, u128)| {
                         if dq_events < events.0.len() {
                             if !bracket.is_disqualified(player) {
                                 dq_events = dq_events + 1;
-                                bracket =
-                                    bracket.disqualify_participant(player).expect("bracket").0;
+                                bracket = bracket
+                                    .disqualify_participant_from_bracket(player)
+                                    .expect("bracket")
+                                    .0;
                             }
                         } else {
                             assert!(
@@ -125,17 +111,21 @@ fuzz_target!(|data: (BigOnlineBracketEvents, u128)| {
                     }
                     MatchEvent::TOWin(is_player_1) => {
                         let (p1, p2) = match m.get_players() {
-                            [Opponent::Player(p1), Opponent::Player(p2)] => (p1, p2),
+                            [Opponent(Some(p1)), Opponent(Some(p2))] => (p1, p2),
                             _ => continue,
                         };
-                        let mut result = ReportedResult((2, 0));
+                        let mut result = ReportedResult(Some(Score(2, 0)));
                         if !is_player_1 {
                             result = result.reverse();
                         }
                         if !bracket.is_over() {
                             bracket = match bracket
-                                .tournament_organiser_reports_result(p1, result.0, p2)
-                            {
+                                .clone()
+                                .tournament_organiser_reports_result_dangerous(
+                                    p1,
+                                    result.0.unwrap(),
+                                    p2,
+                                ) {
                                 Ok((b, _, _)) => b,
                                 Err(e) => panic!("TO can't report result: {e}"),
                             };
