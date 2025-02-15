@@ -1,18 +1,20 @@
-// FIXME works but no lsp => no auto complete and no refactor
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
 extern crate libfuzzer_sys;
 
-use chrono::prelude::*;
-use totsugeki_core::{
-    bracket::Bracket, format::Format, matches::ReportedResult, opponent::Opponent, player::Player,
-    seeding::Method,
-};
+use totsugeki_core::bracket::seeding::Seeding;
+use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki_core::matches::result::{MatchFormat, Score};
+use totsugeki_core::single_elimination_bracket::SingleEliminationBracket;
+use totsugeki_core::validation::AutomaticMatchValidationMode;
+use totsugeki_core::{matches::ReportedResult, opponent::Opponent, player::Player, ID};
 use totsugeki_fuzz::{BracketFormat, Events, MatchEvent};
 
 fuzz_target!(|data: (Events, BracketFormat)| {
     let (events, format) = data;
+
+    let debug = std::env::var("PRINTLN").is_ok();
 
     // early exit if there is not enough matches to fuzz
     match (format, events.sequence.len()) {
@@ -32,48 +34,85 @@ fuzz_target!(|data: (Events, BracketFormat)| {
         (BracketFormat::DoubleElimination, _) => events.sequence.len() / 2, // 2 * n - 1 = total_matches
     };
 
-    let format = match format {
-        BracketFormat::SingleElimination => Format::SingleElimination,
-        BracketFormat::DoubleElimination => Format::DoubleElimination,
-    };
-
-    let mut bracket = Bracket::new(
-        "",
-        format,
-        Method::Strict,
-        Utc.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap(),
-        true,
-    );
-
-    let mut players = vec![Player::new(String::default())];
+    let mut players = vec![];
     for i in 1..=total_players {
         let player = Player::new(format!("p{i}"));
         players.push(player.clone());
-        bracket = bracket.join(player).expect("");
     }
+    let player_ids: Vec<ID> = players.iter().map(|p| *p.get_id()).collect();
 
-    // println!("{format:?}");
-    // println!("#total players: {total_players}");
-    // println!("#events: {}", events.0.len());
-    bracket = bracket.start().expect("bracket started").0;
+    let mut seb = if let BracketFormat::SingleElimination = format {
+        Some(SingleEliminationBracket::create(
+            Seeding::new(player_ids.clone()).unwrap(),
+            AutomaticMatchValidationMode::Flexible,
+            MatchFormat::new(2).unwrap(),
+            None,
+        ))
+    } else {
+        None
+    };
+
+    let mut deb = if let BracketFormat::DoubleElimination = format {
+        Some(DoubleEliminationBracket::create(
+            Seeding::new(player_ids).unwrap(),
+            AutomaticMatchValidationMode::Flexible,
+            MatchFormat::new(2).unwrap(),
+            None,
+        ))
+    } else {
+        None
+    };
+
+    if debug {
+        println!("{format:?}");
+        println!("#total players: {total_players}");
+        println!("#events: {}", events.sequence.len());
+        println!("{:?}", events.sequence);
+    }
     let mut dq_events = 0;
-
-    // println!("#matches: {}", bracket.get_matches().len());
 
     for (i, e) in events.sequence.iter().enumerate() {
         // println!("{e:?}");
         // println!("{}", bracket.summary());
-        if bracket.is_over() {
-            break;
+        match format {
+            BracketFormat::SingleElimination => {
+                if seb.as_ref().unwrap().is_over() {
+                    break;
+                }
+            }
+            BracketFormat::DoubleElimination => {
+                if deb.as_ref().unwrap().is_over() {
+                    break;
+                }
+            }
         }
-        let matches = bracket.get_matches();
+        let matches = match format {
+            BracketFormat::SingleElimination => seb.as_ref().unwrap().get_matches().to_owned(),
+            BracketFormat::DoubleElimination => deb.as_ref().unwrap().get_matches().to_owned(),
+        };
+        // if debug {
+        //     for m in &matches {
+        //         println!("{}", m.summary());
+        //     }
+        // }
         // We processed enough events
         if matches.len() <= i {
-            assert!(
-                bracket.is_over(),
-                "expected bracket to be over, {}",
-                bracket.summary()
-            );
+            match format {
+                BracketFormat::SingleElimination => {
+                    assert!(
+                        seb.as_ref().unwrap().is_over(),
+                        "expected bracket to be over {}",
+                        seb.as_ref().unwrap().summary(),
+                    );
+                }
+                BracketFormat::DoubleElimination => {
+                    assert!(
+                        deb.as_ref().unwrap().is_over(),
+                        "expected bracket to be over {}",
+                        deb.as_ref().unwrap().summary(),
+                    );
+                }
+            }
             return;
         }
         let m = matches.get(i).expect("match");
@@ -89,45 +128,134 @@ fuzz_target!(|data: (Events, BracketFormat)| {
             MatchEvent::Disqualification(is_player_1) => {
                 dq_events = dq_events + 1;
                 let player = match (is_player_1, m.get_players()) {
-                    (true, [Opponent::Player(id), _]) => id,
-                    (false, [_, Opponent::Player(id)]) => id,
+                    (true, [Opponent(Some(id)), _]) => id,
+                    (false, [_, Opponent(Some(id))]) => id,
                     _ => {
-                        panic!("cannot disqualify: {}", bracket.summary());
+                        unreachable!()
                     }
                 };
-                if dq_events < events.sequence.len() {
-                    bracket = bracket.disqualify_participant(player).expect("bracket").0;
+                if events.sequence.len() < 40 {
+                    let pos = match format {
+                        BracketFormat::SingleElimination => {
+                            seb.as_ref()
+                                .unwrap()
+                                .get_seeding()
+                                .get()
+                                .iter()
+                                .position(|s| s == player)
+                                .unwrap()
+                                + 1
+                        }
+                        BracketFormat::DoubleElimination => {
+                            deb.as_ref()
+                                .unwrap()
+                                .get_seeding()
+                                .get()
+                                .iter()
+                                .position(|s| s == player)
+                                .unwrap()
+                                + 1
+                        }
+                    };
+                    if debug {
+                        println!("disqualify player {} with ID {}", pos, player);
+                    }
+                }
+                // <= because 4 dq in 5 person tournaments (single elimination) with 4 events...
+                if dq_events <= events.sequence.len() {
+                    match format {
+                        BracketFormat::SingleElimination => {
+                            seb = Some(seb.unwrap().disqualify_participant_from_bracket(player).0);
+                        }
+                        BracketFormat::DoubleElimination => {
+                            deb = Some(
+                                deb.unwrap()
+                                    .disqualify_participant_from_bracket(player)
+                                    .unwrap()
+                                    .0,
+                            );
+                        }
+                    }
                 } else {
-                    assert!(
-                        bracket.is_over(),
-                        "expected bracket to be over {}",
-                        bracket.summary()
-                    );
+                    // println!("{}", dq_events);
+                    // println!("{}", events.sequence.len());
+                    let events = if events.sequence.len() < 40 {
+                        format!("{events:?}")
+                    } else {
+                        format!("... too many events to list ({})", events.sequence.len())
+                    };
+                    match format {
+                        BracketFormat::SingleElimination => {
+                            assert!(
+                                seb.as_ref().unwrap().is_over(),
+                                "expected bracket to be over {}\n{events}",
+                                seb.as_ref().unwrap().summary(),
+                            );
+                        }
+                        BracketFormat::DoubleElimination => {
+                            assert!(
+                                deb.as_ref().unwrap().is_over(),
+                                "expected bracket to be over {}\n{events}",
+                                deb.as_ref().unwrap().summary(),
+                            );
+                        }
+                    }
                     return;
                 }
             }
             MatchEvent::TOWin(is_player_1) => {
                 let (p1, p2) = match m.get_players() {
-                    [Opponent::Player(p1), Opponent::Player(p2)] => (p1, p2),
+                    [Opponent(Some(p1)), Opponent(Some(p2))] => (p1, p2),
                     _ => panic!("oh no"),
                 };
-                let mut result = ReportedResult((2, 0));
+                let mut result = ReportedResult(Some(Score(2, 0)));
                 if !*is_player_1 {
                     result = result.reverse();
                 }
-                if !bracket.is_over() {
-                    bracket = match bracket.tournament_organiser_reports_result(p1, result.0, p2) {
-                        Ok((b, _, _)) => b,
-                        Err(e) => panic!("TO can't report result: {e}"),
-                    };
+                match format {
+                    BracketFormat::SingleElimination => {
+                        if !seb.as_ref().unwrap().is_over() {
+                            seb = Some(
+                                seb.unwrap()
+                                    .tournament_organiser_reports_result(p1, result.0.unwrap(), p2)
+                                    .unwrap()
+                                    .0,
+                            );
+                        }
+                    }
+                    BracketFormat::DoubleElimination => {
+                        if !deb.as_ref().unwrap().is_over() {
+                            deb = Some(
+                                deb.unwrap()
+                                    .tournament_organiser_reports_result_dangerous(
+                                        p1,
+                                        result.0.unwrap(),
+                                        p2,
+                                    )
+                                    .unwrap()
+                                    .0,
+                            );
+                        }
+                    }
                 }
             }
         }
     }
 
-    assert!(
-        bracket.is_over(),
-        "expected bracket to be over: {}",
-        bracket.summary()
-    );
+    match format {
+        BracketFormat::SingleElimination => {
+            assert!(
+                seb.as_ref().unwrap().is_over(),
+                "expected bracket to be over {}",
+                seb.as_ref().unwrap().summary(),
+            );
+        }
+        BracketFormat::DoubleElimination => {
+            assert!(
+                deb.as_ref().unwrap().is_over(),
+                "expected bracket to be over {}",
+                deb.as_ref().unwrap().summary(),
+            );
+        }
+    }
 });

@@ -205,7 +205,7 @@ impl<'a> Arbitrary<'a> for StillRealisticEvents {
         // n times (n being the number of total matches) and assert if bracket
         // is over.
         let mut choices: Vec<usize> = (0..len).collect();
-        let mut permutation: Vec<usize> = vec![];
+        // let mut permutation: Vec<usize> = vec![];
         // println!("choosing event processing order...");
         // for _ in 0..len {
         // FIXME what preserving is not how you do it?

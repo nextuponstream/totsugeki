@@ -201,8 +201,13 @@ impl Match {
             (_, Opponent(Some(l)), Opponent(Some(p2))) if l == p2 => "L",
             _ => "-",
         };
+        let score = if let Some(score) = self.get_score() {
+            score.to_string()
+        } else {
+            "? - ?".to_string()
+        };
         format!(
-            "{:?} {p1_status}{p1:02} VS {p2_status}{p2:02} | match id: {}",
+            "{:?} {p1_status}{p1:02} VS {p2_status}{p2:02} | score {score} | match id: {}",
             self.seeds, self.id
         )
     }

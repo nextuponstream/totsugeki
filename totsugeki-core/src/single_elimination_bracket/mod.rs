@@ -10,6 +10,7 @@ use crate::bracket::seeding::Seeding;
 use crate::matches::result::{MatchFormat, Score};
 use crate::matches::Match;
 use crate::opponent::Opponent;
+use crate::player::Participants;
 use crate::seeding::single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored;
 use crate::validation::AutomaticMatchValidationMode;
 use crate::ID;
@@ -25,6 +26,28 @@ pub struct SingleEliminationBracket {
     seeding: Seeding,
     /// Validation mode. May trigger validation after a reported result
     automatic_match_validation_mode: AutomaticMatchValidationMode,
+}
+
+impl SingleEliminationBracket {
+    /// Summarise bracket state
+    ///
+    /// # Panics
+    /// When seeding is corrupted
+    #[must_use]
+    pub fn summary(&self) -> String {
+        let mut r = String::new();
+        let mut participants = Participants::default();
+        for (index, id) in self.get_seeding().get().iter().enumerate() {
+            r = format!("{r}\n\t* {}", index + 1);
+            participants = participants
+                .add_participant(&(*id, format!("player {}", index + 1)).into())
+                .expect("participants");
+        }
+        for m in self.get_matches() {
+            r = format!("{r}\n\t* {}", m.summary_with_name(&participants));
+        }
+        r
+    }
 }
 
 /// Input is invalid because of current bracket state
@@ -50,8 +73,8 @@ pub enum SingleEliminationReportResultError {
 impl SingleEliminationBracket {
     /// Get matches
     #[must_use]
-    pub fn get_matches(&self) -> Vec<Match> {
-        self.matches.clone()
+    pub fn get_matches(&self) -> &[Match] {
+        &self.matches
     }
 
     /// Generate matches for a new bracket using `seeding` and other configuration
@@ -145,7 +168,8 @@ impl SingleEliminationBracket {
         let old_matches = self.matches_to_play();
         let match_to_update = self
             .get_matches()
-            .into_iter()
+            .iter()
+            .copied()
             .find(|m| m.contains(player_id) && *m.get_winner() == Opponent(None));
         let seeding = self.seeding.clone();
         let automatic_match_progression = self.automatic_match_validation_mode;
@@ -162,7 +186,7 @@ impl SingleEliminationBracket {
                     AutomaticMatchValidationMode::Flexible => {
                         let updated_match = bracket
                             .get_matches()
-                            .into_iter()
+                            .iter()
                             .find(|mm| mm.id == m.id)
                             .expect("updated match");
                         if updated_match.has_all_player_reports() {

@@ -4,6 +4,7 @@ use crate::bracket::late_bracket_configuration::LateBracketConfiguration;
 use crate::bracket::seeding::Seeding;
 use crate::matches::result::MatchFormat;
 use crate::matches::Match;
+use crate::player::Participants;
 use crate::seeding::double_elimination_seeded_bracket::get_loser_bracket_matches_top_seed_favored;
 use crate::validation::AutomaticMatchValidationMode;
 use crate::ID;
@@ -29,6 +30,28 @@ pub struct DoubleEliminationBracket {
     seeding: Seeding,
     /// Condition for automatic match validation when reports come in
     automatic_match_validation_mode: AutomaticMatchValidationMode,
+}
+
+impl DoubleEliminationBracket {
+    /// Summarise bracket state
+    ///
+    /// # Panics
+    /// When seeding is corrupted
+    #[must_use]
+    pub fn summary(&self) -> String {
+        let mut r = String::new();
+        let mut participants = Participants::default();
+        for (index, id) in self.get_seeding().get().iter().enumerate() {
+            r = format!("{r}\n\t* {}", index + 1);
+            participants = participants
+                .add_participant(&(*id, format!("player {}", index + 1)).into())
+                .expect("new player");
+        }
+        for m in self.get_matches() {
+            r = format!("{r}\n\t* {}", m.summary_with_name(&participants));
+        }
+        r
+    }
 }
 
 impl DoubleEliminationBracket {
