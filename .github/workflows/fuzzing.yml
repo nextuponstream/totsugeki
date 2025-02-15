@@ -1,4 +1,4 @@
-on: [pull_request]
+on: [ pull_request ]
 
 # NOTE avoid running on draft PR branches withi https://stackoverflow.com/questions/68349031/only-run-actions-on-non-draft-pull-request
 
@@ -6,7 +6,7 @@ name: Fuzzing
 
 defaults:
   run:
-    working-directory: ./totsugeki/fuzz
+    working-directory: ./totsugeki-core/fuzz
 
 # cargo install fails if already installed. Then just exit with true
 # TODO exit with 0 if already exit instead of ignoring all errors
