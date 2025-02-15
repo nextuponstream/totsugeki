@@ -5,6 +5,13 @@
 
 use arbitrary::{Arbitrary, Result, Unstructured};
 use itertools::Itertools;
+use totsugeki_core::bracket::seeding::Seeding;
+use totsugeki_core::double_elimination_bracket::DoubleEliminationBracket;
+use totsugeki_core::matches::result::MatchFormat;
+use totsugeki_core::player::Player;
+use totsugeki_core::single_elimination_bracket::SingleEliminationBracket;
+use totsugeki_core::validation::AutomaticMatchValidationMode;
+use totsugeki_core::ID;
 
 #[derive(Debug, Arbitrary)]
 /// A sequence of events
@@ -244,4 +251,44 @@ impl<'a> Arbitrary<'a> for StillRealisticEvents {
         // println!("{}", r.sequence.len());
         Ok(r)
     }
+}
+
+/// Get both structure and return options. Use as_ref when interrogating and
+/// unwrap when updating
+pub fn get(
+    format: BracketFormat,
+    total_players: usize,
+) -> (
+    Option<SingleEliminationBracket>,
+    Option<DoubleEliminationBracket>,
+) {
+    let mut players = vec![];
+    for i in 1..=total_players {
+        let player = Player::new(format!("p{i}"));
+        players.push(player.clone());
+    }
+    let player_ids: Vec<ID> = players.iter().map(|p| *p.get_id()).collect();
+
+    let seb = if let BracketFormat::SingleElimination = format {
+        Some(SingleEliminationBracket::create(
+            Seeding::new(player_ids.clone()).unwrap(),
+            AutomaticMatchValidationMode::Flexible,
+            MatchFormat::new(2).unwrap(),
+            None,
+        ))
+    } else {
+        None
+    };
+
+    let deb = if let BracketFormat::DoubleElimination = format {
+        Some(DoubleEliminationBracket::create(
+            Seeding::new(player_ids).unwrap(),
+            AutomaticMatchValidationMode::Flexible,
+            MatchFormat::new(2).unwrap(),
+            None,
+        ))
+    } else {
+        None
+    };
+    (seb, deb)
 }

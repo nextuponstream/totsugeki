@@ -9,7 +9,7 @@ use totsugeki_core::matches::result::{MatchFormat, Score};
 use totsugeki_core::single_elimination_bracket::SingleEliminationBracket;
 use totsugeki_core::validation::AutomaticMatchValidationMode;
 use totsugeki_core::{matches::ReportedResult, opponent::Opponent, player::Player, ID};
-use totsugeki_fuzz::{BracketFormat, Events, MatchEvent};
+use totsugeki_fuzz::{get, BracketFormat, Events, MatchEvent};
 
 fuzz_target!(|data: (Events, BracketFormat)| {
     let (events, format) = data;
@@ -34,34 +34,7 @@ fuzz_target!(|data: (Events, BracketFormat)| {
         (BracketFormat::DoubleElimination, _) => events.sequence.len() / 2, // 2 * n - 1 = total_matches
     };
 
-    let mut players = vec![];
-    for i in 1..=total_players {
-        let player = Player::new(format!("p{i}"));
-        players.push(player.clone());
-    }
-    let player_ids: Vec<ID> = players.iter().map(|p| *p.get_id()).collect();
-
-    let mut seb = if let BracketFormat::SingleElimination = format {
-        Some(SingleEliminationBracket::create(
-            Seeding::new(player_ids.clone()).unwrap(),
-            AutomaticMatchValidationMode::Flexible,
-            MatchFormat::new(2).unwrap(),
-            None,
-        ))
-    } else {
-        None
-    };
-
-    let mut deb = if let BracketFormat::DoubleElimination = format {
-        Some(DoubleEliminationBracket::create(
-            Seeding::new(player_ids).unwrap(),
-            AutomaticMatchValidationMode::Flexible,
-            MatchFormat::new(2).unwrap(),
-            None,
-        ))
-    } else {
-        None
-    };
+    let (mut seb, mut deb) = get(format, total_players);
 
     if debug {
         println!("{format:?}");
