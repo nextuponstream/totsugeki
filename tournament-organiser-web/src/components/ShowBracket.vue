@@ -206,6 +206,14 @@ function showResultModal(
 }
 
 const isTournamentOrganiser = computed(() => {
-  return tournamentStore.bracket?.is_tournament_organiser
+  console.log('t_id', tournamentStore.bracket?.tournament_id)
+  console.log('is_to', tournamentStore.bracket?.is_tournament_organiser)
+  if (location.href.includes('/tournaments/guest')) {
+    return true
+  }
+  return (
+    tournamentStore.bracket?.tournament_id &&
+    tournamentStore.bracket?.is_tournament_organiser
+  )
 })
 </script>

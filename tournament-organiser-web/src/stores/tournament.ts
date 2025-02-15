@@ -119,6 +119,12 @@ export const useTournamentStore = defineStore(
       // console.log(bracket.value?.winner_bracket)
       // console.log(r.winner_bracket)
       bracket.value = r
+      // FIXME
+      bracket.value!.is_tournament_organiser = r.is_tournament_organiser
+      bracket.value!.tournament_name = r.tournament.name
+      bracket.value!.tournament = r.tournament
+      bracket.value!.tournament_id = r.tournament.id
+
       console.log(bracket.value?.bracket?.seeding)
       participants.value = r.participants
     }
@@ -158,6 +164,12 @@ export const useTournamentStore = defineStore(
           score_p1: scoreP1,
           score_p2: scoreP2,
         })
+
+        let r = response
+        if (!dryRun) {
+          // FIXME
+          bracket.value!.tournament_id = bracket.value!.tournament!.id
+        }
       } else {
         throw new Error('missing bracket in store for reporting result')
       }
