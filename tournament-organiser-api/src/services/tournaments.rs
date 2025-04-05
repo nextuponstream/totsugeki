@@ -187,7 +187,7 @@ GROUP BY tournaments.id
             return match e {
                 ParticipantError::AlreadyPresent => Err(Error::PlayerAlreadyPresent),
             };
-        };
+        }
 
         let bracket = DoubleEliminationBracket::create(
             Seeding::new(

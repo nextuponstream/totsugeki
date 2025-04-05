@@ -95,7 +95,7 @@ pub(crate) async fn registration(
                 message: "weak_password".into(),
             }),
         ));
-    };
+    }
 
     // Copied from zero2prod book
     let salt = SaltString::generate(&mut rand::thread_rng());

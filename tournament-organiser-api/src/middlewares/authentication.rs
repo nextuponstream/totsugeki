@@ -33,7 +33,7 @@ pub(crate) async fn auth_layer(
             request.method()
         );
         return (StatusCode::UNAUTHORIZED).into_response();
-    };
+    }
     // do something with `request`...
 
     // do something with `response`...
