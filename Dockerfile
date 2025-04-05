@@ -7,7 +7,7 @@
 
 # build rust binary
 # alpine and slim-bullseye does not work
-FROM rust:1.73.0-bullseye as builder
+FROM rust:1.86.0-bullseye as builder
 ENV SQLX_OFFLINE=true
 COPY . .
 RUN cargo build --release --package tournament-organiser-api 
