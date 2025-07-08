@@ -10,7 +10,7 @@
   </div>
   <ExternalLink
     v-else
-    :link-name="tournamentStore.bracket?.bracket!.name"
+    :link-name="tournamentStore.bracket?.tournament?.name"
   ></ExternalLink>
   <div v-if="showJoinLink">
     <other-btn @click="showJoinModal">{{ $t('bracketView.join') }}</other-btn>
@@ -77,7 +77,9 @@ const props = defineProps({
 })
 
 const unsavedBracketCanBeSavedAction = computed(() => {
-  return userStore.id !== null && !tournamentStore.isSaved
+  return (
+    userStore.id !== null && !tournamentStore.id && !tournamentStore.isSaved
+  )
 })
 
 const unsavedBracketCanBeSavedWarning = computed(() => {
