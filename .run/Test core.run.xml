@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Test totsugeki" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+  <configuration default="false" name="Test core" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
     <option name="buildProfileId" value="test" />
-    <option name="command" value="test --package totsugeki" />
+    <option name="command" value="test --package totsugeki-core" />
     <option name="workingDirectory" value="file://$PROJECT_DIR$" />
     <envs />
     <option name="emulateTerminal" value="true" />
