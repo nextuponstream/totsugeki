@@ -5,7 +5,9 @@
 
 import { defineStore } from 'pinia'
 import { type Ref, ref } from 'vue'
+
 export type ToastStatus = 'success' | 'warning' | 'error'
+
 export interface Toast {
   id: number
   title?: string
@@ -14,7 +16,7 @@ export interface Toast {
   type: ToastStatus
 }
 
-const defaultTimeout = 3000
+const defaultTimeout = 4000
 
 export const useToastStore = defineStore('toast', () => {
   const toasts: Ref<Array<Toast>> = ref([])

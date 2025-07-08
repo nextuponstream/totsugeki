@@ -24,6 +24,6 @@ const { toasts } = storeToRefs(toastStore)
 .toastZone {
   position: fixed;
   top: 3%;
-  right: 10%;
+  right: 3%;
 }
 </style>
