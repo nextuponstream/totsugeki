@@ -9,6 +9,10 @@ interface UserInfos {
   name: string
 }
 
+function emptyInfos(): UserInfos {
+  return { email: '', name: '' }
+}
+
 export const useUserStore = defineStore(
   'user',
   () => {
@@ -16,7 +20,7 @@ export const useUserStore = defineStore(
      * ID of user if logged in
      */
     const id: Ref<string | null> = ref(null)
-    const infos: UserInfos = reactive({ email: '', name: '' })
+    const infos: UserInfos = reactive({ ...emptyInfos() })
 
     /**
      * @param values
@@ -85,6 +89,8 @@ export const useUserStore = defineStore(
     async function logout() {
       await httpClient.post(`/logout`)
       id.value = null
+      // https://github.com/vuejs/core/issues/1081#issuecomment-621385050
+      Object.assign(infos, emptyInfos())
     }
 
     async function deleteAccount(): Promise<any> {
