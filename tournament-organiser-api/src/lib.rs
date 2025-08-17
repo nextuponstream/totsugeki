@@ -22,6 +22,9 @@ pub mod tournaments;
 mod types;
 pub mod users;
 
+#[cfg(test)]
+mod tests;
+
 use crate::router::api;
 use axum::Router;
 use serde::{Deserialize, Serialize};

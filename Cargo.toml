@@ -6,8 +6,3 @@ members = [
     "tournament-organiser-api",
     "ui",
 ]
-
-# otherwise cannot build because those crates believes they are in a workspace
-exclude = [
-    "examples/totsugeki-discord-bot",
-]

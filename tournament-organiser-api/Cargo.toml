@@ -32,7 +32,6 @@ zxcvbn = "2.2.2"
 time = "0.3.36"
 tower-sessions-sqlx-store = { version = "0.15.0", features = ["postgres"] }
 validator = { version = "0.16.1", features = ["derive"] }
-async-trait = "0.1.77"
 thiserror = "1.0.57"
 uuid = { version = "1.1.2", features = ["v4", "serde"] }
 bigdecimal = { version = "0.4.7" }
