@@ -1,5 +1,5 @@
 //! Upon match validation, bracket progress by moving winners forward and
-//! handling loosers
+//! handling losers
 
 use crate::{matches::Match, opponent::Opponent, ID};
 

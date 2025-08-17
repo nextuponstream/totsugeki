@@ -70,10 +70,10 @@ impl DoubleEliminationBracket {
             let mut winner_bracket_matches =
                 crate::seeding::single_elimination_seeded_bracket::get_balanced_round_matches_top_seed_favored(&seeding, base_match_format, late_bracket_configuration);
             matches.append(&mut winner_bracket_matches);
-            let mut looser_bracket_matches =
+            let mut loser_bracket_matches =
                 get_loser_bracket_matches_top_seed_favored(&seeding, base_match_format, None);
 
-            matches.append(&mut looser_bracket_matches);
+            matches.append(&mut loser_bracket_matches);
             let grand_finals: Match = Match::new_empty([1, 2], base_match_format);
             matches.push(grand_finals);
             let grand_finals_reset: Match = Match::new_empty([1, 2], base_match_format);

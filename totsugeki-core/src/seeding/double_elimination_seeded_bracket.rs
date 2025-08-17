@@ -12,25 +12,25 @@ use crate::ID;
 fn get_seed_of(player: &ID, seeding: &Seeding) -> usize {
     assert!(seeding.contains(player));
     for (i, p) in seeding.get().iter().enumerate() {
-        if p == player {
+        if *p == *player {
             return i + 1;
         }
     }
     unreachable!("player somehow is not in the seeding")
 }
 
-/// Returns looser bracket for a double elimination tournament
+/// Returns loser bracket for a double elimination tournament
 ///
 /// It is similar to `get_balanced_round_matches_top_seed_favored` where you
 /// generate matches for 2 iterations at a time to compute winners moving to
 /// next loser round.
 ///
-/// The loosers of winner round X (power of 2 except for round 1) drop into
-/// lower bracket and are matched against the winners of the previous looser
+/// The losers of winner round X (power of 2 except for round 1) drop into
+/// lower bracket and are matched against the winners of the previous loser
 /// bracket round (also a power of two).
 /// When dropping from winner round 1, you may get a bye match if your seed is
-/// high for this looser round. Highest seeds are then matched against lowest
-/// seeds.
+/// high for this loser round. Highest seeds are then matched against the
+/// lowest seeds.
 ///
 /// Note that it is not balanced in the sense that seed 2 will only get one
 /// match in losers while bottom seed dropping to losers has the longest road
@@ -50,7 +50,7 @@ pub fn get_loser_bracket_matches_top_seed_favored(
     let mut matches = vec![];
     let mut incoming_players_of_this_wave = vec![];
     let mut initial_wave = true;
-    // initial looser wave <= next wave
+    // initial loser wave <= next wave
     let skip_initial_wave_match_generation = losers_by_round[0].len() <= losers_by_round[1].len();
     // generate loser bracket matches
     for losers_for_this_round in losers_by_round {
@@ -100,10 +100,10 @@ pub fn get_loser_bracket_matches_top_seed_favored(
     // use unused remaining participants
     if !incoming_players_of_this_wave.is_empty() {
         let half = incoming_players_of_this_wave.len() / 2;
-        let (expected_winners, expected_loosers) = incoming_players_of_this_wave.split_at(half);
-        let mut expected_loosers = expected_loosers.to_vec();
-        expected_loosers.reverse();
-        for (o1, o2) in expected_winners.iter().zip(expected_loosers.iter()) {
+        let (expected_winners, expected_losers) = incoming_players_of_this_wave.split_at(half);
+        let mut expected_losers = expected_losers.to_vec();
+        expected_losers.reverse();
+        for (o1, o2) in expected_winners.iter().zip(expected_losers.iter()) {
             let seed_o1 = get_seed_of(o1, seeding);
             let seed_o2 = get_seed_of(o2, seeding);
             let m = Match::new_empty([seed_o1, seed_o2], match_format);
@@ -200,7 +200,7 @@ fn form_wave(incoming_players_of_wave: &[ID]) -> Wave<'_> {
 }
 
 /// Returns `ControlFlow::Break` when the players from the initial wave should
-/// be group together with the player for the next wave
+/// be grouped together with the player for the next wave
 fn fill_incoming_wave(
     incoming_wave: &mut Vec<ID>,
     losers_for_this_round: &[ID],
@@ -222,9 +222,9 @@ fn fill_incoming_wave(
 /// loser bracket round and the incoming player from the winner bracket (who
 /// lost a mathc)
 fn partition_players_of_loser_bracket(seeding: &Seeding) -> Vec<Vec<ID>> {
-    let mut remaining_loosers = seeding.get();
-    remaining_loosers.reverse();
-    remaining_loosers.pop();
+    let mut remaining_losers = seeding.get();
+    remaining_losers.reverse();
+    remaining_losers.pop();
     let mut losers_by_round = vec![];
     let mut total_waves = 0;
     let mut n = 0;
@@ -238,14 +238,14 @@ fn partition_players_of_loser_bracket(seeding: &Seeding) -> Vec<Vec<ID>> {
     for i in 0..total_waves {
         // take 2^i participants for this wave starting from the last possible wave
         let number_of_losers_for_this_round = match usize::checked_pow(2, i) {
-            Some(power_of_two) => power_of_two.min(remaining_loosers.len()),
+            Some(power_of_two) => power_of_two.min(remaining_losers.len()),
             None => panic!("math overflow"),
         };
-        let mut loosers_for_this_round = vec![];
+        let mut losers_for_this_round = vec![];
         for _ in 0..number_of_losers_for_this_round {
-            loosers_for_this_round.push(remaining_loosers.pop().expect("looser"));
+            losers_for_this_round.push(remaining_losers.pop().expect("loser"));
         }
-        losers_by_round.push(loosers_for_this_round);
+        losers_by_round.push(losers_for_this_round);
     }
     losers_by_round.reverse();
     losers_by_round

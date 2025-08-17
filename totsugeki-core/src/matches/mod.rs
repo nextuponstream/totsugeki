@@ -313,7 +313,7 @@ impl Match {
         &self.id
     }
 
-    /// Get automatic looser of match. Loosers are always players
+    /// Get automatic loser of match. Losers are always players
     #[must_use]
     pub fn get_automatic_loser(&self) -> &Opponent {
         &self.automatic_loser
@@ -337,11 +337,11 @@ impl Match {
         &self.winner
     }
 
-    /// Returns true if player the automatic looser of this match is given
+    /// Returns true if player the automatic loser of this match is given
     /// player
     #[must_use]
     pub(crate) fn is_automatic_loser_by_disqualification(&self, player_id: &ID) -> bool {
-        matches!(self.automatic_loser, Opponent(Some(loser)) if &loser == player_id)
+        matches!(self.automatic_loser, Opponent(Some(loser)) if loser == *player_id)
     }
 
     #[must_use]
@@ -372,7 +372,7 @@ impl Match {
             && self.players[1] != Opponent(None)
     }
 
-    /// Create looser bracket match where opponents are unknown yet
+    /// Create loser bracket match where opponents are unknown yet
     #[must_use]
     #[cfg(test)]
     pub(crate) fn loser_bracket_match(id: ID, seeds: [usize; 2], format: MatchFormat) -> Self {
@@ -458,25 +458,25 @@ impl Match {
         }
     }
 
-    /// Set looser of this match (when disqualified)
+    /// Set loser of this match (when disqualified)
     ///
     /// # Panics
-    /// * looser is not a participant of the match
+    /// * loser is not a participant of the match
     pub fn set_automatic_loser_(&mut self, player_id: &ID) {
         assert!(self.contains(player_id), "player {player_id} in match");
 
         let loser = match self.players {
-            [Opponent(Some(p1)), _] if &p1 == player_id => self.players[0],
-            [_, Opponent(Some(p2))] if &p2 == player_id => self.players[1],
+            [Opponent(Some(p1)), _] if p1 == *player_id => self.players[0],
+            [_, Opponent(Some(p2))] if p2 == *player_id => self.players[1],
             _ => Opponent(None),
         };
 
         self.automatic_loser = loser;
     }
-    /// Set looser of this match (when disqualified)
+    /// Set loser of this match (when disqualified)
     ///
     /// # Errors
-    /// thrown when looser is not a participant of the match
+    /// thrown when loser is not a participant of the match
     /// # Panics
     /// When player does not belong to the match
     #[must_use]
@@ -484,8 +484,8 @@ impl Match {
         assert!(self.contains(player_id), "player {player_id} in match");
 
         let loser = match self.players {
-            [Opponent(Some(p1)), _] if &p1 == player_id => self.players[0],
-            [_, Opponent(Some(p2))] if &p2 == player_id => self.players[1],
+            [Opponent(Some(p1)), _] if p1 == *player_id => self.players[0],
+            [_, Opponent(Some(p2))] if p2 == *player_id => self.players[1],
             _ => Opponent(None),
         };
 
@@ -528,7 +528,7 @@ impl Match {
         match (is_player_1, self.players) {
             (true, [Opponent(Some(other_player)), _])
             | (false, [_, Opponent(Some(other_player))])
-                if player_id != &other_player =>
+                if *player_id != other_player =>
             {
                 panic!("player {player_id} is already in match {}", self.id);
             }
@@ -760,9 +760,9 @@ pub enum MatchParsingError {
     /// Winner is not one of the players in the match
     #[error("Winner is not a participant of the match")]
     UnknownWinner,
-    /// Looser is not one of the players in the match
-    #[error("Looser is not a participant of the match")]
-    UnknownLooser,
+    /// Loser is not one of the players in the match
+    #[error("Loser is not a participant of the match")]
+    UnknownLoser,
 }
 
 // NOTE: here because Vec<T> does not implement std::error::Error when used with try_into

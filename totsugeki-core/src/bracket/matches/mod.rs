@@ -142,7 +142,7 @@ pub(crate) fn update(bracket_matches: &[Match], match_id: &ID) -> Result<Bracket
         None => bracket,
     };
 
-    // looser drops to loser bracket in double elimination format
+    // loser drops to loser bracket in double elimination format
 
     // Set winner to all matches were a player is disqualified
     // while loop is needed because there can be a scenario where a player

@@ -73,7 +73,7 @@ fn disqualifying_player_that_could_not_make_it() {
         !bracket.get_matches().iter().any(
             |m| matches!(m.get_automatic_loser(), Opponent(Some(loser)) if loser == p[1].get_id())
         ),
-        "expected player 1 not to be declared looser in any match"
+        "expected player 1 not to be declared loser in any match"
     );
     let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[1].get_id())
@@ -82,7 +82,7 @@ fn disqualifying_player_that_could_not_make_it() {
         bracket.get_matches().iter().any(
             |m| matches!(m.get_automatic_loser(), Opponent(Some(loser)) if loser == p[1].get_id())
         ),
-        "expected match where player 1 is declared looser"
+        "expected match where player 1 is declared loser"
     );
     assert!(
         bracket
@@ -94,7 +94,7 @@ fn disqualifying_player_that_could_not_make_it() {
 }
 
 #[test]
-fn disqualifying_player_sets_looser_of_their_current_match() {
+fn disqualifying_player_sets_loser_of_their_current_match() {
     let mut p = vec![Player::new("don't use".into())];
     let mut participants = Participants::default();
     for i in 1..=3 {
@@ -118,7 +118,7 @@ fn disqualifying_player_sets_looser_of_their_current_match() {
         !bracket.get_matches().iter().any(
             |m| matches!(m.get_automatic_loser(), Opponent(Some(loser)) if loser == p[2].get_id())
         ),
-        "expected player 2 not to be declared looser in any match"
+        "expected player 2 not to be declared loser in any match"
     );
     let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[2].get_id())
@@ -171,7 +171,7 @@ fn disqualifying_player_sets_their_opponent_as_the_winner_and_they_move_to_their
         !bracket.get_matches().iter().any(
             |m| matches!(m.get_automatic_loser(), Opponent(Some(loser)) if loser == p[2].get_id())
         ),
-        "expected player 2 not to be declared looser in any match"
+        "expected player 2 not to be declared loser in any match"
     );
     let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[2].get_id())
@@ -180,7 +180,7 @@ fn disqualifying_player_sets_their_opponent_as_the_winner_and_they_move_to_their
         bracket.get_matches().iter().any(
             |m| matches!(m.get_automatic_loser(), Opponent(Some(player)) if player == p[2].get_id())
         ),
-        "expected match where player 2 is declared looser"
+        "expected match where player 2 is declared loser"
     );
     assert!(
         bracket

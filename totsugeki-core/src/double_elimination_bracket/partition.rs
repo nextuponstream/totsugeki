@@ -7,7 +7,7 @@ use crate::double_elimination_bracket::DoubleEliminationBracket;
 use crate::matches::Match;
 
 impl DoubleEliminationBracket {
-    /// Partitions double elimination bracket matches in winner bracket, looser
+    /// Partitions double elimination bracket matches in winner bracket, loser
     /// bracket, grand finals and grand finals reset for `n` players
     /// (inferred from seeding)
     ///
