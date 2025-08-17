@@ -44,6 +44,8 @@ import { ref, computed, onUpdated, provide } from 'vue'
 import BlurredBackground from '@/components/ui/modals/BlurredBackground.vue'
 import { prefixKey } from '@/config'
 import { useUserStore } from '@/stores/user'
+import { useToastStore } from '@/stores/toast'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   matchId: string | null
@@ -57,6 +59,8 @@ const scoreP2 = ref(0)
 const emits = defineEmits(['update:modelValue'])
 const bracketStore = useTournamentStore()
 const userStore = useUserStore()
+const toastStore = useToastStore()
+const { t } = useI18n({})
 
 provide(prefixKey, 'report-result-modal')
 
@@ -86,6 +90,7 @@ async function submit() {
       !userStore.loggedIn()
     )
     hideModal()
+    toastStore.success(t('generic.updated'))
   } else {
     throw new Error('missing players in modal, cannot report result')
   }

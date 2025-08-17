@@ -71,7 +71,7 @@ fn disqualifying_player_that_could_not_make_it() {
 
     assert!(
         !bracket.get_matches().iter().any(
-            |m| matches!(m.get_automatic_loser(), Opponent(Some(loser)) if loser == p[1].get_id())
+            |m| matches!(m.get_automatic_loser(), Opponent(Some(loser)) if *loser == *p[1].get_id())
         ),
         "expected player 1 not to be declared loser in any match"
     );
@@ -80,7 +80,7 @@ fn disqualifying_player_that_could_not_make_it() {
         .expect("bracket with player 1 disqualified");
     assert!(
         bracket.get_matches().iter().any(
-            |m| matches!(m.get_automatic_loser(), Opponent(Some(loser)) if loser == p[1].get_id())
+            |m| matches!(m.get_automatic_loser(), Opponent(Some(loser)) if *loser == *p[1].get_id())
         ),
         "expected match where player 1 is declared loser"
     );
@@ -116,7 +116,7 @@ fn disqualifying_player_sets_loser_of_their_current_match() {
 
     assert!(
         !bracket.get_matches().iter().any(
-            |m| matches!(m.get_automatic_loser(), Opponent(Some(loser)) if loser == p[2].get_id())
+            |m| matches!(m.get_automatic_loser(), Opponent(Some(loser)) if *loser == *p[2].get_id())
         ),
         "expected player 2 not to be declared loser in any match"
     );
@@ -297,7 +297,7 @@ fn disqualifying_everyone_is_impossible_because_the_last_player_remaining_wins_g
     let Opponent(Some(loser)) = m.get_automatic_loser() else {
         panic!("expected loser but found none {m:?}");
     };
-    assert_eq!(loser, p[7].get_id());
+    assert_eq!(*loser, *p[7].get_id());
 
     let (bracket, _) = bracket
         .disqualify_participant_from_bracket(p[8].get_id())
@@ -440,7 +440,7 @@ fn disqualifying_most_in_double_elimination_tournament_and_lowest_expected_seed_
 fn assert_x_wins_against_y(p1: &Player, p2: &Player, matches: &[Match]) {
     assert!(
         matches.iter().any(|m| {
-            matches!((m.get_winner(), m.contains(p2.get_id())), (Opponent(Some(winner)), true) if winner == p1.get_id())
+            matches!((m.get_winner(), m.contains(p2.get_id())), (Opponent(Some(winner)), true) if *winner == *p1.get_id())
         }),
         "no matches where {} wins against {}",
         p1.get_name(),

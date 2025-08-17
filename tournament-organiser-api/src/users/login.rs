@@ -25,7 +25,7 @@ pub struct Credentials {
     pub password: SecretString,
 }
 
-/// Successful login response with ID of logged in user
+/// Successful login response with ID of logged-in user
 #[derive(Serialize)]
 struct SuccessfulLogin {
     /// User ID

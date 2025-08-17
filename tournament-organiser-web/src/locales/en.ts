@@ -21,6 +21,7 @@ export default {
     name: 'Name',
     created_at: 'Date created',
     add: 'Add',
+    updated: 'Your changes have been saved successfully.',
   },
   error: {
     invalidEmail: 'This field must be a valid email',

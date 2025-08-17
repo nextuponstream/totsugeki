@@ -21,6 +21,7 @@ export default {
     name: 'Nom',
     created_at: 'Date de création',
     add: 'Ajouter',
+    updated: 'Vos modifications ont été enregistrées avec succès.',
   },
   error: {
     invalidEmail: 'Email invalide',
