@@ -48,7 +48,7 @@ export const useUserStore = defineStore(
      * Update user ID in store
      *
      * NOTE: this is too specialised and not reused enough to extract any logic
-     * in httpClient because
+     * in httpClient
      * @param values form values
      * @returns status code response
      */

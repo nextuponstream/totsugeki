@@ -34,7 +34,6 @@ const props = defineProps({
 const toastClasses = reactive([] as string[])
 
 onMounted(() => {
-  console.log(props.type)
   switch (props.type) {
     case 'success':
       toastClasses.push('bg-emerald-400')

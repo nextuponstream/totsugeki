@@ -181,7 +181,7 @@ struct Wave<'a> {
 }
 
 /// Returns wave of players. See `Wave` documentation for more information
-fn form_wave(incoming_players_of_wave: &[ID]) -> Wave {
+fn form_wave(incoming_players_of_wave: &[ID]) -> Wave<'_> {
     let byes = match (incoming_players_of_wave.len()).checked_next_power_of_two() {
         Some(next_higher_power_of_two) => next_higher_power_of_two - incoming_players_of_wave.len(),
         None => panic!("math overflow"),
