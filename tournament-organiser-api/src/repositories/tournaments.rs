@@ -2,13 +2,14 @@
 
 use crate::tournaments::Tournament;
 use crate::types::{SqlxError, SqlxTransaction};
+use crate::ID;
 
 /// Tournament repository
 pub struct TournamentRepository {}
 
 impl TournamentRepository {
     /// Create tournament
-    pub async fn create(
+    pub(crate) async fn create(
         transaction: SqlxTransaction<'_, '_>,
         tournament: &Tournament,
     ) -> Result<(), SqlxError> {
@@ -21,5 +22,55 @@ impl TournamentRepository {
         .execute(&mut **transaction)
         .await?;
         Ok(())
+    }
+
+    /// Delete tournament
+    pub async fn delete(transaction: SqlxTransaction<'_, '_>, id: ID) -> Result<(), SqlxError> {
+        let _ = sqlx::query!("DELETE FROM tournaments WHERE id = $1", id)
+            .execute(&mut **transaction)
+            .await?;
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sqlx::PgPool;
+
+    #[sqlx::test(fixtures("3_players_tournament.sql"))]
+    async fn deleting_tournaments_deletes_related_data(db: PgPool) {
+        let mut conn = db.acquire().await.unwrap();
+        let tournaments = sqlx::query("SELECT * FROM tournaments")
+            .fetch_all(&mut *conn)
+            .await
+            .unwrap();
+        assert_eq!(1, tournaments.len());
+        let matches = sqlx::query("SELECT * FROM matches")
+            .fetch_all(&mut *conn)
+            .await
+            .unwrap();
+        assert_eq!(5, matches.len());
+        conn.close().await.unwrap();
+
+        let mut transaction = db.begin().await.unwrap();
+        let tournament_id = "62aefc4c-d6ec-4c2f-98f0-b639688cbe0c".parse().unwrap();
+        TournamentRepository::delete(&mut transaction, tournament_id)
+            .await
+            .unwrap();
+        transaction.commit().await.unwrap();
+
+        let mut conn = db.acquire().await.unwrap();
+        let tournaments = sqlx::query("SELECT * FROM tournaments")
+            .fetch_all(&mut *conn)
+            .await
+            .unwrap();
+        assert_eq!(0, tournaments.len());
+        let matches = sqlx::query("SELECT * FROM matches")
+            .fetch_all(&mut *conn)
+            .await
+            .unwrap();
+        assert_eq!(0, matches.len());
+        conn.close().await.unwrap();
     }
 }

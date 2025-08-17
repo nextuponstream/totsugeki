@@ -9,6 +9,7 @@ async fn cannot_delete_user_without_a_valid_session(db: PgPool) {
     let app = spawn_app(db).await;
 
     // create a user to delete
+    // TODO use seeder rather than action
     let response = app
         .register(&FormUserInput {
             name: "jean".into(),
@@ -40,6 +41,7 @@ async fn delete_user(db: PgPool) -> sqlx::Result<()> {
     let mut conn = db.acquire().await?;
     let app = spawn_app(db).await;
 
+    // TODO use seeder rather than action
     let response = app
         .register(&FormUserInput {
             name: "jean".into(),
@@ -55,6 +57,7 @@ async fn delete_user(db: PgPool) -> sqlx::Result<()> {
         response.text().await.unwrap()
     );
 
+    // TODO use ORM or repository
     let records = sqlx::query("SELECT * FROM users")
         // wtf dereference?
         .fetch_all(&mut *conn)
@@ -76,6 +79,7 @@ async fn delete_user(db: PgPool) -> sqlx::Result<()> {
         response.text().await.unwrap()
     );
 
+    // TODO should be a lower level test
     let response = app.delete_user().await;
 
     let status = response.status();
@@ -85,6 +89,7 @@ async fn delete_user(db: PgPool) -> sqlx::Result<()> {
         response.text().await.unwrap()
     );
 
+    // TODO use repository
     let records = sqlx::query("SELECT * FROM users")
         .fetch_all(&mut *conn)
         .await?;
