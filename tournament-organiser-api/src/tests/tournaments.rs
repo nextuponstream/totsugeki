@@ -6,11 +6,7 @@ mod tests {
     #[sqlx::test(fixtures("3_players_tournament.sql"))]
     async fn deleting_tournaments_deletes_related_data(db: PgPool) {
         let mut transaction = db.begin().await.unwrap();
-        // TODO refactor to repository
-        let tournaments = sqlx::query("SELECT * FROM tournaments")
-            .fetch_all(&mut *transaction)
-            .await
-            .unwrap();
+        let tournaments = TournamentRepository::all(&mut transaction).await.unwrap();
         assert_eq!(1, tournaments.len());
         // TODO refactor to repository
         let matches = sqlx::query("SELECT * FROM matches")
@@ -25,10 +21,7 @@ mod tests {
             .unwrap();
 
         // TODO refactor to repository
-        let tournaments = sqlx::query("SELECT * FROM tournaments")
-            .fetch_all(&mut *transaction)
-            .await
-            .unwrap();
+        let tournaments = TournamentRepository::all(&mut transaction).await.unwrap();
         assert_eq!(0, tournaments.len());
         // TODO refactor to repository
         let matches = sqlx::query("SELECT * FROM matches")

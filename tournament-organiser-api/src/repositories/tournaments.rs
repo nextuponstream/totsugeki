@@ -3,9 +3,42 @@
 use crate::tournaments::Tournament;
 use crate::types::{SqlxError, SqlxTransaction};
 use crate::ID;
+use std::fmt::Display;
 
 /// Tournament repository
 pub struct TournamentRepository {}
+
+#[derive(sqlx::Type)]
+#[sqlx(type_name = "format")]
+#[allow(
+    non_camel_case_types,
+    reason = "serializing postgres enum into sqlx enum"
+)]
+pub enum Format {
+    double_elimination,
+}
+
+impl Display for Format {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Format::double_elimination => "double_elimination",
+            }
+        )
+    }
+}
+
+/// Tournament from database
+pub struct TournamentRecord {
+    /// ID
+    pub(crate) id: ID,
+    /// Name
+    pub(crate) name: String,
+    /// Format
+    pub(crate) format: Format,
+}
 
 impl TournamentRepository {
     /// Create tournament
@@ -22,6 +55,24 @@ impl TournamentRepository {
         .execute(&mut **transaction)
         .await?;
         Ok(())
+    }
+
+    pub(crate) async fn all(
+        transaction: SqlxTransaction<'_, '_>,
+    ) -> Result<Vec<TournamentRecord>, SqlxError> {
+        let tuples = sqlx::query_as!(
+            TournamentRecord,
+            r#"
+SELECT
+    id,
+    name,
+    format AS "format!: Format"
+from tournaments
+"#,
+        )
+        .fetch_all(&mut **transaction)
+        .await?;
+        Ok(tuples.into_iter().collect())
     }
 
     /// Delete tournament
