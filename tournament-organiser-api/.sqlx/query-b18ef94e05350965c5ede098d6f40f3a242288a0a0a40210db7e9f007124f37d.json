@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nSELECT\n    players.id,\n    user_id,\n    guest_id,\n    COALESCE (U.name, G.name, '') as name,\n    seeding_index\nFROM players\nLEFT JOIN users U ON players.user_id = U.id\nLEFT JOIN guests G ON players.guest_id = G.id\nWHERE tournament_id = $1            \n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "guest_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "seeding_index",
+        "type_info": "Int2"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      null,
+      false
+    ]
+  },
+  "hash": "b18ef94e05350965c5ede098d6f40f3a242288a0a0a40210db7e9f007124f37d"
+}

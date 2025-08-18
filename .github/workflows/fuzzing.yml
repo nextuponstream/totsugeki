@@ -1,4 +1,4 @@
-on: [pull_request]
+on: [ pull_request ]
 
 # NOTE avoid running on draft PR branches withi https://stackoverflow.com/questions/68349031/only-run-actions-on-non-draft-pull-request
 
@@ -6,7 +6,7 @@ name: Fuzzing
 
 defaults:
   run:
-    working-directory: ./totsugeki/fuzz
+    working-directory: ./totsugeki-core/fuzz
 
 # cargo install fails if already installed. Then just exit with true
 # TODO exit with 0 if already exit instead of ignoring all errors
@@ -133,5 +133,5 @@ jobs:
       - run: rustup toolchain install nightly --component llvm-tools-preview || true
       # did timeout once and exited with code 1
       # you could add -timeout_exitcode=0 but let's limit the imput size
-      - run: cargo +nightly fuzz run very_big_brackets_de -- -max_total_time=60
+      - run: cargo +nightly fuzz run very_big_brackets_de -- -max_total_time=60 -rss_limit_mb=0
 

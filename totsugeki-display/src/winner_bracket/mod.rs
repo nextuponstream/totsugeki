@@ -9,7 +9,7 @@ use crate::{BoxElement, MinimalMatch};
 #[must_use]
 pub fn lines(rounds: &[Vec<MinimalMatch>]) -> Option<Vec<Vec<BoxElement>>> {
     if rounds.is_empty() {
-        return None;
+        return Some(vec![]);
     }
 
     // 3 players, 2 matches => 4
@@ -93,7 +93,7 @@ pub fn lines(rounds: &[Vec<MinimalMatch>]) -> Option<Vec<Vec<BoxElement>>> {
                         - boxes_between_matches_of_same_round / 2]
                         .bottom_border = true;
                 }
-            };
+            }
         }
 
         let lines_for_round = [left_column_flow_out_of, right_column_flow_into].concat();

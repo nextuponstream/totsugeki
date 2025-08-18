@@ -3,7 +3,7 @@
 use reqwest::StatusCode;
 use sqlx::PgPool;
 use tournament_organiser_api::test_utils::{spawn_app, FormUserInput};
-use tournament_organiser_api::ErrorResponse;
+use tournament_organiser_api::ApiResponse;
 
 // Use sqlx macro to create (and teardown) database on the fly to enforce test
 // isolation
@@ -64,7 +64,7 @@ async fn registration_fails_when_another_user_already_exists(db: PgPool) {
 
     // why 409: https://stackoverflow.com/a/3826024
     assert_eq!(status, StatusCode::CONFLICT);
-    let details: ErrorResponse = response.json().await.unwrap();
+    let details: ApiResponse = response.json().await.unwrap();
     assert_eq!(
         details.message,
         "Another user has already registered with provided mail"
@@ -91,6 +91,6 @@ async fn weak_password_ask_for_stronger_password(db: PgPool) {
         response.text().await.unwrap()
     );
 
-    let json: ErrorResponse = response.json().await.unwrap();
+    let json: ApiResponse = response.json().await.unwrap();
     assert!(json.message.contains("weak_password"));
 }

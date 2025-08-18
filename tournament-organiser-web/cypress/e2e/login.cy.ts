@@ -2,7 +2,9 @@ it('shows warning when user is unknown', () => {
   cy.visit('/')
 
   cy.get('[data-test-id=modal]').should('not.be.visible')
-  cy.contains('Register').click()
+  cy.get('[data-test-id=navbar]').within(() => {
+    cy.contains('Register').click()
+  })
   cy.get('[data-test-id=modal]').should('be.visible')
   cy.contains('Email')
   cy.contains('Password')

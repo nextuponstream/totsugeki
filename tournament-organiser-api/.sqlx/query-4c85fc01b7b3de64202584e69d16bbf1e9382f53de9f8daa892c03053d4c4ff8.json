@@ -1,0 +1,48 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nSELECT id, name, created_at, format, count(*) OVER() AS total\nFROM tournaments\nORDER BY\n    CASE WHEN $1 = 'ASC' THEN created_at END ASC,\n    CASE WHEN $1 = 'DESC' THEN created_at END DESC\nLIMIT $2\nOFFSET $3\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 3,
+        "name": "format",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "total",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "4c85fc01b7b3de64202584e69d16bbf1e9382f53de9f8daa892c03053d4c4ff8"
+}

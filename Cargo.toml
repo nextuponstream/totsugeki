@@ -1,16 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
-  "totsugeki",
-  "totsugeki-display",
-  "dioxus-components",
-  "tournament-organiser-api",
-  "ui",
-]
-
-# otherwise cannot build because those crates believes they are in a workspace
-exclude = [
-  "examples/totsugeki-discord-bot",
-  "examples/totsugeki-native-app",
-  "examples/web",
+    "totsugeki-core",
+    "totsugeki-display",
+    "tournament-organiser-api",
+    "ui",
 ]

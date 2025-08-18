@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nSELECT\n    id,\n    match_id,\n    player_id,\n    tournament_organiser_id,\n    high_seed_player_score,\n    low_seed_player_score\nFROM reports\nWHERE match_id = $1\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "match_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "player_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "tournament_organiser_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "high_seed_player_score",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 5,
+        "name": "low_seed_player_score",
+        "type_info": "Int2"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "5cd40baed0c9dd03781cf98bef0205174b8ab43174f3be8a1c5d629624cd5b30"
+}

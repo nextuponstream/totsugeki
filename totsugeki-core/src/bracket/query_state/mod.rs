@@ -1,0 +1,1 @@
+//! Query state of bracket

@@ -6,29 +6,32 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axum = "0.7.4"
-axum-extra = "0.9.0"
-http = "1.0.0"
-serde = { version = "1.0.171", features = ["derive"]}
+axum = { version = "0.8.1", features = ["macros"] }
+axum-macros = "0.4.1"
+tower-sessions = { version = "0.14.0" }
+http = "1.2.0"
+serde = { version = "1.0.171", features = ["derive"] }
 tokio = { version = "1.0", features = ["full"] }
-tower = { version = "0.4", features = ["util"] }
-tower-http = { version = "0.5.1", features = ["fs", "trace", "cors"] }
+tower = { version = "0.5.2", features = ["util"] }
+tower-http = { version = "0.6.2", features = ["fs", "trace", "cors"] }
 tracing = { version = "0.1" }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-totsugeki = { path = "../totsugeki" }
+totsugeki-core = { path = "../totsugeki-core" }
 totsugeki-display = { path = "../totsugeki-display" }
 # like in the zero2prod book
 # I don't like that sqlx might have a huge breaking change when going 1.0 but
 # that's life
-sqlx = { version = "0.7.3", features = [ "runtime-tokio", "tls-rustls", "postgres", "uuid", "chrono" ] }
-chrono = "0.4.31"
-reqwest = { version = "0.11.24", features = ["json", "cookies"] }
-secrecy = { version = "0.8.0", features = ["serde"] }
+sqlx = { version = "0.8.3", features = ["runtime-tokio-rustls", "any", "tls-rustls", "postgres", "uuid", "chrono", "json", "bigdecimal"] }
+chrono = { version = "0.4.39", features = ["serde"] }
+reqwest = { version = "0.12.12", features = ["json", "cookies"] }
+secrecy = { version = "0.10.3", features = ["serde"] }
 argon2 = { version = "0.5.3", features = ["std"] }
 rand = "0.8.5"
-base64 = "0.21.7"
+base64 = "0.22.1"
 zxcvbn = "2.2.2"
-axum-macros = "0.4.1"
-tower-sessions = "0.10.1"
-time = "0.3.32"
-tower-sessions-sqlx-store = { version = "0.10.0", features = ["postgres"] }
+time = "0.3.36"
+tower-sessions-sqlx-store = { version = "0.15.0", features = ["postgres"] }
+validator = { version = "0.16.1", features = ["derive"] }
+thiserror = "1.0.57"
+uuid = { version = "1.1.2", features = ["v4", "serde"] }
+bigdecimal = { version = "0.4.7" }

@@ -1,7 +1,7 @@
 # Tournament organiser API
 
 An api to create and manage brackets. Serves `tournament-organiser-web` if
-available. 
+available.
 
 For now, we limit the scope to tournament organiser to create brackets, add
 players and update results. No persistence is in place server-side.
@@ -10,7 +10,8 @@ players and update results. No persistence is in place server-side.
 
 ### Dev setup
 
-Chosing to not manage inside a container. Following this [guide](https://www.digitalocean.com/community/tutorials/how-to-install-postgresql-on-ubuntu-20-04-quickstart),
+Chosing to not manage inside a container. Following
+this [guide](https://www.digitalocean.com/community/tutorials/how-to-install-postgresql-on-ubuntu-20-04-quickstart),
 we install (ubuntu based distro):
 
 ```bash
@@ -36,6 +37,15 @@ createuser --interactive
 # Shall the new role be a superuser? (y/n) y
 # Shall the new role be allowed to create databases? (y/n) n
 # Shall the new role be allowed to create more new roles? (y/n) n
+```
+
+For convenience, create a user with your name (use `whoami`):
+
+```bash
+createuser --interactive 
+# Enter name of role to add: <YOUR NAME>
+# Shall the new role be a superuser? (y/n) y
+# Shall the new role be allowed to create databases? (y/n) n
 ```
 
 To run `sqlx::test`, we need our user to have superuser privileges as discussed

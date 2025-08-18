@@ -10,24 +10,25 @@
 #![warn(clippy::unwrap_used)]
 #![forbid(unsafe_code)]
 
-use serde::Serialize;
-use totsugeki::matches::{Id as MatchId, Match};
-use totsugeki::opponent::Opponent;
-use totsugeki::player::Id as PlayerId;
-use totsugeki::player::{Participants, Player};
+use serde::{Deserialize, Serialize};
+use totsugeki_core::matches::result::Score;
+use totsugeki_core::matches::{Match, ReportedResult};
+use totsugeki_core::opponent::Opponent;
+use totsugeki_core::player::Player;
+use totsugeki_core::ID;
 
 pub mod loser_bracket;
 pub mod winner_bracket;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 /// Strict necessary information to use when displaying a match in UI
 pub struct MinimalMatch {
-    /// Match identifier
-    id: MatchId,
+    /// Match ID
+    id: ID,
     /// Names of players participating in match
     players: [Player; 2],
     /// Score of match
-    score: (i8, i8),
+    score: ReportedResult,
     /// Expected seeds of player in match
     seeds: [usize; 2],
     /// Indicate which row it belongs to, starting from 0 index
@@ -37,12 +38,12 @@ pub struct MinimalMatch {
 impl Default for MinimalMatch {
     fn default() -> Self {
         MinimalMatch {
-            id: MatchId::new_v4(),
+            id: ID::new_v4(),
             players: [
                 Player::new(String::default()),
                 Player::new(String::default()),
             ],
-            score: (0, 0),
+            score: ReportedResult(None),
             seeds: [0, 0],
             row_hint: None,
         }
@@ -83,19 +84,19 @@ impl MinimalMatch {
 
     /// Get scores of match
     #[must_use]
-    pub fn get_score(&self) -> (i8, i8) {
-        self.score
+    pub fn get_score(&self) -> Option<Score> {
+        self.score.0
     }
 
     /// Get ID of match
     #[must_use]
-    pub fn get_id(&self) -> MatchId {
+    pub fn get_id(&self) -> ID {
         self.id
     }
 }
 
 /// Display lines using boxes and their borders
-#[derive(Clone, Copy, Debug, PartialEq, Default, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Default, Serialize, Deserialize)]
 pub struct BoxElement {
     /// true when left border of box should be visible
     pub(crate) left_border: bool,
@@ -128,30 +129,31 @@ impl BoxElement {
 /// Convert match struct from Totsugeki library into minimal struct, using
 /// `participants` to fill in name of players.
 #[must_use]
-pub fn from_participants(m: &Match, participants: &Participants) -> MinimalMatch {
-    let list = participants.get_players_list();
-    let players: Vec<(PlayerId, String)> =
-        list.iter().map(|p| (p.get_id(), p.get_name())).collect();
+pub fn from_participants(m: &Match, seeding: &[Player]) -> MinimalMatch {
+    let players: Vec<(ID, String)> = seeding
+        .iter()
+        .map(|p| (*p.get_id(), p.get_name()))
+        .collect();
 
     // TODO find out if storing both player name and id is better than storing
-    // only the id and doing some work to get back id and name.
+    //  only the id and doing some work to get back id and name.
     let p1 = match m.get_players()[0] {
-        Opponent::Player(id) => id,
-        Opponent::Unknown => PlayerId::new_v4(),
+        Opponent(Some(id)) => id,
+        Opponent(None) => ID::new_v4(),
     };
     let p2 = match m.get_players()[1] {
-        Opponent::Player(id) => id,
-        Opponent::Unknown => PlayerId::new_v4(),
+        Opponent(Some(id)) => id,
+        Opponent(None) => ID::new_v4(),
     };
     let top_seed = m.get_players()[0].get_name(&players);
     let bottom_seed = m.get_players()[1].get_name(&players);
     MinimalMatch {
-        id: m.get_id(),
+        id: *m.get_id(),
         players: [
             Player::from((p1, top_seed)),
             Player::from((p2, bottom_seed)),
         ],
-        score: m.get_score(),
+        score: ReportedResult(m.get_score()),
         seeds: m.get_seeds(),
         row_hint: None,
     }

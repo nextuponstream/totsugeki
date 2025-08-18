@@ -4,14 +4,14 @@
     :class="scoreClass(scores, index, otherIndex)"
   >
     <div class="place-self-center">
-      {{ !isPaddingMatch ? scores[index] : '&#8205;' }}
+      {{ !isPaddingMatch ? (scores ? scores[index] : '?') : '&#8205;' }}
     </div>
   </div>
 </template>
 <script setup lang="ts">
 const props = defineProps<{
   isPaddingMatch: boolean
-  scores: number[]
+  scores: number[] | undefined
   index: number
   otherIndex: number
 }>()

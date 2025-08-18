@@ -4,16 +4,24 @@
 
 #[cfg(test)]
 mod tests {
-    use totsugeki::bracket::builder::Builder;
-    use totsugeki::bracket::single_elimination_variant::Variant;
-    use totsugeki::bracket::Bracket;
+    use totsugeki_core::bracket::seeding::Seeding;
+    use totsugeki_core::matches::result::MatchFormat;
+    use totsugeki_core::player::Player;
+    use totsugeki_core::single_elimination_bracket::SingleEliminationBracket;
+    use totsugeki_core::validation::AutomaticMatchValidationMode;
+    use totsugeki_core::ID;
 
-    fn get_data(n: usize) -> Bracket {
-        Builder::default()
-            .set_format(totsugeki::format::Format::SingleElimination)
-            .set_new_players(n)
-            .build()
-            .expect("bracket")
+    fn get_data(n: usize) -> SingleEliminationBracket {
+        let mut seeding = vec![];
+        for _ in 0..n {
+            seeding.push(ID::new_v4());
+        }
+        SingleEliminationBracket::create(
+            Seeding::new(seeding).unwrap(),
+            AutomaticMatchValidationMode::Flexible,
+            MatchFormat::ft2(),
+            None,
+        )
     }
 
     use crate::from_participants;
@@ -49,15 +57,16 @@ mod tests {
     #[test]
     fn _3_participants_bracket() {
         let bracket = get_data(3);
-        let participants = bracket.get_participants();
-        let sev: Variant = bracket.try_into().expect("single elimination bracket");
-        let matches_by_rounds = sev.partition_by_round().expect("rounds");
+        let players = bracket
+            .get_seeding()
+            .get()
+            .iter()
+            .map(|id| (*id, "p").try_into().unwrap())
+            .collect::<Vec<Player>>();
+        let matches_by_rounds = bracket.partition_by_round().expect("rounds");
         let mut rounds = vec![];
         for r in matches_by_rounds {
-            let round = r
-                .iter()
-                .map(|m| from_participants(m, &participants))
-                .collect();
+            let round = r.iter().map(|m| from_participants(m, &players)).collect();
             rounds.push(round);
         }
 
@@ -105,15 +114,16 @@ mod tests {
     #[test]
     fn _4_participants_bracket() {
         let bracket = get_data(4);
-        let participants = bracket.get_participants();
-        let sev: Variant = bracket.try_into().expect("single elimination bracket");
-        let matches_by_rounds = sev.partition_by_round().expect("rounds");
+        let players = bracket
+            .get_seeding()
+            .get()
+            .iter()
+            .map(|id| (*id, "p").try_into().unwrap())
+            .collect::<Vec<Player>>();
+        let matches_by_rounds = bracket.partition_by_round().expect("rounds");
         let mut rounds = vec![];
         for r in matches_by_rounds {
-            let round = r
-                .iter()
-                .map(|m| from_participants(m, &participants))
-                .collect();
+            let round = r.iter().map(|m| from_participants(m, &players)).collect();
             rounds.push(round);
         }
         reorder(&mut rounds);
@@ -134,15 +144,16 @@ mod tests {
     #[test]
     fn _5_participants_bracket() {
         let bracket = get_data(5);
-        let participants = bracket.get_participants();
-        let sev: Variant = bracket.try_into().expect("single elimination bracket");
-        let matches_by_rounds = sev.partition_by_round().expect("rounds");
+        let players = bracket
+            .get_seeding()
+            .get()
+            .iter()
+            .map(|id| (*id, "p").try_into().unwrap())
+            .collect::<Vec<Player>>();
+        let matches_by_rounds = bracket.partition_by_round().expect("rounds");
         let mut rounds = vec![];
         for r in matches_by_rounds {
-            let round = r
-                .iter()
-                .map(|m| from_participants(m, &participants))
-                .collect();
+            let round = r.iter().map(|m| from_participants(m, &players)).collect();
             rounds.push(round);
         }
         reorder(&mut rounds);
